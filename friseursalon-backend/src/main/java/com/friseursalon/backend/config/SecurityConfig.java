@@ -6,7 +6,6 @@ import com.friseursalon.backend.security.jwt.AuthTokenFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod; // Import für HttpMethod
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -49,11 +48,13 @@ public class SecurityConfig {
         return authProvider;
     }
 
+    // Der AuthenticationManager Bean ist in Spring Security 6+ korrekt so
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
 
+    // Bean für die CORS-Konfiguration
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -75,21 +76,25 @@ public class SecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Öffentliche Endpunkte (keine Authentifizierung erforderlich)
-                        .requestMatchers("/api/auth/**").permitAll() // Registrierung und Login
-                        .requestMatchers("/api/hello").permitAll() // Dein Hello World Endpunkt
-                        .requestMatchers("/api/services/**").permitAll() // Dienstleistungen (Frontend kann diese ohne Login anzeigen)
-                        .requestMatchers("/h2-console/**").permitAll() // H2-Konsole (NUR FÜR ENTWICKLUNG!)
+                        // Öffentliche Endpunkte
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/hello").permitAll()
+                        .requestMatchers("/api/services/**").permitAll()
+                        .requestMatchers("/h2-console/**").permitAll()
 
-                        // NEU: Nur POST-Anfragen an /api/appointments sind für Gäste erlaubt (Terminbuchung)
-                        .requestMatchers(HttpMethod.POST, "/api/appointments").permitAll()
+                        // Geschützte Endpunkte
+                        .requestMatchers("/api/customers/**").authenticated()
+                        .requestMatchers("/api/appointments/**").authenticated()
 
-                        // Alle anderen Anfragen (GET, PUT, DELETE für /api/appointments)
-                        // sowie alle Anfragen an /api/customers benötigen Authentifizierung
+                        // Alle anderen Anfragen benötigen Authentifizierung
                         .anyRequest().authenticated()
                 );
 
-        http.authenticationProvider(authenticationProvider());
+        // Die explizite Konfiguration des Providers ist hier nicht mehr nötig,
+        // da der DaoAuthenticationProvider als @Bean von Spring automatisch erkannt wird.
+        // http.authenticationProvider(authenticationProvider()); // <-- DIESE ZEILE IST NICHT NÖTIG
+
+        // JWT-Authentifizierungsfilter vor dem Standardfilter hinzufügen
         http.addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
