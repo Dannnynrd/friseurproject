@@ -9,15 +9,21 @@ public class JwtResponse {
     private String token;
     private String type = "Bearer";
     private Long id;
-    private String username;
+    // private String username; // DIESE ZEILE ENTFERNEN, da Email jetzt der Username ist
     private String email;
+    private String firstName; // NEUES FELD
+    private String lastName;  // NEUES FELD
+    private String phoneNumber; // NEUES FELD
     private List<String> roles;
 
-    public JwtResponse(String accessToken, Long id, String username, String email, List<String> roles) {
+    // Konstruktor anpassen
+    public JwtResponse(String accessToken, Long id, String email, String firstName, String lastName, String phoneNumber, List<String> roles) {
         this.token = accessToken;
         this.id = id;
-        this.username = username;
         this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.phoneNumber = phoneNumber;
         this.roles = roles;
     }
 }

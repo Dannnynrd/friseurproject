@@ -1,6 +1,6 @@
 package com.friseursalon.backend.payload.request;
 
-import jakarta.validation.constraints.NotBlank; // Für Validierung (später optional nutzbar)
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -9,8 +9,8 @@ import lombok.AllArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LoginRequest {
-    @NotBlank // Stellt sicher, dass das Feld nicht leer ist
-    private String username;
+    @NotBlank
+    private String email; // Änderung von 'username' zu 'email'
 
     @NotBlank
     private String password;

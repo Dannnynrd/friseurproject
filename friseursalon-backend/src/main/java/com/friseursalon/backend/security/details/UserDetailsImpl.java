@@ -1,8 +1,7 @@
-package com.friseursalon.backend.security.details; // <-- So muss es sein!
+package com.friseursalon.backend.security.details;
 
-
-import com.friseursalon.backend.model.User; // Dein User-Modell
-import com.fasterxml.jackson.annotation.JsonIgnore; // Für JSON-Serialisierung
+import com.friseursalon.backend.model.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -16,24 +15,30 @@ public class UserDetailsImpl implements UserDetails {
     private static final long serialVersionUID = 1L;
 
     private Long id;
-    private String username;
-    private String email;
-
-    @JsonIgnore // Passwort nicht in JSON serialisieren
+    // private String username; // DIESE ZEILE ENTFERNEN (Email wird jetzt der Username)
+    private String email; // Bleibt
     private String password;
+
+    // NEUE FELDER HINZUFÜGEN
+    private String firstName;
+    private String lastName;
+    private String phoneNumber;
 
     private Collection<? extends GrantedAuthority> authorities;
 
-    public UserDetailsImpl(Long id, String username, String email, String password,
+    // Konstruktor anpassen
+    public UserDetailsImpl(Long id, String email, String password, String firstName, String lastName, String phoneNumber,
                            Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
-        this.username = username;
         this.email = email;
         this.password = password;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.phoneNumber = phoneNumber;
         this.authorities = authorities;
     }
 
-    // Factory-Methode zum Erstellen aus deinem User-Modell
+    // Factory-Methode zum Erstellen aus deinem User-Modell anpassen
     public static UserDetailsImpl build(User user) {
         List<GrantedAuthority> authorities = user.getRoles().stream()
                 .map(role -> new SimpleGrantedAuthority(role.getName().name()))
@@ -41,9 +46,11 @@ public class UserDetailsImpl implements UserDetails {
 
         return new UserDetailsImpl(
                 user.getId(),
-                user.getUsername(),
-                user.getEmail(),
+                user.getEmail(), // Email als "Username" für UserDetailsImpl
                 user.getPassword(),
+                user.getFirstName(), // NEUES FELD
+                user.getLastName(),  // NEUES FELD
+                user.getPhoneNumber(), // NEUES FELD
                 authorities);
     }
 
@@ -55,9 +62,14 @@ public class UserDetailsImpl implements UserDetails {
         return email;
     }
 
+    public String getFirstName() { return firstName; } // NEUER GETTER
+    public String getLastName() { return lastName; }   // NEUER GETTER
+    public String getPhoneNumber() { return phoneNumber; } // NEUER GETTER
+
+
     @Override
     public String getUsername() {
-        return username;
+        return email; // WICHTIG: Email wird jetzt als Benutzername zurückgegeben
     }
 
     @Override
@@ -72,24 +84,13 @@ public class UserDetailsImpl implements UserDetails {
 
     // Standard-Methoden von UserDetails
     @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
+    public boolean isAccountNonExpired() { return true; }
     @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
+    public boolean isAccountNonLocked() { return true; }
     @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
+    public boolean isCredentialsNonExpired() { return true; }
     @Override
-    public boolean isEnabled() {
-        return true;
-    }
+    public boolean isEnabled() { return true; }
 
     @Override
     public boolean equals(Object o) {

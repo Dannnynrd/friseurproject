@@ -5,12 +5,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
-    // Findet einen Benutzer anhand seines Benutzernamens
-    Optional<User> findByUsername(String username);
-
-    // Prüft, ob ein Benutzer mit diesem Benutzernamen existiert
-    Boolean existsByUsername(String username);
+    // Findet einen Benutzer anhand seiner E-Mail-Adresse (die jetzt der "Benutzername" ist)
+    Optional<User> findByEmail(String email); // Änderung von findByUsername zu findByEmail
 
     // Prüft, ob ein Benutzer mit dieser E-Mail-Adresse existiert
-    Boolean existsByEmail(String email);
+    Boolean existsByEmail(String email); // Diese Methode bleibt, ist aber jetzt unser Haupt-Check
+
+    // Entferne existsByUsername, da username nicht mehr im Model ist
+    // Boolean existsByUsername(String username); // DIESE ZEILE ENTFERNEN!
 }

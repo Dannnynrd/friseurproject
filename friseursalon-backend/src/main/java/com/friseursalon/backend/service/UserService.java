@@ -33,26 +33,23 @@ public class UserService implements UserDetailsService {
 
     @Override
     @Transactional
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Benutzer nicht gefunden mit Benutzername: " + username));
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException { // Parameter von 'username' zu 'email' ändern
+        User user = userRepository.findByEmail(email) // HIER findByEmail nutzen
+                .orElseThrow(() -> new UsernameNotFoundException("Benutzer nicht gefunden mit E-Mail: " + email));
 
-        // Hier wird ausschließlich dein benutzerdefiniertes UserDetails-Objekt zurückgegeben.
         return UserDetailsImpl.build(user);
     }
 
+    // registerNewUser Methode anpassen: nimmt Vorname, Nachname, Telefonnummer
     @Transactional
-    public User registerNewUser(String username, String email, String password, Set<String> strRoles) {
-        if (userRepository.existsByUsername(username)) {
-            throw new RuntimeException("Fehler: Benutzername ist bereits vergeben!");
-        }
-
-        if (userRepository.existsByEmail(email)) {
+    public User registerNewUser(String firstName, String lastName, String email, String password, String phoneNumber, Set<String> strRoles) {
+        // Prüfung auf E-Mail-Eindeutigkeit
+        if (userRepository.existsByEmail(email)) { // existsByUsername entfernt
             throw new RuntimeException("Fehler: E-Mail ist bereits vergeben!");
         }
 
-        // DIESE ZEILE SOLLTE ZEILE 41 SEIN, WENN DIE KOMMENTARE KORREKT SIND
-        User user = new User(username, email, passwordEncoder.encode(password));
+        // Neues Benutzerobjekt erstellen: Email als "Benutzername"
+        User user = new User(email, passwordEncoder.encode(password), firstName, lastName, phoneNumber); // Konstruktor anpassen
 
         Set<Role> roles = new HashSet<>();
 
@@ -83,11 +80,12 @@ public class UserService implements UserDetailsService {
         return userRepository.save(user);
     }
 
-    public Boolean existsByUsername(String username) {
-        return userRepository.existsByUsername(username);
-    }
+    // existsByUsername entfernen, da Email jetzt der Login-Name ist
+    // public Boolean existsByUsername(String username) {
+    //     return userRepository.existsByUsername(username);
+    // }
 
-    public Boolean existsByEmail(String email) {
+    public Boolean existsByEmail(String email) { // Diese Methode bleibt
         return userRepository.existsByEmail(email);
     }
 }

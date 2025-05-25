@@ -13,18 +13,25 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SignupRequest {
-    @NotBlank
-    @Size(min = 3, max = 20)
-    private String username;
+    // @NotBlank // DIESE ZEILE ENTFERNEN
+    // @Size(min = 3, max = 20) // DIESE ZEILE ENTFERNEN
+    // private String username; // DIESE ZEILE ENTFERNEN
 
     @NotBlank
     @Size(max = 50)
     @Email
-    private String email;
+    private String email; // Bleibt bestehen
 
     @NotBlank
     @Size(min = 6, max = 40)
-    private String password;
+    private String password; // Bleibt bestehen
 
-    private Set<String> role; // Rollen als String-Set, z.B. ["admin", "user"]
+    // NEUE FELDER HINZUFÜGEN
+    @NotBlank
+    private String firstName;
+    @NotBlank
+    private String lastName;
+    private String phoneNumber; // Optional, kein @NotBlank
+
+    private Set<String> role;
 }

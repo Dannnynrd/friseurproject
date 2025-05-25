@@ -1,13 +1,13 @@
 package com.friseursalon.backend.controller;
 
-import com.friseursalon.backend.model.User; // Dennoch benötigt, falls User-Modell an anderer Stelle genutzt wird
+import com.friseursalon.backend.model.User; // Immer noch benötigt, falls User-Modell an anderer Stelle genutzt wird
 import com.friseursalon.backend.payload.request.LoginRequest;
 import com.friseursalon.backend.payload.request.SignupRequest;
 import com.friseursalon.backend.payload.response.JwtResponse;
 import com.friseursalon.backend.payload.response.MessageResponse;
 import com.friseursalon.backend.security.jwt.JwtUtils;
 import com.friseursalon.backend.service.UserService;
-import com.friseursalon.backend.security.details.UserDetailsImpl; // WICHTIG: DIESEN IMPORT HINZUFÜGEN
+import com.friseursalon.backend.security.details.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,7 +15,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails; // Dennoch benötigt, da authentication.getPrincipal() UserDetails zurückgibt
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -39,15 +39,15 @@ public class AuthController {
         this.jwtUtils = jwtUtils;
     }
 
-    @PostMapping("/signin")
+    @PostMapping("/signin") // POST http://localhost:8080/api/auth/signin
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+        // Authentifiziere den Benutzer mit Spring Security (Email ist jetzt der 'username')
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
+                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())); // Hier email statt username nutzen
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // HIER DIE KORREKTUR
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal(); // HIER IN UserDetailsImpl CASTEN
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal(); // Cast zu UserDetailsImpl
 
         String jwt = jwtUtils.generateJwtToken(userDetails);
 
@@ -55,32 +55,32 @@ public class AuthController {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
 
-        // JETZT DIREKT AUF DIE GETTER VON USERDETAILSIMPL ZUGREIFEN
+        // JwtResponse mit neuen Feldern füllen
         return ResponseEntity.ok(new JwtResponse(jwt,
-                userDetails.getId(), // Direkt auf getId() zugreifen
-                userDetails.getUsername(), // Auch hier, direkt auf getUsername() zugreifen
-                userDetails.getEmail(), // Direkt auf getEmail() zugreifen
+                userDetails.getId(),
+                userDetails.getEmail(),
+                userDetails.getFirstName(), // NEUES FELD
+                userDetails.getLastName(),  // NEUES FELD
+                userDetails.getPhoneNumber(), // NEUES FELD
                 roles));
     }
 
-    @PostMapping("/signup")
+    @PostMapping("/signup") // POST http://localhost:8080/api/auth/signup
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signupRequest) {
-        if (userService.existsByUsername(signupRequest.getUsername())) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(new MessageResponse("Fehler: Benutzername ist bereits vergeben!"));
-        }
-
-        if (userService.existsByEmail(signupRequest.getEmail())) {
+        // Prüfe auf E-Mail-Eindeutigkeit
+        if (userService.existsByEmail(signupRequest.getEmail())) { // Prüfen mit existsByEmail
             return ResponseEntity
                     .badRequest()
                     .body(new MessageResponse("Fehler: E-Mail ist bereits vergeben!"));
         }
 
+        // Neuen Benutzer registrieren (mit neuen Feldern)
         userService.registerNewUser(
-                signupRequest.getUsername(),
+                signupRequest.getFirstName(), // NEUES FELD
+                signupRequest.getLastName(),  // NEUES FELD
                 signupRequest.getEmail(),
                 signupRequest.getPassword(),
+                signupRequest.getPhoneNumber(), // NEUES FELD
                 signupRequest.getRole()
         );
 
