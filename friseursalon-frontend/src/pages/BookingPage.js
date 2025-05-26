@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom'; // useNavigate entfernt, da nicht verwendet
 import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css'; // CSS-Import
 import { de } from 'date-fns/locale/de';
@@ -8,13 +8,12 @@ import {
     faSpinner, faExclamationCircle, faCheckCircle,
     faArrowLeft, faArrowRight, faCalendarAlt,
     faClock, faInfoCircle, faEdit,
-    faCheck // Benötigt für das Häkchen im Step Indicator
+    faCheck
 } from '@fortawesome/free-solid-svg-icons';
 
 import api from '../services/api.service';
 import AuthService from '../services/auth.service';
 import AppointmentForm from '../components/AppointmentForm';
-// import './BookingPage.css'; // Auskommentiert, da wir Stile in App.css haben
 
 registerLocale('de', de);
 setDefaultLocale('de');
@@ -22,7 +21,6 @@ setDefaultLocale('de');
 function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     const { serviceName: initialServiceNameParam } = useParams();
     const [initialService, setInitialService] = useState(initialServiceNameParam ? decodeURIComponent(initialServiceNameParam) : null);
-    // const navigate = useNavigate(); // Wird aktuell nicht verwendet, daher auskommentiert für ESLint
 
     const [step, setStep] = useState(1);
     const [selectedService, setSelectedService] = useState(null);
@@ -53,6 +51,11 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                         console.warn(`Vorausgewählter Service "${initialService}" nicht in der geladenen Liste gefunden.`);
                         setInitialService(null);
                     }
+                } else if (initialService) {
+                    // Fall: initialService ist gesetzt, aber fetchedServices ist leer
+                    console.warn(`Vorausgewählter Service "${initialService}" kann nicht gefunden werden, da keine Services geladen wurden.`);
+                    setInitialService(null); // Zurücksetzen, um Endlosschleife zu vermeiden, falls fetchServices fehlschlägt
+                    setServiceError('Keine Dienstleistungen verfügbar, um den vorausgewählten Service zu prüfen.');
                 }
             } catch (error) {
                 console.error("Fehler beim Laden der Dienstleistungen:", error);
@@ -130,13 +133,16 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
 
     const handleAppointmentBooked = () => {
         if (onAppointmentAdded) {
-            onAppointmentAdded();
+            onAppointmentAdded(); // Callback für App.js, falls benötigt
         }
-        setStep(4);
+        setStep(4); // Gehe zum Bestätigungsschritt
     };
 
     const resetBookingProcess = () => {
-        setInitialService(null);
+        // initialService wird über useParams neu gesetzt, wenn die Seite neu geladen wird.
+        // Wenn wir hier zu Schritt 1 gehen, ohne die URL zu ändern, bleibt initialService bestehen.
+        // Um einen echten Reset zu erzwingen, könnte man zur Basis /buchen navigieren oder initialService explizit nullen.
+        setInitialService(null); // Dies stellt sicher, dass bei Klick auf "Dienstleistung ändern" keine alte Vorauswahl hängen bleibt
         setSelectedService(null);
         setSelectedDate(null);
         setSelectedTime('');
@@ -147,10 +153,10 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     };
 
 
-    if (loadingServices) {
+    if (loadingServices && !initialService) { // Zeige Ladeanzeige nur, wenn nicht schon ein Service vorausgewählt wurde (und ggf. direkt zu Schritt 2 gesprungen wird)
         return <div className="page-center-content"><p className="loading-message"><FontAwesomeIcon icon={faSpinner} spin /> Dienstleistungen werden geladen...</p></div>;
     }
-    if (serviceError && services.length === 0) {
+    if (serviceError && services.length === 0 && !loadingServices) {
         return <div className="page-center-content"><p className="form-message error"><FontAwesomeIcon icon={faExclamationCircle} /> {serviceError}</p></div>;
     }
 
@@ -184,7 +190,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                     })}
                 </div>
 
-                {serviceError && services.length > 0 && (
+                {serviceError && services.length > 0 && step < 4 && (
                     <p className="form-message error mb-4"><FontAwesomeIcon icon={faExclamationCircle} /> {serviceError}</p>
                 )}
 
@@ -192,6 +198,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                 {step === 1 && (
                     <div className="booking-step-content animate-step">
                         <h2 className="booking-step-heading">1. Dienstleistung auswählen</h2>
+                        {loadingServices && <p className="loading-message small"><FontAwesomeIcon icon={faSpinner} spin /> Lade Dienste...</p>}
                         {!loadingServices && !serviceError && services.length === 0 && (
                             <p className="form-message info"><FontAwesomeIcon icon={faInfoCircle} /> Aktuell sind keine Dienstleistungen online buchbar.</p>
                         )}
@@ -202,12 +209,12 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                                     onClick={() => { setSelectedService(service); setSelectedDate(null); setSelectedTime(''); setStep(2); }}
                                     className={`service-card ${selectedService?.id === service.id ? 'selected' : ''}`}
                                     role="button" tabIndex={0}
-                                    onKeyPress={(e) => { if (e.key === 'Enter') { setSelectedService(service); setSelectedDate(null); setSelectedTime(''); setStep(2); }}}
+                                    onKeyPress={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedService(service); setSelectedDate(null); setSelectedTime(''); setStep(2); }}}
                                 >
                                     <h3 className="service-name">{service.name}</h3>
                                     {service.description && <p className="service-description">{service.description}</p>}
                                     <p className="service-details">
-                                        {service.price ? service.price.toFixed(2) : 'N/A'} €
+                                        {typeof service.price === 'number' ? service.price.toFixed(2) : 'N/A'} €
                                         <span className="service-duration">/ {service.durationMinutes || '-'} Min</span>
                                     </p>
                                 </div>
@@ -220,8 +227,10 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                     <div className="booking-step-content animate-step">
                         <h2 className="booking-step-heading">2. Datum & Uhrzeit für "{selectedService.name}"</h2>
                         <p className="booking-step-subheading">
-                            Gewählte Dienstleistung: <strong>{selectedService.name}</strong>
-                            ({selectedService.price ? selectedService.price.toFixed(2) : 'N/A'} € / {selectedService.durationMinutes || '-'} Min)
+                            <span>
+                                Gewählte Dienstleistung: <strong>{selectedService.name}</strong>
+                                ({typeof selectedService.price === 'number' ? selectedService.price.toFixed(2) : 'N/A'} € / {selectedService.durationMinutes || '-'} Min)
+                            </span>
                             <button type="button" onClick={resetBookingProcess} className="edit-selection-button small-edit">
                                 <FontAwesomeIcon icon={faEdit} /> Ändern
                             </button>
@@ -318,7 +327,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                         )}
 
                         <AppointmentForm
-                            onAppointmentBooked={handleAppointmentBooked}
+                            onAppointmentBooked={handleAppointmentBooked} // Korrigierter Prop-Name
                             currentUser={currentUser}
                             onRegisterAttempt={handleRegisterDuringBooking}
                             onLoginSuccess={onLoginSuccess}
@@ -340,7 +349,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                         <h2 className="booking-step-heading">Termin erfolgreich gebucht!</h2>
                         <p>Vielen Dank für Ihre Buchung. {currentUser ? 'Eine Bestätigung finden Sie auch unter "Meine Termine".' : 'Eine Bestätigung wurde an Ihre E-Mail-Adresse gesendet (falls angegeben).'}</p>
                         {selectedService && selectedDate && selectedTime && (
-                            <div className="appointment-summary light">
+                            <div className="appointment-summary light"> {/* 'light' Klasse für ggf. helleren Hintergrund */}
                                 <h4>Ihre Buchungsdetails:</h4>
                                 <p><strong>Dienstleistung:</strong> {selectedService.name}</p>
                                 <p><strong>Datum:</strong> {selectedDate.toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
