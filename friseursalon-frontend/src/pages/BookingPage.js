@@ -3,30 +3,28 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css'; // CSS-Import
 import { de } from 'date-fns/locale/de';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; // FontAwesome Import
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faSpinner, faExclamationCircle, faCheckCircle,
     faArrowLeft, faArrowRight, faCalendarAlt,
     faClock, faInfoCircle, faEdit,
     faCheck // Benötigt für das Häkchen im Step Indicator
-} from '@fortawesome/free-solid-svg-icons'; // FontAwesome Icons
+} from '@fortawesome/free-solid-svg-icons';
 
 import api from '../services/api.service';
 import AuthService from '../services/auth.service';
 import AppointmentForm from '../components/AppointmentForm';
-// import './BookingPage.css'; // Auskommentiert, da wir erstmal alles in App.css haben
+// import './BookingPage.css'; // Auskommentiert, da wir Stile in App.css haben
 
-// Funktionsaufrufe sollten nach allen Imports und vor der Komponenten-Definition stehen.
-// Es ist eine gute Praxis, solche globalen Konfigurationen so früh wie möglich auszuführen.
 registerLocale('de', de);
 setDefaultLocale('de');
 
 function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     const { serviceName: initialServiceNameParam } = useParams();
     const [initialService, setInitialService] = useState(initialServiceNameParam ? decodeURIComponent(initialServiceNameParam) : null);
-    const navigate = useNavigate();
+    // const navigate = useNavigate(); // Wird aktuell nicht verwendet, daher auskommentiert für ESLint
 
-    const [step, setStep] = useState(1); // Beginnt bei Schritt 1
+    const [step, setStep] = useState(1);
     const [selectedService, setSelectedService] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
     const [selectedTime, setSelectedTime] = useState('');
@@ -34,10 +32,9 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     const [services, setServices] = useState([]);
     const [loadingServices, setLoadingServices] = useState(true);
     const [serviceError, setServiceError] = useState(null);
-    const [registerMessage, setRegisterMessage] = useState(''); // Sollte Objekt sein: { type: '', text: '' }
+    const [registerMessage, setRegisterMessage] = useState({ type: '', text: '' });
     const [notes, setNotes] = useState('');
 
-    // Effekt zum Laden der Dienstleistungen
     useEffect(() => {
         const fetchServices = async () => {
             setLoadingServices(true);
@@ -51,10 +48,10 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                     const service = fetchedServices.find(s => s.name.toLowerCase() === initialService.toLowerCase());
                     if (service) {
                         setSelectedService(service);
-                        setStep(2); // Direkt zu Schritt 2, wenn Service vorausgewählt ist
+                        setStep(2);
                     } else {
                         console.warn(`Vorausgewählter Service "${initialService}" nicht in der geladenen Liste gefunden.`);
-                        setInitialService(null); // Service zurücksetzen, wenn nicht gefunden
+                        setInitialService(null);
                     }
                 }
             } catch (error) {
@@ -76,23 +73,18 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
         const slotInterval = 30;
         const dayOfWeek = selectedDate.getDay();
 
-        // Sonntag (Tag 0) und Montag (Tag 1) sind oft Ruhetage oder haben spezielle Zeiten
         if (dayOfWeek === 0) { // Sonntag
-            // setTimeSlotsError("Sonntags haben wir geschlossen."); // Besser: direkt im State setzen
             return [];
         }
-        // if (dayOfWeek === 1) { /* Ggf. Montag hier behandeln */ }
-
 
         for (let hour = openingHour; hour < closingHour; hour++) {
             for (let minute = 0; minute < 60; minute += slotInterval) {
                 const slotTime = new Date(selectedDate);
                 slotTime.setHours(hour, minute, 0, 0);
 
-                // Prüfen, ob der Termin in der Vergangenheit liegt (für den aktuellen Tag)
                 const now = new Date();
                 if (selectedDate.toDateString() === now.toDateString() && slotTime < now) {
-                    continue; // Überspringe vergangene Zeiten am aktuellen Tag
+                    continue;
                 }
 
                 const endTime = new Date(slotTime.getTime() + serviceDurationMinutes * 60000);
@@ -108,14 +100,13 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
         if (selectedDate && selectedService) {
             const times = generateTimeSlots(selectedService.durationMinutes);
             setAvailableTimes(times);
-            // Hier könnte man timeSlotsError setzen, wenn times leer ist NACHDEM der Tag ausgewählt wurde
         } else {
             setAvailableTimes([]);
         }
     }, [selectedDate, selectedService, generateTimeSlots]);
 
     const handleRegisterDuringBooking = async (customerEmail, customerFirstName, customerLastName, customerPhoneNumber, password) => {
-        setRegisterMessage({ type: '', text: '' }); // Zurücksetzen
+        setRegisterMessage({ type: '', text: '' });
         try {
             await AuthService.register(customerFirstName, customerLastName, customerEmail, password, customerPhoneNumber, ["user"]);
             setRegisterMessage({ type: 'success', text: `Konto für ${customerEmail} erfolgreich erstellt! Sie können sich jetzt anmelden oder die Buchung abschließen.`});
@@ -137,19 +128,29 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     const handleNextStep = () => setStep(prev => prev < 4 ? prev + 1 : 4);
     const handlePrevStep = () => setStep(prev => prev > 1 ? prev - 1 : 1);
 
-    // Wird von AppointmentForm aufgerufen nach erfolgreicher Buchung
     const handleAppointmentBooked = () => {
         if (onAppointmentAdded) {
             onAppointmentAdded();
         }
-        setStep(4); // Gehe zum Bestätigungsschritt
+        setStep(4);
+    };
+
+    const resetBookingProcess = () => {
+        setInitialService(null);
+        setSelectedService(null);
+        setSelectedDate(null);
+        setSelectedTime('');
+        setNotes('');
+        setRegisterMessage({ type: '', text: '' });
+        setServiceError(null);
+        setStep(1);
     };
 
 
     if (loadingServices) {
         return <div className="page-center-content"><p className="loading-message"><FontAwesomeIcon icon={faSpinner} spin /> Dienstleistungen werden geladen...</p></div>;
     }
-    if (serviceError && services.length === 0) { // Zeige Fehler nur, wenn keine Services geladen werden konnten
+    if (serviceError && services.length === 0) {
         return <div className="page-center-content"><p className="form-message error"><FontAwesomeIcon icon={faExclamationCircle} /> {serviceError}</p></div>;
     }
 
@@ -158,13 +159,12 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
         <div className="booking-page-container container">
             <div className="booking-form-container">
                 <h1 className="booking-page-main-heading">Termin buchen</h1>
-                {/* <p className="booking-page-subheading">Wählen Sie Ihre gewünschte Dienstleistung, Datum und Uhrzeit.</p> */}
 
                 <div className="booking-step-indicators">
                     {[1, 2, 3, 4].map(s_idx => {
                         let label = "";
-                        let currentStepIsActive = step === s_idx;
-                        let stepIsCompleted = (step === 4 && s_idx < 4) || (step > s_idx);
+                        const isCurrentStepActive = step === s_idx;
+                        const isStepCompleted = (step > s_idx) || (step === 4 && s_idx < 4);
 
                         if (s_idx === 1) label = "Dienstleistung";
                         else if (s_idx === 2) label = "Datum & Zeit";
@@ -172,12 +172,10 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                         else if (s_idx === 4) label = "Bestätigung";
 
                         return (
-                            <div key={s_idx} className={`booking-step-indicator ${currentStepIsActive ? 'active' : ''} ${stepIsCompleted ? 'completed' : ''}`}>
+                            <div key={s_idx} className={`booking-step-indicator ${isCurrentStepActive ? 'active' : ''} ${isStepCompleted ? 'completed' : ''}`}>
                                 <div className="step-number-wrapper">
                                     <span className="step-number">
-                                        {(stepIsCompleted && s_idx < 4) || (step === 4 && s_idx < 4)
-                                            ? <FontAwesomeIcon icon={faCheck} />
-                                            : s_idx}
+                                        {isStepCompleted ? <FontAwesomeIcon icon={faCheck} /> : s_idx}
                                     </span>
                                 </div>
                                 <span className="step-label">{label}</span>
@@ -186,7 +184,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                     })}
                 </div>
 
-                {serviceError && services.length > 0 && ( /* Fehler auch anzeigen, wenn Services da sind, aber z.B. TimeSlots nicht laden */
+                {serviceError && services.length > 0 && (
                     <p className="form-message error mb-4"><FontAwesomeIcon icon={faExclamationCircle} /> {serviceError}</p>
                 )}
 
@@ -224,7 +222,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                         <p className="booking-step-subheading">
                             Gewählte Dienstleistung: <strong>{selectedService.name}</strong>
                             ({selectedService.price ? selectedService.price.toFixed(2) : 'N/A'} € / {selectedService.durationMinutes || '-'} Min)
-                            <button type="button" onClick={() => { setInitialService(null); setSelectedService(null); setStep(1); }} className="edit-selection-button small-edit">
+                            <button type="button" onClick={resetBookingProcess} className="edit-selection-button small-edit">
                                 <FontAwesomeIcon icon={faEdit} /> Ändern
                             </button>
                         </p>
@@ -233,7 +231,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                                 <h3 className="sub-heading"><FontAwesomeIcon icon={faCalendarAlt} /> Datum wählen:</h3>
                                 <DatePicker
                                     selected={selectedDate}
-                                    onChange={(date) => { setSelectedDate(date); setSelectedTime(''); /* setTimeSlotsError(null); */ }}
+                                    onChange={(date) => { setSelectedDate(date); setSelectedTime(''); }}
                                     locale="de"
                                     dateFormat="dd.MM.yyyy"
                                     minDate={new Date()}
@@ -247,9 +245,6 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                                     <FontAwesomeIcon icon={faClock} /> Verfügbare Zeiten
                                     {selectedDate ? ` für den ${selectedDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}` : ''}:
                                 </h3>
-                                {/* {isLoadingTimes && <p className="loading-message small"><FontAwesomeIcon icon={faSpinner} spin /> Zeiten werden geladen...</p>} */}
-                                {/* {!isLoadingTimes && selectedDate && (
-                                    timeSlotsError ? <p className="form-message error small">{timeSlotsError}</p> : */}
                                 {selectedDate ? ( availableTimes.length > 0 ? (
                                         <div className="time-slots-grid">
                                             {availableTimes.map(time => (
@@ -265,8 +260,6 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                                     ) : <p className="no-times-message">Keine Online-Zeiten für diesen Tag verfügbar.</p>
                                 ) : <p className="select-date-message">Bitte wählen Sie zuerst ein Datum.</p>
                                 }
-                                {/* )} */}
-
 
                                 {selectedDate && selectedTime && (
                                     <div className="selected-datetime-info">
@@ -277,7 +270,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                             </div>
                         </div>
                         <div className="booking-navigation-buttons">
-                            <button type="button" onClick={() => { setSelectedService(null); setInitialService(null); setStep(1); }} className="button-link-outline">
+                            <button type="button" onClick={resetBookingProcess} className="button-link-outline">
                                 <FontAwesomeIcon icon={faArrowLeft} /> Dienstleistung ändern
                             </button>
                             <button type="button" onClick={handleNextStep} disabled={!selectedDate || !selectedTime} className="button-link">
@@ -318,7 +311,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                                 }}>Hier einloggen</Link> für eine schnellere Buchung oder als Gast fortfahren.</p>
                             </div>
                         )}
-                        {registerMessage.text && ( // registerMessage ist jetzt ein Objekt
+                        {registerMessage.text && (
                             <p className={`form-message ${registerMessage.type} mb-4`}>
                                 <FontAwesomeIcon icon={registerMessage.type === 'success' ? faCheckCircle : faExclamationCircle} /> {registerMessage.text}
                             </p>
@@ -357,7 +350,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                         )}
                         <div className="booking-navigation-buttons confirmation-buttons">
                             {currentUser && <Link to="/my-account" className="button-link">Meine Termine</Link>}
-                            <button type="button" onClick={() => { setInitialService(null); setSelectedService(null); setStep(1);}} className="button-link-outline">Neuen Termin buchen</button>
+                            <button type="button" onClick={resetBookingProcess} className="button-link-outline">Neuen Termin buchen</button>
                             {!currentUser && <Link to="/" className="button-link-outline">Zur Startseite</Link>}
                         </div>
                     </div>
