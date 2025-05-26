@@ -22,9 +22,9 @@
 
   /* Farben für Schritt-Indikatoren (BookingPage) */
   --step-indicator-default-border: var(--border-color);
-  --step-indicator-default-text: var(--light-grey-text); /* Für inaktive Labels UND Nummern */
-  --step-indicator-line-default: #e0e0e0; /* Etwas hellere Linie als Standard-Border */
-  --step-indicator-line-height: 4px; /* Dickere Linie */
+  --step-indicator-default-text: var(--light-grey-text);
+  --step-indicator-line-default: #e0e0e0;
+  --step-indicator-line-height: 3px; /* Konsistente Linienstärke */
 
   --step-indicator-active-bg: var(--dark-text);
   --step-indicator-active-border: var(--dark-text);
@@ -33,8 +33,8 @@
 
   --step-indicator-completed-bg: var(--success-color);
   --step-indicator-completed-border: var(--success-color);
-  --step-indicator-completed-text-in-circle: var(--light-bg); /* Für das Häkchen */
-  --step-indicator-completed-label-text: var(--dark-text); /* Abgeschlossene Labels auch dunkel */
+  --step-indicator-completed-text-in-circle: var(--light-bg);
+  --step-indicator-completed-label-text: var(--dark-text); /* Auch abgeschlossene Labels dunkel */
   --step-indicator-line-completed: var(--success-color);
 
 
@@ -51,7 +51,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; font-size: 16px; }
 body {
-  font-family: var(--font-sans), sans-serif; /* Fallback hinzugefügt */
+  font-family: var(--font-sans), sans-serif;
   background-color: var(--light-bg);
   color: var(--dark-text);
   line-height: 1.7;
@@ -386,17 +386,12 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .booking-step-indicators::before {
   content: '';
   position: absolute;
-  top: calc(1.25rem - (var(--step-indicator-line-height) / 2)); /* Zentriert zur Höhe des Kreises */
-  left: 0;
-  right: 0;
+  top: calc(1.125rem - (var(--step-indicator-line-height) / 2)); /* (Durchmesser 2.25rem / 2) - (Hälfte Linienstärke) */
+  left: calc( (100% / 4) / 2 ); /* Startet in der Mitte des ersten Elements */
+  right: calc( (100% / 4) / 2 ); /* Endet in der Mitte des letzten Elements */
   height: var(--step-indicator-line-height);
   background-color: var(--step-indicator-line-default);
   z-index: 1;
-  /* Passt die Breite an, um nicht über die äußeren Kreise hinauszugehen */
-  /* Annahme: 4 Schritte, jeder nimmt ca. 25% der Breite ein */
-  /* Die Linie soll zwischen den Mittelpunkten der äußeren Kreise verlaufen */
-  width: calc(100% - (100% / 4)); /* (Gesamtbreite - Breite eines Schrittsegments) */
-  margin: 0 auto; /* Zentriert die Linie */
 }
 
 .booking-step-indicator {
@@ -408,12 +403,12 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   flex-grow: 1;
   position: relative;
   z-index: 2;
-  min-width: 70px;
+  min-width: 60px; /* Noch etwas schmaler für Flexibilität */
 }
 
 .booking-step-indicator .step-number-wrapper {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.25rem; /* Etwas kleiner für ein feineres Design */
+  height: 2.25rem;
   border-radius: 50%;
   border: 2px solid var(--step-indicator-default-border);
   background-color: var(--light-bg);
@@ -421,7 +416,7 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
   transition: all 0.3s var(--transition-ease);
   font-weight: 600;
   position: relative;
@@ -429,19 +424,19 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 }
 
 .booking-step-indicator .step-number {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 .booking-step-indicator .step-number .svg-inline--fa {
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: var(--step-indicator-completed-text-in-circle);
 }
 
 .booking-step-indicator .step-label {
-  font-size: 0.8rem;
+  font-size: 0.75rem; /* Etwas kleiner für mehr Eleganz */
   font-weight: 500;
   color: var(--step-indicator-default-text);
   transition: color 0.3s ease, font-weight 0.3s ease;
-  line-height: 1.3;
+  line-height: 1.2;
   padding: 0 0.1rem;
 }
 
@@ -451,21 +446,20 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   border-color: var(--step-indicator-completed-border);
 }
 .booking-step-indicator.completed .step-label {
-  color: var(--step-indicator-completed-label-text);
+  color: var(--step-indicator-completed-label-text); /* Dunkler als inaktiv */
 }
 
 /* Linie NACH einem abgeschlossenen Schritt */
 .booking-step-indicator.completed::after {
   content: '';
   position: absolute;
-  top: calc(1.25rem - (var(--step-indicator-line-height) / 2));
+  top: calc(1.125rem - (var(--step-indicator-line-height) / 2));
   left: 50%;
-  width: 100%; /* Erstreckt sich bis zur Mitte des nächsten Indikators */
+  width: 100%;
   height: var(--step-indicator-line-height);
   background-color: var(--step-indicator-line-completed);
-  z-index: 1; /* Liegt über der Basislinie, aber unter dem nächsten Kreis */
+  z-index: 1; /* Muss über der Basislinie sein, aber unter dem nächsten Kreis */
 }
-/* Verhindert, dass die Linie beim letzten Element übersteht */
 .booking-step-indicator:last-child.completed::after {
   width: 0;
 }
@@ -476,6 +470,7 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   border-color: var(--step-indicator-active-border);
   color: var(--step-indicator-active-text-in-circle);
   transform: scale(1.1);
+  box-shadow: 0 0 8px rgba(0,0,0,0.1);
 }
 .booking-step-indicator.active .step-label {
   color: var(--step-indicator-active-label-text);
@@ -484,26 +479,26 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 
 /* Mobile Anpassungen für die Indikatoren */
 @media (max-width: 576px) {
+  .booking-step-indicators::before {
+    margin: 0 calc(25% / 2 - 0.5rem); /* Anpassung für schmalere Bildschirme */
+  }
   .booking-step-indicator .step-number-wrapper {
-    width: 2.2rem;
-    height: 2.2rem;
+    width: 2rem;
+    height: 2rem;
   }
   .booking-step-indicator .step-number {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
   }
   .booking-step-indicator .step-number .svg-inline--fa {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
   }
   .booking-step-indicator .step-label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
   }
   .booking-step-indicators::before,
   .booking-step-indicator.completed::after {
-    top: calc(1.1rem - (var(--step-indicator-line-height) / 2) + 1px); /* +1px für dünnere Linie */
-    height: calc(var(--step-indicator-line-height) - 1px); /* Dünnere Linie mobil */
-  }
-  .booking-step-indicators::before {
-    margin: 0 calc(25% / 2 - 0.2rem);
+    top: calc(1rem - (var(--step-indicator-line-height) / 2) + 1px);
+    height: calc(var(--step-indicator-line-height) - 1px);
   }
 }
 
@@ -516,6 +511,7 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   }
   .booking-step-indicators {
     padding-bottom: 0.5rem;
+    margin-bottom: 2rem;
   }
   .booking-step-indicators::before,
   .booking-step-indicator.completed::after {
@@ -533,40 +529,42 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   font-family: var(--font-serif), serif; font-size: 1.8rem; color: var(--dark-text);
   text-align: left; margin-bottom: 1.5rem;
 }
-/* Verbesserte Darstellung für gewählte Dienstleistung */
+
+/* Verbesserte Darstellung für gewählte Dienstleistung in Schritt 2 */
 .booking-step-subheading {
   font-size: 0.9rem;
   color: var(--medium-grey-text);
-  margin-bottom: 2rem; /* Mehr Abstand nach unten */
-  padding: 1rem; /* Mehr Padding */
+  margin-bottom: 2rem;
+  padding: 1rem 1.25rem; /* Mehr horizontales Padding */
   border: 1px solid var(--border-color);
-  border-radius: 6px; /* Stärker abgerundet */
+  border-radius: 6px;
   background-color: var(--light-grey-bg);
   display: flex;
   justify-content: space-between;
   align-items: flex-start; /* Besser für mehrzeiligen Text */
-  flex-wrap: wrap;
+  flex-wrap: wrap; /* Erlaubt Umbruch bei Bedarf */
   gap: 0.5rem; /* Abstand zwischen Text und Button bei Umbruch */
 }
-.booking-step-subheading .service-info-text { /* Wrapper für den Textteil */
-  flex-grow: 1; /* Nimmt verfügbaren Platz */
+.booking-step-subheading .service-info-text {
+  flex-grow: 1;
+  line-height: 1.5; /* Bessere Lesbarkeit */
 }
-.booking-step-subheading strong {
+.booking-step-subheading .service-info-text strong { /* Dienstleistungsname */
   color: var(--dark-text);
   font-weight: 600;
-  display: block; /* Name in eigener Zeile */
-  font-size: 1.05rem; /* Größerer Name */
+  display: block;
+  font-size: 1.1rem; /* Größer */
   margin-bottom: 0.25rem;
 }
-.booking-step-subheading .service-price-duration {
+.booking-step-subheading .service-price-duration { /* Preis und Dauer */
   display: block;
-  font-size: 0.85rem; /* Etwas größer */
+  font-size: 0.85rem;
   color: var(--medium-grey-text);
 }
 .booking-step-subheading .edit-selection-button {
-  margin-left: 1rem; /* Sorgt für Abstand, wenn nicht umgebrochen */
-  flex-shrink: 0;
-  align-self: center; /* Zentriert den Button vertikal, falls Text mehrzeilig */
+  margin-left: 1rem; /* Nur anwenden, wenn kein Umbruch stattfindet */
+  flex-shrink: 0; /* Verhindert, dass der Button schrumpft */
+  align-self: center; /* Vertikal zentrieren, falls Text mehrzeilig wird */
 }
 
 
@@ -626,44 +624,43 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 @media (min-width: 768px) {
   .datepicker-time-container {
     flex-direction: row;
-    align-items: stretch; /* Lässt beide Kinder die volle Höhe des Containers einnehmen */
+    align-items: stretch; /* Stellt sicher, dass beide Kinder dieselbe Höhe anstreben */
   }
   .datepicker-wrapper, .time-slots-wrapper {
     flex: 1;
     min-width: 0;
-    display: flex; /* Um interne Elemente besser zu steuern */
+    display: flex;
     flex-direction: column;
   }
-  .time-slots-wrapper {
-    /* min-height wird entfernt, da align-items: stretch greift */
-  }
+  /* .time-slots-wrapper {
+     min-height: 330px; /* Ggf. anpassen, muss ungefähr Höhe des Kalenders sein
+  } */
   .time-slots-grid {
-    flex-grow: 1; /* Grid füllt den verfügbaren Platz im Wrapper */
+    flex-grow: 1; /* Füllt den verfügbaren Platz im Wrapper */
   }
 }
 
 /* --- Verbesserte Kalender-Stile --- */
-.datepicker-wrapper .react-datepicker {
+.datepicker-wrapper .react-datepicker { /* Gilt für den Inline-Kalender */
   width: 100%;
   font-family: var(--font-sans), sans-serif !important;
   font-size: 0.9rem;
   border: none !important;
-  border-radius: 6px !important;
+  border-radius: 4px !important; /* Weniger runder Radius, wie gewünscht */
   box-shadow: none !important;
   display: block !important;
 }
 .datepicker-wrapper {
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 4px; /* Weniger runder Radius */
   padding: 0.5rem;
   background-color: var(--light-bg);
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  /* Stellt sicher, dass der Wrapper wächst, wenn der Kalender es tut */
-  display: flex; /* Um den Kalender darin zu zentrieren oder zu strecken */
+  display: flex;
   flex-direction: column;
 }
-.datepicker-wrapper .react-datepicker-popper { /* Falls der Kalender nicht inline ist */
-  z-index: 10; /* Über anderen Elementen im Booking-Form */
+.datepicker-wrapper .react-datepicker-popper {
+  z-index: 10;
 }
 
 
@@ -674,6 +671,8 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .react-datepicker__header {
   background-color: transparent !important;
   border-bottom: 1px solid var(--border-color) !important;
+  border-top-left-radius: 3px !important; /* Passend zum äußeren Radius */
+  border-top-right-radius: 3px !important;
   padding: 0.8rem 0.5rem !important;
 }
 .react-datepicker__current-month {
@@ -687,8 +686,8 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   font-size: 0.85rem !important;
   line-height: 2.1rem !important;
   width: 2.1rem !important;
-  margin: 0.2rem auto !important; /* Mehr vertikaler Abstand */
-  border-radius: 50% !important;
+  margin: 0.2rem 0.15rem !important; /* Mehr vertikaler, weniger horizontaler Abstand */
+  border-radius: 3px !important; /* Weniger runder Radius */
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
   border: 1px solid transparent;
   padding: 0 !important;
@@ -716,9 +715,8 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .react-datepicker__day--today {
   font-weight: bold;
   border-color: var(--dark-text) !important;
-  background-color: rgba(0,0,0,0.03) !important; /* Leichter Hintergrund für heute */
+  background-color: rgba(0,0,0,0.03) !important;
 }
-
 
 .react-datepicker__navigation {
   top: 1rem !important;
@@ -762,7 +760,7 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
     line-height: 1.8rem !important;
     width: 1.8rem !important;
     font-size: 0.8rem !important;
-    margin: 0.1rem auto !important; /* Etwas enger für Mobile */
+    margin: 0.1rem auto !important;
   }
   .react-datepicker__navigation {
     width: 2rem;
@@ -773,8 +771,27 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 /* --- Ende Verbesserte Kalender-Stile --- */
 
 
-.sub-heading { font-family: var(--font-sans), sans-serif; font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: var(--dark-text); display: flex; align-items: center; gap: 0.5rem; }
-.sub-heading .svg-inline--fa { font-size: 0.9em; }
+/* Konsistente Platzierung für Sub-Headings */
+.sub-heading {
+  font-family: var(--font-sans), sans-serif;
+  font-size: 1.05rem; /* War vorher 1.1rem, leichte Anpassung */
+  font-weight: 600; /* War vorher 500, etwas dicker */
+  margin-bottom: 0.8rem; /* Einheitlicher Abstand */
+  color: var(--dark-text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sub-heading .svg-inline--fa {
+  font-size: 0.9em;
+  color: var(--medium-grey-text); /* Icon leicht abgesetzt */
+}
+/* Stellt sicher, dass die Titel immer außerhalb der jeweiligen Boxen sind */
+.datepicker-wrapper > .sub-heading,
+.time-slots-wrapper > .sub-heading {
+  /* Falls der Titel innerhalb war, muss er im JSX verschoben werden */
+}
+
 
 .time-slots-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -802,8 +819,11 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100px;
-  flex-grow: 1; /* Wichtig für Höhenangleichung mit Flexbox */
+  min-height: 150px; /* Erhöht die Mindesthöhe, um den Bereich besser zu füllen */
+  flex-grow: 1; /* Nimmt den restlichen Platz im Flex-Container .time-slots-wrapper ein */
+  background-color: var(--light-grey-bg); /* Gleicher Hintergrund wie time-slots-grid */
+  border-radius: 6px; /* Gleicher Radius */
+  border: 1px dashed var(--border-color); /* Leichter Hinweis, dass es ein Platzhalter ist */
 }
 .selected-datetime-info {
   text-align: center; color: var(--dark-text); margin-top: 1rem; padding: 0.8rem;
