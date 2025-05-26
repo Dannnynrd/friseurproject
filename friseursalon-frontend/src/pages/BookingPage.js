@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css'; // CSS-Import
+import 'react-datepicker/dist/react-datepicker.css';
 import { de } from 'date-fns/locale/de';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faSpinner, faExclamationCircle, faCheckCircle,
     faArrowLeft, faArrowRight, faCalendarAlt,
     faClock, faInfoCircle, faEdit,
-    faCheck
+    faCheck, faUser, faEnvelope, faPhone, faStickyNote, faCreditCard // faCreditCard hinzugefügt für Konsistenz
 } from '@fortawesome/free-solid-svg-icons';
 
 import api from '../services/api.service';
@@ -31,7 +31,32 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     const [loadingServices, setLoadingServices] = useState(true);
     const [serviceError, setServiceError] = useState(null);
     const [registerMessage, setRegisterMessage] = useState({ type: '', text: '' });
-    const [notes, setNotes] = useState('');
+
+    const [customerDetails, setCustomerDetails] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phoneNumber: '',
+        notes: '',
+        password: ''
+    });
+    const [isSubmittingFinal, setIsSubmittingFinal] = useState(false);
+    const [finalBookingMessage, setFinalBookingMessage] = useState({type: '', text: ''});
+
+    useEffect(() => {
+        if (currentUser) {
+            setCustomerDetails(prevDetails => ({
+                ...prevDetails,
+                firstName: currentUser.firstName || prevDetails.firstName || '',
+                lastName: currentUser.lastName || prevDetails.lastName || '',
+                email: currentUser.email || prevDetails.email || '',
+                phoneNumber: currentUser.phoneNumber || prevDetails.phoneNumber || '',
+                password: ''
+            }));
+        }
+        // Notizen werden über onNotesChange in customerDetails aktualisiert
+    }, [currentUser]);
+
 
     useEffect(() => {
         const fetchServices = async () => {
@@ -70,25 +95,17 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     const generateTimeSlots = useCallback((serviceDurationMinutes) => {
         const slots = [];
         if (!selectedDate || !serviceDurationMinutes) return slots;
-
         const openingHour = 9; const closingHour = 18;
         const slotInterval = 30;
         const dayOfWeek = selectedDate.getDay();
-
-        if (dayOfWeek === 0) { // Sonntag
-            return [];
-        }
+        if (dayOfWeek === 0) return slots;
 
         for (let hour = openingHour; hour < closingHour; hour++) {
             for (let minute = 0; minute < 60; minute += slotInterval) {
                 const slotTime = new Date(selectedDate);
                 slotTime.setHours(hour, minute, 0, 0);
-
                 const now = new Date();
-                if (selectedDate.toDateString() === now.toDateString() && slotTime < now) {
-                    continue;
-                }
-
+                if (selectedDate.toDateString() === now.toDateString() && slotTime < now) continue;
                 const endTime = new Date(slotTime.getTime() + serviceDurationMinutes * 60000);
                 if (endTime.getHours() < closingHour || (endTime.getHours() === closingHour && endTime.getMinutes() === 0)) {
                     slots.push(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
@@ -107,19 +124,26 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
         }
     }, [selectedDate, selectedService, generateTimeSlots]);
 
-    const handleRegisterDuringBooking = async (customerEmail, customerFirstName, customerLastName, customerPhoneNumber, password) => {
+    const handleRegisterDuringBooking = async (email, firstName, lastName, phoneNumber, password) => {
         setRegisterMessage({ type: '', text: '' });
         try {
-            await AuthService.register(customerFirstName, customerLastName, customerEmail, password, customerPhoneNumber, ["user"]);
-            setRegisterMessage({ type: 'success', text: `Konto für ${customerEmail} erfolgreich erstellt! Sie können sich jetzt anmelden oder die Buchung abschließen.`});
+            await AuthService.register(firstName, lastName, email, password, phoneNumber, ["user"]);
             return true;
         } catch (error) {
             const errMsg = error.response?.data?.message || error.message || "Unbekannter Fehler bei der Registrierung.";
             console.error("Fehler bei der Registrierung während der Buchung:", error);
-            setRegisterMessage({ type: 'error', text: `Fehler bei der Registrierung: ${errMsg}`});
+            setRegisterMessage({ type: 'error', text: `Registrierung fehlgeschlagen: ${errMsg}`});
             return false;
         }
     };
+
+    const handleDataFromAppointmentForm = (dataFromForm) => {
+        setCustomerDetails(dataFromForm);
+        setRegisterMessage({ type: '', text: '' });
+        setFinalBookingMessage({ type: '', text: '' });
+        setStep(4);
+    };
+
 
     const isPastDate = (date) => {
         const today = new Date();
@@ -130,31 +154,102 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     const handleNextStep = () => setStep(prev => prev < 4 ? prev + 1 : 4);
     const handlePrevStep = () => setStep(prev => prev > 1 ? prev - 1 : 1);
 
-    const handleAppointmentBooked = () => {
-        if (onAppointmentAdded) {
-            onAppointmentAdded();
+    const handleFinalBooking = async () => {
+        setIsSubmittingFinal(true);
+        setFinalBookingMessage({ type: '', text: '' });
+        setRegisterMessage({ type: '', text: '' });
+
+        const year = selectedDate.getFullYear();
+        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(selectedDate.getDate()).padStart(2, '0');
+        const dateTimeString = `${year}-${month}-${day}T${selectedTime}:00`;
+
+        const appointmentData = {
+            startTime: dateTimeString,
+            service: { id: parseInt(selectedService.id) },
+            customer: {
+                firstName: customerDetails.firstName.trim(),
+                lastName: customerDetails.lastName.trim(),
+                email: customerDetails.email.trim(),
+                phoneNumber: customerDetails.phoneNumber.trim() || null,
+            },
+            notes: customerDetails.notes.trim(),
+        };
+
+        let userRegisteredAndLoggedIn = false;
+        if (!currentUser && customerDetails.password) {
+            const registrationSuccessful = await handleRegisterDuringBooking(
+                customerDetails.email,
+                customerDetails.firstName,
+                customerDetails.lastName,
+                customerDetails.phoneNumber,
+                customerDetails.password
+            );
+            if (!registrationSuccessful) {
+                setIsSubmittingFinal(false);
+                setFinalBookingMessage({type: 'error', text: registerMessage.text || 'Registrierung fehlgeschlagen. Bitte überprüfen Sie Ihre Daten in Schritt 3.'})
+                setStep(3); // Zurück zu Schritt 3, um Fehler anzuzeigen
+                return;
+            }
+            try {
+                const loginData = await AuthService.login(customerDetails.email, customerDetails.password);
+                if (loginData.token && onLoginSuccess) {
+                    onLoginSuccess();
+                    userRegisteredAndLoggedIn = true;
+                    setRegisterMessage({ type: 'success', text: `Konto für ${customerDetails.email} erfolgreich erstellt und Sie wurden angemeldet!`});
+                }
+            } catch (loginError) {
+                console.warn("Automatischer Login nach Registrierung fehlgeschlagen:", loginError);
+                setRegisterMessage({type: 'info', text: 'Konto erstellt, aber automatischer Login fehlgeschlagen. Bitte loggen Sie sich später manuell ein.'});
+            }
         }
-        setStep(4);
+
+        try {
+            await api.post('/appointments', appointmentData);
+            if (onAppointmentAdded) {
+                onAppointmentAdded();
+            }
+            setFinalBookingMessage({type: 'success', text: 'Termin erfolgreich gebucht!'});
+            // Bleibe auf Schritt 4, um die Erfolgsmeldung anzuzeigen (UI ändert sich basierend auf finalBookingMessage.type)
+        } catch (error) {
+            console.error("Fehler beim Buchen des Termins:", error);
+            let errorMsg = "Ein Fehler ist beim Buchen des Termins aufgetreten. Bitte versuchen Sie es erneut.";
+            if (error.response) {
+                errorMsg = error.response.data?.message || errorMsg;
+                if (error.response.status === 409 && !userRegisteredAndLoggedIn) {
+                    errorMsg = `${errorMsg} Diese E-Mail ist bereits registriert. Bitte melden Sie sich an oder gehen Sie zurück, um Ihre Daten zu ändern.`;
+                } else if (userRegisteredAndLoggedIn && error.response.status !== 409) {
+                    errorMsg = `Ihr Konto wurde erstellt und Sie sind angemeldet, aber die Terminbuchung schlug fehl: ${errorMsg}`;
+                }
+            }
+            setFinalBookingMessage({ type: 'error', text: errorMsg });
+        } finally {
+            setIsSubmittingFinal(false);
+        }
     };
+
 
     const resetBookingProcess = () => {
         setInitialService(null);
         setSelectedService(null);
         setSelectedDate(null);
         setSelectedTime('');
-        setNotes('');
+        setCustomerDetails({ firstName: '', lastName: '', email: '', phoneNumber: '', notes: '', password: '' });
         setRegisterMessage({ type: '', text: '' });
+        setFinalBookingMessage({ type: '', text: '' });
         setServiceError(null);
         setStep(1);
     };
 
 
-    if (loadingServices && !initialService) {
+    if (loadingServices && !initialService && step === 1) {
         return <div className="page-center-content"><p className="loading-message"><FontAwesomeIcon icon={faSpinner} spin /> Dienstleistungen werden geladen...</p></div>;
     }
-    if (serviceError && services.length === 0 && !loadingServices) {
+    if (serviceError && services.length === 0 && !loadingServices && step === 1) {
         return <div className="page-center-content"><p className="form-message error"><FontAwesomeIcon icon={faExclamationCircle} /> {serviceError}</p></div>;
     }
+
+    const stepLabels = ["Dienstleistung", "Datum und Zeit", "Ihre Daten", "Bestätigung"];
 
 
     return (
@@ -163,15 +258,18 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                 <h1 className="booking-page-main-heading">Termin buchen</h1>
 
                 <div className="booking-step-indicators">
-                    {[1, 2, 3, 4].map(s_idx => {
-                        let label = "";
+                    {stepLabels.map((label, index) => {
+                        const s_idx = index + 1;
                         const isCurrentStepActive = step === s_idx;
-                        const isStepCompleted = (step > s_idx) || (step === 4 && s_idx < 4);
+                        let isStepCompleted = step > s_idx;
+                        // Schritt 4 (Bestätigung) ist nur "completed", wenn die Buchung erfolgreich war
+                        if (s_idx === 4 && finalBookingMessage.type !== 'success') {
+                            isStepCompleted = false;
+                        }
+                        if (s_idx < 4 && step === 4 && finalBookingMessage.type === 'success') { // Alle vorherigen Schritte sind completed, wenn Schritt 4 erfolgreich ist
+                            isStepCompleted = true;
+                        }
 
-                        if (s_idx === 1) label = "Dienstleistung";
-                        else if (s_idx === 2) label = "Datum und Zeit";
-                        else if (s_idx === 3) label = "Ihre Daten";
-                        else if (s_idx === 4) label = "Bestätigung";
 
                         return (
                             <div key={s_idx} className={`booking-step-indicator ${isCurrentStepActive ? 'active' : ''} ${isStepCompleted ? 'completed' : ''}`}>
@@ -186,7 +284,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                     })}
                 </div>
 
-                {serviceError && services.length > 0 && step < 4 && (
+                {serviceError && services.length > 0 && step < 3 && (
                     <p className="form-message error mb-4"><FontAwesomeIcon icon={faExclamationCircle} /> {serviceError}</p>
                 )}
 
@@ -234,16 +332,13 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                             </button>
                         </div>
 
-                        {/* "Ihr Termin" Info oder Platzhalter jetzt hier oben */}
                         <div className={`selected-datetime-info summary-above-datepicker ${!(selectedDate && selectedTime) ? 'placeholder' : ''}`}>
                             {selectedDate && selectedTime ? (
                                 <>
-                                    <FontAwesomeIcon icon={faCheckCircle} />
                                     Ihr Termin: <strong>{selectedDate.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })}</strong> um <strong>{selectedTime} Uhr</strong>
                                 </>
                             ) : (
                                 <>
-                                    <FontAwesomeIcon icon={faInfoCircle} />
                                     Bitte Datum und Uhrzeit auswählen.
                                 </>
                             )}
@@ -303,77 +398,101 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
 
                 {step === 3 && selectedService && selectedDate && selectedTime && (
                     <div className="booking-step-content animate-step">
-                        <h2 className="booking-step-heading">3. Ihre Daten und Buchung abschließen</h2>
-
-                        <div className="appointment-summary-inline">
+                        <h2 className="booking-step-heading">3. Ihre persönlichen Daten</h2>
+                        <div className="appointment-summary-inline"> {/* Kurze Info über Auswahl */}
                             <p>
                                 <FontAwesomeIcon icon={faCheckCircle} className="summary-icon" />
-                                Ihre Auswahl: <strong>{selectedService.name}</strong>
-                                {selectedService.price !== undefined && ` (${selectedService.price.toFixed(2)} €)`}
-                                {selectedDate && ` am ${selectedDate.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' })}`}
-                                {selectedTime && ` um ${selectedTime} Uhr`}.
+                                Termin für: <strong>{selectedService.name}</strong>
+                                am {selectedDate.toLocaleDateString('de-DE')} um {selectedTime} Uhr.
                                 <button type="button" onClick={() => setStep(2)} className="edit-selection-button subtle-edit">
                                     <FontAwesomeIcon icon={faEdit} /> Ändern
                                 </button>
                             </p>
                         </div>
-
-                        {!currentUser && (
-                            <div className="login-prompt-booking">
-                                <p>Bereits Kunde? <Link to="/login" state={{
-                                    fromBooking: true,
-                                    bookingDetails: {
-                                        serviceId: selectedService?.id,
-                                        serviceName: selectedService?.name,
-                                        date: selectedDate?.toISOString().substring(0,10),
-                                        time: selectedTime,
-                                        notes: notes
-                                    }
-                                }}>Hier einloggen</Link> für eine schnellere Buchung oder als Gast fortfahren.</p>
-                            </div>
-                        )}
-                        {registerMessage.text && (
+                        {registerMessage.text && registerMessage.type === 'error' && ( // Nur Registrierungsfehler hier anzeigen
                             <p className={`form-message ${registerMessage.type} mb-4`}>
-                                <FontAwesomeIcon icon={registerMessage.type === 'success' ? faCheckCircle : faExclamationCircle} /> {registerMessage.text}
+                                <FontAwesomeIcon icon={faExclamationCircle} /> {registerMessage.text}
                             </p>
                         )}
-
                         <AppointmentForm
-                            onAppointmentBooked={handleAppointmentBooked}
                             currentUser={currentUser}
-                            onRegisterAttempt={handleRegisterDuringBooking}
-                            onLoginSuccess={onLoginSuccess}
-                            selectedServiceProp={selectedService}
-                            selectedDateProp={selectedDate}
-                            selectedTimeProp={selectedTime}
-                            initialNotes={notes}
-                            onNotesChange={setNotes}
+                            initialData={customerDetails} // Übergibt die bereits erfassten oder currentUser Daten
+                            onFormSubmit={handleDataFromAppointmentForm}
                         />
                         <div className="booking-navigation-buttons">
                             <button type="button" onClick={handlePrevStep} className="button-link-outline"><FontAwesomeIcon icon={faArrowLeft} /> Zurück zu Datum und Zeit</button>
+                            {/* Der "Weiter"-Button ist jetzt im AppointmentForm und löst onFormSubmit aus */}
                         </div>
                     </div>
                 )}
 
-                {step === 4 && (
-                    <div className="booking-step-content animate-step booking-confirmation">
-                        <FontAwesomeIcon icon={faCheckCircle} className="confirmation-icon" />
-                        <h2 className="booking-step-heading">Termin erfolgreich gebucht!</h2>
-                        <p>Vielen Dank für Ihre Buchung. {currentUser ? 'Eine Bestätigung finden Sie auch unter "Meine Termine".' : 'Eine Bestätigung wurde an Ihre E-Mail-Adresse gesendet (falls angegeben).'}</p>
-                        {selectedService && selectedDate && selectedTime && (
-                            <div className="appointment-summary light">
-                                <h4>Ihre Buchungsdetails:</h4>
-                                <p><strong>Dienstleistung:</strong> {selectedService.name}</p>
-                                <p><strong>Datum:</strong> {selectedDate.toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                                <p><strong>Uhrzeit:</strong> {selectedTime} Uhr</p>
-                                {notes && <p><strong>Anmerkungen:</strong> {notes}</p>}
+                {step === 4 && selectedService && selectedDate && selectedTime && (
+                    <div className="booking-step-content animate-step">
+                        {finalBookingMessage.type === 'success' ? (
+                            <div className="booking-confirmation">
+                                <FontAwesomeIcon icon={faCheckCircle} className="confirmation-icon" />
+                                <h2 className="booking-step-heading">Termin erfolgreich gebucht!</h2>
+                                <p>Vielen Dank für Ihre Buchung. {currentUser || customerDetails.email ? 'Eine Bestätigung wurde an Ihre E-Mail-Adresse gesendet (falls angegeben) und Sie finden den Termin ggf. unter "Meine Termine".' : ''}</p>
+                                <div className="appointment-summary light">
+                                    <h4>Ihre Buchungsdetails:</h4>
+                                    <p><strong>Dienstleistung:</strong> {selectedService.name}</p>
+                                    <p><strong>Datum:</strong> {selectedDate.toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                    <p><strong>Uhrzeit:</strong> {selectedTime} Uhr</p>
+                                    {customerDetails.notes && <p><strong>Anmerkungen:</strong> {customerDetails.notes}</p>}
+                                </div>
+                                <div className="booking-navigation-buttons confirmation-buttons">
+                                    {AuthService.getCurrentUser() && <Link to="/my-account" className="button-link">Meine Termine</Link>}
+                                    <button type="button" onClick={resetBookingProcess} className="button-link-outline">Neuen Termin buchen</button>
+                                    {!AuthService.getCurrentUser() && <Link to="/" className="button-link-outline">Zur Startseite</Link>}
+                                </div>
                             </div>
+                        ) : (
+                            <>
+                                <h2 className="booking-step-heading">4. Buchung überprüfen und bestätigen</h2>
+                                <div className="appointment-summary-final">
+                                    <h3>Ihre Auswahl:</h3>
+                                    <p><FontAwesomeIcon icon={faCheckCircle} /> <strong>Dienstleistung:</strong> {selectedService.name} ({typeof selectedService.price === 'number' ? selectedService.price.toFixed(2) : 'N/A'} € / {selectedService.durationMinutes || '-'} Min)</p>
+                                    <p><FontAwesomeIcon icon={faCalendarAlt} /> <strong>Datum:</strong> {selectedDate.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                    <p><FontAwesomeIcon icon={faClock} /> <strong>Uhrzeit:</strong> {selectedTime} Uhr</p>
+
+                                    <h3 className="mt-4">Ihre Daten:</h3>
+                                    <p><FontAwesomeIcon icon={faUser} /> <strong>Name:</strong> {customerDetails.firstName} {customerDetails.lastName}</p>
+                                    <p><FontAwesomeIcon icon={faEnvelope} /> <strong>E-Mail:</strong> {customerDetails.email}</p>
+                                    {customerDetails.phoneNumber && <p><FontAwesomeIcon icon={faPhone} /> <strong>Telefon:</strong> {customerDetails.phoneNumber}</p>}
+                                    {customerDetails.notes && <p><FontAwesomeIcon icon={faStickyNote} /> <strong>Anmerkungen:</strong> {customerDetails.notes}</p>}
+                                </div>
+
+                                {registerMessage.text && registerMessage.type !== 'error' && ( // Erfolgs- oder Info-Nachrichten von Registrierung
+                                    <p className={`form-message ${registerMessage.type} mt-4`}>
+                                        <FontAwesomeIcon icon={registerMessage.type === 'success' ? faCheckCircle : faInfoCircle} /> {registerMessage.text}
+                                    </p>
+                                )}
+                                {finalBookingMessage.text && finalBookingMessage.type !== 'success' && ( // Fehler der finalen Buchung
+                                    <p className={`form-message ${finalBookingMessage.type} mt-4`}>
+                                        <FontAwesomeIcon icon={finalBookingMessage.type === 'info' ? faInfoCircle : faExclamationCircle} />
+                                        {finalBookingMessage.text}
+                                    </p>
+                                )}
+
+                                <div className="booking-navigation-buttons">
+                                    <button type="button" onClick={handlePrevStep} className="button-link-outline" disabled={isSubmittingFinal}>
+                                        <FontAwesomeIcon icon={faArrowLeft} /> Zurück zu Ihren Daten
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleFinalBooking}
+                                        disabled={isSubmittingFinal}
+                                        className="button-link"
+                                    >
+                                        {isSubmittingFinal ? (
+                                            <><FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> Wird gebucht...</>
+                                        ) : (
+                                            "Termin verbindlich buchen"
+                                        )}
+                                    </button>
+                                </div>
+                            </>
                         )}
-                        <div className="booking-navigation-buttons confirmation-buttons">
-                            {currentUser && <Link to="/my-account" className="button-link">Meine Termine</Link>}
-                            <button type="button" onClick={resetBookingProcess} className="button-link-outline">Neuen Termin buchen</button>
-                            {!currentUser && <Link to="/" className="button-link-outline">Zur Startseite</Link>}
-                        </div>
                     </div>
                 )}
             </div>
