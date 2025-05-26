@@ -234,19 +234,20 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                             </button>
                         </div>
 
-                        {/* "Ihr Termin" Info jetzt hier oben, VOR dem datepicker-time-container */}
-                        {selectedDate && selectedTime && (
-                            <div className="selected-datetime-info summary-above-datepicker">
-                                <FontAwesomeIcon icon={faCheckCircle} />
-                                Ihr Termin: <strong>{selectedDate.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })}</strong> um <strong>{selectedTime} Uhr</strong>
-                            </div>
-                        )}
-                        {/* Platzhalter für die Termin-Info, wenn noch nichts ausgewählt ist */}
-                        {!(selectedDate && selectedTime) && (
-                            <div className="selected-datetime-info summary-above-datepicker placeholder">
-                                <FontAwesomeIcon icon={faInfoCircle} /> Bitte Datum und Uhrzeit auswählen.
-                            </div>
-                        )}
+                        {/* "Ihr Termin" Info oder Platzhalter jetzt hier oben */}
+                        <div className={`selected-datetime-info summary-above-datepicker ${!(selectedDate && selectedTime) ? 'placeholder' : ''}`}>
+                            {selectedDate && selectedTime ? (
+                                <>
+                                    <FontAwesomeIcon icon={faCheckCircle} />
+                                    Ihr Termin: <strong>{selectedDate.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })}</strong> um <strong>{selectedTime} Uhr</strong>
+                                </>
+                            ) : (
+                                <>
+                                    <FontAwesomeIcon icon={faInfoCircle} />
+                                    Bitte Datum und Uhrzeit auswählen.
+                                </>
+                            )}
+                        </div>
 
 
                         <div className="datepicker-time-container">

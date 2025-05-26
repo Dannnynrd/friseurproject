@@ -382,18 +382,17 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   position: relative;
 }
 
-/* Durchgehende Basislinie */
 .booking-step-indicators::before {
   content: '';
   position: absolute;
-  top: calc(1.125rem - (var(--step-indicator-line-height) / 2)); /* (Höhe des Kreises 2.25rem / 2) - (Hälfte Linienstärke) */
+  top: calc(1.125rem - (var(--step-indicator-line-height) / 2));
   left: 0;
   right: 0;
   height: var(--step-indicator-line-height);
   background-color: var(--step-indicator-line-default);
   z-index: 1;
-  width: calc(100% - (100% / 4)); /* Linie spannt sich über 3/4 der Gesamtbreite (für 4 Schritte) */
-  margin: 0 auto; /* Zentriert die Linie */
+  width: calc(100% - (100% / 4));
+  margin: 0 auto;
 }
 
 .booking-step-indicator {
@@ -442,7 +441,6 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   padding: 0 0.1rem;
 }
 
-/* Abgeschlossener Schritt */
 .booking-step-indicator.completed .step-number-wrapper {
   background-color: var(--step-indicator-completed-bg);
   border-color: var(--step-indicator-completed-border);
@@ -451,7 +449,6 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   color: var(--step-indicator-completed-label-text);
 }
 
-/* Linie NACH einem abgeschlossenen Schritt */
 .booking-step-indicator.completed::after {
   content: '';
   position: absolute;
@@ -466,7 +463,6 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   width: 0;
 }
 
-/* Aktiver Schritt */
 .booking-step-indicator.active .step-number-wrapper {
   background-color: var(--step-indicator-active-bg);
   border-color: var(--step-indicator-active-border);
@@ -479,7 +475,6 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   font-weight: 700;
 }
 
-/* Mobile Anpassungen für die Indikatoren */
 @media (max-width: 576px) {
   .booking-step-indicators::before {
     margin: 0 calc(25% / 2 - 0.5rem);
@@ -531,11 +526,11 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   font-family: var(--font-serif), serif; font-size: 1.8rem; color: var(--dark-text);
   text-align: left; margin-bottom: 1.5rem;
 }
-/* Verbesserte Darstellung für gewählte Dienstleistung in Schritt 2 */
+
 .booking-step-subheading {
   font-size: 0.9rem;
   color: var(--medium-grey-text);
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   padding: 1rem 1.25rem;
   border: 1px solid var(--border-color);
   border-radius: 6px;
@@ -619,28 +614,27 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .datepicker-time-container {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  margin-top: 1.5rem;
+  gap: 1.5rem;
+  margin-top: 0; /* Da die Termin-Info jetzt darüber ist */
 }
 @media (min-width: 768px) {
   .datepicker-time-container {
     flex-direction: row;
-    align-items: stretch; /* Sorgt dafür, dass beide äußeren Wrapper dieselbe Höhe anstreben */
+    align-items: stretch; /* Wichtig für gleiche Höhe der äußeren Wrapper */
   }
-  .datepicker-wrapper-outer, .time-slots-wrapper-outer { /* Äußere Wrapper für Titel + Box */
+  .datepicker-wrapper-outer, .time-slots-wrapper-outer {
     flex: 1;
-    min-width: 0; /* Erlaubt Schrumpfen */
+    min-width: 0;
     display: flex;
-    flex-direction: column; /* Stellt sicher, dass Titel und Box untereinander sind */
+    flex-direction: column; /* Titel und Box untereinander */
   }
-  .time-slots-wrapper { /* Der innere Wrapper für das Grid und Nachrichten */
+  .datepicker-wrapper, .time-slots-wrapper { /* Innere Boxen */
+    flex-grow: 1; /* Wachsen, um den Platz im äußeren Wrapper zu füllen */
     display: flex;
     flex-direction: column;
-    flex-grow: 1; /* Nimmt den Platz im äußeren Wrapper ein */
-    /* min-height: 320px; /* Entfernt oder angepasst, da align-items:stretch greifen sollte */
   }
-  .time-slots-grid {
-    flex-grow: 1; /* Füllt den Platz im .time-slots-wrapper */
+  .time-slots-grid, .no-times-message, .select-date-message {
+    flex-grow: 1; /* Grid/Nachricht füllt den Platz im .time-slots-wrapper */
   }
 }
 
@@ -650,19 +644,17 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   font-family: var(--font-sans), sans-serif !important;
   font-size: 0.9rem;
   border: none !important;
-  border-radius: 4px !important; /* Weniger runder Radius */
+  border-radius: 4px !important;
   box-shadow: none !important;
   display: block !important;
 }
-.datepicker-wrapper { /* Wrapper für den Kalender selbst (die Box) */
+.datepicker-wrapper {
   border: 1px solid var(--border-color);
-  border-radius: 4px; /* Weniger runder Radius */
+  border-radius: 4px;
   padding: 0.5rem;
   background-color: var(--light-bg);
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  display: flex; /* Um den Kalender darin zu zentrieren oder zu strecken */
-  flex-direction: column;
-  height: 100%; /* Versucht, die Höhe des Flex-Items (.datepicker-wrapper-outer) zu füllen */
+  /* height: 100%; Entfernt, da der äußere Wrapper jetzt die Höhe steuert */
 }
 .datepicker-wrapper .react-datepicker-popper {
   z-index: 10;
@@ -676,7 +668,7 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .react-datepicker__header {
   background-color: transparent !important;
   border-bottom: 1px solid var(--border-color) !important;
-  border-top-left-radius: 3px !important; /* Passend zum äußeren Radius */
+  border-top-left-radius: 3px !important;
   border-top-right-radius: 3px !important;
   padding: 0.8rem 0.5rem !important;
 }
@@ -692,7 +684,7 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   line-height: 2.1rem !important;
   width: 2.1rem !important;
   margin: 0.2rem 0.15rem !important;
-  border-radius: 3px !important; /* Weniger runder Radius */
+  border-radius: 3px !important;
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
   border: 1px solid transparent;
   padding: 0 !important;
@@ -825,12 +817,33 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   border-radius: 6px;
   border: 1px dashed var(--border-color);
 }
-.selected-datetime-info {
-  text-align: center; color: var(--dark-text); margin-top: 1rem; padding: 0.8rem;
-  font-size: 0.95rem; font-weight: 500; background-color: var(--success-bg-light);
-  border-radius: 4px; border: 1px solid var(--success-color); display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+/* Styling für die "Ihr Termin"-Info und den Platzhalter */
+.selected-datetime-info.summary-above-datepicker {
+  margin-bottom: 1.5rem;
+  border-radius: 6px;
+  padding: 0.8rem 1.25rem;
+  text-align: left;
+  font-size: 0.9rem;
+  min-height: 45px;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+.selected-datetime-info.summary-above-datepicker.placeholder {
+  background-color: var(--info-bg-light);
+  border: 1px solid var(--info-color);
+  color: var(--info-color);
+}
+.selected-datetime-info.summary-above-datepicker:not(.placeholder) {
+  background-color: var(--success-bg-light);
+  border: 1px solid var(--success-color);
   color: var(--success-color);
 }
+.selected-datetime-info.summary-above-datepicker strong {
+  font-weight: 600;
+}
+
 
 .booking-navigation-buttons {
   display: flex; justify-content: space-between; align-items: center; margin-top: 2rem;
@@ -1368,7 +1381,7 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   flex-grow: 1; padding: 0.7rem 1rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3);
   background: rgba(255,255,255,0.1); color: var(--light-text-on-dark); font-size: 0.9rem;
 }
-.newsletter-form input[type="email"]::placeholder { color: rgba(245,245,245,0.5); }
+.newsletter-form input[type="email"]::placeholder { color: rgba(245,245,255,0.5); }
 
 .newsletter-form button.interactive {
   padding: 0.7rem 1.2rem; background: var(--light-bg); color: var(--dark-text); border-color: var(--light-bg);
@@ -1377,7 +1390,7 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   background-color: #f0f0f0; border-color: #f0f0f0; color: var(--dark-text);
 }
 
-.footer { background-color: var(--dark-text); color: rgba(245,245,245,0.7); padding: 3rem 0 2rem; font-size: 0.85rem; }
+.footer { background-color: var(--dark-text); color: rgba(245,245,255,0.7); padding: 3rem 0 2rem; font-size: 0.85rem; }
 .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; margin-bottom: 2rem; }
 .footer-column h4 { font-family: var(--font-serif), serif; font-size: 1.1rem; color: var(--light-text-on-dark); margin-bottom: 0.8rem; }
 .footer-column ul { list-style: none; padding: 0; }
