@@ -212,14 +212,7 @@ function AppointmentForm({ onAppointmentAdded, initialService, onRegisterAttempt
                 )}
 
                 {/* Termin-Datum und -Uhrzeit (jetzt nur noch als Info, da in BookingPage ausgewählt) */}
-                <div className="form-group">
-                    <label className="block text-gray-700 text-sm font-bold mb-2">Ausgewählte Dienstleistung:</label>
-                    <p className="text-gray-800">{selectedService?.name} ({selectedService?.price?.toFixed(2)} € / {selectedService?.durationMinutes} Min)</p>
-                </div>
-                <div className="form-group">
-                    <label className="block text-gray-700 text-sm font-bold mb-2">Ausgewähltes Datum & Uhrzeit:</label>
-                    <p className="text-gray-800">{selectedDate?.toLocaleDateString('de-DE')} um {selectedTime}</p>
-                </div>
+
 
 
                 <div className="form-group">
