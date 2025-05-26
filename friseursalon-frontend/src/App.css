@@ -17,8 +17,24 @@
   --disabled-bg: #e9ecef;
   --disabled-text: #adb5bd;
   --disabled-border: #ced4da;
-  --focus-ring-color: #007bff; /* Blaue Akzentfarbe für Fokus-Ringe */
-  --focus-ring-subtle-color: rgba(0, 123, 255, 0.3); /* Für subtilere Fokus-Indikatoren */
+  --focus-ring-color: #007bff;
+  --focus-ring-subtle-color: rgba(0, 123, 255, 0.3);
+
+  /* Farben für Schritt-Indikatoren (BookingPage) */
+  --step-indicator-default-border: var(--border-color);
+  --step-indicator-default-text: var(--light-grey-text); /* Für inaktive Labels */
+  --step-indicator-line-default: var(--border-color); /* Farbe der Basislinie */
+
+  --step-indicator-active-bg: var(--dark-text);
+  --step-indicator-active-border: var(--dark-text);
+  --step-indicator-active-text-in-circle: var(--light-bg);
+  --step-indicator-active-label-text: var(--dark-text);
+
+  --step-indicator-completed-bg: var(--success-color);
+  --step-indicator-completed-border: var(--success-color);
+  --step-indicator-completed-text-in-circle: var(--light-bg);
+  --step-indicator-completed-label-text: var(--medium-grey-text); /* Abgeschlossen, aber nicht mehr aktiv */
+  --step-indicator-line-completed: var(--success-color); /* Farbe der Linie für abgeschlossene Segmente */
 
 
   --font-serif: 'Playfair Display', serif;
@@ -61,18 +77,17 @@ section { padding: 4rem 0; position: relative; z-index: 0; }
    Interaktive Elemente: Basisstile und Fokusmanagement
    ========================================================================== */
 
-/* Basis für alle fokussierbaren Elemente (verhindert Browser-Standard-Outline) */
 a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Deutlicher Fokus-Ring für wichtige Aktionen und Formularelemente */
 .button-link:focus-visible,
 .nav-cta:focus-visible,
 .auth-button:focus-visible,
 .modal-actions button:focus-visible,
 .time-slot-button:focus-visible,
-.service-card:focus-visible, /* Für die Dienstleistungskarten */
+.service-card:focus-visible,
 .newsletter-form button.interactive:focus-visible,
 .form-group input:focus-visible,
 .form-group textarea:focus-visible,
@@ -81,29 +96,32 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .react-datepicker__navigation:focus-visible,
 .react-datepicker__day:focus-visible,
 .react-datepicker__time-list-item:focus-visible,
-.mobile-menu-toggle:focus-visible {
-  outline: 2px solid var(--focus-ring-color) !important; /* !important um sicherzustellen, dass es greift */
+.mobile-menu-toggle:focus-visible,
+.slider-nav button.interactive:focus-visible,
+.service-form .submit-button:focus-visible,
+.appointment-form-fields .submit-appointment-button:focus-visible
+{
+  outline: 2px solid var(--focus-ring-color) !important;
   outline-offset: 2px !important;
-  box-shadow: 0 0 0 2px var(--light-bg), 0 0 0 4px var(--focus-ring-color) !important; /* Visueller "Halo" */
+  box-shadow: 0 0 0 2px var(--light-bg), 0 0 0 4px var(--focus-ring-color) !important;
 }
-/* Spezialfall für bereits ausgewählte Time-Slots oder dunkle Elemente */
+
 .time-slot-button.selected:focus-visible,
 .react-datepicker__day--selected:focus-visible {
-  box-shadow: 0 0 0 2px var(--dark-text), 0 0 0 4px var(--focus-ring-color) !important; /* Halo auf dunklem Grund */
+  box-shadow: 0 0 0 2px var(--dark-text), 0 0 0 4px var(--focus-ring-color) !important;
 }
 
 
-/* Subtilere Fokus-Stile für Text-Links oder weniger prominente Elemente */
 .nav-link-item:focus-visible,
 .footer a.interactive:focus-visible,
 .faq-item summary.interactive:focus-visible,
-.product-card a.interactive:focus-visible, /* Kann auch den stärkeren Ring haben, je nach Präferenz */
+.product-card a.interactive:focus-visible,
 .login-prompt-booking a:not(.button-link):focus-visible,
 .edit-selection-button:focus-visible,
 .logo:focus-visible {
-  outline: 2px solid var(--focus-ring-subtle-color); /* Dezenterer Ring */
+  outline: 2px solid var(--focus-ring-subtle-color);
   outline-offset: 1px;
-  background-color: var(--light-grey-bg); /* Leichter Hintergrund als Indikator */
+  background-color: var(--light-grey-bg);
   border-radius: 3px;
 }
 
@@ -111,12 +129,15 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
    Buttons & Button-ähnliche Links
    ========================================================================== */
 .button-link, .nav-cta, .auth-button,
-.modal-actions button, .time-slot-button,
+.modal-actions button,
+.time-slot-button,
 .book-service-btn.interactive,
-.service-action .book-service-btn, /* Direkter Nachfahre von .service-action */
-.product-card a.interactive, /* Wenn es wie ein Button aussehen soll */
+.service-action .book-service-btn,
+.product-card a.interactive,
 .newsletter-form button.interactive,
-.location-container a.button-link.interactive /* Spezifisch für den Button in LocationSection */
+.location-container a.button-link.interactive,
+.service-form .submit-button,
+.appointment-form-fields .submit-appointment-button
 {
   display: inline-flex; align-items: center; justify-content: center;
   background-color: var(--dark-text); color: var(--light-bg);
@@ -127,19 +148,19 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 }
 
 .button-link:hover:not(:disabled), .nav-cta:hover:not(:disabled), .auth-button:hover:not(:disabled),
-.modal-actions button.save-button:hover:not(:disabled), .modal-actions button.submit-button:hover:not(:disabled),
+.modal-actions button.save-button:hover:not(:disabled),
 .time-slot-button:hover:not(.selected):not(:disabled),
 .book-service-btn.interactive:hover:not(:disabled),
 .service-action .book-service-btn:hover:not(:disabled),
 .product-card a.interactive:hover:not(:disabled),
 .newsletter-form button.interactive:hover:not(:disabled),
-.location-container a.button-link.interactive:hover:not(:disabled)
+.location-container a.button-link.interactive:hover:not(:disabled),
+.service-form .submit-button:hover:not(:disabled),
+.appointment-form-fields .submit-appointment-button:hover:not(:disabled)
 {
   background-color: #333333; border-color: #333333; color: var(--light-bg);
   transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
-
-/* Fokus-Stil für Buttons wird durch den globalen Fokus-Ring oben abgedeckt */
 
 .button-link-outline {
   background-color: transparent; color: var(--dark-text); border: 1px solid var(--dark-text);
@@ -147,10 +168,8 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .button-link-outline:hover:not(:disabled) {
   background-color: var(--light-grey-bg); color: var(--dark-text); border-color: var(--dark-text);
 }
-/* Fokus für Outline-Buttons wird durch den globalen Fokus-Ring oben abgedeckt,
-   aber wir stellen sicher, dass die Hover-Effekte erhalten bleiben. */
 .button-link-outline:focus-visible:not(:disabled) {
-  background-color: var(--light-grey-bg); /* Behält Hover-Hintergrund bei */
+  background-color: var(--light-grey-bg);
 }
 
 
@@ -162,15 +181,40 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   transform: translateY(0px); box-shadow: none;
 }
 .button-link[disabled], .nav-cta[disabled], .auth-button[disabled],
-.modal-actions button[disabled], .time-slot-button[disabled] {
+.modal-actions button[disabled], .time-slot-button[disabled],
+.service-form .submit-button[disabled],
+.appointment-form-fields .submit-appointment-button[disabled]
+{
   background-color: var(--disabled-bg); border-color: var(--disabled-border);
   color: var(--disabled-text); cursor: not-allowed; transform: none; box-shadow: none;
 }
 
+.slider-nav button.interactive {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: var(--light-text-on-dark);
+  padding: 0.6rem;
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  line-height: 1;
+}
+.slider-nav button.interactive .svg-inline--fa {
+  font-size: 0.9rem;
+  margin: 0;
+}
+.slider-nav button.interactive:hover {
+  background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.6);
+  transform: scale(1.05);
+  box-shadow: none;
+}
+.slider-nav button.interactive:focus-visible {
+  box-shadow: 0 0 0 2px var(--dark-text), 0 0 0 4px rgba(255,255,255,0.5) !important;
+  background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.6);
+}
 
-/* ==========================================================================
-   Header & Navigation
-   ========================================================================== */
+
+/* --- HEADER & NAVIGATION --- */
 .header {
   position: fixed; width: 100%; top: 0; left: 0; z-index: 1001;
   background-color: rgba(255, 255, 255, 0.88);
@@ -190,13 +234,11 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 
 .navbar { display: flex; justify-content: space-between; align-items: center; width: 100%; }
 .logo { font-size: 1.6rem; font-weight: 600; text-decoration: none; color: var(--dark-text); font-family: var(--font-serif); z-index: 1005; }
-/* Logo Fokus-Stil wird durch den globalen subtilen Ring oben abgedeckt */
 
 
 .nav-links-container { display: flex; align-items: center; }
 .main-nav-group { display: flex; align-items: center; gap: 0.1rem; }
 
-/* Stile für normale Navigationslinks (Textlinks) */
 .nav-link-item {
   text-decoration: none; color: var(--dark-text); font-size: 0.88rem; font-weight: 500;
   position: relative; padding: 0.6rem 0.7rem; margin: 0 0.15rem;
@@ -205,24 +247,21 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   display: inline-flex; align-items: center;
 }
 .nav-link-item .svg-inline--fa { margin-right: 0.4rem; }
-.nav-link-item:hover { /* Nur Hover-Stil, Fokus wird durch globalen :focus-visible gehandhabt */
+.nav-link-item:hover {
   color: var(--dark-text); background-color: var(--light-grey-bg);
 }
-/* Der Fokus-Stil für .nav-link-item:focus-visible ist bereits oben definiert (subtiler Ring) */
 
 .nav-auth-actions { display: flex; align-items: center; gap: 0.7rem; margin-left: 1.2rem; }
-.nav-auth-actions .nav-link-item { padding: 0.6rem 0.7rem; } /* Behält Link-Aussehen bei */
-.nav-cta { /* Dieser ist explizit ein Button und erbt von .button-link */
+.nav-auth-actions .nav-link-item { padding: 0.6rem 0.7rem; }
+.nav-cta {
   padding: 0.5rem 1.1rem; font-size: 0.85rem;
 }
 
 
-/* Mobile Navigation */
 .mobile-menu-toggle {
   display: none; background: none; border: none; color: var(--dark-text);
   font-size: 1.5rem; cursor: pointer; z-index: 1005; padding: 0.5rem; line-height: 1;
 }
-/* Fokus für Mobile-Menü-Toggle wird oben global gehandhabt */
 
 @media (max-width: 992px) {
   .header, .header.scrolled { height: var(--header-height-mobile); }
@@ -252,9 +291,8 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   .nav-links-container .main-nav-group > .nav-link-item:last-child,
   .nav-links-container .nav-auth-actions > .nav-link-item:last-child { border-bottom: none; }
   .nav-links-container .nav-link-item:hover,
-  .nav-links-container .nav-link-item:focus-visible { /* Fokus im mobilen Menü */
+  .nav-links-container .nav-link-item:focus-visible {
     background-color: var(--light-grey-bg);
-    /* Der globale subtile Ring ist hier gut */
   }
 
   .nav-links-container .nav-cta {
@@ -284,59 +322,247 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 @media (max-width: 768px) { .hero-title { font-size: 2.8rem; } .hero-subtitle { font-size: 1rem; } }
 
 
-/* --- BookingPage.js spezifische UX Verbesserungen --- */
-.booking-page-container { padding: 2rem 0; background-color: var(--light-bg); }
-.booking-form-container {
-  max-width: 700px; margin: 0 auto; padding: 2rem; background-color: var(--light-bg);
-  border: 1px solid var(--border-color); border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-.booking-page-main-heading {
-  font-family: var(--font-serif); font-size: 2rem;
-  color: var(--dark-text); text-align: center; margin-bottom: 1.5rem;
+/* ==========================================================================
+   Booking Page spezifische Stile (jetzt in App.css)
+   ========================================================================== */
+
+.booking-page-container {
+  padding: 2rem 0;
+  background-color: var(--light-bg);
+  min-height: calc(100vh - var(--header-height-desktop) - var(--footer-height) - 4rem);
 }
 
+@media (max-width: 992px) {
+  .booking-page-container {
+    min-height: calc(100vh - var(--header-height-mobile) - var(--footer-height) - 2rem);
+    padding: 1rem 0;
+  }
+}
+
+.booking-form-container {
+  max-width: 750px;
+  margin: 0 auto;
+  padding: 2rem 2.5rem;
+  background-color: var(--light-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.07);
+}
+
+@media (max-width: 768px) {
+  .booking-form-container {
+    padding: 1.5rem 1rem;
+  }
+}
+
+.booking-page-main-heading {
+  font-family: var(--font-serif);
+  font-size: 2.2rem;
+  color: var(--dark-text);
+  text-align: center;
+  margin-bottom: 2rem;
+}
+@media (max-width: 768px) {
+  .booking-page-main-heading {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+  }
+}
+
+/* Schritt-Indikatoren (Überarbeitet für Klarheit) */
 .booking-step-indicators {
-  display: flex; justify-content: space-around;
-  margin-bottom: 2.5rem; padding-bottom: 1rem;
+  display: flex;
+  justify-content: space-between; /* Items gleichmäßig verteilen */
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem; /* Platz für Linien und Labels */
   border-bottom: 1px solid var(--border-color);
   list-style: none;
+  position: relative; /* Für die Verbindungslinien */
 }
+
+/* Horizontale Linie als Basis */
+.booking-step-indicators::before {
+  content: '';
+  position: absolute;
+  top: 1.25rem; /* Vertikal mittig zum Kreis-Durchmesser (2.5rem / 2) */
+  left: 10%;  /* Einzug links */
+  right: 10%; /* Einzug rechts */
+  height: 2px;
+  background-color: var(--step-indicator-line-default);
+  z-index: 1; /* Hinter den Kreisen */
+}
+
 .booking-step-indicator {
-  display: flex; flex-direction: column; align-items: center;
-  color: var(--light-grey-text); font-size: 0.8rem; text-align: center;
-  flex-basis: 0; flex-grow: 1; position: relative;
-  cursor: default;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1; /* Nimmt verfügbaren Platz ein */
+  max-width: 25%; /* Für 4 Schritte */
+  position: relative; /* Für z-index der Kreise */
+  z-index: 2;
 }
+
 .booking-step-indicator .step-number-wrapper {
-  width: 2.2rem; height: 2.2rem; border-radius: 50%;
-  border: 2px solid var(--border-color);
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 0.5rem; background-color: var(--light-bg);
+  width: 2.5rem; /* Durchmesser des Kreises */
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 2px solid var(--step-indicator-default-border);
+  background-color: var(--light-bg); /* Damit der Kreis die Linie darunter verdeckt */
+  color: var(--step-indicator-default-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
   transition: all 0.3s var(--transition-ease);
-  position: relative; z-index: 2;
+  font-weight: 600;
 }
-.booking-step-indicator .step-number { font-weight: 600; font-size: 0.9rem; }
-.booking-step-indicator .step-label { font-weight: 500; }
 
-.booking-step-indicator.active .step-number-wrapper,
+.booking-step-indicator .step-number {
+  font-size: 0.9rem;
+}
+.booking-step-indicator .step-number .svg-inline--fa, /* Für das Häkchen */
+.booking-step-indicator .step-number .fas.fa-check { /* Alternative für direktes i-Tag */
+  font-size: 1rem;
+}
+
+
+.booking-step-indicator .step-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--step-indicator-default-text);
+  transition: color 0.3s ease, font-weight 0.3s ease;
+}
+
+/* Abgeschlossener Schritt */
 .booking-step-indicator.completed .step-number-wrapper {
-  border-color: var(--dark-text);
-  background-color: var(--dark-text);
-  color: var(--light-bg);
+  background-color: var(--step-indicator-completed-bg);
+  border-color: var(--step-indicator-completed-border);
+  color: var(--step-indicator-completed-text-in-circle);
 }
-.booking-step-indicator.active .step-label { color: var(--dark-text); font-weight: 600; }
-.booking-step-indicator.completed .step-label { color: var(--medium-grey-text); }
+.booking-step-indicator.completed .step-label {
+  color: var(--step-indicator-completed-label-text);
+}
 
-.booking-step-indicator:not(:first-child)::before {
-  content: ''; position: absolute; top: 1.1rem;
-  right: 50%; width: 100%; height: 2px;
-  background-color: var(--border-color);
-  z-index: 1; transform: translateX(-50%);
+/* Aktiver Schritt */
+.booking-step-indicator.active .step-number-wrapper {
+  background-color: var(--step-indicator-active-bg);
+  border-color: var(--step-indicator-active-border);
+  color: var(--step-indicator-active-text-in-circle);
+  transform: scale(1.05);
 }
-.booking-step-indicator.completed:not(:first-child)::before,
-.booking-step-indicator.active:not(:first-child)::before {
-  background-color: var(--dark-text);
+.booking-step-indicator.active .step-label {
+  color: var(--step-indicator-active-label-text);
+  font-weight: 700;
+}
+
+/* Fortschritt der Linie - Segment für Segment */
+/* Wenn der zweite Schritt (oder mehr) erreicht ist, ist die Linie zum zweiten Schritt aktiv */
+.booking-step-indicator:nth-child(1).completed + .booking-step-indicator::before,
+.booking-step-indicator:nth-child(1).active + .booking-step-indicator::before /* Linie zum 2. wenn 1. active (selten der Fall hier) */
+{
+  content: '';
+  position: absolute;
+  top: calc(1.25rem - 1px);
+  right: 50%; /* Von Mitte des vorherigen ... */
+  width: 50%; /* ... bis Mitte des aktuellen */
+  height: 2px;
+  background-color: var(--step-indicator-line-completed);
+  z-index: 1;
+}
+
+/* Wenn der dritte Schritt (oder mehr) erreicht ist, ist die Linie zum dritten Schritt aktiv */
+.booking-step-indicator:nth-child(2).completed + .booking-step-indicator::before,
+.booking-step-indicator:nth-child(2).active + .booking-step-indicator::before
+{
+  content: '';
+  position: absolute;
+  top: calc(1.25rem - 1px);
+  right: 50%;
+  width: 100%; /* Geht über den ganzen Bereich des vorherigen Items */
+  transform: translateX(50%); /* Zentriert die Linie zwischen den Punkten */
+  height: 2px;
+  background-color: var(--step-indicator-line-completed);
+  z-index: 1;
+}
+/* Spezifisch für die Linie zwischen Schritt 1 und 2, wenn Schritt 2 aktiv oder completed */
+.booking-step-indicators[data-step-active="2"] .booking-step-indicator:nth-child(1)::after,
+.booking-step-indicators[data-step-active="3"] .booking-step-indicator:nth-child(1)::after,
+.booking-step-indicators[data-step-active="4"] .booking-step-indicator:nth-child(1)::after,
+.booking-step-indicator:nth-child(1).completed::after {
+  content: '';
+  position: absolute;
+  top: calc(1.25rem - 1px);
+  left: calc(50% + 0.5rem); /* Startet rechts vom Kreis */
+  width: calc(100% - 1rem); /* Füllt den Raum zum nächsten Kreis, abzüglich Kreisbreite */
+  height: 2px;
+  background-color: var(--step-indicator-line-completed);
+  z-index: 1;
+}
+
+/* Linie zwischen 2 und 3 */
+.booking-step-indicators[data-step-active="3"] .booking-step-indicator:nth-child(2)::after,
+.booking-step-indicators[data-step-active="4"] .booking-step-indicator:nth-child(2)::after,
+.booking-step-indicator:nth-child(2).completed::after {
+  content: '';
+  position: absolute;
+  top: calc(1.25rem - 1px);
+  left: calc(50% + 0.5rem);
+  width: calc(100% - 1rem);
+  height: 2px;
+  background-color: var(--step-indicator-line-completed);
+  z-index: 1;
+}
+
+/* Linie zwischen 3 und 4 */
+.booking-step-indicators[data-step-active="4"] .booking-step-indicator:nth-child(3)::after,
+.booking-step-indicator:nth-child(3).completed::after {
+  content: '';
+  position: absolute;
+  top: calc(1.25rem - 1px);
+  left: calc(50% + 0.5rem);
+  width: calc(100% - 1rem);
+  height: 2px;
+  background-color: var(--step-indicator-line-completed);
+  z-index: 1;
+}
+
+
+@media (max-width: 576px) {
+  .booking-step-indicator .step-number-wrapper {
+    width: 2.2rem;
+    height: 2.2rem;
+  }
+  .booking-step-indicator .step-number {
+    font-size: 0.8rem;
+  }
+  .booking-step-indicator .step-number .svg-inline--fa {
+    font-size: 0.9rem;
+  }
+  .booking-step-indicator .step-label {
+    font-size: 0.75rem; /* Etwas lesbarer */
+  }
+  .booking-step-indicators::before,
+  .booking-step-indicator.completed::after,
+  .booking-step-indicator:nth-child(1).completed + .booking-step-indicator::before,
+  .booking-step-indicator:nth-child(2).completed + .booking-step-indicator::before,
+  .booking-step-indicator:nth-child(1).active + .booking-step-indicator::before,
+  .booking-step-indicator:nth-child(2).active + .booking-step-indicator::before,
+  .booking-step-indicators[data-step-active="2"] .booking-step-indicator:nth-child(1)::after,
+  .booking-step-indicators[data-step-active="3"] .booking-step-indicator:nth-child(1)::after,
+  .booking-step-indicators[data-step-active="4"] .booking-step-indicator:nth-child(1)::after,
+  .booking-step-indicators[data-step-active="3"] .booking-step-indicator:nth-child(2)::after,
+  .booking-step-indicators[data-step-active="4"] .booking-step-indicator:nth-child(2)::after,
+  .booking-step-indicators[data-step-active="4"] .booking-step-indicator:nth-child(3)::after
+  {
+    top: calc(1.1rem - 1px);
+  }
+}
+
+@media (max-width: 400px) { /* Sehr kleine Bildschirme */
+  .booking-step-indicator .step-label {
+    display: none; /* Labels ausblenden, nur Nummern anzeigen */
+  }
 }
 
 
@@ -345,7 +571,7 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 @keyframes fadeInStep { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
 .booking-step-heading {
-  font-family: var(--font-serif); font-size: 1.6rem; color: var(--dark-text);
+  font-family: var(--font-serif); font-size: 1.8rem; color: var(--dark-text);
   text-align: left; margin-bottom: 1.5rem;
 }
 .booking-step-subheading {
@@ -362,47 +588,143 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   color: var(--dark-text);
 }
 
-.services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+.services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; }
 .service-card {
-  padding: 1rem; border: 1px solid var(--border-color); border-radius: 6px;
-  cursor: pointer; transition: all 0.2s var(--transition-ease);
-  background-color: var(--light-bg); display: flex; flex-direction: column; justify-content: space-between;
+  padding: 1.2rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s var(--transition-ease);
+  background-color: var(--light-bg);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
 }
-.service-card:hover { border-color: var(--medium-grey-text); box-shadow: 0 2px 8px rgba(0,0,0,0.07); transform: translateY(-2px); }
+.service-card:hover {
+  border-color: var(--medium-grey-text);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateY(-3px);
+}
 .service-card.selected {
-  border-color: var(--dark-text); background-color: var(--light-grey-bg);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1); transform: translateY(-2px);
+  border-color: var(--dark-text);
+  background-color: var(--light-grey-bg);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-3px);
 }
-/* Fokus für Service-Karten wird oben global gehandhabt */
+.service-card.selected::after {
+  content: '\\f00c';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  color: var(--success-color);
+  font-size: 1rem;
+  background-color: var(--light-bg);
+  border-radius: 50%;
+  padding: 0.2rem;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
 
-.service-name { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.3rem; color: var(--dark-text); }
-.service-description { font-size: 0.85rem; color: var(--medium-grey-text); margin-bottom: 0.5rem; flex-grow: 1; }
-.service-details { font-size: 0.9rem; font-weight: 500; color: var(--dark-text); margin-top: 0.5rem; }
+
+.service-name { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--dark-text); }
+.service-description { font-size: 0.88rem; color: var(--medium-grey-text); margin-bottom: 0.6rem; flex-grow: 1; line-height: 1.5; }
+.service-details { font-size: 0.9rem; font-weight: 500; color: var(--dark-text); margin-top: 0.75rem; }
 .service-duration { color: var(--medium-grey-text); font-size: 0.8em; }
 
 
-.datepicker-time-container { display: flex; flex-direction: column; gap: 2rem; margin-top: 1rem; }
+.datepicker-time-container { display: flex; flex-direction: column; gap: 2.5rem; margin-top: 1.5rem; }
 @media (min-width: 768px) {
-  .datepicker-time-container { flex-direction: row; gap: 1.5rem; }
-  .datepicker-wrapper, .time-slots-wrapper { flex: 1; min-width: 250px; }
+  .datepicker-time-container { flex-direction: row; gap: 2rem; }
+  .datepicker-wrapper, .time-slots-wrapper { flex: 1; min-width: 280px; }
 }
-.datepicker-wrapper .react-datepicker { width: 100%; font-size: 0.9rem; }
-.sub-heading { font-size: 1.05rem; font-weight: 500; margin-bottom: 0.8rem; color: var(--dark-text); display: flex; align-items: center; gap: 0.5rem; }
+
+.datepicker-wrapper .react-datepicker {
+  width: 100%;
+  font-size: 0.9rem;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+}
+.react-datepicker__month-container {
+  width: 100%;
+}
+.react-datepicker__header {
+  background-color: var(--light-grey-bg) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  border-top-left-radius: 6px !important;
+  border-top-right-radius: 6px !important;
+  padding: 0.8rem 0 !important;
+}
+.react-datepicker__current-month {
+  color: var(--dark-text) !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+}
+.react-datepicker__day-name, .react-datepicker__day {
+  color: var(--medium-grey-text) !important;
+  font-size: 0.88rem !important;
+  line-height: 2rem !important;
+  width: 2rem !important;
+  margin: 0.15rem !important;
+  border-radius: 4px;
+}
+.react-datepicker__day--selected, .react-datepicker__day--keyboard-selected {
+  background-color: var(--dark-text) !important;
+  color: var(--light-bg) !important;
+  border-radius: 4px !important;
+}
+.react-datepicker__day:hover {
+  background-color: var(--light-grey-bg) !important;
+  border-radius: 4px !important;
+  color: var(--dark-text) !important;
+}
+.react-datepicker__day--outside-month {
+  color: var(--light-grey-text) !important;
+  opacity: 0.5;
+}
+.react-datepicker__day--disabled {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+}
+.react-datepicker__day--today {
+  font-weight: bold;
+  border: 1px solid var(--dark-text);
+  background-color: rgba(0,0,0,0.03);
+}
+
+.react-datepicker__navigation {
+  top: 0.9rem !important;
+  width: 2rem; height: 2rem;
+}
+.react-datepicker__navigation--previous { border-right-color: var(--dark-text) !important; }
+.react-datepicker__navigation--next { border-left-color: var(--dark-text) !important; }
+.react-datepicker__navigation:hover {
+  opacity: 0.7;
+}
+
+
+.sub-heading { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: var(--dark-text); display: flex; align-items: center; gap: 0.5rem; }
 .sub-heading .svg-inline--fa { font-size: 0.9em; }
 
 .time-slots-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-  gap: 0.5rem; max-height: 240px; overflow-y: auto; padding: 0.5rem;
-  background-color: var(--light-grey-bg); border-radius: 4px; border: 1px solid var(--border-color);
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 0.75rem;
+  max-height: 280px;
+  overflow-y: auto; padding: 0.75rem;
+  background-color: var(--light-grey-bg); border-radius: 6px; border: 1px solid var(--border-color);
 }
-.time-slot-button { /* Erbt von .button-link, aber spezifische Anpassungen */
-  padding: 0.6rem 0.4rem; font-size: 0.85rem;
+.time-slot-button {
+  padding: 0.75rem 0.5rem;
+  font-size: 0.9rem;
   background-color: var(--light-bg); color: var(--dark-text); border: 1px solid var(--border-color);
-  font-weight: 400; /* Normales Gewicht für nicht ausgewählte */
+  font-weight: 500;
+  border-radius: 4px;
 }
 .time-slot-button:hover:not(.selected):not(:disabled) { background-color: #e9e9e9; border-color: var(--medium-grey-text); color: var(--dark-text); transform: translateY(-1px); }
-.time-slot-button.selected { background-color: var(--dark-text); color: var(--light-bg); border-color: var(--dark-text); font-weight: 500; }
-/* Fokus für Time-Slot-Buttons wird oben global gehandhabt */
+.time-slot-button.selected { background-color: var(--dark-text); color: var(--light-bg); border-color: var(--dark-text); font-weight: 600; }
 
 
 .no-times-message, .select-date-message { text-align: center; color: var(--medium-grey-text); padding: 1rem 0; font-size: 0.9rem; }
@@ -412,16 +734,15 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   border-radius: 4px; border: 1px solid var(--success-color); display: flex; align-items: center; justify-content: center; gap: 0.5rem;
   color: var(--success-color);
 }
-.selected-datetime-info .success-icon { /* Wird schon von globaler .form-message.success abgedeckt, falls verwendet */ }
-
 
 .booking-navigation-buttons {
-  display: flex; justify-content: space-between; align-items: center; margin-top: 1.8rem;
-  padding-top: 1.2rem; border-top: 1px solid var(--border-color);
+  display: flex; justify-content: space-between; align-items: center; margin-top: 2rem;
+  padding-top: 1.5rem; border-top: 1px solid var(--border-color);
 }
 .booking-navigation-buttons .button-link,
 .booking-navigation-buttons .button-link-outline {
-  padding: 0.7rem 1.3rem; font-size: 0.85rem;
+  padding: 0.8rem 1.5rem;
+  font-size: 0.9rem;
   display: inline-flex; align-items: center; gap: 0.4rem;
 }
 
@@ -437,32 +758,29 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .login-prompt-booking a:not(.button-link):hover {
   color: var(--medium-grey-text);
 }
-/* Fokus für Textlinks im Login-Prompt wird oben global gehandhabt */
 
-
-/* Kurze Zusammenfassung in Schritt 3 */
 .appointment-summary-inline {
-  padding: 0.8rem;
+  padding: 1rem;
   background-color: var(--light-grey-bg);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
+  border-radius: 6px;
+  margin-bottom: 2rem;
+  font-size: 0.95rem;
 }
 .appointment-summary-inline p {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap; /* Für kleinere Bildschirme */
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 .appointment-summary-inline .summary-icon {
   color: var(--success-color);
-  margin-right: 0.5rem;
-  font-size: 1.1em;
+  margin-right: 0.6rem;
+  font-size: 1.2em;
 }
 .appointment-summary-inline .edit-selection-button {
-  margin-left: auto; /* Schiebt den Button nach rechts */
+  margin-left: auto;
 }
 .edit-selection-button {
   background: none; border: none; color: var(--medium-grey-text); font-size: 0.8rem;
@@ -471,12 +789,11 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   padding: 0.2rem 0.4rem; border-radius: 3px;
 }
 .edit-selection-button:hover { color: var(--dark-text); background-color: var(--border-color); }
-/* Fokus für Edit-Button wird oben global gehandhabt */
 
 .edit-selection-button.small-edit {
   font-size: 0.75rem; padding: 0.1rem 0.3rem; margin-left: 0.5rem;
 }
-.edit-selection-button.subtle-edit { /* Für den Ändern-Button in der Inline-Zusammenfassung */
+.edit-selection-button.subtle-edit {
   font-size: 0.85rem;
   padding: 0.1rem 0.2rem;
   text-decoration: underline;
@@ -488,12 +805,130 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   text-decoration: underline;
 }
 
-
 .booking-confirmation { text-align: center; padding: 2rem 0; }
-.confirmation-icon { font-size: 3.5rem; color: var(--success-color); margin-bottom: 1rem; }
-.booking-confirmation .booking-step-heading { border-bottom: none; margin-bottom: 0.8rem; font-size: 1.8rem; }
-.booking-confirmation p { color: var(--medium-grey-text); margin-bottom: 1.5rem; font-size: 1rem; }
-.confirmation-buttons { justify-content: center; gap: 1rem; display: flex; }
+.confirmation-icon { font-size: 4rem; color: var(--success-color); margin-bottom: 1.2rem; }
+.booking-confirmation .booking-step-heading { border-bottom: none; margin-bottom: 1rem; font-size: 2rem; }
+.booking-confirmation p { color: var(--medium-grey-text); margin-bottom: 1.8rem; font-size: 1.05rem; max-width: 500px; margin-left: auto; margin-right: auto;}
+.confirmation-buttons { justify-content: center; gap: 1rem; display: flex; flex-wrap: wrap; }
+.confirmation-buttons .button-link, .confirmation-buttons .button-link-outline {
+  min-width: 180px;
+}
+
+.loading-message {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1rem;
+  color: var(--medium-grey-text);
+}
+.loading-message .svg-inline--fa {
+  margin-right: 0.5rem;
+  font-size: 1.2em;
+}
+.loading-message.small {
+  font-size: 0.9rem;
+  padding: 0.5rem;
+}
+
+.form-message {
+  margin-top: 1rem;
+  padding: 0.7rem 1rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+/* Globale Nachrichten-Styles, falls nicht in BookingPage.css überschrieben */
+.form-message.error {
+  color: var(--danger-color);
+  background-color: var(--danger-bg-light);
+  border: 1px solid var(--danger-color);
+}
+.form-message.success {
+  color: var(--success-color);
+  background-color: var(--success-bg-light);
+  border: 1px solid var(--success-color);
+}
+.form-message.info {
+  color: var(--info-color);
+  background-color: var(--info-bg-light);
+  border: 1px solid var(--info-color);
+}
+.form-message.small {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.8rem;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .booking-step-indicator .step-label {
+    font-size: 0.7rem;
+  }
+  .booking-step-indicator .step-number-wrapper {
+    width: 2.2rem;
+    height: 2.2rem;
+    margin-bottom: 0.5rem;
+  }
+  .booking-step-indicator .step-number {
+    font-size: 0.8rem;
+  }
+  .booking-step-indicator .step-number .svg-inline--fa {
+    font-size: 0.9rem;
+  }
+
+  .booking-step-indicators::before,
+  .booking-step-indicator.completed::after {
+    top: calc(1.1rem - 1px);
+    height: 2px;
+  }
+  .booking-step-indicators::before {
+    left: 8%;
+    right: 8%;
+  }
+
+  .react-datepicker__day-name, .react-datepicker__day {
+    line-height: 1.6rem !important;
+    width: 1.6rem !important;
+    font-size: 0.8rem !important;
+  }
+  .react-datepicker__current-month {
+    font-size: 0.9rem !important;
+  }
+  .time-slots-grid {
+    grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+    gap: 0.5rem;
+  }
+  .time-slot-button {
+    padding: 0.6rem 0.3rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .booking-step-indicators {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+  }
+  .booking-step-indicator .step-label {
+    display: none;
+  }
+  .booking-step-indicator .step-number-wrapper {
+    width: 2rem;
+    height: 2rem;
+  }
+  .booking-step-indicator .step-number {
+    font-size: 0.7rem;
+  }
+  .booking-step-indicators::before,
+  .booking-step-indicator.completed::after {
+    top: calc(1rem - 1px);
+  }
+  .booking-step-indicators::before {
+    left: 5%;
+    right: 5%;
+  }
+}
 
 
 /* --- AccountDashboard.css Integration --- */
@@ -519,7 +954,6 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .dashboard-nav-button[aria-expanded="true"] .accordion-chevron { transform: rotate(90deg); }
 
 .dashboard-nav-button:hover { background-color: var(--light-grey-bg); }
-/* Fokus für Dashboard Nav-Buttons wird oben global gehandhabt (subtiler Ring + Hintergrund) */
 
 .dashboard-nav-button.active {
   background: var(--dark-text); color: var(--light-bg);
@@ -527,8 +961,6 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 }
 .dashboard-nav-button.active:hover, .dashboard-nav-button.active:focus-visible {
   background: #333333; border-color: #333333;
-  /* Für aktive Elemente kann der Fokus-Ring etwas anders aussehen, falls nötig */
-  /* box-shadow: 0 0 0 2px var(--light-bg), 0 0 0 4px var(--focus-ring-color); */
 }
 .dashboard-nav-item.logout-button-container { margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 0.7rem; }
 .dashboard-nav-button.logout-button { color: var(--dark-text); }
@@ -577,17 +1009,15 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .app-table th { background-color: var(--light-grey-bg); font-weight: 600; color: var(--dark-text); }
 .app-table tr:hover { background-color: #f5f5f5; }
 .action-buttons { display: flex; gap: 0.3rem; align-items: center; }
-/* .action-buttons .button-link wurde zu .action-buttons button umbenannt für Klarheit */
 .action-buttons button {
   padding: 0.3rem 0.6rem; font-size: 0.8rem;
-  background-color: transparent; border: 1px solid transparent; /* Wichtig für Hover/Fokus */
+  background-color: transparent; border: 1px solid transparent;
   color: var(--medium-grey-text);
   cursor: pointer; border-radius: 3px;
 }
 .action-buttons button:hover {
   background-color: var(--light-grey-bg); color: var(--dark-text); border-color: var(--border-color);
 }
-/* Fokus für Action-Buttons (Edit/Delete) wird oben global gehandhabt (stärkerer Ring) */
 .action-buttons button.delete-button:hover,
 .action-buttons button.delete-button:focus-visible {
   background-color: var(--danger-bg-light); color: var(--danger-color); border-color: var(--danger-bg-light);
@@ -605,61 +1035,12 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .md\:hidden .space-y-4 > div p strong { font-weight: 600; color: var(--dark-text); }
 .md\:hidden .space-y-4 > div .action-buttons { margin-top: 0.6rem; justify-content: flex-end; }
 
-/* react-datepicker Anpassungen */
+/* Globale Basis-Stile für react-datepicker (falls an anderer Stelle verwendet) */
 .react-datepicker-wrapper input {
   width: 100%; padding: 0.7rem 0.8rem; border-radius: 4px;
   border: 1px solid var(--border-color); font-family: var(--font-sans);
   font-size: 0.9rem; background: var(--light-bg); color: var(--dark-text);
 }
-/* Fokus für Datepicker Input wird oben global gehandhabt */
-
-.react-datepicker-popper { z-index: 1060 !important; }
-.react-datepicker {
-  font-family: var(--font-sans) !important; border-radius: 4px !important;
-  border: 1px solid var(--border-color) !important;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.08) !important;
-}
-.react-datepicker__header {
-  background-color: var(--light-grey-bg) !important;
-  border-bottom: 1px solid var(--border-color) !important;
-  border-top-left-radius: 4px !important; border-top-right-radius: 4px !important;
-  padding: 0.5rem 0 !important;
-}
-.react-datepicker__navigation { top: 0.6rem !important; }
-/* Fokus für Datepicker Navigation (Pfeile) wird oben global gehandhabt */
-
-.react-datepicker__navigation--previous { border-right-color: var(--medium-grey-text) !important; }
-.react-datepicker__navigation--next { border-left-color: var(--medium-grey-text) !important; }
-.react-datepicker__current-month, .react-datepicker-time__header, .react-datepicker-year-header {
-  color: var(--dark-text) !important; font-weight: 500 !important; font-size: 0.9rem !important;
-}
-.react-datepicker__day-name, .react-datepicker__day, .react-datepicker__time-name {
-  color: var(--medium-grey-text) !important; font-size: 0.8rem !important;
-  line-height: 1.5rem !important; width: 1.5rem !important; margin: 0.15rem !important;
-}
-.react-datepicker__day--selected, .react-datepicker__day--keyboard-selected,
-.react-datepicker__time-list-item--selected {
-  background-color: var(--dark-text) !important; color: var(--light-bg) !important;
-  border-radius: 3px !important;
-}
-.react-datepicker__day:hover, .react-datepicker__time-list-item:hover {
-  background-color: var(--light-grey-bg) !important; border-radius: 3px !important;
-  color: var(--dark-text) !important;
-}
-/* Fokus für Kalendertage und Zeitauswahl-Items wird oben global gehandhabt */
-
-
-.react-datepicker__day--disabled { color: #c0c0c0 !important; opacity: 0.6; }
-.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item {
-  font-size: 0.8rem !important; padding: 4px 8px !important;
-}
-.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected {
-  background-color: var(--dark-text) !important; color: var(--light-bg) !important;
-}
-.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item:hover {
-  background-color: var(--light-grey-bg) !important; color: var(--dark-text) !important;
-}
-
 
 /* --- PRELOADER --- */
 #preloader { position: fixed; inset: 0; background: var(--light-bg); z-index: 10002; display: flex; align-items: center; justify-content: center; transition: opacity 0.5s var(--transition-ease) 0.1s, visibility 0s 0.6s linear; }
@@ -667,30 +1048,12 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .loader-char { font-family: var(--font-serif); font-size: 1.6rem; animation: pulse 1.3s infinite ease-in-out; color: var(--dark-text);}
 @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
 
-/* Loading Message Style (z.B. für BookingPage) */
-.loading-message {
-  text-align: center;
-  padding: 2rem;
-  font-size: 1rem;
-  color: var(--medium-grey-text);
-}
-.loading-message .svg-inline--fa {
-  margin-right: 0.5rem;
-  font-size: 1.2em;
-}
-.loading-message.small {
-  font-size: 0.9rem;
-  padding: 0.5rem;
-}
-
-
 /* Form-spezifische Styles (Login, ServiceForm, AppointmentForm) */
 .auth-container, .service-form-container, .appointment-form-fields {
   padding: 1.5rem;
-  background-color: var(--light-bg); /* Konsistent mit anderen Sektionen */
+  background-color: var(--light-bg);
   border-radius: 6px;
-  /* box-shadow: 0 2px 8px rgba(0,0,0,0.05); */ /* Optional, wenn es nicht im Modal ist */
-  margin: 1rem auto; /* Etwas Abstand, falls nicht Teil eines größeren Containers */
+  margin: 1rem auto;
 }
 .auth-container h2, .service-form-container h3, .appointment-form-fields .form-section-heading-compact {
   font-family: var(--font-serif);
@@ -700,12 +1063,12 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 }
 .service-form-container h3, .appointment-form-fields .form-section-heading-compact {
   font-size: 1.25rem;
-  text-align: left; /* Formular-Überschriften linksbündig */
+  text-align: left;
 }
-.auth-form, .service-form, .space-y-form { /* 'space-y-form' von AppointmentForm */
+.auth-form, .service-form, .space-y-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem; /* Einheitlicher Abstand zwischen Formulargruppen */
+  gap: 1rem;
 }
 .form-group {
   display: flex;
@@ -734,7 +1097,6 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   color: var(--dark-text);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-/* Fokus für Formular-Inputs wird oben global gehandhabt */
 
 .form-group textarea {
   min-height: 80px;
@@ -746,15 +1108,14 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   margin-top: 0.25rem;
 }
 
-/* Buttons in Formularen */
-.auth-button, /* Von Login.js */
-.service-form .submit-button, /* Von ServiceForm.js */
-.appointment-form-fields .submit-appointment-button { /* Von AppointmentForm.js */
-  /* Erbt die meisten Stile von .button-link */
+.auth-button,
+.service-form .submit-button,
+.appointment-form-fields .submit-appointment-button
+{
   width: 100%;
-  margin-top: 0.5rem; /* Etwas Abstand nach oben */
+  margin-top: 0.5rem;
 }
-.auth-form .switch-button { /* Für Login/Register-Wechsel */
+.auth-form .switch-button {
   background: none;
   border: none;
   color: var(--dark-text);
@@ -765,27 +1126,11 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   margin-top: 0.8rem;
   font-weight: 500;
 }
-.auth-form .switch-button:hover, .auth-form .switch-button:focus-visible {
+.auth-form .switch-button:hover {
   color: var(--medium-grey-text);
-  /* Fokus für diesen speziellen Link-Button wird oben global gehandhabt */
 }
 
-/* Nachrichten in Formularen (Login, Service, Appointment) */
-.auth-message, /* Von Login.js */
-.service-form-container .form-message, /* Von ServiceForm.js */
-.appointment-form-fields .form-message, /* Von AppointmentForm.js */
-.booking-form-container .form-message /* Für Nachrichten in BookingPage direkt */
-{
-  margin-top: 1rem;
-  padding: 0.7rem 1rem;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  text-align: left;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.auth-message, /* Login.js - Standardmäßig für Fehler */
+/* Globale Nachrichten-Styles, falls nicht in BookingPage.css überschrieben */
 .form-message.error {
   color: var(--danger-color);
   background-color: var(--danger-bg-light);
@@ -802,13 +1147,13 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   border: 1px solid var(--info-color);
 }
 
-/* Spezifisch für AppointmentForm Grid */
+
 .form-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
 }
-@media (min-width: 576px) { /* Zwei Spalten ab kleineren Bildschirmen */
+@media (min-width: 576px) {
   .form-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -826,14 +1171,14 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 
 .modal-content {
   background-color: var(--light-bg);
-  padding: 1.5rem 2rem 2rem; /* Mehr Padding unten für Buttons */
+  padding: 1.5rem 2rem 2rem;
   border-radius: 8px;
   box-shadow: 0 5px 15px rgba(0,0,0,0.2);
   width: 100%;
-  max-width: 500px; /* Gute Maximalbreite für Formulare */
+  max-width: 500px;
   animation: slideInModalContent 0.3s ease forwards;
-  max-height: 90vh; /* Verhindert Überlaufen bei viel Inhalt */
-  overflow-y: auto; /* Scrollbar falls nötig */
+  max-height: 90vh;
+  overflow-y: auto;
 }
 @keyframes slideInModalContent {
   from { opacity: 0; transform: translateY(-30px) scale(0.95); }
@@ -848,29 +1193,23 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   border-bottom: 1px solid var(--border-color);
 }
 
-.service-edit-form { /* Gilt auch für AppointmentEditModal Form */
+.service-edit-form {
   display: flex; flex-direction: column; gap: 1rem;
 }
 
 .modal-actions {
-  display: flex; justify-content: flex-end; /* Buttons rechtsbündig */
+  display: flex; justify-content: flex-end;
   gap: 0.75rem; margin-top: 1.5rem;
   padding-top: 1rem;
   border-top: 1px solid var(--border-color);
 }
-/* Buttons im Modal erben von .button-link, können aber hier angepasst werden */
-.modal-actions .save-button, .modal-actions .submit-button {
-  /* Erbt .button-link Stile & Fokus-Stile */
-}
 .modal-actions .cancel-button {
-  /* Erbt .button-link Stile, aber mit Outline-Look */
   background-color: transparent; color: var(--medium-grey-text); border-color: var(--border-color);
 }
 .modal-actions .cancel-button:hover {
   background-color: var(--light-grey-bg); color: var(--dark-text); border-color: var(--medium-grey-text);
-  transform: none; /* Hover-Transform überschreiben, wenn kein Offset gewünscht */
+  transform: none;
 }
-/* Fokus für Cancel-Button im Modal wird oben global gehandhabt */
 .modal-actions .cancel-button:focus-visible {
   background-color: var(--light-grey-bg); color: var(--dark-text); border-color: var(--medium-grey-text);
 }
@@ -882,7 +1221,6 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 /* TrustBarSection, ExperienceSection, TestimonialsSection, AboutFounderSection, ServicesSection,
    GalleryJournalSection, EssentialsSection, FAQSection, LocationSection, NewsletterSection, Footer */
 
-/* TrustBarSection */
 #trust-bar { background-color: var(--light-grey-bg); padding: 2.5rem 0; }
 .trust-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem; text-align: center; }
 .trust-item h3 { font-size: 2rem; font-weight: 600; color: var(--dark-text); margin-bottom: 0.2rem; font-family: var(--font-serif); }
@@ -892,51 +1230,25 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   .trust-item h3 { font-size: 1.7rem; }
 }
 
-/* ExperienceSection */
 .experience-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; }
 .experience-step { text-align: center; padding: 1.5rem; background-color: var(--light-bg); border: 1px solid var(--border-color); border-radius: 6px; }
 .experience-step .step-number { font-size: 0.9rem; font-weight: 600; color: var(--medium-grey-text); display: block; margin-bottom: 0.7rem; }
 .experience-step h3 { font-family: var(--font-serif); font-size: 1.3rem; margin-bottom: 0.5rem; color: var(--dark-text); }
 .experience-step p { font-size: 0.9rem; color: var(--medium-grey-text); line-height: 1.6; }
 
-/* TestimonialsSection */
 #testimonials { background-color: var(--dark-text); color: var(--light-text-on-dark); }
 #testimonials .section-header h2 { color: var(--light-text-on-dark); }
 #testimonials .section-header .subtitle, #testimonials .section-header p { color: rgba(245,245,245,0.8); }
 .testimonial-slider { position: relative; overflow: hidden; max-width: 700px; margin: 0 auto; }
 .testimonial-slides { display: flex; transition: transform 0.5s var(--transition-ease); }
 .testimonial-slide { flex: 0 0 100%; padding: 1.5rem; text-align: center; }
-.testimonial-slide .stars { margin-bottom: 0.8rem; color: #ffd700; /* Gold */ }
+.testimonial-slide .stars { margin-bottom: 0.8rem; color: #ffd700; }
 .testimonial-slide blockquote { font-family: var(--font-serif); font-size: 1.2rem; line-height: 1.6; margin-bottom: 1rem; font-style: italic; }
 .testimonial-slide cite { font-size: 0.9rem; font-weight: 500; color: rgba(245,245,245,0.9); }
 .slider-nav { display: flex; justify-content: center; gap: 1rem; margin-top: 1.5rem; }
-.slider-nav button.interactive {
-  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);
-  color: var(--light-text-on-dark); padding: 0.5rem 0.8rem;
-}
-.slider-nav button.interactive:hover {
-  background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.5);
-}
-/* Fokus für Slider-Buttons wird oben global gehandhabt */
-.slider-nav button.interactive:focus-visible {
-  background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.5);
-  /* box-shadow: 0 0 0 2px var(--dark-text), 0 0 0 4px rgba(255,255,255,0.4); /* Angepasster Fokusring für dunklen Hintergrund */
-}
 
-
-/* AboutFounderSection */
-.founder-container { display: grid; grid-template-columns: 1fr 1.5fr; gap: 2.5rem; align-items: center; }
-@media (max-width: 992px) { .founder-container { grid-template-columns: 1fr; text-align: center; } }
-.founder-image img { width: 100%; height: auto; border-radius: 6px; max-height: 500px; object-fit: cover; }
-.founder-bio .subtitle { color: var(--medium-grey-text); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; font-size: 0.7rem; margin-bottom: 0.3rem; }
-.founder-bio h2 { font-family: var(--font-serif); font-size: 2rem; margin-bottom: 1rem; color: var(--dark-text); }
-.founder-bio .philosophy { font-family: var(--font-serif); font-size: 1.1rem; font-style: italic; color: var(--medium-grey-text); margin-bottom: 1rem; line-height: 1.6; }
-.founder-bio p:not(.philosophy) { font-size: 0.9rem; margin-bottom: 1rem; color: var(--dark-text); line-height: 1.7; }
-.founder-bio .button-link { margin-top: 1rem; }
-
-/* ServicesSection (Styling für die statische Ansicht, wenn nicht eingeloggt) */
 #services-dynamic { background-color: var(--light-grey-bg); }
-.services-container { /* Für die statische Ansicht, wenn nicht eingeloggt */
+.services-container {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
 }
@@ -955,28 +1267,24 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .service-info p { font-size: 0.85rem; color: var(--medium-grey-text); }
 .service-action { text-align: right; white-space: nowrap; }
 .service-action .price { display: block; font-weight: 500; color: var(--dark-text); margin-bottom: 0.3rem; font-size: 0.95rem; }
-.service-action .book-service-btn { /* Ist ein .button-link */
+.service-action .book-service-btn {
   font-size: 0.8rem; padding: 0.4rem 0.8rem;
-  background: transparent; border: 1px solid var(--dark-text); color: var(--dark-text);
 }
-.service-action .book-service-btn:hover {
-  background: var(--dark-text); color: var(--light-bg);
-}
-/* Fokus für .book-service-btn wird oben global gehandhabt */
 
-/* GalleryJournalSection */
 .gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
 .gallery-item, .before-after-slider {
   position: relative; overflow: hidden; border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-  background-color: var(--light-grey-bg); /* Platzhalter-Hintergrund */
-  aspect-ratio: 4 / 3; /* Seitenverhältnis beibehalten */
+  background-color: var(--light-grey-bg);
+  aspect-ratio: 4 / 3;
 }
 .gallery-item-image img, .ba-image-container img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s var(--transition-ease); }
 .gallery-item:hover img { transform: scale(1.05); }
-/* Fokus für Gallery-Items wird oben global (subtiler Ring) gehandhabt, wenn sie 'interactive' Klasse haben */
 .gallery-item.interactive:focus-visible img { transform: scale(1.05); }
-
+.gallery-item.interactive:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 3px;
+}
 
 .gallery-item-overlay { position: absolute; inset: 0; background: linear-gradient(transparent 60%, rgba(0,0,0,0.7) 100%); display: flex; align-items: flex-end; padding: 1rem; color: var(--light-text-on-dark); text-decoration: none; }
 .overlay-content .category { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 0.2rem; opacity: 0.8; }
@@ -991,30 +1299,22 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .ba-slider-handle::after { clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%); margin-left: 10px;}
 
 
-/* EssentialsSection */
 #essentials { background-color: var(--light-grey-bg); }
 .essentials-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
 .product-card { background: var(--light-bg); border-radius: 6px; text-align: center; padding: 1.5rem; border: 1px solid var(--border-color); transition: box-shadow 0.2s ease, transform 0.2s ease; }
 .product-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); transform: translateY(-3px); }
-.product-image { margin-bottom: 1rem; height: 200px; /* Feste Höhe für Konsistenz */ }
+.product-image { margin-bottom: 1rem; height: 200px; }
 .product-image img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
 .product-card h3 { font-family: var(--font-serif); font-size: 1.1rem; margin-bottom: 0.3rem; color: var(--dark-text); }
 .product-card .price { font-weight: 500; color: var(--dark-text); margin-bottom: 0.8rem; font-size: 0.95rem; }
-.product-card a.interactive { /* Stil wie ein Outline-Button */
+.product-card a.interactive {
   font-size: 0.8rem; padding: 0.5rem 1rem;
-  background: transparent; border: 1px solid var(--dark-text); color: var(--dark-text);
 }
-.product-card a.interactive:hover {
-  background: var(--dark-text); color: var(--light-bg);
-}
-/* Fokus für Produkt-Links wird oben global gehandhabt (subtiler Ring) */
 
-
-/* FAQSection */
 .faq-container { max-width: 750px; margin: 0 auto; }
 .faq-item { border-bottom: 1px solid var(--border-color); }
 .faq-item summary.interactive {
-  display: block; /* Damit der Pfeil rechts sein kann */
+  display: block;
   padding: 1rem 0; cursor: pointer; font-weight: 600; color: var(--dark-text);
   position: relative; font-size: 1.05rem;
   background: none; border: none; width: 100%; text-align: left;
@@ -1022,25 +1322,22 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .faq-item summary.interactive:hover {
   color: var(--medium-grey-text);
 }
-/* Fokus für FAQ summary wird oben global gehandhabt (subtiler Ring) */
 
-.faq-item summary.interactive::after { content: '\\f078'; /* FontAwesome Chevron Down */ font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; right: 0; top: 50%; transform: translateY(-50%) rotate(0deg); transition: transform 0.2s var(--transition-ease); font-size: 0.8em; }
+.faq-item summary.interactive::after { content: '\\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; right: 0; top: 50%; transform: translateY(-50%) rotate(0deg); transition: transform 0.2s var(--transition-ease); font-size: 0.8em; }
 .faq-item[open] summary.interactive::after { transform: translateY(-50%) rotate(180deg); }
 .faq-content { padding: 0.5rem 0 1.5rem; font-size: 0.9rem; color: var(--medium-grey-text); line-height: 1.7; }
 .faq-content p { margin-bottom: 0; }
 
-/* LocationSection */
 #location { background-color: var(--light-grey-bg); }
 .location-container { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: center; }
 @media (max-width: 992px) { .location-container { grid-template-columns: 1fr; } }
 .address-info h3 { font-family: var(--font-serif); font-size: 1.6rem; margin-bottom: 1rem; color: var(--dark-text); }
 .address-info p { font-size: 0.9rem; color: var(--dark-text); margin-bottom: 1rem; line-height: 1.7; }
 .address-info .button-link { margin-top: 1rem; }
-#map { height: 350px; border-radius: 6px; background-color: #e0e0e0; /* Fallback falls was schiefgeht */ }
-#map > div { /* Stil für den Karten-Platzhalter */ border-radius: 6px !important; }
+#map { height: 350px; border-radius: 6px; background-color: #e0e0e0; }
+#map > div { border-radius: 6px !important; }
 
 
-/* NewsletterSection */
 #newsletter { background-color: var(--dark-text); color: var(--light-text-on-dark); text-align: center; }
 #newsletter h2 { font-family: var(--font-serif); font-size: 1.8rem; margin-bottom: 0.5rem; color: var(--light-text-on-dark); }
 #newsletter p { max-width: 500px; margin: 0 auto 1.5rem auto; color: rgba(245,245,245,0.8); font-size: 0.9rem; }
@@ -1049,19 +1346,15 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   flex-grow: 1; padding: 0.7rem 1rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3);
   background: rgba(255,255,255,0.1); color: var(--light-text-on-dark); font-size: 0.9rem;
 }
-.newsletter-form input[type="email"]::placeholder { color: rgba(245,245,245,0.5); }
-/* Fokus für Newsletter Input wird oben global gehandhabt */
+.newsletter-form input[type="email"]::placeholder { color: rgba(245,245,255,0.5); }
 
-.newsletter-form button.interactive { /* Ist ein .button-link */
+.newsletter-form button.interactive {
   padding: 0.7rem 1.2rem; background: var(--light-bg); color: var(--dark-text); border-color: var(--light-bg);
 }
 .newsletter-form button.interactive:hover {
   background-color: #f0f0f0; border-color: #f0f0f0; color: var(--dark-text);
 }
-/* Fokus für Newsletter Button wird oben global gehandhabt */
 
-
-/* Footer */
 .footer { background-color: var(--dark-text); color: rgba(245,245,245,0.7); padding: 3rem 0 2rem; font-size: 0.85rem; }
 .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; margin-bottom: 2rem; }
 .footer-column h4 { font-family: var(--font-serif); font-size: 1.1rem; color: var(--light-text-on-dark); margin-bottom: 0.8rem; }
@@ -1071,11 +1364,9 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .footer-column a.interactive:hover {
   color: var(--light-text-on-dark); text-decoration: underline;
 }
-/* Fokus für Footer Links wird oben global gehandhabt (subtiler Ring) */
 .social-icons a.interactive { font-size: 1.1rem; margin-right: 0.8rem; }
 .footer-bottom { text-align: center; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.8rem; }
 .footer-bottom a.interactive { font-weight: 500; }
 
-/* Animationen für Sektionen */
 .animate-up { opacity: 0; transform: translateY(30px); transition: opacity 0.6s var(--transition-ease), transform 0.6s var(--transition-ease); }
-.visible .animate-up, section.visible /* Wenn die Sektion selbst die Klasse hat */ { opacity: 1; transform: translateY(0); }
+.visible .animate-up, section.visible { opacity: 1; transform: translateY(0); }
