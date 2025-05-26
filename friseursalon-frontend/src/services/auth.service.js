@@ -1,99 +1,77 @@
-import axios from "axios";
-
-// Setze eine Basis-URL für Axios Instanzen, um Wiederholungen zu vermeiden
-// Alle Anfragen über diese Instanz werden automatisch 'http://localhost:8080/api/' vorangestellt bekommen.
-const instance = axios.create({
-    baseURL: "http://localhost:8080/api/"
-});
-
-// Request Interceptor: Wird vor jeder Anfrage ausgeführt
-// Fügt den JWT-Token zum Authorization-Header hinzu, wenn ein Benutzer angemeldet ist.
-instance.interceptors.request.use(
-    (config) => {
-        const user = JSON.parse(localStorage.getItem("user")); // Benutzerdaten aus Local Storage holen
-
-        if (user && user.token) {
-            // Wenn ein Token vorhanden ist, füge ihn zum Authorization-Header hinzu
-            // Dies ist entscheidend für den Zugriff auf geschützte Backend-Endpunkte
-            config.headers["Authorization"] = 'Bearer ' + user.token;
-        }
-        return config;
-    },
-    (error) => {
-        // Fehlerbehandlung für Request-Fehler (z.B. Netzwerkprobleme)
-        return Promise.reject(error);
-    }
-);
-
-// Response Interceptor: Wird nach jeder Antwort ausgeführt
-// Kann optional für globale Fehlerbehandlung verwendet werden (z.B. automatischen Logout bei 401/403)
-instance.interceptors.response.use(
-    (response) => {
-        return response;
-    },
-    async (error) => {
-        // Beispiel für globale 401 (Unauthorized) / 403 (Forbidden) Fehlerbehandlung
-        // Wenn der Server 401 oder 403 zurückgibt, könnte der Token abgelaufen oder ungültig sein.
-        // In diesem Fall könnte man den Benutzer automatisch ausloggen.
-        // Für dieses Projekt ist es optional, aber in echten Anwendungen wichtig.
-        // if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-        //   // Hier könnte man einen Refresh Token Fluss implementieren oder direkt ausloggen.
-        //   // Dies würde den EventBus.dispatch("logout"); von AuthVerify.js ergänzen.
-        //   // console.log("Caught 401/403 in interceptor, considering logout or refresh...");
-        //   // localStorage.removeItem("user");
-        //   // window.location.reload(); // Seite neu laden, um Login-Formular anzuzeigen
-        // }
-        return Promise.reject(error);
-    }
-);
-
+// Importiert die globale Axios-Instanz, die bereits Interceptoren für Basis-URL und Authentifizierungstoken enthält.
+import api from "./api.service";
 
 // Die AuthService Klasse: Verwaltet die Benutzerauthentifizierung und -registrierung
 class AuthService {
     // Meldet einen Benutzer an
-    login(username, password) {
-        return instance // Nutzt die Axios-Instanz mit Interceptor
-            .post("auth/signin", { // Pfad ist relativ zur baseURL der Instanz ("http://localhost:8080/api/auth/signin")
-                username,
-                password
+    // Parameter:
+    // - email: Die E-Mail-Adresse des Benutzers (wird als Benutzername für den Login verwendet)
+    // - password: Das Passwort des Benutzers
+    login(email, password) {
+        return api // Nutzt die globale Axios-Instanz
+            .post("auth/signin", { // Sendet eine POST-Anfrage an den "/api/auth/signin" Endpunkt
+                // Die baseURL ("http://localhost:8080/api/") wird automatisch von der 'api'-Instanz vorangestellt.
+                email, // E-Mail des Benutzers
+                password // Passwort des Benutzers
             })
             .then(response => {
+                // Wenn die Antwort einen Token enthält (erfolgreicher Login)
                 if (response.data.token) {
-                    // Speichert den JWT-Token und Benutzerdaten im Local Storage des Browsers
+                    // Speichert die Benutzerdaten (inklusive Token) im Local Storage des Browsers.
+                    // JSON.stringify ist notwendig, da Local Storage nur Strings speichern kann.
                     localStorage.setItem("user", JSON.stringify(response.data));
                 }
+                // Gibt die Daten der Antwort zurück (enthält Token, Benutzer-ID, Rollen etc.)
                 return response.data;
             });
     }
 
     // Meldet einen Benutzer ab
     logout() {
-        // Entfernt die Benutzerdaten und den Token aus dem Local Storage
+        // Entfernt die Benutzerdaten und den Token aus dem Local Storage.
+        // Dies ist der Standardweg, um einen Benutzer im Frontend auszuloggen.
         localStorage.removeItem("user");
     }
 
     // Registriert einen neuen Benutzer
-    register(username, email, password, roles) {
-        return instance.post("auth/signup", { // Nutzt die Axios-Instanz
-            username,
+    // Parameter:
+    // - firstName: Vorname des neuen Benutzers
+    // - lastName: Nachname des neuen Benutzers
+    // - email: E-Mail-Adresse des neuen Benutzers
+    // - password: Passwort für den neuen Benutzer
+    // - phoneNumber: Telefonnummer des neuen Benutzers (optional)
+    // - roles: Ein Set von Rollen-Strings (z.B. ["user", "admin"]). Standard ist ["user"].
+    register(firstName, lastName, email, password, phoneNumber, roles) {
+        return api.post("auth/signup", { // Sendet eine POST-Anfrage an den "/api/auth/signup" Endpunkt
+            firstName,
+            lastName,
             email,
             password,
+            phoneNumber,
             role: roles || ["user"] // Setzt Standardrolle auf "user", falls keine angegeben
         });
     }
 
     // Ruft die aktuellen Benutzerdaten aus dem Local Storage ab
     getCurrentUser() {
+        // Holt den "user"-Eintrag aus dem Local Storage
         const userStr = localStorage.getItem("user");
+        // Wenn ein Eintrag vorhanden ist, parse ihn von JSON zurück zu einem Objekt.
         if (userStr) return JSON.parse(userStr);
+        // Andernfalls gib null zurück (kein Benutzer angemeldet).
         return null;
     }
 
     // Ruft nur den JWT-Token aus dem Local Storage ab
     getToken() {
+        // Holt den aktuellen Benutzer
         const user = this.getCurrentUser();
+        // Wenn ein Benutzer vorhanden ist und einen Token hat, gib den Token zurück.
+        // Andernfalls gib null zurück.
         return user ? user.token : null;
     }
 }
 
-export default new AuthService(); // Exportiert eine einzelne Instanz des AuthService
+// Exportiert eine einzelne, neue Instanz des AuthService.
+// Dies ermöglicht es anderen Teilen der Anwendung, AuthService.login(), AuthService.logout() etc. direkt aufzurufen.
+export default new AuthService();
