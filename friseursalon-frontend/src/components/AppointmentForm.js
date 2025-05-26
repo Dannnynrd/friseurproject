@@ -1,26 +1,29 @@
 import React, { useState, useEffect } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSpinner, faCheckCircle, faExclamationCircle, faInfoCircle } from '@fortawesome/free-solid-svg-icons'; // faInfoCircle für alle Fälle importiert
 import api from '../services/api.service';
 import AuthService from '../services/auth.service';
 
+function AppointmentForm({
+                             onAppointmentBooked,
+                             currentUser,
+                             onRegisterAttempt,
+                             onLoginSuccess,
+                             selectedServiceProp,
+                             selectedDateProp,
+                             selectedTimeProp,
+                             initialNotes,
+                             onNotesChange
+                         }) {
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [email, setEmail] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [password, setPassword] = useState('');
+    const [notes, setNotesState] = useState(initialNotes || '');
 
-// initialService, onRegisterAttempt, currentUser als Props
-function AppointmentForm({ onAppointmentAdded, initialService, onRegisterAttempt, currentUser, onLoginSuccess, selectedService, selectedDate, selectedTime }) {
-    const [services, setServices] = useState([]);
-    // HIER SIND DIE FEHLENDEN STATE-DEKLARATIONEN
-    const [selectedServiceId, setSelectedServiceId] = useState(''); // Muss deklariert sein
-
-    const [firstName, setFirstName] = useState(currentUser?.firstName || '');
-    const [lastName, setLastName] = useState(currentUser?.lastName || '');
-    const [email, setEmail] = useState(currentUser?.email || '');
-    const [phoneNumber, setPhoneNumber] = useState(currentUser?.phoneNumber || '');
-
-    const [password, setPassword] = useState(''); // Passwortfeld für Registrierung während der Buchung
-
-    // HIER SIND DIE FEHLENDEN STATE-DEKLARATIONEN
-    const [date, setDate] = useState(''); // Muss deklariert sein
-    const [time, setTime] = useState(''); // Muss deklariert sein
-    const [notes, setNotes] = useState('');
-    const [message, setMessage] = useState('');
+    const [message, setMessage] = useState({ type: '', text: '' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (currentUser) {
@@ -28,206 +31,216 @@ function AppointmentForm({ onAppointmentAdded, initialService, onRegisterAttempt
             setLastName(currentUser.lastName || '');
             setEmail(currentUser.email || '');
             setPhoneNumber(currentUser.phoneNumber || '');
+            setPassword('');
         } else {
             setFirstName('');
             setLastName('');
             setEmail('');
             setPhoneNumber('');
-        }
-
-        // initialService wird jetzt direkt in BookingPage gehandhabt, aber wir brauchen services zum Mappen
-        // Hier setzen wir selectedServiceId nur, wenn selectedService als Prop übergeben wird
-        if (selectedService) {
-            setSelectedServiceId(selectedService.id.toString());
-        }
-        // Setze Datum und Uhrzeit aus Props
-        if (selectedDate) {
-            setDate(selectedDate);
-        }
-        if (selectedTime) {
-            setTime(selectedTime);
-        }
-
-    }, [initialService, services, currentUser, selectedService, selectedDate, selectedTime]); // Abhängigkeiten aktualisiert
-
-    useEffect(() => {
-        const fetchServices = async () => {
-            try {
-                const response = await api.get('services');
-                setServices(response.data);
-                // Setze initialServiceId, falls selectedService als Prop kommt und Services geladen sind
-                if (selectedService && response.data.length > 0) {
-                    const serviceToSelect = response.data.find(s => s.id === selectedService.id);
-                    if (serviceToSelect) {
-                        setSelectedServiceId(serviceToSelect.id.toString());
-                    }
-                }
-            } catch (error) {
-                console.error("Fehler beim Laden der Dienstleistungen:", error);
-                setMessage('Fehler beim Laden der Dienstleistungen.');
-            }
-        };
-        fetchServices();
-    }, [selectedService]);
-
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        if (!selectedService || !selectedDate || !selectedTime || !firstName || !lastName || !email) {
-            setMessage('Bitte füllen Sie alle erforderlichen Felder aus.');
-            return;
-        }
-        if (!currentUser && !password) {
-            setMessage('Bitte legen Sie ein Passwort für Ihr neues Konto fest.');
-            return;
-        }
-
-
-        const dateTimeString = `${selectedDate}T${selectedTime}:00`;
-
-        try {
-            const newAppointment = {
-                startTime: dateTimeString,
-                service: { id: selectedService.id },
-                customer: {
-                    firstName,
-                    lastName,
-                    email,
-                    phoneNumber
-                },
-                notes
-            };
-
-            const appointmentResponse = await api.post('appointments', newAppointment);
-
-            setMessage(`Termin erfolgreich gebucht für ${firstName} ${lastName} mit Dienstleistung "${selectedService.name}" am ${new Date(appointmentResponse.data.startTime).toLocaleString('de-DE')}.`);
-
-            if (!currentUser && password) {
-                try {
-                    await AuthService.register(firstName, lastName, email, password, phoneNumber, ["user"]);
-                    await AuthService.login(email, password);
-                    onLoginSuccess();
-                    setMessage(prevMsg => `${prevMsg} Ihr Konto wurde erstellt und Sie sind jetzt angemeldet!`);
-                } catch (regLoginError) {
-                    console.error("Fehler bei Registrierung/Login nach Buchung:", regLoginError);
-                    if (regLoginError.response && regLoginError.response.status === 409) {
-                        setMessage(`Fehler: ${regLoginError.response.data.message || 'Diese E-Mail ist bereits registriert. Bitte melden Sie sich an oder verwenden Sie eine andere E-Mail.'}`);
-                    } else {
-                        setMessage(prevMsg => `${prevMsg} Fehler bei der Kontoerstellung/Anmeldung: ${regLoginError.message}`);
-                    }
-                }
-            }
-
-            setSelectedServiceId('');
-            setFirstName(currentUser?.firstName || '');
-            setLastName(currentUser?.lastName || '');
-            setEmail(currentUser?.email || '');
-            setPhoneNumber(currentUser?.phoneNumber || '');
-            setDate('');
-            setTime('');
-            setNotes('');
             setPassword('');
+        }
+        setNotesState(initialNotes || '');
+    }, [currentUser, initialNotes]);
 
-            onAppointmentAdded();
-        } catch (error) {
-            console.error("Fehler beim Buchen des Termins:", error);
-            if (error.response && error.response.status === 400) {
-                setMessage('Fehler bei der Anfrage: Bitte überprüfen Sie Ihre Eingaben (z.B. Datums-/Zeitformat, fehlende IDs).');
-            } else if (error.response && error.response.status === 401) {
-                setMessage('Anmeldung erforderlich, um diesen Vorgang abzuschließen. Bitte melden Sie sich an.');
-            } else if (error.response && error.response.status === 409) {
-                setMessage(`Fehler: ${error.response.data.message || 'Diese E-Mail ist bereits registriert. Bitte melden Sie sich an oder verwenden Sie eine andere E-Mail.'}`);
-            } else {
-                setMessage('Fehler beim Buchen des Termins. Bitte versuchen Sie es erneut.');
-            }
+    const handleNotesChangeInternal = (e) => {
+        const newNotes = e.target.value;
+        setNotesState(newNotes);
+        if (onNotesChange) {
+            onNotesChange(newNotes);
         }
     };
 
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setMessage({ type: '', text: '' });
+
+        if (!selectedServiceProp || !selectedDateProp || !selectedTimeProp) {
+            setMessage({ type: 'error', text: 'Fehler: Dienstleistung, Datum oder Uhrzeit fehlen. Bitte gehen Sie zurück.' });
+            return;
+        }
+
+        if (!firstName.trim() || !lastName.trim() || !email.trim()) {
+            setMessage({ type: 'error', text: 'Bitte füllen Sie Vorname, Nachname und E-Mail aus.' });
+            return;
+        }
+        if (!currentUser && !password.trim()) {
+            setMessage({ type: 'error', text: 'Als neuer Kunde legen Sie bitte ein Passwort für Ihr Konto fest.' });
+            return;
+        }
+        if (!currentUser && password.trim() && password.length < 6) {
+            setMessage({ type: 'error', text: 'Das Passwort muss mindestens 6 Zeichen lang sein.' });
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        const year = selectedDateProp.getFullYear();
+        const month = String(selectedDateProp.getMonth() + 1).padStart(2, '0');
+        const day = String(selectedDateProp.getDate()).padStart(2, '0');
+        const dateTimeString = `${year}-${month}-${day}T${selectedTimeProp}:00`;
+
+        const appointmentData = {
+            startTime: dateTimeString,
+            service: { id: parseInt(selectedServiceProp.id) },
+            customer: {
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                email: email.trim(),
+                phoneNumber: phoneNumber.trim() || null,
+            },
+            notes: notes.trim(),
+        };
+
+        let userRegisteredAndLoggedIn = false;
+
+        if (!currentUser && password && onRegisterAttempt) {
+            const registrationSuccessful = await onRegisterAttempt(email.trim(), firstName.trim(), lastName.trim(), phoneNumber.trim(), password);
+            if (!registrationSuccessful) {
+                setIsSubmitting(false);
+                return;
+            }
+            try {
+                const loginData = await AuthService.login(email.trim(), password);
+                if (loginData.token && onLoginSuccess) {
+                    onLoginSuccess();
+                    userRegisteredAndLoggedIn = true;
+                }
+            } catch (loginError) {
+                console.warn("Automatischer Login nach Registrierung fehlgeschlagen:", loginError);
+                // Die Nachricht über erfolgreiche Registrierung, aber fehlgeschlagenen Login
+                // wird idealerweise in BookingPage gesetzt, da dort der Kontext (z.B. currentUser) aktualisiert wird.
+                // Hier setzen wir eine Fallback-Nachricht, falls onLoginSuccess keine eigene Nachricht setzt.
+                if (!message.text) { // Nur setzen, wenn nicht schon eine spezifischere Nachricht von onRegisterAttempt kam
+                    setMessage({type: 'info', text: 'Konto erstellt. Automatischer Login fehlgeschlagen. Bitte loggen Sie sich ein, um Ihre Buchungen zu sehen.'});
+                }
+            }
+        }
+
+        try {
+            await api.post('/appointments', appointmentData);
+            if (onAppointmentBooked) {
+                onAppointmentBooked(); // Navigiert zu Schritt 4 in BookingPage
+            }
+            // Formular-Reset ist nicht mehr nötig, da die Komponente bei Erfolg durch Step-Wechsel unmounted wird
+            // oder die übergeordnete Komponente den Reset übernimmt.
+        } catch (error) {
+            console.error("Fehler beim Buchen des Termins:", error);
+            let errorMsg = "Ein Fehler ist beim Buchen des Termins aufgetreten. Bitte versuchen Sie es erneut.";
+            if (error.response) {
+                errorMsg = error.response.data?.message || errorMsg;
+                if (error.response.status === 409 && !userRegisteredAndLoggedIn) {
+                    errorMsg = `${errorMsg} Diese E-Mail ist bereits registriert. Bitte melden Sie sich an.`;
+                } else if (userRegisteredAndLoggedIn && error.response.status !== 409) {
+                    errorMsg = `Ihr Konto wurde erstellt, aber die Terminbuchung schlug fehl: ${errorMsg}`;
+                }
+            }
+            setMessage({ type: 'error', text: errorMsg });
+            setIsSubmitting(false); // Wichtig, um den Button wieder freizugeben
+        }
+        // setIsSubmitting(false) wird im Erfolgsfall nicht hier gesetzt, da onAppointmentBooked navigiert
+    };
+
     return (
-        <div className="appointment-form-container p-6 bg-white rounded-lg shadow-md">
-            <h2 className="text-2xl font-serif text-gray-800 mb-4 text-center">Ihre Daten</h2>
-            <p className="text-gray-600 mb-6 text-center">Bitte überprüfen oder ergänzen Sie Ihre Daten für die Buchung.</p>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="form-group">
-                    <label htmlFor="firstName" className="block text-gray-700 text-sm font-bold mb-2">Vorname:</label>
-                    <input
-                        type="text"
-                        id="firstName"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        required
-                        disabled={!!currentUser}
-                    />
+        // Die Klasse "appointment-form-container" wird nicht mehr benötigt,
+        // da das Styling über die globalen .form-group etc. in App.css erfolgt.
+        // Der äußere Container ist .appointment-form-fields in BookingPage.js
+        <div className="appointment-form-fields">
+            {/* Die Überschrift "Ihre Daten" wird jetzt in BookingPage.js gerendert */}
+            {/* <p className="text-gray-600 mb-6 text-center">Bitte überprüfen oder ergänzen Sie Ihre Daten für die Buchung.</p> */}
+
+            <form onSubmit={handleSubmit} className="space-y-form">
+                <div className="form-grid">
+                    <div className="form-group">
+                        <label htmlFor="firstName">Vorname*</label>
+                        <input
+                            type="text"
+                            id="firstName"
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)}
+                            required
+                            disabled={!!currentUser}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="lastName">Nachname*</label>
+                        <input
+                            type="text"
+                            id="lastName"
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                            required
+                            disabled={!!currentUser}
+                        />
+                    </div>
                 </div>
                 <div className="form-group">
-                    <label htmlFor="lastName">Nachname:</label>
-                    <input
-                        type="text"
-                        id="lastName"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        required
-                        disabled={!!currentUser}
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">E-Mail:</label>
+                    <label htmlFor="email">E-Mail*</label>
                     <input
                         type="email"
                         id="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                         required
                         disabled={!!currentUser}
                     />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="phoneNumber">Telefonnummer:</label>
+                    <label htmlFor="phoneNumber">Telefonnummer (optional)</label>
                     <input
                         type="tel"
                         id="phoneNumber"
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                         disabled={!!currentUser}
+                        placeholder="Für Rückfragen oder Terminänderungen"
                     />
                 </div>
 
                 {!currentUser && (
                     <div className="form-group">
-                        <label htmlFor="password">Passwort festlegen (für Konto):</label>
+                        <label htmlFor="password">Passwort für neues Konto*</label>
                         <input
                             type="password"
                             id="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                             required
+                            placeholder="Mindestens 6 Zeichen"
                         />
+                        <p className="form-hint">Wird benötigt, um Ihre Buchungen später zu verwalten.</p>
                     </div>
                 )}
 
-                {/* Termin-Datum und -Uhrzeit (jetzt nur noch als Info, da in BookingPage ausgewählt) */}
-
-
-
                 <div className="form-group">
-                    <label htmlFor="notes" className="block text-gray-700 text-sm font-bold mb-2">Notizen (optional):</label>
+                    <label htmlFor="notes">Anmerkungen (optional)</label>
                     <textarea
                         id="notes"
                         value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-24 resize-none"
-                    ></textarea>
+                        onChange={handleNotesChangeInternal} // Interne Handler-Funktion verwenden
+                        rows="3"
+                        placeholder="Haben Sie spezielle Wünsche oder Informationen für uns?"
+                    />
                 </div>
 
-                <button type="submit" className="bg-accent-color hover:bg-accent-dark text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full">Termin buchen</button>
+                {message.text && (
+                    <p className={`form-message ${message.type} text-center`}> {/* text-center hinzugefügt */}
+                        <FontAwesomeIcon icon={message.type === 'success' ? faCheckCircle : (message.type === 'info' ? faInfoCircle : faExclamationCircle)} />
+                        {message.text}
+                    </p>
+                )}
+
+                <button
+                    type="submit"
+                    className="button-link submit-appointment-button" // Standard Button-Styling
+                    disabled={isSubmitting}
+                >
+                    {isSubmitting ? (
+                        <><FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> Termin wird gebucht...</>
+                    ) : (
+                        "Termin verbindlich buchen"
+                    )}
+                </button>
             </form>
-            {message && <p className="text-center text-red-500 mt-4">{message}</p>}
         </div>
     );
 }
