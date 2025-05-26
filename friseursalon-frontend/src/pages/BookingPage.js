@@ -20,10 +20,17 @@ setDefaultLocale('de');
 
 function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     const { serviceName: initialServiceNameParam } = useParams();
-    const [initialService, setInitialService] = useState(initialServiceNameParam ? decodeURIComponent(initialServiceNameParam) : null);
+    const [initialServiceParam, setInitialServiceParam] = useState(initialServiceNameParam ? decodeURIComponent(initialServiceNameParam) : null);
 
-    // Startet bei Schritt 1, Logik für eingeloggte User wird in useEffect behandelt
-    const [step, setStep] = useState(1);
+    // Bestimme den initialen Schritt basierend auf currentUser und ob ein Service vorausgewählt ist.
+    const determineInitialStep = useCallback(() => {
+        if (initialServiceParam && currentUser) return 2; // Service da, User da -> Datum/Zeit
+        if (initialServiceParam && !currentUser) return 2; // Service da, User nicht da -> Datum/Zeit
+        if (currentUser && !initialServiceParam) return 1; // User da, kein Service -> Service wählen
+        return 1; // Standard: Service wählen
+    }, [currentUser, initialServiceParam]);
+
+    const [step, setStep] = useState(determineInitialStep());
 
     const [selectedService, setSelectedService] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
@@ -47,7 +54,6 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     const [finalBookingMessage, setFinalBookingMessage] = useState({type: '', text: ''});
     const appointmentFormRef = useRef(null);
 
-    // Effekt um Kundendaten zu setzen, wenn currentUser sich ändert oder vorhanden ist
     useEffect(() => {
         if (currentUser) {
             setCustomerDetails(prevDetails => ({
@@ -59,14 +65,11 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                 password: ''
             }));
         }
-        // Kein 'else', um manuelle Eingaben eines Gastes nicht zu überschreiben,
-        // falls er sich später doch nicht einloggt/registriert.
-        // Das Passwortfeld im AppointmentForm wird ohnehin nur angezeigt, wenn !currentUser.
     }, [currentUser]);
 
 
     useEffect(() => {
-        const fetchServicesAndSetInitial = async () => {
+        const fetchServices = async () => {
             setLoadingServices(true);
             setServiceError(null);
             try {
@@ -74,25 +77,18 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                 const fetchedServices = response.data || [];
                 setServices(fetchedServices);
 
-                let currentInitialService = initialService; // Lokale Kopie für diesen Effekt
-                if (initialServiceNameParam && !initialService) { // Wenn URL-Param da, aber State noch nicht gesetzt
-                    currentInitialService = decodeURIComponent(initialServiceNameParam);
-                    setInitialService(currentInitialService); // Setze State für zukünftige Renderings
-                }
-
-
-                if (currentInitialService && fetchedServices.length > 0) {
-                    const service = fetchedServices.find(s => s.name.toLowerCase() === currentInitialService.toLowerCase());
+                if (initialServiceParam && fetchedServices.length > 0) {
+                    const service = fetchedServices.find(s => s.name.toLowerCase() === initialServiceParam.toLowerCase());
                     if (service) {
                         setSelectedService(service);
-                        setStep(2); // Immer zu Schritt 2, wenn Service gewählt
+                        // setStep(2) wird bereits durch determineInitialStep gehandhabt oder wenn User klickt
                     } else {
-                        console.warn(`Vorausgewählter Service "${currentInitialService}" nicht in der geladenen Liste gefunden.`);
-                        setInitialService(null);
+                        console.warn(`Vorausgewählter Service "${initialServiceParam}" nicht in der geladenen Liste gefunden.`);
+                        setInitialServiceParam(null); // Reset, damit der User normal auswählen kann
                     }
-                } else if (currentInitialService) {
-                    console.warn(`Vorausgewählter Service "${currentInitialService}" kann nicht gefunden werden, da keine Services geladen wurden.`);
-                    setInitialService(null);
+                } else if (initialServiceParam) {
+                    console.warn(`Vorausgewählter Service "${initialServiceParam}" kann nicht gefunden werden, da keine Services geladen wurden.`);
+                    setInitialServiceParam(null);
                     setServiceError('Keine Dienstleistungen verfügbar, um den vorausgewählten Service zu prüfen.');
                 }
             } catch (error) {
@@ -102,8 +98,8 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                 setLoadingServices(false);
             }
         };
-        fetchServicesAndSetInitial();
-    }, [initialService, initialServiceNameParam]); // initialServiceNameParam hinzugefügt
+        fetchServices();
+    }, [initialServiceParam]);
 
 
     const generateTimeSlots = useCallback((serviceDurationMinutes) => {
@@ -155,8 +151,8 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
         setCustomerDetails(dataFromForm);
         setRegisterMessage({ type: '', text: '' });
         setFinalBookingMessage({ type: '', text: '' });
-        setStep(4);
-        setIsSubmittingForm(false);
+        setStep(4); // Gehe zu Schritt 4 (Bestätigung)
+        setIsSubmittingForm(false); // Ladezustand für "Weiter"-Button zurücksetzen
     };
 
 
@@ -168,9 +164,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
 
     const handleNextStep = () => {
         if (step === 2 && currentUser && selectedService && selectedDate && selectedTime) {
-            // Eingeloggter User: Von Schritt 2 direkt zu Schritt 4 (Bestätigung)
-            // Kundendaten sind bereits aus currentUser im customerDetails State
-            setStep(4);
+            setStep(4); // Eingeloggter User: Von Schritt 2 direkt zu Schritt 4
         } else if (step === 3) { // Von Schritt 3 (Daten) zu Schritt 4 (Bestätigung)
             setIsSubmittingForm(true);
             if (appointmentFormRef.current) {
@@ -187,10 +181,8 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
             setStep(prev => prev + 1);
         }
     };
-
     const handlePrevStep = () => {
         if (step === 4 && currentUser) {
-            // Eingeloggter User: Von Schritt 4 (Bestätigung) zurück zu Schritt 2 (Datum/Zeit)
             setStep(2);
         } else if (step > 1) {
             setStep(prev => prev - 1);
@@ -221,7 +213,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
             notes: customerDetails.notes.trim(),
         };
 
-        let userRegisteredAndLoggedIn = false;
+        let userJustRegisteredAndLoggedIn = false;
         if (!currentUser && customerDetails.password) {
             const registrationSuccessful = await handleRegisterDuringBooking(
                 customerDetails.email,
@@ -240,8 +232,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                 const loginData = await AuthService.login(customerDetails.email, customerDetails.password);
                 if (loginData.token && onLoginSuccess) {
                     onLoginSuccess(); // Aktualisiert currentUser in App.js
-                    userRegisteredAndLoggedIn = true;
-                    // Die Erfolgsmeldung für die Registrierung wird nun in Schritt 4 angezeigt
+                    userJustRegisteredAndLoggedIn = true; // Wichtig für die Erfolgsnachricht
                     setRegisterMessage({ type: 'success', text: `Konto für ${customerDetails.email} erfolgreich erstellt und Sie wurden angemeldet!`});
                 }
             } catch (loginError) {
@@ -255,15 +246,23 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
             if (onAppointmentAdded) {
                 onAppointmentAdded();
             }
-            setFinalBookingMessage({type: 'success', text: 'Termin erfolgreich gebucht!'});
+            // Erfolgsmeldung wird nun hier gesetzt, um sicherzustellen, dass sie nach erfolgreicher Buchung erscheint
+            let successMsg = 'Termin erfolgreich gebucht!';
+            if(userJustRegisteredAndLoggedIn && registerMessage.type === 'success') {
+                successMsg = registerMessage.text + " " + successMsg; // Kombiniere Nachrichten
+            } else if (userJustRegisteredAndLoggedIn && registerMessage.type === 'info') {
+                successMsg = registerMessage.text + " " + successMsg;
+            }
+            setFinalBookingMessage({type: 'success', text: successMsg});
+            // Bleibe auf Schritt 4, um die Erfolgsmeldung anzuzeigen
         } catch (error) {
             console.error("Fehler beim Buchen des Termins:", error);
             let errorMsg = "Ein Fehler ist beim Buchen des Termins aufgetreten. Bitte versuchen Sie es erneut.";
             if (error.response) {
                 errorMsg = error.response.data?.message || errorMsg;
-                if (error.response.status === 409 && !userRegisteredAndLoggedIn) {
+                if (error.response.status === 409 && !userJustRegisteredAndLoggedIn) {
                     errorMsg = `${errorMsg} Diese E-Mail ist bereits registriert. Bitte melden Sie sich an oder gehen Sie zurück, um Ihre Daten zu ändern.`;
-                } else if (userRegisteredAndLoggedIn && error.response.status !== 409) {
+                } else if (userJustRegisteredAndLoggedIn && error.response.status !== 409) {
                     errorMsg = `Ihr Konto wurde erstellt und Sie sind angemeldet, aber die Terminbuchung schlug fehl: ${errorMsg}`;
                 }
             }
@@ -324,7 +323,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
 
 
     const resetBookingProcess = () => {
-        setInitialService(null);
+        setInitialServiceParam(null); // Wichtig, um URL-Parameter-Logik zurückzusetzen
         setSelectedService(null);
         setSelectedDate(null);
         setSelectedTime('');
@@ -332,24 +331,24 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
         setRegisterMessage({ type: '', text: '' });
         setFinalBookingMessage({ type: '', text: '' });
         setServiceError(null);
-        setStep(1);
+        setStep(determineInitialStep()); // Setzt den Schritt basierend auf dem Login-Status zurück
     };
 
 
-    if (loadingServices && !initialService && step === 1) {
+    if (loadingServices && !initialServiceParam && step === 1) {
         return <div className="page-center-content"><p className="loading-message"><FontAwesomeIcon icon={faSpinner} spin /> Dienstleistungen werden geladen...</p></div>;
     }
     if (serviceError && services.length === 0 && !loadingServices && step === 1) {
         return <div className="page-center-content"><p className="form-message error"><FontAwesomeIcon icon={faExclamationCircle} /> {serviceError}</p></div>;
     }
 
-    const stepLabels = currentUser
+    const visibleStepLabels = currentUser
         ? ["Dienstleistung", "Datum und Zeit", "Bestätigung"]
         : ["Dienstleistung", "Datum und Zeit", "Ihre Daten", "Bestätigung"];
 
-    const getActualStepIndex = (visibleStepIndex) => {
-        if (currentUser && visibleStepIndex >= 2) return visibleStepIndex + 1; // Nach "Datum und Zeit" kommt direkt "Bestätigung" (intern Schritt 4)
-        return visibleStepIndex + 1;
+    const getInternalStepForVisibleStep = (visibleStep) => {
+        if (currentUser && visibleStep >= 3) return visibleStep + 1; // Bestätigung ist intern Schritt 4
+        return visibleStep;
     };
 
 
@@ -358,30 +357,28 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
             <div className="booking-form-container">
                 <h1 className="booking-page-main-heading">Termin buchen</h1>
 
-                <div className="booking-step-indicators">
-                    {stepLabels.map((label, index) => {
-                        const currentVisibleStep = index + 1;
-                        const actualInternalStep = getActualStepIndex(index);
+                <div className={`booking-step-indicators ${currentUser ? 'three-steps' : ''}`}>
+                    {visibleStepLabels.map((label, index) => {
+                        const visibleStepNumber = index + 1;
+                        const internalStepForIndicator = getInternalStepForVisibleStep(visibleStepNumber);
 
-                        const isCurrentStepActive = step === actualInternalStep;
-                        let isStepCompleted = step > actualInternalStep;
+                        const isCurrentStepActive = step === internalStepForIndicator;
+                        let isStepCompleted = step > internalStepForIndicator;
 
-                        if (actualInternalStep === 4 && finalBookingMessage.type === 'success') { // Letzter Schritt (Bestätigung)
+                        if (internalStepForIndicator === 4 && finalBookingMessage.type === 'success') {
                             isStepCompleted = true;
-                        } else if (actualInternalStep === 4 && finalBookingMessage.type !== 'success') {
+                        } else if (internalStepForIndicator === 4 && finalBookingMessage.type !== 'success') {
                             isStepCompleted = false;
                         }
-                        // Alle vorherigen Schritte sind completed, wenn der letzte Schritt (4) erfolgreich ist
-                        if (actualInternalStep < 4 && step === 4 && finalBookingMessage.type === 'success') {
+                        if (internalStepForIndicator < 4 && step === 4 && finalBookingMessage.type === 'success') {
                             isStepCompleted = true;
                         }
 
-
                         return (
-                            <div key={currentVisibleStep} className={`booking-step-indicator ${isCurrentStepActive ? 'active' : ''} ${isStepCompleted ? 'completed' : ''}`}>
+                            <div key={visibleStepNumber} className={`booking-step-indicator ${isCurrentStepActive ? 'active' : ''} ${isStepCompleted ? 'completed' : ''}`}>
                                 <div className="step-number-wrapper">
                                     <span className="step-number">
-                                        {isStepCompleted ? <FontAwesomeIcon icon={faCheck} /> : currentVisibleStep}
+                                        {isStepCompleted ? <FontAwesomeIcon icon={faCheck} /> : visibleStepNumber}
                                     </span>
                                 </div>
                                 <span className="step-label">{label}</span>

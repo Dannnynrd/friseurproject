@@ -49,7 +49,7 @@ const AppointmentForm = forwardRef(({
             setEmail(currentUser.email || effectiveInitialData.email || '');
             setPhoneNumber(currentUser.phoneNumber || effectiveInitialData.phoneNumber || '');
             setPassword('');
-            setNotesState(effectiveInitialData.notes || currentUser.notes || '');
+            setNotesState(effectiveInitialData.notes || ''); // Notizen aus initialData, falls vorhanden, sonst leer
         } else {
             setFirstName(effectiveInitialData.firstName || '');
             setLastName(effectiveInitialData.lastName || '');
@@ -62,11 +62,8 @@ const AppointmentForm = forwardRef(({
 
     const handleFormInternalSubmit = (e) => {
         if (e) e.preventDefault();
-        // Die Logik wird nun von der Parent-Komponente über die Ref getriggert
-        // und onFormSubmit wird dort aufgerufen, wenn die Validierung hier erfolgreich war.
-        // Wir rufen hier onFormSubmit nicht direkt auf.
         const formData = ref.current?.triggerSubmitAndGetData();
-        if (formData && onFormSubmit) {
+        if(formData && onFormSubmit) { // Nur aufrufen, wenn Validierung erfolgreich war
             onFormSubmit(formData);
         }
     };
