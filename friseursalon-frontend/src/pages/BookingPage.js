@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom'; // useNavigate entfernt, da nicht verwendet
+import { useParams, Link } from 'react-router-dom';
 import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css'; // CSS-Import
 import { de } from 'date-fns/locale/de';
@@ -52,9 +52,8 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                         setInitialService(null);
                     }
                 } else if (initialService) {
-                    // Fall: initialService ist gesetzt, aber fetchedServices ist leer
                     console.warn(`Vorausgewählter Service "${initialService}" kann nicht gefunden werden, da keine Services geladen wurden.`);
-                    setInitialService(null); // Zurücksetzen, um Endlosschleife zu vermeiden, falls fetchServices fehlschlägt
+                    setInitialService(null);
                     setServiceError('Keine Dienstleistungen verfügbar, um den vorausgewählten Service zu prüfen.');
                 }
             } catch (error) {
@@ -133,16 +132,13 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
 
     const handleAppointmentBooked = () => {
         if (onAppointmentAdded) {
-            onAppointmentAdded(); // Callback für App.js, falls benötigt
+            onAppointmentAdded();
         }
-        setStep(4); // Gehe zum Bestätigungsschritt
+        setStep(4);
     };
 
     const resetBookingProcess = () => {
-        // initialService wird über useParams neu gesetzt, wenn die Seite neu geladen wird.
-        // Wenn wir hier zu Schritt 1 gehen, ohne die URL zu ändern, bleibt initialService bestehen.
-        // Um einen echten Reset zu erzwingen, könnte man zur Basis /buchen navigieren oder initialService explizit nullen.
-        setInitialService(null); // Dies stellt sicher, dass bei Klick auf "Dienstleistung ändern" keine alte Vorauswahl hängen bleibt
+        setInitialService(null);
         setSelectedService(null);
         setSelectedDate(null);
         setSelectedTime('');
@@ -153,7 +149,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     };
 
 
-    if (loadingServices && !initialService) { // Zeige Ladeanzeige nur, wenn nicht schon ein Service vorausgewählt wurde (und ggf. direkt zu Schritt 2 gesprungen wird)
+    if (loadingServices && !initialService) {
         return <div className="page-center-content"><p className="loading-message"><FontAwesomeIcon icon={faSpinner} spin /> Dienstleistungen werden geladen...</p></div>;
     }
     if (serviceError && services.length === 0 && !loadingServices) {
@@ -173,7 +169,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                         const isStepCompleted = (step > s_idx) || (step === 4 && s_idx < 4);
 
                         if (s_idx === 1) label = "Dienstleistung";
-                        else if (s_idx === 2) label = "Datum & Zeit";
+                        else if (s_idx === 2) label = "Datum und Zeit";
                         else if (s_idx === 3) label = "Ihre Daten";
                         else if (s_idx === 4) label = "Bestätigung";
 
@@ -225,57 +221,72 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
 
                 {step === 2 && selectedService && (
                     <div className="booking-step-content animate-step">
-                        <h2 className="booking-step-heading">2. Datum & Uhrzeit für "{selectedService.name}"</h2>
-                        <p className="booking-step-subheading">
-                            <span>
-                                Gewählte Dienstleistung: <strong>{selectedService.name}</strong>
-                                ({typeof selectedService.price === 'number' ? selectedService.price.toFixed(2) : 'N/A'} € / {selectedService.durationMinutes || '-'} Min)
-                            </span>
+                        <h2 className="booking-step-heading">2. Datum und Uhrzeit wählen</h2>
+                        <div className="booking-step-subheading">
+                            <div className="service-info-text">
+                                <strong>{selectedService.name}</strong>
+                                <span className="service-price-duration">
+                                    ({typeof selectedService.price === 'number' ? selectedService.price.toFixed(2) : 'N/A'} € / {selectedService.durationMinutes || '-'} Min)
+                                </span>
+                            </div>
                             <button type="button" onClick={resetBookingProcess} className="edit-selection-button small-edit">
                                 <FontAwesomeIcon icon={faEdit} /> Ändern
                             </button>
-                        </p>
-                        <div className="datepicker-time-container">
-                            <div className="datepicker-wrapper">
-                                <h3 className="sub-heading"><FontAwesomeIcon icon={faCalendarAlt} /> Datum wählen:</h3>
-                                <DatePicker
-                                    selected={selectedDate}
-                                    onChange={(date) => { setSelectedDate(date); setSelectedTime(''); }}
-                                    locale="de"
-                                    dateFormat="dd.MM.yyyy"
-                                    minDate={new Date()}
-                                    filterDate={date => !isPastDate(date)}
-                                    inline
-                                    calendarClassName="booking-datepicker"
-                                />
+                        </div>
+
+                        {/* "Ihr Termin" Info jetzt hier oben, VOR dem datepicker-time-container */}
+                        {selectedDate && selectedTime && (
+                            <div className="selected-datetime-info summary-above-datepicker">
+                                <FontAwesomeIcon icon={faCheckCircle} />
+                                Ihr Termin: <strong>{selectedDate.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })}</strong> um <strong>{selectedTime} Uhr</strong>
                             </div>
-                            <div className="time-slots-wrapper">
+                        )}
+                        {/* Platzhalter für die Termin-Info, wenn noch nichts ausgewählt ist */}
+                        {!(selectedDate && selectedTime) && (
+                            <div className="selected-datetime-info summary-above-datepicker placeholder">
+                                <FontAwesomeIcon icon={faInfoCircle} /> Bitte Datum und Uhrzeit auswählen.
+                            </div>
+                        )}
+
+
+                        <div className="datepicker-time-container">
+                            <div className="datepicker-wrapper-outer">
+                                <h3 className="sub-heading"><FontAwesomeIcon icon={faCalendarAlt} /> Datum wählen:</h3>
+                                <div className="datepicker-wrapper">
+                                    <DatePicker
+                                        selected={selectedDate}
+                                        onChange={(date) => { setSelectedDate(date); setSelectedTime(''); }}
+                                        locale="de"
+                                        dateFormat="dd.MM.yyyy"
+                                        minDate={new Date()}
+                                        filterDate={date => !isPastDate(date)}
+                                        inline
+                                        calendarClassName="booking-datepicker"
+                                    />
+                                </div>
+                            </div>
+                            <div className="time-slots-wrapper-outer">
                                 <h3 className="sub-heading">
                                     <FontAwesomeIcon icon={faClock} /> Verfügbare Zeiten
                                     {selectedDate ? ` für den ${selectedDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}` : ''}:
                                 </h3>
-                                {selectedDate ? ( availableTimes.length > 0 ? (
-                                        <div className="time-slots-grid">
-                                            {availableTimes.map(time => (
-                                                <button
-                                                    key={time} type="button"
-                                                    onClick={() => setSelectedTime(time)}
-                                                    className={`time-slot-button ${selectedTime === time ? 'selected' : ''}`}
-                                                >
-                                                    {time}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    ) : <p className="no-times-message">Keine Online-Zeiten für diesen Tag verfügbar.</p>
-                                ) : <p className="select-date-message">Bitte wählen Sie zuerst ein Datum.</p>
-                                }
-
-                                {selectedDate && selectedTime && (
-                                    <div className="selected-datetime-info">
-                                        <FontAwesomeIcon icon={faCheckCircle} />
-                                        Ihr Termin: <strong>{selectedDate.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })}</strong> um <strong>{selectedTime} Uhr</strong>
-                                    </div>
-                                )}
+                                <div className="time-slots-wrapper">
+                                    {selectedDate ? ( availableTimes.length > 0 ? (
+                                            <div className="time-slots-grid">
+                                                {availableTimes.map(time => (
+                                                    <button
+                                                        key={time} type="button"
+                                                        onClick={() => setSelectedTime(time)}
+                                                        className={`time-slot-button ${selectedTime === time ? 'selected' : ''}`}
+                                                    >
+                                                        {time}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        ) : <p className="no-times-message">Keine Online-Zeiten für diesen Tag verfügbar.</p>
+                                    ) : <p className="select-date-message">Bitte wählen Sie zuerst ein Datum.</p>
+                                    }
+                                </div>
                             </div>
                         </div>
                         <div className="booking-navigation-buttons">
@@ -291,7 +302,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
 
                 {step === 3 && selectedService && selectedDate && selectedTime && (
                     <div className="booking-step-content animate-step">
-                        <h2 className="booking-step-heading">3. Ihre Daten & Buchung abschließen</h2>
+                        <h2 className="booking-step-heading">3. Ihre Daten und Buchung abschließen</h2>
 
                         <div className="appointment-summary-inline">
                             <p>
@@ -327,7 +338,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                         )}
 
                         <AppointmentForm
-                            onAppointmentBooked={handleAppointmentBooked} // Korrigierter Prop-Name
+                            onAppointmentBooked={handleAppointmentBooked}
                             currentUser={currentUser}
                             onRegisterAttempt={handleRegisterDuringBooking}
                             onLoginSuccess={onLoginSuccess}
@@ -338,7 +349,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                             onNotesChange={setNotes}
                         />
                         <div className="booking-navigation-buttons">
-                            <button type="button" onClick={handlePrevStep} className="button-link-outline"><FontAwesomeIcon icon={faArrowLeft} /> Zurück zu Datum & Zeit</button>
+                            <button type="button" onClick={handlePrevStep} className="button-link-outline"><FontAwesomeIcon icon={faArrowLeft} /> Zurück zu Datum und Zeit</button>
                         </div>
                     </div>
                 )}
@@ -349,7 +360,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                         <h2 className="booking-step-heading">Termin erfolgreich gebucht!</h2>
                         <p>Vielen Dank für Ihre Buchung. {currentUser ? 'Eine Bestätigung finden Sie auch unter "Meine Termine".' : 'Eine Bestätigung wurde an Ihre E-Mail-Adresse gesendet (falls angegeben).'}</p>
                         {selectedService && selectedDate && selectedTime && (
-                            <div className="appointment-summary light"> {/* 'light' Klasse für ggf. helleren Hintergrund */}
+                            <div className="appointment-summary light">
                                 <h4>Ihre Buchungsdetails:</h4>
                                 <p><strong>Dienstleistung:</strong> {selectedService.name}</p>
                                 <p><strong>Datum:</strong> {selectedDate.toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
