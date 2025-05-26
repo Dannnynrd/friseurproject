@@ -526,6 +526,10 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   font-family: var(--font-serif), serif; font-size: 1.8rem; color: var(--dark-text);
   text-align: left; margin-bottom: 1.5rem;
 }
+.booking-confirmation .booking-step-heading {
+  text-align: center;
+}
+
 
 .booking-step-subheading {
   font-size: 0.9rem;
@@ -663,7 +667,6 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   box-shadow: none !important;
   display: block !important;
 }
-/* .datepicker-wrapper ist jetzt im .datepicker-time-container Block oben definiert */
 
 .react-datepicker__month-container {
   width: 100%;
@@ -717,6 +720,7 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   font-weight: bold;
   border-color: var(--dark-text) !important;
   background-color: rgba(0,0,0,0.03) !important;
+  color: var(--dark-text) !important; /* Sicherstellen, dass Text sichtbar ist */
 }
 
 
@@ -794,7 +798,6 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   gap: 0.75rem;
   max-height: 280px;
   overflow-y: auto; padding: 0.75rem;
-  /* Hintergrund und Rahmen werden jetzt vom .time-slots-wrapper übernommen */
 }
 .time-slot-button {
   padding: 0.75rem 0.5rem;
@@ -817,7 +820,6 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   justify-content: center;
   min-height: 150px;
   flex-grow: 1;
-  /* Hintergrund und Rahmen werden jetzt vom .time-slots-wrapper übernommen */
 }
 /* Styling für die "Ihr Termin"-Info und den Platzhalter */
 .selected-datetime-info.summary-above-datepicker {
@@ -829,7 +831,6 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   min-height: 45px;
   display: flex;
   align-items: center;
-  /* gap: 0.6rem; Icon ist entfernt */
   transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 .selected-datetime-info.summary-above-datepicker.placeholder {
@@ -837,10 +838,18 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   border: 1px solid var(--info-color);
   color: var(--info-color);
 }
+.selected-datetime-info.summary-above-datepicker.placeholder .svg-inline--fa { /* Icon für Platzhalter, falls wieder hinzugefügt */
+  /* margin-right: 0.5rem; */
+  /* color: var(--info-color); */
+}
 .selected-datetime-info.summary-above-datepicker:not(.placeholder) {
   background-color: var(--success-bg-light);
   border: 1px solid var(--success-color);
   color: var(--success-color);
+}
+.selected-datetime-info.summary-above-datepicker:not(.placeholder) .svg-inline--fa { /* Icon für Erfolgsfall, falls wieder hinzugefügt */
+  /* margin-right: 0.5rem; */
+  /* color: var(--success-color); */
 }
 .selected-datetime-info.summary-above-datepicker strong {
   font-weight: 600;
@@ -873,7 +882,7 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 }
 
 /* Styling für die Zusammenfassungen in Schritt 3 (inline) und Schritt 4 (final) */
-.appointment-summary-inline { /* Wird in Schritt 3 für die kurze Info verwendet */
+.appointment-summary-inline {
   padding: 0.8rem 1.25rem;
   background-color: var(--light-grey-bg);
   border: 1px solid var(--border-color);
@@ -923,7 +932,7 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 }
 .appointment-summary-final p {
   display: flex;
-  align-items: flex-start; /* Besser für mehrzeilige Inhalte */
+  align-items: flex-start;
   gap: 0.6rem;
   margin-bottom: 0.6rem;
   line-height: 1.6;
@@ -933,7 +942,7 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   color: var(--medium-grey-text);
   width: 1.2em;
   text-align: center;
-  margin-top: 0.15em; /* Leichte Anpassung für vertikale Ausrichtung mit Text */
+  margin-top: 0.15em;
 }
 .appointment-summary-final strong {
   color: var(--dark-text);
@@ -966,31 +975,64 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 
 .booking-confirmation { text-align: center; padding: 2rem 0; }
 .confirmation-icon { font-size: 4rem; color: var(--success-color); margin-bottom: 1.2rem; }
-.booking-confirmation .booking-step-heading { font-family: var(--font-serif), serif; border-bottom: none; margin-bottom: 1rem; font-size: 2rem; }
+.booking-confirmation .booking-step-heading {
+  font-family: var(--font-serif), serif;
+  border-bottom: none;
+  margin-bottom: 1rem;
+  font-size: 2rem;
+  text-align: center; /* Sicherstellen, dass es zentriert ist */
+}
 .booking-confirmation p { color: var(--medium-grey-text); margin-bottom: 1.8rem; font-size: 1.05rem; max-width: 500px; margin-left: auto; margin-right: auto;}
 .booking-confirmation .appointment-summary.light {
   background-color: var(--light-bg);
   border: 1px solid var(--border-color);
-  padding: 1rem;
-  border-radius: 6px;
+  padding: 1.5rem;
+  border-radius: 8px;
   margin-top: 1.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
   text-align: left;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 .booking-confirmation .appointment-summary.light h4 {
   font-family: var(--font-sans), sans-serif;
   font-weight: 600;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
   color: var(--dark-text);
+  font-size: 1.1rem;
 }
 .booking-confirmation .appointment-summary.light p {
   font-size: 0.9rem;
   color: var(--medium-grey-text);
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.5rem;
 }
 .booking-confirmation .appointment-summary.light p strong {
   color: var(--dark-text);
 }
+
+/* Buttons für Kalender-Aktionen */
+.calendar-actions {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column; /* Untereinander für mobile Ansicht */
+  align-items: center; /* Zentriert die Buttons */
+  gap: 0.75rem; /* Abstand zwischen den Buttons */
+}
+@media (min-width: 576px) { /* Nebeneinander auf größeren Bildschirmen */
+  .calendar-actions {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+.calendar-actions .button-link-outline.small-button {
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  min-width: 200px; /* Gibt den Buttons eine gute Breite */
+}
+.calendar-actions .button-link-outline.small-button .svg-inline--fa {
+  margin-right: 0.4rem;
+}
+
 
 .confirmation-buttons { justify-content: center; gap: 1rem; display: flex; flex-wrap: wrap; }
 .confirmation-buttons .button-link, .confirmation-buttons .button-link-outline {
@@ -1222,10 +1264,10 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 
 .auth-button,
 .service-form .submit-button,
-.appointment-form-fields .submit-appointment-button
+.appointment-form-fields .submit-appointment-button /* Wird in BookingPage.js für den "Weiter zur Zusammenfassung"-Button genutzt */
 {
   width: 100%;
-  margin-top: 0.5rem;
+  margin-top: 0.5rem; /* Sorgt für Abstand, wenn es der einzige Button in einer Gruppe ist */
 }
 .auth-form .switch-button {
   background: none;
@@ -1468,7 +1510,7 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .footer-column h4 { font-family: var(--font-serif), serif; font-size: 1.1rem; color: var(--light-text-on-dark); margin-bottom: 0.8rem; }
 .footer-column ul { list-style: none; padding: 0; }
 .footer-column li { margin-bottom: 0.4rem; }
-.footer-column a.interactive { color: rgba(245,245,255,0.7); text-decoration: none; transition: color 0.2s ease; background: none; border: none; padding: 0; }
+.footer-column a.interactive { color: rgba(245,245,245,0.7); text-decoration: none; transition: color 0.2s ease; background: none; border: none; padding: 0; }
 .footer-column a.interactive:hover {
   color: var(--light-text-on-dark); text-decoration: underline;
 }
