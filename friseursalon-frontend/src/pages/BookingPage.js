@@ -22,7 +22,9 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     const { serviceName: initialServiceNameParam } = useParams();
     const [initialService, setInitialService] = useState(initialServiceNameParam ? decodeURIComponent(initialServiceNameParam) : null);
 
+    // Startet bei Schritt 1, Logik für eingeloggte User wird in useEffect behandelt
     const [step, setStep] = useState(1);
+
     const [selectedService, setSelectedService] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
     const [selectedTime, setSelectedTime] = useState('');
@@ -40,33 +42,31 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
         notes: '',
         password: ''
     });
-    const [isSubmittingForm, setIsSubmittingForm] = useState(false); // Für "Weiter zur Zusammenfassung" Button
+    const [isSubmittingForm, setIsSubmittingForm] = useState(false);
     const [isSubmittingFinal, setIsSubmittingFinal] = useState(false);
     const [finalBookingMessage, setFinalBookingMessage] = useState({type: '', text: ''});
     const appointmentFormRef = useRef(null);
 
-
+    // Effekt um Kundendaten zu setzen, wenn currentUser sich ändert oder vorhanden ist
     useEffect(() => {
         if (currentUser) {
             setCustomerDetails(prevDetails => ({
                 ...prevDetails,
-                firstName: currentUser.firstName || prevDetails.firstName || '',
-                lastName: currentUser.lastName || prevDetails.lastName || '',
-                email: currentUser.email || prevDetails.email || '',
-                phoneNumber: currentUser.phoneNumber || prevDetails.phoneNumber || '',
+                firstName: currentUser.firstName || '',
+                lastName: currentUser.lastName || '',
+                email: currentUser.email || '',
+                phoneNumber: currentUser.phoneNumber || '',
                 password: ''
             }));
-        } else {
-            setCustomerDetails(prevDetails => ({
-                ...prevDetails,
-                password: prevDetails.password || ''
-            }));
         }
+        // Kein 'else', um manuelle Eingaben eines Gastes nicht zu überschreiben,
+        // falls er sich später doch nicht einloggt/registriert.
+        // Das Passwortfeld im AppointmentForm wird ohnehin nur angezeigt, wenn !currentUser.
     }, [currentUser]);
 
 
     useEffect(() => {
-        const fetchServices = async () => {
+        const fetchServicesAndSetInitial = async () => {
             setLoadingServices(true);
             setServiceError(null);
             try {
@@ -74,17 +74,24 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                 const fetchedServices = response.data || [];
                 setServices(fetchedServices);
 
-                if (initialService && fetchedServices.length > 0) {
-                    const service = fetchedServices.find(s => s.name.toLowerCase() === initialService.toLowerCase());
+                let currentInitialService = initialService; // Lokale Kopie für diesen Effekt
+                if (initialServiceNameParam && !initialService) { // Wenn URL-Param da, aber State noch nicht gesetzt
+                    currentInitialService = decodeURIComponent(initialServiceNameParam);
+                    setInitialService(currentInitialService); // Setze State für zukünftige Renderings
+                }
+
+
+                if (currentInitialService && fetchedServices.length > 0) {
+                    const service = fetchedServices.find(s => s.name.toLowerCase() === currentInitialService.toLowerCase());
                     if (service) {
                         setSelectedService(service);
-                        setStep(2);
+                        setStep(2); // Immer zu Schritt 2, wenn Service gewählt
                     } else {
-                        console.warn(`Vorausgewählter Service "${initialService}" nicht in der geladenen Liste gefunden.`);
+                        console.warn(`Vorausgewählter Service "${currentInitialService}" nicht in der geladenen Liste gefunden.`);
                         setInitialService(null);
                     }
-                } else if (initialService) {
-                    console.warn(`Vorausgewählter Service "${initialService}" kann nicht gefunden werden, da keine Services geladen wurden.`);
+                } else if (currentInitialService) {
+                    console.warn(`Vorausgewählter Service "${currentInitialService}" kann nicht gefunden werden, da keine Services geladen wurden.`);
                     setInitialService(null);
                     setServiceError('Keine Dienstleistungen verfügbar, um den vorausgewählten Service zu prüfen.');
                 }
@@ -95,8 +102,8 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                 setLoadingServices(false);
             }
         };
-        fetchServices();
-    }, [initialService]);
+        fetchServicesAndSetInitial();
+    }, [initialService, initialServiceNameParam]); // initialServiceNameParam hinzugefügt
 
 
     const generateTimeSlots = useCallback((serviceDurationMinutes) => {
@@ -160,24 +167,37 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     };
 
     const handleNextStep = () => {
-        if (step === 3) {
+        if (step === 2 && currentUser && selectedService && selectedDate && selectedTime) {
+            // Eingeloggter User: Von Schritt 2 direkt zu Schritt 4 (Bestätigung)
+            // Kundendaten sind bereits aus currentUser im customerDetails State
+            setStep(4);
+        } else if (step === 3) { // Von Schritt 3 (Daten) zu Schritt 4 (Bestätigung)
             setIsSubmittingForm(true);
             if (appointmentFormRef.current) {
                 const formData = appointmentFormRef.current.triggerSubmitAndGetData();
                 if (formData) {
                     handleDataFromAppointmentForm(formData);
                 } else {
-                    // Validierung im Formular fehlgeschlagen, Nachricht wird im Formular angezeigt
-                    setIsSubmittingForm(false); // Wichtig: Ladezustand zurücksetzen
+                    setIsSubmittingForm(false);
                 }
             } else {
-                setIsSubmittingForm(false); // Fallback, falls Ref nicht da ist
+                setIsSubmittingForm(false);
             }
         } else if (step < 4) {
             setStep(prev => prev + 1);
         }
     };
-    const handlePrevStep = () => setStep(prev => prev > 1 ? prev - 1 : 1);
+
+    const handlePrevStep = () => {
+        if (step === 4 && currentUser) {
+            // Eingeloggter User: Von Schritt 4 (Bestätigung) zurück zu Schritt 2 (Datum/Zeit)
+            setStep(2);
+        } else if (step > 1) {
+            setStep(prev => prev - 1);
+        }
+        setFinalBookingMessage({ type: '', text: '' });
+        setRegisterMessage({ type: '', text: '' });
+    };
 
     const handleFinalBooking = async () => {
         setIsSubmittingFinal(true);
@@ -212,7 +232,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
             );
             if (!registrationSuccessful) {
                 setIsSubmittingFinal(false);
-                setFinalBookingMessage({type: 'error', text: registerMessage.text || 'Registrierung fehlgeschlagen. Bitte überprüfen Sie Ihre Daten in Schritt 3.'})
+                setFinalBookingMessage({type: 'error', text: registerMessage.text || 'Registrierung fehlgeschlagen. Bitte überprüfen Sie Ihre Daten.'})
                 setStep(3);
                 return;
             }
@@ -221,11 +241,12 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                 if (loginData.token && onLoginSuccess) {
                     onLoginSuccess(); // Aktualisiert currentUser in App.js
                     userRegisteredAndLoggedIn = true;
+                    // Die Erfolgsmeldung für die Registrierung wird nun in Schritt 4 angezeigt
                     setRegisterMessage({ type: 'success', text: `Konto für ${customerDetails.email} erfolgreich erstellt und Sie wurden angemeldet!`});
                 }
             } catch (loginError) {
                 console.warn("Automatischer Login nach Registrierung fehlgeschlagen:", loginError);
-                setRegisterMessage({type: 'info', text: 'Konto erstellt, aber automatischer Login fehlgeschlagen. Bitte loggen Sie sich später manuell ein.'});
+                setRegisterMessage({type: 'info', text: 'Konto erstellt, aber automatischer Login fehlgeschlagen. Ihre Buchung wird dennoch versucht.'});
             }
         }
 
@@ -235,7 +256,6 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                 onAppointmentAdded();
             }
             setFinalBookingMessage({type: 'success', text: 'Termin erfolgreich gebucht!'});
-            // Der Step bleibt 4, aber die UI ändert sich basierend auf finalBookingMessage.type
         } catch (error) {
             console.error("Fehler beim Buchen des Termins:", error);
             let errorMsg = "Ein Fehler ist beim Buchen des Termins aufgetreten. Bitte versuchen Sie es erneut.";
@@ -267,7 +287,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
             d.setHours(parseInt(hours), parseInt(minutes), 0, 0);
             if (durationMinutes && !isNaN(parseInt(durationMinutes))) {
                 d.setMinutes(d.getMinutes() + parseInt(durationMinutes));
-            } else { // Fallback, falls keine Dauer vorhanden ist (z.B. 1 Stunde)
+            } else {
                 d.setHours(d.getHours() + 1);
             }
             return d.toISOString().replace(/-|:|\.\d{3}/g, "");
@@ -281,13 +301,13 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
             "VERSION:2.0",
             "PRODID:-//Friseursalon IMW//Terminbuchung v1.0//DE",
             "BEGIN:VEVENT",
-            `UID:${Date.now()}-${selectedService.id}@friseursalon-imw.de`, // Eindeutigere ID
+            `UID:${Date.now()}-${selectedService.id}@friseursalon-imw.de`,
             `DTSTAMP:${new Date().toISOString().replace(/-|:|\.\d{3}/g, "")}`,
             `DTSTART:${startDateStr}`,
             `DTEND:${endDateStr}`,
             `SUMMARY:Friseurtermin: ${selectedService.name}`,
             `DESCRIPTION:Ihr Termin für ${selectedService.name}.${customerDetails.notes ? ' Ihre Anmerkungen: ' + customerDetails.notes : ''}`,
-            "LOCATION:Friseursalon IMW, Musterstraße 1, 12345 Musterstadt", // Beispieladresse anpassen
+            "LOCATION:Friseursalon IMW, Musterstraße 1, 12345 Musterstadt",
             "END:VEVENT",
             "END:VCALENDAR"
         ].join("\r\n");
@@ -323,7 +343,14 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
         return <div className="page-center-content"><p className="form-message error"><FontAwesomeIcon icon={faExclamationCircle} /> {serviceError}</p></div>;
     }
 
-    const stepLabels = ["Dienstleistung", "Datum und Zeit", "Ihre Daten", "Bestätigung"];
+    const stepLabels = currentUser
+        ? ["Dienstleistung", "Datum und Zeit", "Bestätigung"]
+        : ["Dienstleistung", "Datum und Zeit", "Ihre Daten", "Bestätigung"];
+
+    const getActualStepIndex = (visibleStepIndex) => {
+        if (currentUser && visibleStepIndex >= 2) return visibleStepIndex + 1; // Nach "Datum und Zeit" kommt direkt "Bestätigung" (intern Schritt 4)
+        return visibleStepIndex + 1;
+    };
 
 
     return (
@@ -333,27 +360,28 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
 
                 <div className="booking-step-indicators">
                     {stepLabels.map((label, index) => {
-                        const s_idx = index + 1;
-                        const isCurrentStepActive = step === s_idx;
-                        let isStepCompleted = step > s_idx;
-                        // Schritt 4 (Bestätigung) ist nur "completed", wenn die Buchung erfolgreich war
-                        if (s_idx === 4 && finalBookingMessage.type === 'success') {
+                        const currentVisibleStep = index + 1;
+                        const actualInternalStep = getActualStepIndex(index);
+
+                        const isCurrentStepActive = step === actualInternalStep;
+                        let isStepCompleted = step > actualInternalStep;
+
+                        if (actualInternalStep === 4 && finalBookingMessage.type === 'success') { // Letzter Schritt (Bestätigung)
                             isStepCompleted = true;
-                        } else if (s_idx === 4 && finalBookingMessage.type !== 'success') {
-                            // Wenn Schritt 4 aktiv ist, aber Buchung nicht erfolgreich, ist er nicht completed
+                        } else if (actualInternalStep === 4 && finalBookingMessage.type !== 'success') {
                             isStepCompleted = false;
                         }
-                        // Alle vorherigen Schritte sind completed, wenn Schritt 4 erreicht (und erfolgreich) ist
-                        if (s_idx < 4 && step === 4 && finalBookingMessage.type === 'success') {
+                        // Alle vorherigen Schritte sind completed, wenn der letzte Schritt (4) erfolgreich ist
+                        if (actualInternalStep < 4 && step === 4 && finalBookingMessage.type === 'success') {
                             isStepCompleted = true;
                         }
 
 
                         return (
-                            <div key={s_idx} className={`booking-step-indicator ${isCurrentStepActive ? 'active' : ''} ${isStepCompleted ? 'completed' : ''}`}>
+                            <div key={currentVisibleStep} className={`booking-step-indicator ${isCurrentStepActive ? 'active' : ''} ${isStepCompleted ? 'completed' : ''}`}>
                                 <div className="step-number-wrapper">
                                     <span className="step-number">
-                                        {isStepCompleted ? <FontAwesomeIcon icon={faCheck} /> : s_idx}
+                                        {isStepCompleted ? <FontAwesomeIcon icon={faCheck} /> : currentVisibleStep}
                                     </span>
                                 </div>
                                 <span className="step-label">{label}</span>
@@ -362,7 +390,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                     })}
                 </div>
 
-                {serviceError && services.length > 0 && step < 3 && (
+                {serviceError && services.length > 0 && step < (currentUser ? 4 : 3) && (
                     <p className="form-message error mb-4"><FontAwesomeIcon icon={faExclamationCircle} /> {serviceError}</p>
                 )}
 
@@ -467,14 +495,19 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                             <button type="button" onClick={resetBookingProcess} className="button-link-outline">
                                 <FontAwesomeIcon icon={faArrowLeft} /> Dienstleistung ändern
                             </button>
-                            <button type="button" onClick={handleNextStep} disabled={!selectedDate || !selectedTime} className="button-link">
-                                Weiter zu Ihren Daten <FontAwesomeIcon icon={faArrowRight} />
+                            <button
+                                type="button"
+                                onClick={handleNextStep}
+                                disabled={!selectedDate || !selectedTime}
+                                className="button-link"
+                            >
+                                {currentUser ? "Weiter zur Bestätigung" : "Weiter zu Ihren Daten"} <FontAwesomeIcon icon={faArrowRight} />
                             </button>
                         </div>
                     </div>
                 )}
 
-                {step === 3 && selectedService && selectedDate && selectedTime && (
+                {step === 3 && !currentUser && selectedService && selectedDate && selectedTime && (
                     <div className="booking-step-content animate-step">
                         <h2 className="booking-step-heading">3. Ihre persönlichen Daten</h2>
                         <div className="appointment-summary-inline">
@@ -495,8 +528,8 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                         <AppointmentForm
                             ref={appointmentFormRef}
                             currentUser={currentUser}
-                            initialData={customerDetails} // Übergibt die bereits erfassten oder currentUser Daten
-                            onFormSubmit={handleDataFromAppointmentForm} // Wird aufgerufen, wenn das interne Formular validiert ist
+                            initialData={customerDetails}
+                            onFormSubmit={handleDataFromAppointmentForm}
                         />
                         <div className="booking-navigation-buttons">
                             <button type="button" onClick={handlePrevStep} className="button-link-outline" disabled={isSubmittingForm}>
@@ -504,7 +537,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                             </button>
                             <button
                                 type="button"
-                                onClick={handleNextStep} // Löst den Submit des AppointmentForm aus
+                                onClick={handleNextStep}
                                 className="button-link"
                                 disabled={isSubmittingForm}
                             >
@@ -520,7 +553,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                             <div className="booking-confirmation">
                                 <FontAwesomeIcon icon={faCheckCircle} className="confirmation-icon" />
                                 <h2 className="booking-step-heading">Termin erfolgreich gebucht!</h2>
-                                <p>Vielen Dank für Ihre Buchung. {currentUser || customerDetails.email ? 'Eine Bestätigung wurde an Ihre E-Mail-Adresse gesendet und Sie finden den Termin ggf. unter "Meine Termine".' : ''}</p>
+                                <p>Vielen Dank für Ihre Buchung. {AuthService.getCurrentUser() || customerDetails.email ? 'Eine Bestätigung wurde an Ihre E-Mail-Adresse gesendet und Sie finden den Termin ggf. unter "Meine Termine".' : ''}</p>
                                 <div className="appointment-summary light">
                                     <h4>Ihre Buchungsdetails:</h4>
                                     <p><strong>Dienstleistung:</strong> {selectedService.name}</p>
@@ -569,7 +602,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
 
                                 <div className="booking-navigation-buttons">
                                     <button type="button" onClick={handlePrevStep} className="button-link-outline" disabled={isSubmittingFinal}>
-                                        <FontAwesomeIcon icon={faArrowLeft} /> Zurück zu Ihren Daten
+                                        <FontAwesomeIcon icon={faArrowLeft} /> Zurück {currentUser ? "zu Datum und Zeit" : "zu Ihren Daten"}
                                     </button>
                                     <button
                                         type="button"

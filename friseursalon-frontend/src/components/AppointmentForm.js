@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle, faExclamationCircle, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
-// api und AuthService werden hier nicht mehr direkt für den Submit benötigt
 
 const AppointmentForm = forwardRef(({
                                         currentUser,
@@ -16,13 +15,12 @@ const AppointmentForm = forwardRef(({
     const [notes, setNotesState] = useState('');
     const [message, setMessage] = useState({ type: '', text: '' });
 
-    // Expose eine Funktion, um das Formular von außen zu validieren und Daten zu erhalten
     useImperativeHandle(ref, () => ({
         triggerSubmitAndGetData: () => {
-            setMessage({ type: '', text: '' }); // Nachricht bei jedem Versuch zurücksetzen
+            setMessage({ type: '', text: '' });
             if (!firstName.trim() || !lastName.trim() || !email.trim()) {
                 setMessage({ type: 'error', text: 'Bitte füllen Sie Vorname, Nachname und E-Mail aus.' });
-                return null; // Signalisiert Validierungsfehler
+                return null;
             }
             if (!currentUser && !password.trim()) {
                 setMessage({ type: 'error', text: 'Als neuer Kunde legen Sie bitte ein Passwort für Ihr Konto fest.' });
@@ -32,7 +30,6 @@ const AppointmentForm = forwardRef(({
                 setMessage({ type: 'error', text: 'Das Passwort muss mindestens 6 Zeichen lang sein.' });
                 return null;
             }
-            // Wenn Validierung erfolgreich, Daten zurückgeben
             return {
                 firstName: firstName.trim(),
                 lastName: lastName.trim(),
@@ -45,46 +42,38 @@ const AppointmentForm = forwardRef(({
     }));
 
     useEffect(() => {
+        const effectiveInitialData = initialData || {};
         if (currentUser) {
-            setFirstName(currentUser.firstName || '');
-            setLastName(currentUser.lastName || '');
-            setEmail(currentUser.email || '');
-            setPhoneNumber(currentUser.phoneNumber || '');
+            setFirstName(currentUser.firstName || effectiveInitialData.firstName || '');
+            setLastName(currentUser.lastName || effectiveInitialData.lastName || '');
+            setEmail(currentUser.email || effectiveInitialData.email || '');
+            setPhoneNumber(currentUser.phoneNumber || effectiveInitialData.phoneNumber || '');
             setPassword('');
-            setNotesState(initialData?.notes || currentUser.notes || '');
-        } else if (initialData) {
-            setFirstName(initialData.firstName || '');
-            setLastName(initialData.lastName || '');
-            setEmail(initialData.email || '');
-            setPhoneNumber(initialData.phoneNumber || '');
-            setPassword(initialData.password || '');
-            setNotesState(initialData.notes || '');
+            setNotesState(effectiveInitialData.notes || currentUser.notes || '');
         } else {
-            setFirstName('');
-            setLastName('');
-            setEmail('');
-            setPhoneNumber('');
-            setPassword('');
-            setNotesState('');
+            setFirstName(effectiveInitialData.firstName || '');
+            setLastName(effectiveInitialData.lastName || '');
+            setEmail(effectiveInitialData.email || '');
+            setPhoneNumber(effectiveInitialData.phoneNumber || '');
+            setPassword(effectiveInitialData.password || '');
+            setNotesState(effectiveInitialData.notes || '');
         }
     }, [currentUser, initialData]);
 
-    // Diese Funktion wird nicht mehr direkt durch einen Button hier ausgelöst,
-    // sondern durch die Parent-Komponente über die Ref.
-    const handleInternalFormSubmit = (e) => {
-        // Verhindert Standard-Form-Submit, falls das <form>-Tag verwendet wird
+    const handleFormInternalSubmit = (e) => {
         if (e) e.preventDefault();
-
-        // Validierung und Datenübergabe erfolgt durch triggerSubmitAndGetData,
-        // das von der Parent-Komponente aufgerufen wird.
-        // Hier ist kein direkter Aufruf von onFormSubmit mehr nötig,
-        // da dies in der triggerSubmitAndGetData-Logik (indirekt über Parent) geschieht.
+        // Die Logik wird nun von der Parent-Komponente über die Ref getriggert
+        // und onFormSubmit wird dort aufgerufen, wenn die Validierung hier erfolgreich war.
+        // Wir rufen hier onFormSubmit nicht direkt auf.
+        const formData = ref.current?.triggerSubmitAndGetData();
+        if (formData && onFormSubmit) {
+            onFormSubmit(formData);
+        }
     };
 
     return (
         <div className="appointment-form-fields">
-            {/* Die id "appointment-data-form" wird für den externen Submit benötigt */}
-            <form onSubmit={handleInternalFormSubmit} className="space-y-form" id="appointment-data-form">
+            <form onSubmit={handleFormInternalSubmit} className="space-y-form" id="appointment-data-form">
                 <div className="form-grid">
                     <div className="form-group">
                         <label htmlFor="firstName">Vorname*</label>
@@ -164,7 +153,6 @@ const AppointmentForm = forwardRef(({
                         {message.text}
                     </p>
                 )}
-                {/* Versteckter Submit-Button, um Enter-Key-Submit im Formular zu ermöglichen, falls gewünscht */}
                 <button type="submit" style={{ display: 'none' }} aria-hidden="true">Submit Form</button>
             </form>
         </div>
