@@ -1,88 +1,116 @@
-import React, { useState } from 'react';
-import AppointmentForm from '../components/AppointmentForm'; // Zum Buchen auf dem Dashboard
-import AppointmentList from '../components/AppointmentList'; // Für eigene Termine / alle Termine
-import ServiceForm from '../components/ServiceForm'; // Für Admin-Service-Verwaltung
-import ServiceList from '../components/ServiceList'; // Für Admin-Service-Verwaltung
+import React, { useState, useEffect } from 'react';
+import AppointmentForm from '../components/AppointmentForm';
+import AppointmentList from '../components/AppointmentList';
+import ServiceForm from '../components/ServiceForm';
+import ServiceList from '../components/ServiceList';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendarPlus, faClipboardList, faUser, faTools, faSignOutAlt, faChevronRight, faChevronDown } from '@fortawesome/free-solid-svg-icons';
-import { Link } from 'react-router-dom';
-import './AccountDashboard.css'; // Importiere die Dashboard-spezifische CSS-Datei
+import './AccountDashboard.css'; // Deine Dashboard-spezifische CSS-Datei [cite: dannnynrd/friseurproject/friseurproject-3ba4766c73e0414802ba8d6734f09adb9ffbc074/friseursalon-frontend/src/pages/AccountDashboard.css]
 
 function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppointmentsList, onServiceAdded, refreshServicesList }) {
-    const [activeTab, setActiveTab] = useState('bookings'); // Standard-Tab: 'Meine Termine'
-    const [activeAccordion, setActiveAccordion] = useState(null); // Für Akkordeon-Funktionalität auf Mobilgeräten
+    // State für den aktuell aktiven Tab. Standardmäßig 'bookings' (Meine Termine).
+    const [activeTab, setActiveTab] = useState('bookings');
+    // State für das aktuell geöffnete Akkordeon-Element in der mobilen Ansicht.
+    const [activeAccordion, setActiveAccordion] = useState(null);
+    // State, um zu erkennen, ob die mobile Ansicht aktiv ist.
+    const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
 
+    // Bestimmt, ob der aktuelle Benutzer ein Administrator ist.
     const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes("ROLE_ADMIN");
 
-    // Akkordeon-Funktion für mobile Ansicht
+    // useEffect-Hook, um auf Änderungen der Fenstergröße zu reagieren und isMobileView zu aktualisieren.
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobileView(window.innerWidth <= 768);
+        };
+        window.addEventListener('resize', handleResize);
+        // Cleanup-Funktion: Entfernt den EventListener, wenn die Komponente unmounted wird.
+        return () => window.removeEventListener('resize', handleResize);
+    }, []); // Leeres Abhängigkeitsarray bedeutet, dass dieser Effekt nur beim Mounten und Unmounten ausgeführt wird.
+
+    // Funktion zum Umschalten des Akkordeon-Status in der mobilen Ansicht.
     const toggleAccordion = (tabName) => {
         setActiveAccordion(activeAccordion === tabName ? null : tabName);
     };
 
-    // Hilfsfunktion zum Rendern eines Navigations-Buttons
-    const renderNavButton = (tabName, icon, label, condition = true) => {
-        if (!condition) return null;
+    // Zentrale Funktion zum Rendern des Inhalts basierend auf dem aktiven Tab.
+    // Wird sowohl für die Desktop-Ansicht als auch für das mobile Akkordeon verwendet.
+    const renderTabContent = (tabName) => {
+        switch (tabName) {
+            case 'bookNew': // Tab: Neuen Termin buchen
+                return !isAdmin && ( // Nur anzeigen, wenn der Benutzer kein Admin ist.
+                    <div className="dashboard-section-content">
+                        <h2 className="dashboard-section-heading">Neuen Termin buchen</h2>
+                        <AppointmentForm onAppointmentAdded={onAppointmentAdded} currentUser={currentUser} />
+                    </div>
+                );
+            case 'bookings': // Tab: Meine Termine
+                return (
+                    <div className="dashboard-section-content">
+                        <h2 className="dashboard-section-heading">Meine Termine</h2>
+                        {/* AppointmentList zeigt Termine basierend auf currentUser (eigene oder alle für Admin) */}
+                        <AppointmentList refreshTrigger={refreshAppointmentsList} currentUser={currentUser} />
+                    </div>
+                );
+            case 'profile': // Tab: Mein Profil
+                return (
+                    <div className="dashboard-section-content">
+                        <h2 className="dashboard-section-heading">Mein Profil</h2>
+                        <div className="dashboard-profile-info">
+                            <p><strong>Vorname:</strong> {currentUser?.firstName}</p>
+                            <p><strong>Nachname:</strong> {currentUser?.lastName}</p>
+                            <p><strong>E-Mail:</strong> {currentUser?.email}</p>
+                            <p><strong>Telefon:</strong> {currentUser?.phoneNumber || 'Nicht angegeben'}</p>
+                            <p><strong>Rollen:</strong> {currentUser?.roles?.join(', ')}</p>
+                        </div>
+                    </div>
+                );
+            case 'adminServices': // Tab: Dienstleistungen verwalten (nur für Admins)
+                return isAdmin && (
+                    <div className="dashboard-section-content">
+                        <h2 className="dashboard-section-heading">Dienstleistungen verwalten</h2>
+                        <ServiceForm onServiceAdded={onServiceAdded} />
+                        <hr className="dashboard-section-hr" />
+                        {/* ServiceList zeigt alle Services zur Bearbeitung an */}
+                        <ServiceList key={refreshServicesList} currentUser={currentUser} />
+                    </div>
+                );
+            default: // Fallback, falls kein gültiger Tab-Name übergeben wird.
+                return null;
+        }
+    };
 
-        const isActive = activeTab === tabName;
-        const isAccordionOpen = activeAccordion === tabName;
+    // Hilfsfunktion zum Rendern der Navigations-Buttons in der Sidebar/Akkordeon.
+    const renderNavButton = (tabName, icon, label, condition = true) => {
+        if (!condition) return null; // Button nicht rendern, wenn die Bedingung nicht erfüllt ist.
+
+        const isActive = activeTab === tabName; // Ist dieser Button der aktuell aktive Tab?
+        const isAccordionOpen = activeAccordion === tabName; // Ist das zugehörige Akkordeon geöffnet?
 
         return (
             <li key={tabName} className="dashboard-nav-item">
                 <button
                     onClick={() => {
-                        setActiveTab(tabName);
-                        // Akkordeon umschalten nur, wenn auf Mobilgerät
-                        if (window.innerWidth <= 768) { // Prüfen der Bildschirmbreite
+                        setActiveTab(tabName); // Setzt den aktiven Tab.
+                        if (isMobileView) { // Wenn mobile Ansicht, Akkordeon umschalten.
                             toggleAccordion(tabName);
                         }
                     }}
                     className={`dashboard-nav-button ${isActive ? 'active' : ''}`}
                 >
                     <FontAwesomeIcon icon={icon} /> {label}
-                    {window.innerWidth <= 768 && ( // Chevron-Icon nur auf Mobilgeräten anzeigen
+                    {isMobileView && ( // Zeigt Chevron-Icon nur in mobiler Ansicht.
                         <FontAwesomeIcon icon={isAccordionOpen ? faChevronDown : faChevronRight} className="ml-auto" />
                     )}
                 </button>
-                {window.innerWidth <= 768 && isAccordionOpen && ( // Akkordeon-Inhalt nur auf Mobilgeräten anzeigen
+                {isMobileView && isAccordionOpen && ( // Zeigt Akkordeon-Inhalt nur in mobiler Ansicht, wenn geöffnet.
                     <div className="dashboard-accordion-content">
-                        {tabName === 'bookNew' && !isAdmin && (
-                            <div className="dashboard-section-content">
-                                <h2 className="dashboard-section-heading">Neuen Termin buchen</h2>
-                                <AppointmentForm onAppointmentAdded={onAppointmentAdded} currentUser={currentUser} />
-                            </div>
-                        )}
-                        {tabName === 'bookings' && (
-                            <div className="dashboard-section-content">
-                                <h2 className="dashboard-section-heading">Meine Termine</h2>
-                                <AppointmentList refreshTrigger={refreshAppointmentsList} currentUser={currentUser} />
-                            </div>
-                        )}
-                        {tabName === 'profile' && (
-                            <div className="dashboard-section-content">
-                                <h2 className="dashboard-section-heading">Mein Profil</h2>
-                                <div className="dashboard-profile-info">
-                                    <p><strong>Vorname:</strong> {currentUser?.firstName}</p>
-                                    <p><strong>Nachname:</strong> {currentUser?.lastName}</p>
-                                    <p><strong>E-Mail:</strong> {currentUser?.email}</p>
-                                    <p><strong>Telefon:</strong> {currentUser?.phoneNumber || 'Nicht angegeben'}</p>
-                                    <p><strong>Rollen:</strong> {currentUser?.roles?.join(', ')}</p>
-                                </div>
-                            </div>
-                        )}
-                        {tabName === 'adminServices' && isAdmin && (
-                            <div className="dashboard-section-content">
-                                <h2 className="dashboard-section-heading">Dienstleistungen verwalten</h2>
-                                <ServiceForm onServiceAdded={onServiceAdded} />
-                                <hr className="dashboard-section-hr" />
-                                <ServiceList key={refreshServicesList} />
-                            </div>
-                        )}
+                        {renderTabContent(tabName)}
                     </div>
                 )}
             </li>
         );
     };
-
 
     return (
         <div className="account-dashboard-container">
@@ -108,12 +136,10 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                         </ul>
                     </div>
 
-                    {/* Main Content Area (nur auf größeren Bildschirmen sichtbar) */}
-                    {/* Auf Mobilgeräten wird der Inhalt im Akkordeon gerendert */}
-                    {window.innerWidth > 768 && (
+                    {/* Hauptinhaltsbereich (nur auf Desktop sichtbar) */}
+                    {!isMobileView && (
                         <div className="dashboard-content">
-                            {/* Inhalt wird von renderContent() gerendert */}
-                            {renderContent()}
+                            {renderTabContent(activeTab)} {/* Rendert den Inhalt des aktiven Tabs */}
                         </div>
                     )}
                 </div>
