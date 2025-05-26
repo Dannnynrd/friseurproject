@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import './App.css'; // Dein gesamtes CSS
-import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom'; // useLocation hinzugefügt
+import './App.css';
+import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUserCircle, faSignOutAlt, faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faUserCircle, faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
 
-// Importiere alle dynamischen Komponenten
+// Dynamische Komponenten
 import Login from './components/Login';
 import AuthService from './services/auth.service';
 import AuthVerify from './common/AuthVerify';
 import EventBus from './common/EventBus';
 
-// Importiere alle statischen Design-Komponenten
+// Statische Design-Komponenten
 import HeroSection from './components/HeroSection';
 import TrustBarSection from './components/TrustBarSection';
 import ExperienceSection from './components/ExperienceSection';
@@ -24,7 +24,7 @@ import LocationSection from './components/LocationSection';
 import NewsletterSection from './components/NewsletterSection';
 import Footer from './components/Footer';
 
-// Importiere die Seiten
+// Seiten
 import BookingPage from './pages/BookingPage';
 import AccountDashboard from './pages/AccountDashboard';
 
@@ -36,23 +36,34 @@ const ProtectedRoute = ({ children, currentUser, redirectPath = '/login' }) => {
 };
 
 function App() {
-    const [refreshServicesList, setRefreshServicesList] = useState(0);
-    const [refreshAppointmentsList, setRefreshAppointmentsList] = useState(0);
     const [currentUser, setCurrentUser] = useState(undefined);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
 
+    const [refreshServicesList, setRefreshServicesList] = useState(0); // Wird das noch gebraucht?
+    const [refreshAppointmentsList, setRefreshAppointmentsList] = useState(0); // Wird das noch gebraucht?
 
     const headerRef = useRef(null);
-    const cursorRef = useRef(null);
     const preloaderRef = useRef(null);
     const navigate = useNavigate();
-    const location = useLocation(); // Um auf Routenänderungen zu reagieren
+    const location = useLocation();
 
-    // Schließe das mobile Menü bei Routenänderung
+    // Schließt mobiles Menü bei Routenänderung
     useEffect(() => {
         closeMobileMenu();
-    }, [location]);
+    }, [location.pathname]); // Nur bei Pfadänderung
+
+    // Body-Klasse für Scroll-Sperre bei offenem mobilen Menü
+    useEffect(() => {
+        const bodyClass = 'mobile-menu-active';
+        if (isMobileMenuOpen) {
+            document.body.classList.add(bodyClass);
+            document.documentElement.classList.add(bodyClass); // Für html-Tag
+        } else {
+            document.body.classList.remove(bodyClass);
+            document.documentElement.classList.remove(bodyClass);
+        }
+    }, [isMobileMenuOpen]);
 
     const logOut = useCallback(() => {
         AuthService.logout();
@@ -61,8 +72,8 @@ function App() {
         navigate('/');
     }, [navigate]);
 
-    const handleServiceAdded = useCallback(() => setRefreshServicesList(prev => prev + 1), []);
-    const handleAppointmentAdded = useCallback(() => setRefreshAppointmentsList(prev => prev + 1), []);
+    const handleServiceAdded = useCallback(() => setRefreshServicesList(p => p + 1), []);
+    const handleAppointmentAdded = useCallback(() => setRefreshAppointmentsList(p => p + 1), []);
 
     const handleLoginSuccess = useCallback(() => {
         const user = AuthService.getCurrentUser();
@@ -73,75 +84,69 @@ function App() {
 
     useEffect(() => {
         const user = AuthService.getCurrentUser();
-        if (user) {
-            setCurrentUser(user);
-        }
+        if (user) setCurrentUser(user);
+
         const handleLogoutEvent = () => logOut();
         EventBus.on("logout", handleLogoutEvent);
         return () => EventBus.remove("logout", handleLogoutEvent);
     }, [logOut]);
 
-    // Preloader, Cursor, Sticky Header Effekte
+    // Preloader und Sticky Header
     useEffect(() => {
         const preloader = preloaderRef.current;
         let preloaderTimeoutId;
         if (preloader) {
-            preloaderTimeoutId = setTimeout(() => preloader.classList.add('loaded'), 1000);
-        }
-
-        const cursor = cursorRef.current;
-        let mouseMoveHandler, mouseEnterHandler, mouseLeaveHandler;
-        let interactiveElements = [];
-
-        if (window.innerWidth > 768 && cursor) {
-            mouseMoveHandler = e => {
-                cursor.style.left = e.clientX + 'px';
-                cursor.style.top = e.clientY + 'px';
-            };
-            window.addEventListener('mousemove', mouseMoveHandler);
-
-            // Selektiere Elemente dynamisch, nachdem die Seite geladen ist
-            interactiveElements = Array.from(document.querySelectorAll('.interactive'));
-            mouseEnterHandler = () => cursor.classList.add('hovered');
-            mouseLeaveHandler = () => cursor.classList.remove('hovered');
-
-            interactiveElements.forEach(el => {
-                el.addEventListener('mouseenter', mouseEnterHandler);
-                el.addEventListener('mouseleave', mouseLeaveHandler);
-            });
+            preloaderTimeoutId = setTimeout(() => preloader.classList.add('loaded'), 300); // Schnellere Preloader-Zeit
         }
 
         const header = headerRef.current;
         let scrollHandler;
         if (header) {
             scrollHandler = () => {
-                const scrolled = window.scrollY > 50;
+                const scrolled = window.scrollY > 20; // Früher "scrolled"
                 header.classList.toggle('scrolled', scrolled);
-                setIsHeaderScrolled(scrolled); // State aktualisieren
+                setIsHeaderScrolled(scrolled); // Nur den State setzen, Klasse wird direkt manipuliert
             };
-            window.addEventListener('scroll', scrollHandler);
+            window.addEventListener('scroll', scrollHandler, { passive: true });
             scrollHandler(); // Initialer Check
         }
-
         return () => {
             if (preloaderTimeoutId) clearTimeout(preloaderTimeoutId);
-            if (mouseMoveHandler) window.removeEventListener('mousemove', mouseMoveHandler);
-            interactiveElements.forEach(el => {
-                el.removeEventListener('mouseenter', mouseEnterHandler);
-                el.removeEventListener('mouseleave', mouseLeaveHandler);
-            });
             if (scrollHandler && header) window.removeEventListener('scroll', scrollHandler);
         };
-    }, []); // Leeres Array, damit es nur beim Mounten/Unmounten läuft
+    }, []);
 
+    // Dynamisches Body-Padding basierend auf Header-Höhe
+    useEffect(() => {
+        const updateBodyPadding = () => {
+            if (headerRef.current) {
+                const headerHeight = headerRef.current.offsetHeight;
+                document.body.style.paddingTop = `${headerHeight}px`;
+            }
+        };
+
+        updateBodyPadding(); // Initial
+        const resizeObserver = new ResizeObserver(updateBodyPadding);
+        if (headerRef.current) {
+            resizeObserver.observe(headerRef.current);
+        }
+
+        // Timeout, um die Höhe nach CSS-Transitionen des Headers (z.B. beim Scrollen) neu zu berechnen
+        const transitionTimeout = setTimeout(updateBodyPadding, 300);
+
+        return () => {
+            if (headerRef.current) resizeObserver.unobserve(headerRef.current);
+            clearTimeout(transitionTimeout);
+        };
+    }, [isHeaderScrolled, isMobileMenuOpen, location.pathname]); // Reagiert auf relevante Änderungen
 
     const openBookingModal = useCallback((serviceName = null) => {
         const path = serviceName ? `/buchen/${encodeURIComponent(serviceName)}` : '/buchen';
         navigate(path);
-        closeMobileMenu(); // Menü schließen
+        closeMobileMenu();
     }, [navigate]);
 
-    const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+    const toggleMobileMenu = () => setIsMobileMenuOpen(prev => !prev);
     const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
     const HomePageLayout = () => (
@@ -167,10 +172,13 @@ function App() {
 
     return (
         <div className="App">
-            <div id="cursor-dot" ref={cursorRef}></div>
             <div id="preloader" ref={preloaderRef}><span className="loader-char">IMW</span></div>
 
-            <header className={`header ${isHeaderScrolled ? 'scrolled' : ''}`} id="header" ref={headerRef}>
+            <header
+                className={`header ${isHeaderScrolled ? 'scrolled' : ''} ${isMobileMenuOpen ? 'menu-open-header-state' : ''}`}
+                id="header"
+                ref={headerRef}
+            >
                 <div className="container navbar">
                     <Link to="/" className="logo" onClick={closeMobileMenu}>IMW</Link>
 
@@ -183,27 +191,24 @@ function App() {
                         <FontAwesomeIcon icon={isMobileMenuOpen ? faTimes : faBars} />
                     </button>
 
-                    <nav className={`nav-links ${isMobileMenuOpen ? 'open' : ''}`} id="main-nav">
-                        <a href="/#experience" className="interactive nav-link-item" onClick={closeMobileMenu}>Erfahrung</a>
-                        <a href="/#about-founder" className="interactive nav-link-item" onClick={closeMobileMenu}>Über Mich</a>
-                        <a href="/#services-dynamic" className="interactive nav-link-item" onClick={closeMobileMenu}>Services</a>
-                        <a href="/#gallery-journal" className="interactive nav-link-item" onClick={closeMobileMenu}>Galerie</a>
-                        <a href="/#faq" className="interactive nav-link-item" onClick={closeMobileMenu}>FAQ</a>
+                    <nav className={`nav-links-container ${isMobileMenuOpen ? 'open' : ''}`} id="main-nav">
+                        <div className="main-nav-group">
+                            <a href="/#experience" className="interactive nav-link-item" onClick={closeMobileMenu}>Erfahrung</a>
+                            <a href="/#about-founder" className="interactive nav-link-item" onClick={closeMobileMenu}>Über Mich</a>
+                            <a href="/#services-dynamic" className="interactive nav-link-item" onClick={closeMobileMenu}>Services</a>
+                            <a href="/#gallery-journal" className="interactive nav-link-item" onClick={closeMobileMenu}>Galerie</a>
+                            <a href="/#faq" className="interactive nav-link-item" onClick={closeMobileMenu}>FAQ</a>
+                        </div>
 
                         <div className="nav-auth-actions">
                             {currentUser ? (
-                                <>
-                                    <Link to="/my-account" className="interactive nav-link-item" onClick={closeMobileMenu}>
-                                        <FontAwesomeIcon icon={faUserCircle} /> Mein Account
-                                    </Link>
-                                    <button onClick={() => { logOut(); closeMobileMenu(); }} className="interactive nav-button-like nav-link-item">
-                                        <FontAwesomeIcon icon={faSignOutAlt} /> Abmelden
-                                    </button>
-                                </>
+                                <Link to="/my-account" className="interactive nav-link-item account-link" onClick={closeMobileMenu}>
+                                    <FontAwesomeIcon icon={faUserCircle} /> Mein Account
+                                </Link>
                             ) : (
-                                <Link to="/login" className="interactive nav-link-item" onClick={closeMobileMenu}>Login</Link>
+                                <Link to="/login" className="interactive nav-link-item login-link" onClick={closeMobileMenu}>Login</Link>
                             )}
-                            <Link to="/buchen" className="button-link interactive nav-cta nav-link-item" onClick={closeMobileMenu}>Termin buchen</Link>
+                            <Link to="/buchen" className="button-link interactive nav-cta" onClick={closeMobileMenu}>Termin buchen</Link>
                         </div>
                     </nav>
                 </div>
@@ -218,7 +223,7 @@ function App() {
                     path="/login"
                     element={
                         currentUser ? <Navigate to="/my-account" replace /> :
-                            <div className="page-center-content"> {/* Eigene Klasse für Zentrierung */}
+                            <div className="page-center-content">
                                 <Login onLoginSuccess={handleLoginSuccess} />
                             </div>
                     }

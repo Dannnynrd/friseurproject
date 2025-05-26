@@ -1,22 +1,21 @@
-import React, { useState, useEffect } from 'react';
-// import AppointmentList from '../components/AppointmentList'; // DIESER IMPORT WIRD ENTFERNT (da AppointmentList im Dashboard ist)
-import AppointmentForm from '../components/AppointmentForm';
-import AuthService from '../services/auth.service';
+import React, { useState, useEffect, useCallback } from 'react';
+// Alle 'import'-Anweisungen zuerst und gruppiert:
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { de } from 'date-fns/locale/de';
+import api from '../services/api.service'; // Import für die konfigurierte Axios-Instanz
+import AuthService from '../services/auth.service';
+import AppointmentForm from '../components/AppointmentForm';
 
-// Import für Datepicker
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css'; // Styling für Datepicker
-import { registerLocale, setDefaultLocale } from 'react-datepicker';
-import de from 'date-fns/locale/de'; // Deutsche Lokalisierung
+// Funktionsaufrufe NACH allen Imports:
 registerLocale('de', de);
 setDefaultLocale('de');
 
-function BookingPage({ onAppointmentAdded, refreshAppointmentsList, currentUser, onLoginSuccess }) {
+function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     const { serviceName: initialServiceNameParam } = useParams();
-    // initialService und setInitialService werden genutzt
-    const [initialService, setInitialService] = useState(initialServiceNameParam || null);
-    // navigate wird genutzt
+    // initialService wird jetzt direkt aus dem dekodierten Parameter gesetzt oder ist null
+    const [initialService, setInitialService] = useState(initialServiceNameParam ? decodeURIComponent(initialServiceNameParam) : null);
     const navigate = useNavigate();
 
     const [step, setStep] = useState(1);
@@ -29,216 +28,234 @@ function BookingPage({ onAppointmentAdded, refreshAppointmentsList, currentUser,
     const [serviceError, setServiceError] = useState(null);
     const [registerMessage, setRegisterMessage] = useState('');
 
-    // Effekt zum Laden der Dienstleistungen beim ersten Rendern
+    // WICHTIG: 'notes' State-Variable definieren
+    const [notes, setNotes] = useState('');
+
+    // Effekt zum Laden der Dienstleistungen
     useEffect(() => {
         const fetchServices = async () => {
+            setLoadingServices(true);
+            setServiceError(null);
             try {
-                const response = await AuthService.api.get('services');
-                setServices(response.data);
-                setLoadingServices(false);
-                // Wenn ein initialer Service über die URL kommt, wähle ihn direkt aus
-                if (initialServiceNameParam) {
-                    const service = response.data.find(s => s.name === initialServiceNameParam);
+                const response = await api.get('/services'); // Korrekter API-Aufruf
+                const fetchedServices = response.data || [];
+                setServices(fetchedServices);
+
+                if (initialService && fetchedServices.length > 0) {
+                    const service = fetchedServices.find(s => s.name === initialService);
                     if (service) {
                         setSelectedService(service);
                         setStep(2);
+                    } else {
+                        console.warn(`Vorausgewählter Service "${initialService}" nicht in der geladenen Liste gefunden.`);
+                        // Optional: initialService zurücksetzen, wenn nicht gefunden, um Verwirrung zu vermeiden
+                        // setInitialService(null); // oder eine Fehlermeldung setzen
                     }
                 }
             } catch (error) {
                 console.error("Fehler beim Laden der Dienstleistungen:", error);
-                setServiceError('Dienstleistungen konnten nicht geladen werden.');
+                setServiceError('Dienstleistungen konnten nicht geladen werden. Bitte versuchen Sie es später erneut.');
+            } finally {
                 setLoadingServices(false);
             }
         };
         fetchServices();
-    }, [initialServiceNameParam]);
+    }, [initialService]); // Abhängigkeit von initialService ist korrekt hier
 
-    // Funktion zum Generieren von Zeit-Slots
-    const generateTimeSlots = (durationMinutes) => {
+    // Funktion zum Generieren von Zeit-Slots (Beispiel, muss ggf. an Backend angepasst werden)
+    const generateTimeSlots = useCallback((serviceDurationMinutes) => {
         const slots = [];
-        const startHour = 9;
-        const endHour = 18;
+        if (!selectedDate || !serviceDurationMinutes) return slots;
 
-        for (let h = startHour; h <= endHour; h++) {
-            for (let m = 0; m < 60; m += 30) {
-                const time = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-                slots.push(time);
+        const openingHour = 9; const closingHour = 18;
+        const slotInterval = 30;
+        const dayOfWeek = selectedDate.getDay();
+
+        if (dayOfWeek === 0) return slots; // Sonntag geschlossen
+
+        for (let hour = openingHour; hour < closingHour; hour++) {
+            for (let minute = 0; minute < 60; minute += slotInterval) {
+                const slotTime = new Date(selectedDate);
+                slotTime.setHours(hour, minute, 0, 0);
+                const endTime = new Date(slotTime.getTime() + serviceDurationMinutes * 60000);
+                if (endTime.getHours() < closingHour || (endTime.getHours() === closingHour && endTime.getMinutes() === 0)) {
+                    slots.push(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
+                }
             }
         }
         return slots;
-    };
+    }, [selectedDate]); // selectedDate als Abhängigkeit
 
     // Effekt zum Aktualisieren der verfügbaren Zeiten
     useEffect(() => {
         if (selectedDate && selectedService) {
             setAvailableTimes(generateTimeSlots(selectedService.durationMinutes));
+        } else {
+            setAvailableTimes([]);
         }
-    }, [selectedDate, selectedService]);
-
+    }, [selectedDate, selectedService, generateTimeSlots]);
 
     // Callback für die Registrierung während der Buchung
     const handleRegisterDuringBooking = async (customerEmail, customerFirstName, customerLastName, customerPhoneNumber, password) => {
+        setRegisterMessage('');
         try {
-            const isEmailTaken = await AuthService.checkEmailExists(customerEmail);
-            if (isEmailTaken) {
-                setRegisterMessage(`Die E-Mail-Adresse ${customerEmail} ist bereits registriert. Bitte melden Sie sich an, um Ihre Termine zu verwalten.`);
-                return;
-            }
-
+            // Hinweis: AuthService.register wurde in deinem Code nicht direkt verwendet,
+            // aber wenn es für Gast-Registrierung gedacht ist, hier der Aufruf:
             await AuthService.register(customerFirstName, customerLastName, customerEmail, password, customerPhoneNumber, ["user"]);
-            setRegisterMessage(`Konto für ${customerEmail} erstellt! Sie können sich jetzt mit dieser E-Mail und dem gewählten Passwort anmelden.`);
+            setRegisterMessage(`Konto für ${customerEmail} erstellt! Sie können sich jetzt anmelden.`);
+            return true;
         } catch (error) {
             console.error("Fehler bei der Registrierung während der Buchung:", error);
             setRegisterMessage(`Fehler bei der Registrierung: ${error.response?.data?.message || error.message}`);
+            return false;
         }
     };
 
+    const isPastDate = (date) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return date < today;
+    };
 
+    // JSX Struktur (aus deinem "code vorher" übernommen und leicht angepasst)
     return (
-        <div className="booking-page-container" style={{paddingTop: '8rem', paddingBottom: '4rem', backgroundColor: 'var(--light-bg)', minHeight: '100vh'}}>
-            <section id="booking-main">
-                <div className="container">
-                    <h1 className="text-center text-5xl font-serif text-gray-800 mb-8">Termin buchen</h1>
-                    <p className="text-center text-lg text-gray-600 mb-12">Wählen Sie Ihre gewünschte Dienstleistung, Datum und Uhrzeit, um Ihren Termin zu vereinbaren.</p>
+        <div className="booking-page-container container"> {/* Globale Klasse aus App.css nutzen */}
+            <div className="booking-form-container"> {/* Spezifischer Container für das Formular */}
+                <h1 className="booking-page-main-heading">Termin buchen</h1>
+                <p className="booking-page-subheading">Wählen Sie Ihre gewünschte Dienstleistung, Datum und Uhrzeit.</p>
 
-                    {/* Schritt-Indikatoren */}
-                    <div className="flex justify-center mb-8">
-                        <div className={`flex items-center mx-2 ${step >= 1 ? 'text-accent-color' : 'text-gray-400'}`}>
-                            <span className="text-xl font-bold mr-2">1</span>
-                            <span className="text-lg">Dienstleistung</span>
-                        </div>
-                        <div className={`flex items-center mx-2 ${step >= 2 ? 'text-accent-color' : 'text-gray-400'}`}>
-                            <span className="text-xl font-bold mr-2">2</span>
-                            <span className="text-lg">Datum & Zeit</span>
-                        </div>
-                        <div className={`flex items-center mx-2 ${step >= 3 ? 'text-accent-color' : 'text-gray-400'}`}>
-                            <span className="text-xl font-bold mr-2">3</span>
-                            <span className="text-lg">Ihre Daten</span>
+                <div className="booking-step-indicators">
+                    <div className={`booking-step-indicator ${step >= 1 ? 'active' : ''}`}><span>1</span>Dienstleistung</div>
+                    <div className={`booking-step-indicator ${step >= 2 ? 'active' : ''}`}><span>2</span>Datum & Zeit</div>
+                    <div className={`booking-step-indicator ${step >= 3 ? 'active' : ''}`}><span>3</span>Ihre Daten</div>
+                </div>
+
+                {serviceError && <p className="form-message error">{serviceError}</p>}
+
+                {step === 1 && (
+                    <div className="booking-step-content">
+                        <h2 className="booking-step-heading">Dienstleistung auswählen</h2>
+                        {loadingServices && <p className="text-center text-gray-600 mb-4">Dienstleistungen werden geladen...</p>}
+                        {!loadingServices && !serviceError && services.length === 0 && (
+                            <p className="form-message info">Aktuell sind keine Dienstleistungen online buchbar.</p>
+                        )}
+                        <div className="services-grid">
+                            {services.map(service => (
+                                <div
+                                    key={service.id}
+                                    onClick={() => { setSelectedService(service); setSelectedDate(null); setSelectedTime(''); setStep(2); }}
+                                    className={`service-card ${selectedService?.id === service.id ? 'selected' : ''}`}
+                                    role="button" tabIndex={0}
+                                    onKeyPress={(e) => { if (e.key === 'Enter') { setSelectedService(service); setSelectedDate(null); setSelectedTime(''); setStep(2); }}}
+                                >
+                                    <h3 className="service-name">{service.name}</h3>
+                                    <p className="service-description">{service.description}</p>
+                                    <p className="service-details">
+                                        {service.price.toFixed(2)} € / {service.durationMinutes} Min
+                                    </p>
+                                </div>
+                            ))}
                         </div>
                     </div>
+                )}
 
-                    {/* Inhalt basierend auf dem Schritt */}
-                    {serviceError && <p className="text-center text-red-500 mb-4">{serviceError}</p>}
-                    {loadingServices && <p className="text-center text-gray-600 mb-4">Dienstleistungen werden geladen...</p>}
-
-                    {/* Schritt 1: Dienstleistung auswählen */}
-                    {step === 1 && !loadingServices && !serviceError && (
-                        <div className="bg-white p-8 rounded-lg shadow-md max-w-2xl mx-auto">
-                            <h2 className="text-2xl font-serif text-gray-800 mb-6 text-center border-b pb-4">Dienstleistung auswählen</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {services.map(service => (
-                                    <div
-                                        key={service.id}
-                                        onClick={() => { setSelectedService(service); setStep(2); }}
-                                        className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${selectedService?.id === service.id ? 'border-accent-color bg-accent-color text-white' : 'border-gray-300 hover:border-accent-color hover:shadow-sm'}`}
-                                        style={{fontFamily: 'var(--font-sans), sans-serif'}}
-                                    >
-                                        <h3 className="text-xl font-bold mb-1">{service.name}</h3>
-                                        <p className="text-sm mb-2">{service.description}</p>
-                                        <p className="text-lg font-semibold">{service.price.toFixed(2)} € / {service.durationMinutes} Min</p>
-                                    </div>
-                                ))}
+                {step === 2 && selectedService && (
+                    <div className="booking-step-content">
+                        <h2 className="booking-step-heading">Datum & Uhrzeit für "{selectedService.name}"</h2>
+                        <div className="datepicker-time-container">
+                            <div className="datepicker-wrapper">
+                                <h3 className="sub-heading">Datum wählen:</h3>
+                                <DatePicker
+                                    selected={selectedDate}
+                                    onChange={(date) => { setSelectedDate(date); setSelectedTime(''); }}
+                                    locale="de"
+                                    dateFormat="dd.MM.yyyy"
+                                    minDate={new Date()}
+                                    filterDate={date => !isPastDate(date)}
+                                    inline
+                                    calendarClassName="booking-datepicker"
+                                />
                             </div>
-                        </div>
-                    )}
-
-                    {/* Schritt 2: Datum und Uhrzeit auswählen */}
-                    {step === 2 && selectedService && (
-                        <div className="bg-white p-8 rounded-lg shadow-md max-w-2xl mx-auto">
-                            <h2 className="text-2xl font-serif text-gray-800 mb-6 text-center border-b pb-4">Datum & Uhrzeit für "{selectedService.name}"</h2>
-
-                            <div className="flex flex-col md:flex-row gap-6 justify-center items-start">
-                                {/* Datepicker */}
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="text-xl font-bold text-gray-700 mb-3">Datum wählen:</h3>
-                                    <DatePicker
-                                        selected={selectedDate}
-                                        onChange={(date) => setSelectedDate(date)}
-                                        dateFormat="dd.MM.yyyy"
-                                        minDate={new Date()}
-                                        inline
-                                        locale="de"
-                                        className="w-full"
-                                        calendarClassName="custom-datepicker-calendar" // Für Custom Styling
-                                    />
-                                </div>
-
-                                {/* Zeit-Slots */}
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="text-xl font-bold text-gray-700 mb-3">Verfügbare Zeiten:</h3>
-                                    {selectedDate ? (
-                                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-80 overflow-y-auto border p-2 rounded-lg bg-gray-50">
-                                            {availableTimes.length > 0 ? (
-                                                availableTimes.map(time => (
-                                                    <button
-                                                        key={time}
-                                                        onClick={() => setSelectedTime(time)}
-                                                        className={`px-3 py-2 rounded-lg text-sm transition-colors duration-200 ${selectedTime === time ? 'bg-accent-color text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                                                    >
-                                                        {time}
-                                                    </button>
-                                                ))
-                                            ) : (
-                                                <p className="col-span-full text-center text-gray-500">Keine Zeiten verfügbar.</p>
-                                            )}
+                            <div className="time-slots-wrapper">
+                                <h3 className="sub-heading">Verfügbare Zeiten:</h3>
+                                {selectedDate ? (
+                                    availableTimes.length > 0 ? (
+                                        <div className="time-slots-grid">
+                                            {availableTimes.map(time => (
+                                                <button
+                                                    key={time} type="button"
+                                                    onClick={() => setSelectedTime(time)}
+                                                    className={`time-slot-button ${selectedTime === time ? 'selected' : ''}`}
+                                                >
+                                                    {time}
+                                                </button>
+                                            ))}
                                         </div>
                                     ) : (
-                                        <p className="text-center text-gray-500">Bitte wählen Sie zuerst ein Datum.</p>
-                                    )}
-                                    {selectedTime && (
-                                        <p className="text-center text-gray-700 mt-4 text-lg font-semibold">Ausgewählt: {selectedDate.toLocaleDateString('de-DE')} um {selectedTime}</p>
-                                    )}
-                                    <button
-                                        onClick={() => setStep(3)}
-                                        disabled={!selectedDate || !selectedTime}
-                                        className="mt-6 bg-accent-color hover:bg-accent-dark text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
-                                    >
-                                        Weiter zu Ihren Daten
-                                    </button>
-                                </div>
+                                        <p className="no-times-message">Keine Zeiten für diesen Tag verfügbar.</p>
+                                    )
+                                ) : (
+                                    <p className="select-date-message">Bitte wählen Sie zuerst ein Datum.</p>
+                                )}
+                                {selectedTime && selectedDate && ( // Sicherstellen, dass selectedDate auch existiert
+                                    <p className="selected-datetime-info">
+                                        Ausgewählt: {selectedDate.toLocaleDateString('de-DE')} um {selectedTime} Uhr
+                                    </p>
+                                )}
                             </div>
-                            <button onClick={() => setStep(1)} className="mt-6 text-accent-color hover:underline">Zurück zur Dienstleistungsauswahl</button>
                         </div>
-                    )}
-
-                    {/* Schritt 3: Persönliche Daten eingeben & Bestätigen */}
-                    {step === 3 && selectedService && selectedDate && selectedTime && (
-                        <div className="max-w-2xl mx-auto">
-                            {/* Login/Registrierungs-Aufforderung, wenn nicht angemeldet */}
-                            {!currentUser && (
-                                <div className="text-center p-4 border border-gray-300 rounded-lg mb-6 bg-blue-50">
-                                    <h3 className="text-xl font-serif text-gray-800 mb-2">Bereits Kunde? Jetzt anmelden.</h3>
-                                    <p className="text-gray-600 mb-3">Melden Sie sich an, um Ihre Daten vorauszufüllen und Ihre Termine im Bereich "Mein Account" zu verwalten. Oder buchen Sie als Gast und erhalten Sie danach die Option zur Kontoerstellung.</p>
-                                    <Link to="/login" className="bg-accent-color hover:bg-accent-dark text-white font-bold py-2 px-4 rounded">Jetzt anmelden</Link>
-                                </div>
-                            )}
-
-                            {/* Nachricht nach Registrierungsversuch */}
-                            {registerMessage && (
-                                <div className="text-center p-3 rounded-lg bg-gray-100 mb-4">
-                                    <p className="text-gray-700">{registerMessage}</p>
-                                </div>
-                            )}
-
-                            <AppointmentForm
-                                onAppointmentAdded={onAppointmentAdded}
-                                initialService={selectedService.name} // Übergabe des Service-Namens
-                                currentUser={currentUser}
-                                onRegisterAttempt={handleRegisterDuringBooking}
-                                onLoginSuccess={onLoginSuccess}
-                                selectedService={selectedService} // NEU: Ausgewählten Service übergeben
-                                selectedDate={selectedDate.toISOString().substring(0, 10)} // Datum als String
-                                selectedTime={selectedTime} // Uhrzeit als String
-                            />
+                        <div className="booking-navigation-buttons">
+                            <button type="button" onClick={() => { setSelectedService(null); setSelectedDate(null); setSelectedTime(''); setStep(1);}} className="button-link-outline">Zurück</button>
+                            <button
+                                type="button"
+                                onClick={() => setStep(3)}
+                                disabled={!selectedDate || !selectedTime}
+                                className="button-link"
+                            >
+                                Weiter zu Ihren Daten
+                            </button>
                         </div>
-                    )}
+                    </div>
+                )}
 
-                    {/* Wenn kein Benutzer angemeldet ist, Hinweis auf Terminverwaltung im Account-Dashboard */}
-                    {!currentUser && (
-                        <p className="text-center text-gray-600 mt-8">Ihre Termine können Sie nach erfolgreicher Anmeldung im Bereich "Mein Account" verwalten.</p>
-                    )}
-                </div>
-            </section>
+                {step === 3 && selectedService && selectedDate && selectedTime && (
+                    <div className="booking-step-content">
+                        <h2 className="booking-step-heading">Ihre Daten & Bestätigung</h2>
+                        {!currentUser && (
+                            <div className="login-prompt-booking">
+                                <p>Bereits Kunde? <Link to="/login" state={{
+                                    fromBooking: true,
+                                    bookingDetails: {
+                                        serviceId: selectedService?.id,
+                                        serviceName: selectedService?.name,
+                                        date: selectedDate?.toISOString().substring(0,10),
+                                        time: selectedTime,
+                                        notes: notes // notes ist hier jetzt korrekt definiert
+                                    }
+                                }}>Hier einloggen</Link>, um schneller zu buchen.</p>
+                            </div>
+                        )}
+                        {registerMessage && (
+                            <p className={`form-message ${registerMessage.includes("erfolgreich") ? 'success' : 'error'}`}>{registerMessage}</p>
+                        )}
+                        <AppointmentForm
+                            onAppointmentAdded={onAppointmentAdded} // Wird von App.js übergeben
+                            currentUser={currentUser}
+                            onRegisterAttempt={handleRegisterDuringBooking}
+                            onLoginSuccess={onLoginSuccess} // Wird von App.js übergeben
+                            selectedServiceProp={selectedService}
+                            selectedDateProp={selectedDate}
+                            selectedTimeProp={selectedTime}
+                            initialNotes={notes} // notes als Prop
+                            onNotesChange={setNotes} // Callback für notes
+                        />
+                        <div className="booking-navigation-buttons">
+                            <button type="button" onClick={() => setStep(2)} className="button-link-outline">Zurück zu Datum & Zeit</button>
+                            {/* Der eigentliche Submit-Button ist in AppointmentForm */}
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
