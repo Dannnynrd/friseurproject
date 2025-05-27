@@ -2,15 +2,25 @@ package com.friseursalon.backend.repository;
 
 import com.friseursalon.backend.model.Appointment;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
-    // Hier können wir spezifische Abfragen hinzufügen, um Terminkonflikte zu finden oder Termine für einen bestimmten Zeitraum abzurufen.
 
-    // Beispiel: Findet alle Termine, die sich mit einem gegebenen Zeitraum überschneiden
     List<Appointment> findByStartTimeBetween(LocalDateTime start, LocalDateTime end);
 
-    // Findet alle Termine nach einem bestimmten Startzeitpunkt
     List<Appointment> findByStartTimeAfterOrderByStartTimeAsc(LocalDateTime startTime);
+
+    @Query("SELECT a FROM Appointment a WHERE " +
+            "(:excludeId IS NULL OR a.id <> :excludeId) AND " +
+            "a.startTime < :proposedEnd AND " +
+            "FUNCTION('TIMESTAMPADD', MINUTE, a.service.durationMinutes, a.startTime) > :proposedStart")
+    List<Appointment> findConflictingAppointments(
+            @Param("proposedStart") LocalDateTime proposedStart,
+            @Param("proposedEnd") LocalDateTime proposedEnd,
+            @Param("excludeId") Long excludeId
+    );
 }
