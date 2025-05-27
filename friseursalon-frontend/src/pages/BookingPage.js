@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import './BookingPage.css'; // NEU: Eigene CSS-Datei importieren
+
 import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { de } from 'date-fns/locale/de';

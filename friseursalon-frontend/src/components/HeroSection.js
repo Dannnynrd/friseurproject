@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import './HeroSection.css'; // HIER den Import hinzufügen
 
 function HeroSection() {
     const sectionRef = useRef(null);

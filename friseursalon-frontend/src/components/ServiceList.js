@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api.service';
 import ServiceEditModal from './ServiceEditModal';
+import ConfirmModal from './ConfirmModal'; // NEU: Importieren
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faTrashAlt, faSpinner } from '@fortawesome/free-solid-svg-icons';
 
@@ -10,16 +11,20 @@ function ServiceList({ refreshTrigger, currentUser }) {
     const [selectedService, setSelectedService] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    // NEU: State für Bestätigungsmodal
+    const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
+    const [serviceToDelete, setServiceToDelete] = useState(null);
+
     const fetchServices = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
             const response = await api.get('services');
-            setServices(response.data || []); // Stelle sicher, dass es ein Array ist
+            setServices(response.data || []);
         } catch (err) {
             console.error("Fehler beim Abrufen der Dienstleistungen:", err);
             setError("Dienstleistungen konnten nicht geladen werden. Bitte versuchen Sie es später erneut.");
-            setServices([]); // Bei Fehler leere Liste setzen
+            setServices([]);
         } finally {
             setIsLoading(false);
         }
@@ -29,19 +34,29 @@ function ServiceList({ refreshTrigger, currentUser }) {
         fetchServices();
     }, [fetchServices, refreshTrigger]);
 
-    const handleDelete = async (id) => {
-        if (window.confirm('Sind Sie sicher, dass Sie diese Dienstleistung löschen möchten?')) {
-            setIsLoading(true);
-            try {
-                await api.delete(`services/${id}`);
-                fetchServices();
-            } catch (err) {
-                console.error("Fehler beim Löschen der Dienstleistung:", err);
-                setError("Fehler beim Löschen der Dienstleistung.");
-                setIsLoading(false);
-            }
+    // NEU: Handler für Klick auf "Löschen"-Button
+    const handleDeleteClick = (service) => {
+        setServiceToDelete(service);
+        setShowConfirmDeleteModal(true);
+    };
+
+    // NEU: Handler für Bestätigung im Modal
+    const confirmDeleteService = async () => {
+        if (!serviceToDelete) return;
+        setIsLoading(true); // Oder einen spezifischen Ladezustand für die Löschaktion
+        setShowConfirmDeleteModal(false);
+        try {
+            await api.delete(`services/${serviceToDelete.id}`);
+            setServiceToDelete(null);
+            fetchServices();
+        } catch (err) {
+            console.error("Fehler beim Löschen der Dienstleistung:", err);
+            setError("Fehler beim Löschen der Dienstleistung.");
+            setIsLoading(false);
+            setServiceToDelete(null);
         }
     };
+
 
     const handleEditClick = (service) => {
         setSelectedService(service);
@@ -60,20 +75,18 @@ function ServiceList({ refreshTrigger, currentUser }) {
         return <p className="loading-message"><FontAwesomeIcon icon={faSpinner} spin /> Dienstleistungen werden geladen...</p>;
     }
 
-
     return (
         <div className="service-list-container">
             {error && <p className="form-message error mb-3">{error}</p>}
 
             <div className="list-controls-header">
-                {/* Platzhalter für zukünftige Controls wie Suche/Filter für Services */}
                 {isLoading && services.length > 0 && <FontAwesomeIcon icon={faSpinner} spin className="ml-auto text-xl" />}
             </div>
 
             {services.length === 0 && !isLoading ? (
                 <p className="text-center text-gray-600 py-4">Keine Dienstleistungen verfügbar. Bitte fügen Sie welche hinzu.</p>
             ) : (
-                <div className="table-responsive-container mt-2"> {/* Leichter oberer Rand, falls keine Controls da sind */}
+                <div className="table-responsive-container mt-2">
                     <table className="app-table services-table">
                         <thead>
                         <tr>
@@ -98,7 +111,7 @@ function ServiceList({ refreshTrigger, currentUser }) {
                                                 <FontAwesomeIcon icon={faEdit} />
                                                 <span className="button-text-desktop">Bearbeiten</span>
                                             </button>
-                                            <button onClick={() => handleDelete(service.id)} className="button-link-outline small-button danger icon-button" title="Dienstleistung löschen">
+                                            <button onClick={() => handleDeleteClick(service)} className="button-link-outline small-button danger icon-button" title="Dienstleistung löschen">
                                                 <FontAwesomeIcon icon={faTrashAlt} />
                                                 <span className="button-text-desktop">Löschen</span>
                                             </button>
@@ -119,6 +132,17 @@ function ServiceList({ refreshTrigger, currentUser }) {
                     onServiceUpdated={handleServiceUpdated}
                 />
             )}
+            {/* NEU: Bestätigungsmodal für Löschen einbinden */}
+            <ConfirmModal
+                isOpen={showConfirmDeleteModal}
+                onClose={() => { setShowConfirmDeleteModal(false); setServiceToDelete(null); }}
+                onConfirm={confirmDeleteService}
+                title="Dienstleistung löschen"
+                message={`Möchten Sie die Dienstleistung "${serviceToDelete?.name}" wirklich endgültig löschen? Dieser Schritt kann nicht rückgängig gemacht werden.`}
+                confirmText="Ja, löschen"
+                cancelText="Abbrechen"
+                type="danger"
+            />
         </div>
     );
 }

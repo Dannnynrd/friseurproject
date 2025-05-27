@@ -4,32 +4,46 @@ import ServiceForm from '../components/ServiceForm';
 import ServiceList from '../components/ServiceList';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faClipboardList, faUser, faTools, faSignOutAlt,
+    faClipboardList, faUserCog, faTools, faSignOutAlt,
     faChevronRight, faChevronDown, faPlusCircle, faMinusCircle,
-    faSpinner // Hinzugefügt für den Fall, dass wir es hier direkt brauchen
+    faChartBar, faUser, faTimesCircle // faTimesCircle hinzugefügt
 } from '@fortawesome/free-solid-svg-icons';
+import './AccountDashboard.css';
+
 
 function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppointmentsList, onServiceAdded, refreshServicesList }) {
     const initialTab = currentUser?.roles?.includes("ROLE_ADMIN") ? 'adminServices' : 'bookings';
     const [activeTab, setActiveTab] = useState(initialTab);
+    const [activeMainMenu, setActiveMainMenu] = useState(currentUser?.roles?.includes("ROLE_ADMIN") ? 'verwaltung' : 'user');
+
+
     const [activeAccordion, setActiveAccordion] = useState(null);
     const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 992);
+    const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
     const [showServiceForm, setShowServiceForm] = useState(false);
-    const [isSubmittingService, setIsSubmittingService] = useState(false); // Für Ladezustand ServiceForm
+    const [isSubmittingService, setIsSubmittingService] = useState(false);
 
     const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes("ROLE_ADMIN");
 
     useEffect(() => {
         const handleResize = () => {
-            setIsMobileView(window.innerWidth <= 992);
+            const mobile = window.innerWidth <= 992;
+            setIsMobileView(mobile);
+            if (!mobile) setMobileNavOpen(false);
         };
         window.addEventListener('resize', handleResize);
+        handleResize();
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     useEffect(() => {
-        setActiveTab(currentUser?.roles?.includes("ROLE_ADMIN") ? 'adminServices' : 'bookings');
+        const newInitialTab = currentUser?.roles?.includes("ROLE_ADMIN") ? 'adminServices' : 'bookings';
+        const newActiveMainMenu = currentUser?.roles?.includes("ROLE_ADMIN") ? 'verwaltung' : 'user';
+
+        setActiveTab(newInitialTab);
+        setActiveMainMenu(newActiveMainMenu);
+
         setActiveAccordion(null);
         setShowServiceForm(false);
     }, [currentUser]);
@@ -39,30 +53,52 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
             onServiceAdded();
         }
         setShowServiceForm(false);
-        setIsSubmittingService(false); // Ladezustand zurücksetzen
+        setIsSubmittingService(false);
     };
 
-    const toggleAccordion = (tabName) => {
-        const newActiveAccordion = activeAccordion === tabName ? null : tabName;
+    const toggleAccordion = (itemName) => {
+        const newActiveAccordion = activeAccordion === itemName ? null : itemName;
         setActiveAccordion(newActiveAccordion);
-        // Wenn ein *anderes* Akkordeon geöffnet wird oder das aktuelle geschlossen, Formular im Services-Tab schließen
-        if (tabName !== 'adminServices' || newActiveAccordion !== 'adminServices') {
+
+        if (itemName !== 'adminServices' && !itemName.startsWith('verwaltung-')) {
             setShowServiceForm(false);
         }
     };
 
-    const handleTabClick = (tabName) => {
+    const handleMainMenuClick = (mainMenuKey) => {
+        setActiveMainMenu(mainMenuKey);
+        if (mainMenuKey === 'verwaltung' && isAdmin) {
+            handleTabClick('adminServices', mainMenuKey);
+        } else if (mainMenuKey === 'user') {
+            handleTabClick('bookings', mainMenuKey);
+        }
+
+        if(isMobileView) {
+            toggleAccordion(mainMenuKey);
+        }
+    };
+
+    const handleTabClick = (tabName, mainMenuKey) => {
         setActiveTab(tabName);
+        if (mainMenuKey) { // Nur setzen, wenn explizit übergeben (z.B. von handleMainMenuClick)
+            setActiveMainMenu(mainMenuKey);
+        } else {
+            // Logik um mainMenuKey basierend auf tabName zu finden, falls nötig
+            if (['bookings', 'profile'].includes(tabName)) setActiveMainMenu('user');
+            if (['adminServices', 'adminAnalytics'].includes(tabName)) setActiveMainMenu('verwaltung');
+        }
+
         if (isMobileView) {
-            // Logik für Akkordeon-Öffnen/Schließen ist schon in toggleAccordion
-            if (activeAccordion !== tabName) {
-                toggleAccordion(tabName);
+            if (mainMenuKey && activeAccordion !== mainMenuKey) {
+                setActiveAccordion(mainMenuKey)
             }
+            setMobileNavOpen(false); // Menü nach Klick schließen
         }
         if (tabName !== 'adminServices') {
             setShowServiceForm(false);
         }
     };
+
 
     const renderTabContent = (tabName) => {
         switch (tabName) {
@@ -104,7 +140,7 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                             <div className="service-form-wrapper">
                                 <ServiceForm
                                     onServiceAdded={handleServiceAddedCallback}
-                                    setIsSubmitting={setIsSubmittingService} // Um Ladezustand vom Formular zu steuern
+                                    setIsSubmitting={setIsSubmittingService}
                                     isSubmitting={isSubmittingService}
                                 />
                             </div>
@@ -113,71 +149,115 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                         <ServiceList key={refreshServicesList} currentUser={currentUser} />
                     </div>
                 );
+            case 'adminAnalytics':
+                return isAdmin && (
+                    <div className="dashboard-section-content">
+                        <h2 className="dashboard-section-heading">Analysen</h2>
+                        <p className="text-center text-gray-600 py-4">Dieser Bereich ist in Entwicklung.</p>
+                    </div>
+                );
             default:
+                if (isAdmin && activeMainMenu === 'verwaltung' && tabName !== 'adminServices' && tabName !== 'adminAnalytics') return renderTabContent('adminServices');
+                if (activeMainMenu === 'user' && tabName !== 'bookings' && tabName !== 'profile') return renderTabContent('bookings');
                 return <p>Bitte wählen Sie eine Option aus dem Menü.</p>;
         }
     };
 
-    const renderNavButton = (tabName, icon, label, condition = true) => {
-        if (!condition) return null;
-        const isActive = activeTab === tabName;
-        const isAccordionOpen = activeAccordion === tabName;
+    const renderNavItem = (tabName, icon, label, mainMenuKeyForClick) => ( // mainMenuKeyForClick hinzugefügt
+        <li key={tabName} className="dashboard-nav-item">
+            <button
+                onClick={() => handleTabClick(tabName, mainMenuKeyForClick)} // mainMenuKeyForClick verwenden
+                className={`dashboard-nav-button ${activeTab === tabName ? 'active' : ''}`}
+            >
+                <FontAwesomeIcon icon={icon} fixedWidth /> <span>{label}</span>
+            </button>
+        </li>
+    );
 
-        return (
-            <li key={tabName} className="dashboard-nav-item">
-                <button
-                    onClick={() => handleTabClick(tabName)}
-                    className={`dashboard-nav-button ${isActive && !isMobileView ? 'active' : ''} ${isMobileView && isAccordionOpen ? 'active-accordion-header' : ''}`}
-                    aria-expanded={isMobileView ? isAccordionOpen : undefined}
-                    aria-controls={isMobileView ? `accordion-content-${tabName}` : undefined}
-                >
-                    <FontAwesomeIcon icon={icon} fixedWidth /> <span>{label}</span>
-                    {isMobileView && (
-                        <FontAwesomeIcon icon={isAccordionOpen ? faChevronDown : faChevronRight} className="accordion-chevron" />
-                    )}
-                </button>
-                {isMobileView && isAccordionOpen && (
-                    <div className="dashboard-accordion-content" id={`accordion-content-${tabName}`} role="region">
-                        {renderTabContent(tabName)}
-                    </div>
-                )}
-            </li>
-        );
-    };
 
     if (!currentUser) {
         return <p>Laden...</p>;
     }
 
+    const DesktopNav = () => (
+        <aside className="dashboard-sidebar">
+            <nav>
+                <ul>
+                    <li className="nav-category-title">Mein Bereich</li>
+                    {renderNavItem('bookings', faClipboardList, 'Meine Termine', 'user')}
+                    {renderNavItem('profile', faUser, 'Meine Daten', 'user')}
+
+                    {isAdmin && (
+                        <>
+                            <li className="nav-category-title mt-4">Verwaltung</li>
+                            {renderNavItem('adminServices', faTools, 'Services', 'verwaltung')}
+                            {renderNavItem('adminAnalytics', faChartBar, 'Analysen', 'verwaltung')}
+                        </>
+                    )}
+                    <li className="dashboard-nav-item logout-button-container">
+                        <button onClick={logOut} className="dashboard-nav-button logout-button">
+                            <FontAwesomeIcon icon={faSignOutAlt} fixedWidth /> <span>Abmelden</span>
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+    );
+
+    const MobileNav = () => (
+        <div className={`mobile-dashboard-nav ${mobileNavOpen ? 'open' : ''}`}>
+            <button className="mobile-nav-close-button" onClick={() => setMobileNavOpen(false)}>
+                <FontAwesomeIcon icon={faTimesCircle} /> Menü schließen
+            </button>
+            <nav>
+                <ul>
+                    <li className="nav-category-title">Mein Bereich</li>
+                    {renderNavItem('bookings', faClipboardList, 'Meine Termine', 'user')}
+                    {renderNavItem('profile', faUser, 'Meine Daten', 'user')}
+
+                    {isAdmin && (
+                        <>
+                            <li className="nav-category-title mt-4">Verwaltung</li>
+                            {renderNavItem('adminServices', faTools, 'Services', 'verwaltung')}
+                            {renderNavItem('adminAnalytics', faChartBar, 'Analysen', 'verwaltung')}
+                        </>
+                    )}
+                    <li className="dashboard-nav-item logout-button-container">
+                        <button onClick={() => { logOut(); setMobileNavOpen(false); }} className="dashboard-nav-button logout-button">
+                            <FontAwesomeIcon icon={faSignOutAlt} fixedWidth /> <span>Abmelden</span>
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    );
+
     return (
         <div className="account-dashboard-container">
             <div className="container">
-                <h1 className="dashboard-main-heading">Mein Account</h1>
+                <div className="dashboard-header">
+                    <h1 className="dashboard-main-heading">Mein Account</h1>
+                    {isMobileView && (
+                        <button
+                            className="mobile-nav-toggle-button button-link-outline small-button"
+                            onClick={() => setMobileNavOpen(true)}
+                            aria-expanded={mobileNavOpen}
+                            aria-controls="mobile-dashboard-navigation" // ID für mobile Nav
+                        >
+                            <FontAwesomeIcon icon={faChevronRight} /> Menü
+                        </button>
+                    )}
+                </div>
                 <p className="dashboard-welcome-message">
                     Hallo, {currentUser.firstName || currentUser.email}! Hier verwalten Sie Ihre Daten.
                 </p>
 
                 <div className="dashboard-layout">
-                    <aside className="dashboard-sidebar">
-                        <nav>
-                            <ul>
-                                {renderNavButton('bookings', faClipboardList, 'Meine Termine')}
-                                {renderNavButton('profile', faUser, 'Meine Daten')}
-                                {renderNavButton('adminServices', faTools, 'Services (Admin)', isAdmin)}
-                                <li className="dashboard-nav-item logout-button-container">
-                                    <button onClick={logOut} className="dashboard-nav-button logout-button">
-                                        <FontAwesomeIcon icon={faSignOutAlt} fixedWidth /> <span>Abmelden</span>
-                                    </button>
-                                </li>
-                            </ul>
-                        </nav>
-                    </aside>
+                    {isMobileView ? <MobileNav /> : <DesktopNav />}
 
-                    {!isMobileView && (
-                        <section className="dashboard-content" aria-live="polite">
-                            {renderTabContent(activeTab)}
-                        </section>
-                    )}
+                    <section className="dashboard-content" aria-live="polite">
+                        {renderTabContent(activeTab)}
+                    </section>
                 </div>
             </div>
         </div>

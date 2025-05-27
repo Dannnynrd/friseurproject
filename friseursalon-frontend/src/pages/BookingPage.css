@@ -1,0 +1,182 @@
+/* src/pages/BookingPage.css */
+
+.booking-page-container {
+    padding: 2rem 0;
+    background-color: var(--light-bg);
+    min-height: calc(100vh - var(--header-height-desktop) - var(--footer-height) - 4rem); /* Annahme: Header und Footer Höhen sind in :root definiert */
+}
+
+@media (max-width: 992px) {
+    .booking-page-container {
+        min-height: calc(100vh - var(--header-height-mobile) - var(--footer-height) - 2rem);
+        padding: 1rem 0;
+    }
+}
+
+.booking-form-container {
+    max-width: 750px;
+    margin: 0 auto;
+    padding: 2rem 2.5rem;
+    background-color: var(--light-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.07);
+}
+
+@media (max-width: 768px) {
+    .booking-form-container {
+        padding: 1.5rem 1rem;
+    }
+}
+
+.booking-page-main-heading {
+    font-family: var(--font-serif), serif;
+    font-size: 2.2rem;
+    color: var(--dark-text);
+    text-align: center;
+    margin-bottom: 2rem;
+}
+@media (max-width: 768px) {
+    .booking-page-main-heading {
+        font-size: 1.8rem;
+        margin-bottom: 1.5rem;
+    }
+}
+
+/* Schritt-Indikatoren */
+.booking-step-indicators {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 3rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    list-style: none;
+    position: relative;
+}
+
+.booking-step-indicators::before {
+    content: '';
+    position: absolute;
+    top: calc(1.125rem - (var(--step-indicator-line-height) / 2));
+    left: 0;
+    right: 0;
+    height: var(--step-indicator-line-height);
+    background-color: var(--step-indicator-line-default);
+    z-index: 1;
+    width: calc(100% - (100% / 4)); /* Standard für 4 Schritte */
+    margin: 0 auto;
+}
+.booking-step-indicators.three-steps::before {
+    width: calc(100% - (100% / 3));
+}
+
+.booking-step-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex-basis: 0;
+    flex-grow: 1;
+    position: relative;
+    z-index: 2;
+    min-width: 60px;
+}
+.booking-step-indicator .step-number-wrapper {
+    width: 2.25rem; height: 2.25rem; border-radius: 50%;
+    border: 2px solid var(--step-indicator-default-border);
+    background-color: var(--light-bg); color: var(--step-indicator-default-text);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 0.4rem; transition: all 0.3s var(--transition-ease);
+    font-weight: 600; position: relative; z-index: 3;
+}
+.booking-step-indicator .step-number { font-size: 0.85rem; }
+.booking-step-indicator .step-number .svg-inline--fa { font-size: 0.9rem; color: var(--step-indicator-completed-text-in-circle); }
+.booking-step-indicator .step-label {
+    font-size: 0.75rem; font-weight: 500; color: var(--step-indicator-default-text);
+    transition: color 0.3s ease, font-weight 0.3s ease;
+    line-height: 1.2; padding: 0 0.1rem;
+}
+.booking-step-indicator.completed .step-number-wrapper { background-color: var(--step-indicator-completed-bg); border-color: var(--step-indicator-completed-border); }
+.booking-step-indicator.completed .step-label { color: var(--step-indicator-completed-label-text); }
+.booking-step-indicator.completed::after {
+    content: ''; position: absolute; top: calc(1.125rem - (var(--step-indicator-line-height) / 2));
+    left: 50%; width: 100%; height: var(--step-indicator-line-height);
+    background-color: var(--step-indicator-line-completed); z-index: 1;
+}
+.booking-step-indicator:last-child.completed::after { width: 0; }
+.booking-step-indicator.active .step-number-wrapper {
+    background-color: var(--step-indicator-active-bg); border-color: var(--step-indicator-active-border);
+    color: var(--step-indicator-active-text-in-circle); transform: scale(1.1);
+    box-shadow: 0 0 8px rgba(0,0,0,0.1);
+}
+.booking-step-indicator.active .step-label { color: var(--step-indicator-active-label-text); font-weight: 700; }
+
+@media (max-width: 576px) {
+    .booking-step-indicators::before { margin: 0 calc(25% / 2 - 0.5rem); }
+    .booking-step-indicators.three-steps::before { margin: 0 calc(33.33% / 2 - 0.5rem); }
+    .booking-step-indicator .step-number-wrapper { width: 2rem; height: 2rem; }
+    .booking-step-indicator .step-number { font-size: 0.75rem; }
+    .booking-step-indicator .step-number .svg-inline--fa { font-size: 0.8rem; }
+    .booking-step-indicator .step-label { font-size: 0.7rem; }
+    .booking-step-indicators::before,
+    .booking-step-indicator.completed::after {
+        top: calc(1rem - (var(--step-indicator-line-height) / 2) + 1px);
+        height: calc(var(--step-indicator-line-height) - 1px);
+    }
+}
+@media (max-width: 420px) {
+    .booking-step-indicator .step-label { display: none; }
+    .booking-step-indicator .step-number-wrapper { margin-bottom: 0; }
+    .booking-step-indicators { padding-bottom: 0.5rem; margin-bottom: 2rem; }
+    .booking-step-indicators::before,
+    .booking-step-indicator.completed::after { top: calc(1rem - (var(--step-indicator-line-height) / 2) + 1px); }
+}
+
+.booking-step-content { padding-top: 1rem; }
+.animate-step { animation: fadeInStep 0.4s var(--transition-ease) forwards; opacity: 0; }
+@keyframes fadeInStep { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+.booking-step-heading {
+    font-family: var(--font-serif), serif; font-size: 1.8rem; color: var(--dark-text);
+    text-align: left; margin-bottom: 1.5rem;
+}
+.booking-confirmation .booking-step-heading { text-align: center; }
+
+.booking-step-subheading {
+    font-size: 0.9rem; color: var(--medium-grey-text); margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem; border: 1px solid var(--border-color); border-radius: 6px;
+    background-color: var(--light-grey-bg); display: flex; justify-content: space-between;
+    align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;
+}
+.booking-step-subheading .service-info-text { flex-grow: 1; line-height: 1.5; }
+.booking-step-subheading .service-info-text strong {
+    color: var(--dark-text); font-weight: 600; display: block;
+    font-size: 1.1rem; margin-bottom: 0.25rem;
+}
+.booking-step-subheading .service-price-duration { display: block; font-size: 0.85rem; color: var(--medium-grey-text); }
+.booking-step-subheading .edit-selection-button { margin-left: 1rem; flex-shrink: 0; align-self: center; }
+
+.services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; }
+.service-card { /* ... (bleibt gleich wie in App.css, kann aber hierher verschoben werden für Spezifität) ... */ }
+.service-name { /* ... */ }
+.service-description { /* ... */ }
+.service-details { /* ... */ }
+.service-duration { /* ... */ }
+
+.datepicker-time-container { /* ... */ }
+.datepicker-wrapper .react-datepicker { /* ... */ }
+/* ... (alle Datepicker und Time-Slot Stile) ... */
+
+.selected-datetime-info.summary-above-datepicker { /* ... */ }
+
+.booking-navigation-buttons { /* ... */ }
+.login-prompt-booking { /* ... */ }
+.appointment-summary-inline { /* ... */ }
+.appointment-summary-final { /* ... */ }
+.edit-selection-button { /* ... */ }
+.booking-confirmation { /* ... */ }
+.calendar-actions { /* ... */ }
+.confirmation-buttons { /* ... */ }
+
+/* Globale .loading-message und .form-message könnten in App.css bleiben oder hierher kopiert werden, wenn sie spezifisch sind */

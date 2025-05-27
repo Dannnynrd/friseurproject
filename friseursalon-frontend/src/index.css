@@ -1,13 +1,43 @@
+/* src/index.css */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
   'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
   sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--light-bg); /* Globale Hintergrundfarbe */
+  color: var(--dark-text); /* Globale Textfarbe */
+  line-height: 1.7; /* Grundlegende Zeilenhöhe */
+  overflow-x: hidden; /* Verhindert horizontales Scrollen */
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px; /* Basis-Schriftgröße */
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body.mobile-menu-active, html.mobile-menu-active,
+body.mobile-dashboard-nav-open, html.mobile-dashboard-nav-open {
+  overflow: hidden;
+}
+
+::selection {
+  background-color: var(--dark-text);
+  color: var(--light-bg);
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
   monospace;
 }
+
+/* :root Variablen bleiben hier oder in App.css, je nach Präferenz.
+   Ich lasse sie vorerst in App.css, da sie dort schon definiert sind.
+   Wenn App.css sehr klein wird, können sie auch hierher. */

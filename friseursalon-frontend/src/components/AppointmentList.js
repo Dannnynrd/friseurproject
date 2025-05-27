@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api.service';
 import AppointmentEditModal from './AppointmentEditModal';
+import ConfirmModal from './ConfirmModal'; // NEU: Importieren
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrashAlt, faCalendarDay, faClock, faSpinner, faFilter } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faTrashAlt, faCalendarDay, faClock, faSpinner, faFilter, faBan } from '@fortawesome/free-solid-svg-icons'; // faBan für Stornieren
 
 function AppointmentList({ refreshTrigger, currentUser }) {
     const [allAppointments, setAllAppointments] = useState([]);
@@ -12,12 +13,17 @@ function AppointmentList({ refreshTrigger, currentUser }) {
     const [isLoading, setIsLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('all');
 
+    // NEU: State für das Bestätigungsmodal
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [appointmentToCancel, setAppointmentToCancel] = useState(null);
+
+
     const fetchAppointments = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
             const response = await api.get('appointments');
-            let fetchedAppointments = response.data || []; // Sicherstellen, dass es ein Array ist
+            let fetchedAppointments = response.data || [];
 
             if (currentUser && currentUser.roles && !currentUser.roles.includes("ROLE_ADMIN")) {
                 fetchedAppointments = fetchedAppointments.filter(app => app.customer && app.customer.email === currentUser.email);
@@ -50,19 +56,29 @@ function AppointmentList({ refreshTrigger, currentUser }) {
         setFilteredAppointments(currentFiltered);
     }, [allAppointments, activeFilter]);
 
-    const handleDelete = async (id) => {
-        if (window.confirm('Sind Sie sicher, dass Sie diesen Termin löschen möchten?')) {
-            setIsLoading(true);
-            try {
-                await api.delete(`appointments/${id}`);
-                fetchAppointments();
-            } catch (err) {
-                console.error("Fehler beim Löschen des Termins:", err);
-                setError("Fehler beim Löschen des Termins.");
-                setIsLoading(false);
-            }
+    // NEU: Handler für Klick auf "Stornieren"-Button
+    const handleCancelClick = (appointment) => {
+        setAppointmentToCancel(appointment);
+        setShowConfirmModal(true);
+    };
+
+    // NEU: Handler für Bestätigung im Modal
+    const confirmCancelAppointment = async () => {
+        if (!appointmentToCancel) return;
+        setIsLoading(true);
+        setShowConfirmModal(false);
+        try {
+            await api.delete(`appointments/${appointmentToCancel.id}`);
+            setAppointmentToCancel(null); // Zurücksetzen
+            fetchAppointments(); // Liste neu laden
+        } catch (err) {
+            console.error("Fehler beim Stornieren des Termins:", err);
+            setError("Fehler beim Stornieren des Termins.");
+            setIsLoading(false);
+            setAppointmentToCancel(null); // Auch im Fehlerfall zurücksetzen
         }
     };
+
 
     const handleEditClick = (appointment) => {
         setSelectedAppointment(appointment);
@@ -83,8 +99,7 @@ function AppointmentList({ refreshTrigger, currentUser }) {
         return appointmentDate < today;
     };
 
-    // Ladeanzeige, solange isLoading true ist
-    if (isLoading) {
+    if (isLoading && filteredAppointments.length === 0) {
         return <p className="loading-message"><FontAwesomeIcon icon={faSpinner} spin /> Termine werden geladen...</p>;
     }
 
@@ -113,10 +128,10 @@ function AppointmentList({ refreshTrigger, currentUser }) {
                         Vergangene
                     </button>
                 </div>
-                {/* Optional: Lade-Spinner hier anzeigen, wenn _nur_ gefiltert wird und nicht initial geladen */}
+                {isLoading && <FontAwesomeIcon icon={faSpinner} spin className="ml-3 text-xl" />}
             </div>
 
-            {/* Anzeige für leere Liste NACHDEM der Ladevorgang abgeschlossen ist */}
+
             {filteredAppointments.length === 0 && !isLoading ? (
                 <p className="text-center text-gray-600 py-4">
                     {activeFilter === 'all' ? 'Es sind noch keine Termine gebucht.' :
@@ -166,12 +181,12 @@ function AppointmentList({ refreshTrigger, currentUser }) {
                                                     <span className="button-text-desktop">Bearbeiten</span>
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDelete(appointment.id)}
+                                                    onClick={() => handleCancelClick(appointment)} // NEU
                                                     className="button-link-outline small-button danger icon-button"
-                                                    title="Termin löschen"
+                                                    title="Termin stornieren"
                                                 >
-                                                    <FontAwesomeIcon icon={faTrashAlt} />
-                                                    <span className="button-text-desktop">Löschen</span>
+                                                    <FontAwesomeIcon icon={faBan} /> {/* NEU: Icon geändert */}
+                                                    <span className="button-text-desktop">Stornieren</span> {/* NEU: Text geändert */}
                                                 </button>
                                             </div>
                                         </td>
@@ -217,11 +232,11 @@ function AppointmentList({ refreshTrigger, currentUser }) {
                                             <FontAwesomeIcon icon={faEdit} /> Bearbeiten
                                         </button>
                                         <button
-                                            onClick={() => handleDelete(appointment.id)}
+                                            onClick={() => handleCancelClick(appointment)} // NEU
                                             className="button-link-outline small-button danger"
-                                            title="Termin löschen"
+                                            title="Termin stornieren"
                                         >
-                                            <FontAwesomeIcon icon={faTrashAlt} /> Löschen
+                                            <FontAwesomeIcon icon={faBan} /> Stornieren {/* NEU */}
                                         </button>
                                     </div>
                                 )}
@@ -238,6 +253,17 @@ function AppointmentList({ refreshTrigger, currentUser }) {
                     onAppointmentUpdated={handleAppointmentUpdated}
                 />
             )}
+            {/* NEU: Bestätigungsmodal einbinden */}
+            <ConfirmModal
+                isOpen={showConfirmModal}
+                onClose={() => { setShowConfirmModal(false); setAppointmentToCancel(null); }}
+                onConfirm={confirmCancelAppointment}
+                title="Termin stornieren"
+                message={`Möchten Sie den Termin für "${appointmentToCancel?.customer?.firstName} ${appointmentToCancel?.customer?.lastName}" am ${appointmentToCancel ? new Date(appointmentToCancel.startTime).toLocaleDateString('de-DE') : ''} um ${appointmentToCancel ? new Date(appointmentToCancel.startTime).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'}) : ''} Uhr wirklich stornieren?`}
+                confirmText="Ja, stornieren"
+                cancelText="Abbrechen"
+                type="danger"
+            />
         </div>
     );
 }

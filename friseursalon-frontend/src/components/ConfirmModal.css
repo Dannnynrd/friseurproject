@@ -1,0 +1,79 @@
+.confirm-modal-overlay {
+    z-index: 1060;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.65); /* Etwas dunkler für besseren Fokus */
+}
+
+.confirm-modal-content {
+    background-color: var(--light-bg);
+    border-radius: 8px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    width: 100%;
+    max-width: 400px; /* Etwas schmaler für einen cleaneren Look */
+    padding: 1.8rem; /* Mehr Padding */
+    text-align: center;
+    animation: fadeInModalContent 0.2s ease-out; /* Schnellere Animation */
+}
+
+.confirm-modal-icon-container {
+    margin-bottom: 1rem;
+}
+
+.confirm-icon {
+    font-size: 2.8rem; /* Größeres Icon */
+}
+
+.icon-warning { color: #ffc107; }
+.icon-danger { color: var(--danger-color); }
+.icon-success { color: var(--success-color); }
+.icon-info { color: var(--info-color); }
+
+
+.confirm-modal-title {
+    font-family: var(--font-serif);
+    font-size: 1.4rem; /* Etwas größer */
+    color: var(--dark-text);
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+.confirm-modal-message {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--medium-grey-text);
+    margin-bottom: 1.8rem; /* Mehr Abstand zu den Buttons */
+}
+
+.confirm-modal-actions {
+    display: flex;
+    justify-content: center; /* Buttons zentrieren */
+    gap: 0.75rem; /* Abstand zwischen Buttons */
+    padding-top: 0; /* Kein oberes Padding mehr, da Abstand durch message margin-bottom */
+    border-top: none; /* Keine Linie mehr */
+    background-color: transparent; /* Kein extra Hintergrund */
+}
+
+.confirm-modal-actions button {
+    padding: 0.6rem 1.2rem; /* Konsistente Button-Größe */
+    font-size: 0.9rem;
+    min-width: 100px;
+}
+.confirm-modal-actions .button-link.danger {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+.confirm-modal-actions .button-link.danger:hover {
+    background-color: var(--danger-hover-bg);
+    border-color: var(--danger-hover-bg);
+}
+.confirm-modal-actions .cancel-action { /* Spezifischer für den Abbrechen Button */
+    color: var(--medium-grey-text);
+    border-color: var(--border-color);
+}
+.confirm-modal-actions .cancel-action:hover {
+    background-color: var(--light-grey-bg);
+    color: var(--dark-text);
+}

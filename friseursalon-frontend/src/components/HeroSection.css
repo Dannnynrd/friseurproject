@@ -1,0 +1,54 @@
+/* src/components/HeroSection.css */
+#hero {
+    height: calc(100vh - var(--header-height-desktop)); /* Annahme: --header-height-desktop ist in :root global verfügbar */
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    background: url('https://images.pexels.com/photos/3065171/pexels-photo-3065171.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2') no-repeat center center;
+    background-size: cover;
+    color: var(--dark-text);
+}
+
+@media (max-width: 992px) {
+    #hero {
+        height: calc(100vh - var(--header-height-mobile)); /* Annahme: --header-height-mobile ist global */
+    }
+}
+
+#hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.05);
+}
+
+.hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.hero-title {
+    font-family: var(--font-serif), serif;
+    font-size: 4rem;
+    line-height: 1.15;
+    font-weight: 500;
+}
+
+.hero-subtitle {
+    font-size: 1.05rem;
+    margin-top: 1.3rem;
+    max-width: 480px;
+    color: var(--medium-grey-text);
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.8rem;
+    }
+    .hero-subtitle {
+        font-size: 1rem;
+    }
+}
