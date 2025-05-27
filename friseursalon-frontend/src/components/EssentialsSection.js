@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
+import './ExperienceSection.css'; // HIER den Import hinzufügen
 
-function EssentialsSection() {
+function ExperienceSection() {
+    // ... (Rest der Komponente bleibt gleich) ...
     const sectionRef = useRef(null);
 
     useEffect(() => {
@@ -24,31 +26,29 @@ function EssentialsSection() {
     }, []);
 
     return (
-        <section id="essentials" ref={sectionRef}>
+        <section id="experience" ref={sectionRef}>
             <div className="container">
+                {/* section-header wird global in App.css gestyled, oder könnte hier spezifisch werden */}
                 <div className="section-header animate-up">
-                    <span className="subtitle">Für Zuhause</span>
-                    <h2>Meine Essentials</h2>
-                    <p>Eine kuratierte Auswahl der Produkte, denen ich vertraue. Alle Produkte sind sulfatfrei, tierversuchsfrei und nachhaltig.</p>
+                    <span className="subtitle">Mein Versprechen</span>
+                    <h2>Die Erfahrung</h2>
+                    <p>Ein Besuch bei IMW ist mehr als ein Termin. Es ist ein Ritual, das der Ruhe und Ihrer individuellen Schönheit gewidmet ist.</p>
                 </div>
-                <div className="essentials-grid">
-                    <div className="product-card animate-up" style={{ transitionDelay: '0.1s' }}>
-                        <div className="product-image"><img src="https://images.pexels.com/photos/7692257/pexels-photo-7692257.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Shampoo" /></div>
-                        <h3>Hydrating Shampoo</h3>
-                        <p className="price">32,00 €</p>
-                        <a href="#" className="interactive">Mehr erfahren</a>
+                <div className="experience-grid">
+                    <div className="experience-step animate-up" style={{ transitionDelay: '0.1s' }}>
+                        <span className="step-number">01</span>
+                        <h3>Ankommen</h3>
+                        <p>Beginnen Sie Ihre Auszeit mit einem Getränk Ihrer Wahl in meiner ruhigen, minimalistischen Atmosphäre.</p>
                     </div>
-                    <div className="product-card animate-up" style={{ transitionDelay: '0.2s' }}>
-                        <div className="product-image"><img src="https://images.pexels.com/photos/7692233/pexels-photo-7692233.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Conditioner" /></div>
-                        <h3>Repair Conditioner</h3>
-                        <p className="price">34,00 €</p>
-                        <a href="#" className="interactive">Mehr erfahren</a>
+                    <div className="experience-step animate-up" style={{ transitionDelay: '0.2s' }}>
+                        <span className="step-number">02</span>
+                        <h3>Beratung</h3>
+                        <p>In einem persönlichen Gespräch analysiere ich Ihre Haarstruktur und Wünsche, um die perfekte Behandlung zu definieren.</p>
                     </div>
-                    <div className="product-card animate-up" style={{ transitionDelay: '0.3s' }}>
-                        <div className="product-image"><img src="https://images.pexels.com/photos/6621472/pexels-photo-6621472.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Haaröl" /></div>
-                        <h3>Nourishing Oil</h3>
-                        <p className="price">45,00 €</p>
-                        <a href="#" className="interactive">Mehr erfahren</a>
+                    <div className="experience-step animate-up" style={{ transitionDelay: '0.3s' }}>
+                        <span className="step-number">03</span>
+                        <h3>Vollendung</h3>
+                        <p>Genießen Sie das Ergebnis und erhalten Sie wertvolle Tipps, um Ihren neuen Look auch zu Hause perfekt zu pflegen.</p>
                     </div>
                 </div>
             </div>
@@ -56,4 +56,4 @@ function EssentialsSection() {
     );
 }
 
-export default EssentialsSection;
+export default ExperienceSection;

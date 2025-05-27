@@ -1,0 +1,71 @@
+/* src/components/EssentialsSection.css */
+#essentials {
+    background-color: var(--light-grey-bg);
+}
+#essentials .section-header {
+    text-align: center; max-width: 600px; margin: 0 auto 2.5rem auto;
+}
+#essentials .section-header h2 { font-family: var(--font-serif), serif; font-size: 2.2rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--dark-text); }
+#essentials .section-header .subtitle { color: var(--medium-grey-text); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; font-size: 0.7rem; margin-bottom: 0.3rem; }
+@media (max-width: 768px) { #essentials .section-header h2 { font-size: 1.8rem; } }
+
+.essentials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+.product-card {
+    background: var(--light-bg);
+    border-radius: 6px;
+    text-align: center;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+.product-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transform: translateY(-3px);
+}
+.product-image {
+    margin-bottom: 1rem;
+    height: 200px;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 4px;
+}
+.product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.product-card h3 {
+    font-family: var(--font-serif), serif;
+    font-size: 1.1rem;
+    margin-bottom: 0.3rem;
+    color: var(--dark-text);
+}
+.product-card .price {
+    font-weight: 500;
+    color: var(--dark-text);
+    margin-bottom: 0.8rem;
+    font-size: 0.95rem;
+}
+.product-card .product-description {
+    font-size: 0.85rem;
+    color: var(--medium-grey-text);
+    margin-bottom: 1rem;
+    flex-grow: 1;
+    line-height: 1.5;
+}
+.product-card a.interactive { /* Ist ein .button-link */
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+    margin-top: auto;
+}
+.product-card a.interactive:focus-visible {
+    outline: 2px solid var(--focus-ring-color) !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 2px var(--light-bg), 0 0 0 4px var(--focus-ring-color) !important;
+}

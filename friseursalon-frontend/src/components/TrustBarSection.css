@@ -1,0 +1,35 @@
+/* src/components/TrustBarSection.css */
+#trust-bar {
+    background-color: var(--light-grey-bg);
+    padding: 2.5rem 0;
+}
+
+.trust-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.5rem;
+    text-align: center;
+}
+
+.trust-item h3 {
+    font-family: var(--font-serif), serif;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--dark-text);
+    margin-bottom: 0.2rem;
+}
+
+.trust-item p {
+    font-size: 0.85rem;
+    color: var(--medium-grey-text);
+}
+
+@media (max-width: 768px) {
+    .trust-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    .trust-item h3 {
+        font-size: 1.7rem;
+    }
+}

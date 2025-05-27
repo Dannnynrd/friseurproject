@@ -1,0 +1,70 @@
+/* src/components/LocationSection.css */
+#location {
+    background-color: var(--light-grey-bg);
+}
+#location .section-header {
+    text-align: center; max-width: 600px; margin: 0 auto 2.5rem auto;
+}
+#location .section-header h2 { font-family: var(--font-serif), serif; font-size: 2.2rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--dark-text); }
+#location .section-header .subtitle { color: var(--medium-grey-text); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; font-size: 0.7rem; margin-bottom: 0.3rem; }
+@media (max-width: 768px) { #location .section-header h2 { font-size: 1.8rem; } }
+
+.location-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    align-items: center;
+}
+@media (min-width: 992px) {
+    .location-container {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+.address-info h3 {
+    font-family: var(--font-serif), serif;
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
+    color: var(--dark-text);
+}
+.address-info p {
+    font-size: 0.9rem;
+    color: var(--dark-text);
+    margin-bottom: 1rem;
+    line-height: 1.7;
+}
+.address-info p strong {
+    font-weight: 600;
+}
+.address-info .button-link { /* Nutzt globale Stile */
+    margin-top: 1rem;
+}
+.address-info a.interactive:not(.button-link) { /* Für normale Links in der Adresse */
+    color: var(--dark-text);
+    text-decoration: underline;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    display: inline;
+}
+.address-info a.interactive:not(.button-link):hover {
+    color: var(--medium-grey-text);
+}
+.address-info a.interactive:not(.button-link):focus-visible {
+    outline: 2px solid var(--focus-ring-subtle-color);
+    outline-offset: 1px;
+    background-color: var(--light-grey-bg) !important;
+    border-radius: 3px;
+    box-shadow: none !important;
+}
+
+
+#map {
+    height: 350px;
+    border-radius: 6px;
+    background-color: #e0e0e0;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+#map > div { /* Für das eigentliche Karten-Div, um sicherzustellen, dass der Radius angewendet wird */
+    border-radius: 6px !important;
+}

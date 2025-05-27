@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
+import './TrustBarSection.css'; // HIER den Import hinzufügen
 
 function TrustBarSection() {
+    // ... (Rest der Komponente bleibt gleich) ...
     const sectionRef = useRef(null);
 
     useEffect(() => {

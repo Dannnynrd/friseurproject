@@ -6,18 +6,21 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faClipboardList, faUserCog, faTools, faSignOutAlt,
     faChevronRight, faChevronDown, faPlusCircle, faMinusCircle,
-    faChartBar, faUser, faTimesCircle // faTimesCircle hinzugefügt
+    faChartBar, faUser, faTimesCircle // Sicherstellen, dass faTimesCircle hier ist
 } from '@fortawesome/free-solid-svg-icons';
-import './AccountDashboard.css';
+import './AccountDashboard.css'; // Eigene CSS-Datei importieren
 
+// ... (Der Rest des Codes aus meiner vorherigen Antwort, in der wir die Navigation überarbeitet haben)
+// Stelle sicher, dass du den gesamten Code aus der vorherigen Antwort hier hast.
+// Ich füge ihn hier zur Vollständigkeit noch einmal ein:
 
 function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppointmentsList, onServiceAdded, refreshServicesList }) {
     const initialTab = currentUser?.roles?.includes("ROLE_ADMIN") ? 'adminServices' : 'bookings';
     const [activeTab, setActiveTab] = useState(initialTab);
-    const [activeMainMenu, setActiveMainMenu] = useState(currentUser?.roles?.includes("ROLE_ADMIN") ? 'verwaltung' : 'user');
+    // const [activeMainMenu, setActiveMainMenu] = useState(currentUser?.roles?.includes("ROLE_ADMIN") ? 'verwaltung' : 'user'); // Veraltet durch neue Navigationslogik
 
 
-    const [activeAccordion, setActiveAccordion] = useState(null);
+    // const [activeAccordion, setActiveAccordion] = useState(null); // Veraltet durch neue Navigationslogik
     const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 992);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -33,18 +36,13 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
             if (!mobile) setMobileNavOpen(false);
         };
         window.addEventListener('resize', handleResize);
-        handleResize();
+        handleResize(); // Initialer Check beim Laden
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     useEffect(() => {
-        const newInitialTab = currentUser?.roles?.includes("ROLE_ADMIN") ? 'adminServices' : 'bookings';
-        const newActiveMainMenu = currentUser?.roles?.includes("ROLE_ADMIN") ? 'verwaltung' : 'user';
-
-        setActiveTab(newInitialTab);
-        setActiveMainMenu(newActiveMainMenu);
-
-        setActiveAccordion(null);
+        // Beim Benutzerwechsel den initialen Tab setzen und Service-Formular ausblenden
+        setActiveTab(currentUser?.roles?.includes("ROLE_ADMIN") ? 'adminServices' : 'bookings');
         setShowServiceForm(false);
     }, [currentUser]);
 
@@ -56,46 +54,13 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
         setIsSubmittingService(false);
     };
 
-    const toggleAccordion = (itemName) => {
-        const newActiveAccordion = activeAccordion === itemName ? null : itemName;
-        setActiveAccordion(newActiveAccordion);
-
-        if (itemName !== 'adminServices' && !itemName.startsWith('verwaltung-')) {
-            setShowServiceForm(false);
-        }
-    };
-
-    const handleMainMenuClick = (mainMenuKey) => {
-        setActiveMainMenu(mainMenuKey);
-        if (mainMenuKey === 'verwaltung' && isAdmin) {
-            handleTabClick('adminServices', mainMenuKey);
-        } else if (mainMenuKey === 'user') {
-            handleTabClick('bookings', mainMenuKey);
-        }
-
-        if(isMobileView) {
-            toggleAccordion(mainMenuKey);
-        }
-    };
-
-    const handleTabClick = (tabName, mainMenuKey) => {
+    const handleTabClick = (tabName) => {
         setActiveTab(tabName);
-        if (mainMenuKey) { // Nur setzen, wenn explizit übergeben (z.B. von handleMainMenuClick)
-            setActiveMainMenu(mainMenuKey);
-        } else {
-            // Logik um mainMenuKey basierend auf tabName zu finden, falls nötig
-            if (['bookings', 'profile'].includes(tabName)) setActiveMainMenu('user');
-            if (['adminServices', 'adminAnalytics'].includes(tabName)) setActiveMainMenu('verwaltung');
-        }
-
-        if (isMobileView) {
-            if (mainMenuKey && activeAccordion !== mainMenuKey) {
-                setActiveAccordion(mainMenuKey)
-            }
-            setMobileNavOpen(false); // Menü nach Klick schließen
-        }
-        if (tabName !== 'adminServices') {
+        if (tabName !== 'adminServices') { // Formular schließen, wenn anderer Tab gewählt wird
             setShowServiceForm(false);
+        }
+        if (isMobileView) {
+            setMobileNavOpen(false); // Schließe mobiles Menü nach Klick
         }
     };
 
@@ -129,7 +94,7 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                             <h2 className="dashboard-section-heading">Dienstleistungen verwalten</h2>
                             <button
                                 onClick={() => setShowServiceForm(!showServiceForm)}
-                                className="button-link-outline toggle-service-form-button"
+                                className="button-link-outline toggle-service-form-button" // Nutzt globale Button-Stile
                                 aria-expanded={showServiceForm}
                             >
                                 <FontAwesomeIcon icon={showServiceForm ? faMinusCircle : faPlusCircle} />
@@ -157,16 +122,16 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                     </div>
                 );
             default:
-                if (isAdmin && activeMainMenu === 'verwaltung' && tabName !== 'adminServices' && tabName !== 'adminAnalytics') return renderTabContent('adminServices');
-                if (activeMainMenu === 'user' && tabName !== 'bookings' && tabName !== 'profile') return renderTabContent('bookings');
-                return <p>Bitte wählen Sie eine Option aus dem Menü.</p>;
+                // Fallback, falls kein Tab aktiv ist (sollte nicht oft vorkommen)
+                if (isAdmin) return renderTabContent('adminServices');
+                return renderTabContent('bookings');
         }
     };
 
-    const renderNavItem = (tabName, icon, label, mainMenuKeyForClick) => ( // mainMenuKeyForClick hinzugefügt
+    const renderNavItem = (tabName, icon, label) => (
         <li key={tabName} className="dashboard-nav-item">
             <button
-                onClick={() => handleTabClick(tabName, mainMenuKeyForClick)} // mainMenuKeyForClick verwenden
+                onClick={() => handleTabClick(tabName)}
                 className={`dashboard-nav-button ${activeTab === tabName ? 'active' : ''}`}
             >
                 <FontAwesomeIcon icon={icon} fixedWidth /> <span>{label}</span>
@@ -176,7 +141,7 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
 
 
     if (!currentUser) {
-        return <p>Laden...</p>;
+        return <p>Laden...</p>; // Einfache Ladeanzeige
     }
 
     const DesktopNav = () => (
@@ -184,14 +149,14 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
             <nav>
                 <ul>
                     <li className="nav-category-title">Mein Bereich</li>
-                    {renderNavItem('bookings', faClipboardList, 'Meine Termine', 'user')}
-                    {renderNavItem('profile', faUser, 'Meine Daten', 'user')}
+                    {renderNavItem('bookings', faClipboardList, 'Meine Termine')}
+                    {renderNavItem('profile', faUser, 'Meine Daten')}
 
                     {isAdmin && (
                         <>
                             <li className="nav-category-title mt-4">Verwaltung</li>
-                            {renderNavItem('adminServices', faTools, 'Services', 'verwaltung')}
-                            {renderNavItem('adminAnalytics', faChartBar, 'Analysen', 'verwaltung')}
+                            {renderNavItem('adminServices', faTools, 'Services')}
+                            {renderNavItem('adminAnalytics', faChartBar, 'Analysen')}
                         </>
                     )}
                     <li className="dashboard-nav-item logout-button-container">
@@ -205,21 +170,21 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
     );
 
     const MobileNav = () => (
-        <div className={`mobile-dashboard-nav ${mobileNavOpen ? 'open' : ''}`}>
+        <div className={`mobile-dashboard-nav ${mobileNavOpen ? 'open' : ''}`} id="mobile-dashboard-navigation">
             <button className="mobile-nav-close-button" onClick={() => setMobileNavOpen(false)}>
                 <FontAwesomeIcon icon={faTimesCircle} /> Menü schließen
             </button>
             <nav>
                 <ul>
                     <li className="nav-category-title">Mein Bereich</li>
-                    {renderNavItem('bookings', faClipboardList, 'Meine Termine', 'user')}
-                    {renderNavItem('profile', faUser, 'Meine Daten', 'user')}
+                    {renderNavItem('bookings', faClipboardList, 'Meine Termine')}
+                    {renderNavItem('profile', faUser, 'Meine Daten')}
 
                     {isAdmin && (
                         <>
                             <li className="nav-category-title mt-4">Verwaltung</li>
-                            {renderNavItem('adminServices', faTools, 'Services', 'verwaltung')}
-                            {renderNavItem('adminAnalytics', faChartBar, 'Analysen', 'verwaltung')}
+                            {renderNavItem('adminServices', faTools, 'Services')}
+                            {renderNavItem('adminAnalytics', faChartBar, 'Analysen')}
                         </>
                     )}
                     <li className="dashboard-nav-item logout-button-container">
@@ -239,10 +204,10 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                     <h1 className="dashboard-main-heading">Mein Account</h1>
                     {isMobileView && (
                         <button
-                            className="mobile-nav-toggle-button button-link-outline small-button"
+                            className="mobile-nav-toggle-button button-link-outline small-button" // Globale Button-Klassen
                             onClick={() => setMobileNavOpen(true)}
                             aria-expanded={mobileNavOpen}
-                            aria-controls="mobile-dashboard-navigation" // ID für mobile Nav
+                            aria-controls="mobile-dashboard-navigation"
                         >
                             <FontAwesomeIcon icon={faChevronRight} /> Menü
                         </button>

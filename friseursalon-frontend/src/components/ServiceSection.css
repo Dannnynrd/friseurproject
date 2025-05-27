@@ -1,0 +1,68 @@
+/* src/components/ServicesSection.css */
+#services-dynamic { /* ID der Section in App.js */
+    background-color: var(--light-grey-bg);
+}
+#services-dynamic .section-header {
+    text-align: center; max-width: 600px; margin: 0 auto 2.5rem auto;
+}
+#services-dynamic .section-header h2 { font-family: var(--font-serif), serif; font-size: 2.2rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--dark-text); }
+#services-dynamic .section-header .subtitle { color: var(--medium-grey-text); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; font-size: 0.7rem; margin-bottom: 0.3rem; }
+@media (max-width: 768px) { #services-dynamic .section-header h2 { font-size: 1.8rem; } }
+
+.services-display-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+.service-display-card {
+    background-color: var(--light-bg);
+    padding: 1.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.service-display-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.service-info h4 {
+    font-family: var(--font-sans), sans-serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    color: var(--dark-text);
+}
+.service-info p.description {
+    font-size: 0.9rem;
+    color: var(--medium-grey-text);
+    margin-bottom: 1rem;
+    flex-grow: 1;
+    line-height: 1.6;
+}
+.service-action {
+    margin-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.service-action .price-duration {
+    font-size: 0.9rem;
+    color: var(--dark-text);
+}
+.service-action .price-duration .price {
+    font-weight: 600;
+}
+.service-action .price-duration .duration {
+    color: var(--medium-grey-text);
+    margin-left: 0.5em;
+}
+.service-action .book-service-btn { /* Erbt von .button-link .small-button */
+    /* font-size: 0.8rem; */
+    /* padding: 0.4rem 0.8rem; */
+}

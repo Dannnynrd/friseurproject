@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import './App.css';
-import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUserCircle, faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
+import './App.css'; // Globale Stile (wird stark reduziert)
+import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
+
+// Layout Komponenten (jetzt direkt aus components/)
+import Header from './components/Header';
+import Footer from './components/Footer';
 
 // Dynamische Komponenten
 import Login from './components/Login';
@@ -10,19 +12,19 @@ import AuthService from './services/auth.service';
 import AuthVerify from './common/AuthVerify';
 import EventBus from './common/EventBus';
 
-// Statische Design-Komponenten
+// Statische Design-Komponenten (Homepage Sektionen)
 import HeroSection from './components/HeroSection';
 import TrustBarSection from './components/TrustBarSection';
 import ExperienceSection from './components/ExperienceSection';
 import TestimonialsSection from './components/TestimonialsSection';
 import AboutFounderSection from './components/AboutFounderSection';
-import ServicesSection from './components/ServicesSection';
+import ServicesSection from './components/ServicesSection'; // Die für die Homepage-Ansicht
 import GalleryJournalSection from './components/GalleryJournalSection';
 import EssentialsSection from './components/EssentialsSection';
 import FAQSection from './components/FAQSection';
 import LocationSection from './components/LocationSection';
 import NewsletterSection from './components/NewsletterSection';
-import Footer from './components/Footer';
+
 
 // Seiten
 import BookingPage from './pages/BookingPage';
@@ -40,29 +42,31 @@ function App() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
 
-    const [refreshServicesList, setRefreshServicesList] = useState(0); // Wird das noch gebraucht?
-    const [refreshAppointmentsList, setRefreshAppointmentsList] = useState(0); // Wird das noch gebraucht?
+    const [refreshServicesList, setRefreshServicesList] = useState(0);
+    const [refreshAppointmentsList, setRefreshAppointmentsList] = useState(0);
 
     const headerRef = useRef(null);
     const preloaderRef = useRef(null);
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Schließt mobiles Menü bei Routenänderung
     useEffect(() => {
         closeMobileMenu();
-    }, [location.pathname]); // Nur bei Pfadänderung
+    }, [location.pathname]);
 
-    // Body-Klasse für Scroll-Sperre bei offenem mobilen Menü
     useEffect(() => {
         const bodyClass = 'mobile-menu-active';
         if (isMobileMenuOpen) {
             document.body.classList.add(bodyClass);
-            document.documentElement.classList.add(bodyClass); // Für html-Tag
+            document.documentElement.classList.add(bodyClass);
         } else {
             document.body.classList.remove(bodyClass);
             document.documentElement.classList.remove(bodyClass);
         }
+        return () => {
+            document.body.classList.remove(bodyClass);
+            document.documentElement.classList.remove(bodyClass);
+        };
     }, [isMobileMenuOpen]);
 
     const logOut = useCallback(() => {
@@ -91,32 +95,29 @@ function App() {
         return () => EventBus.remove("logout", handleLogoutEvent);
     }, [logOut]);
 
-    // Preloader und Sticky Header
     useEffect(() => {
         const preloader = preloaderRef.current;
         let preloaderTimeoutId;
         if (preloader) {
-            preloaderTimeoutId = setTimeout(() => preloader.classList.add('loaded'), 300); // Schnellere Preloader-Zeit
+            preloaderTimeoutId = setTimeout(() => preloader.classList.add('loaded'), 300);
         }
 
-        const header = headerRef.current;
+        const headerElement = headerRef.current;
         let scrollHandler;
-        if (header) {
+        if (headerElement) {
             scrollHandler = () => {
-                const scrolled = window.scrollY > 20; // Früher "scrolled"
-                header.classList.toggle('scrolled', scrolled);
-                setIsHeaderScrolled(scrolled); // Nur den State setzen, Klasse wird direkt manipuliert
+                const scrolled = window.scrollY > 20;
+                setIsHeaderScrolled(scrolled);
             };
             window.addEventListener('scroll', scrollHandler, { passive: true });
-            scrollHandler(); // Initialer Check
+            scrollHandler();
         }
         return () => {
             if (preloaderTimeoutId) clearTimeout(preloaderTimeoutId);
-            if (scrollHandler && header) window.removeEventListener('scroll', scrollHandler);
+            if (scrollHandler && headerElement) window.removeEventListener('scroll', scrollHandler);
         };
     }, []);
 
-    // Dynamisches Body-Padding basierend auf Header-Höhe
     useEffect(() => {
         const updateBodyPadding = () => {
             if (headerRef.current) {
@@ -124,21 +125,20 @@ function App() {
                 document.body.style.paddingTop = `${headerHeight}px`;
             }
         };
-
-        updateBodyPadding(); // Initial
+        updateBodyPadding();
         const resizeObserver = new ResizeObserver(updateBodyPadding);
         if (headerRef.current) {
             resizeObserver.observe(headerRef.current);
         }
-
-        // Timeout, um die Höhe nach CSS-Transitionen des Headers (z.B. beim Scrollen) neu zu berechnen
         const transitionTimeout = setTimeout(updateBodyPadding, 300);
-
         return () => {
-            if (headerRef.current) resizeObserver.unobserve(headerRef.current);
+            if (headerRef.current) {
+                resizeObserver.unobserve(headerRef.current);
+            }
             clearTimeout(transitionTimeout);
+            document.body.style.paddingTop = '0';
         };
-    }, [isHeaderScrolled, isMobileMenuOpen, location.pathname]); // Reagiert auf relevante Änderungen
+    }, [isHeaderScrolled, isMobileMenuOpen, location.pathname]);
 
     const openBookingModal = useCallback((serviceName = null) => {
         const path = serviceName ? `/buchen/${encodeURIComponent(serviceName)}` : '/buchen';
@@ -174,45 +174,14 @@ function App() {
         <div className="App">
             <div id="preloader" ref={preloaderRef}><span className="loader-char">IMW</span></div>
 
-            <header
-                className={`header ${isHeaderScrolled ? 'scrolled' : ''} ${isMobileMenuOpen ? 'menu-open-header-state' : ''}`}
-                id="header"
-                ref={headerRef}
-            >
-                <div className="container navbar">
-                    <Link to="/" className="logo" onClick={closeMobileMenu}>IMW</Link>
-
-                    <button
-                        className="mobile-menu-toggle"
-                        onClick={toggleMobileMenu}
-                        aria-label="Menü öffnen/schließen"
-                        aria-expanded={isMobileMenuOpen}
-                    >
-                        <FontAwesomeIcon icon={isMobileMenuOpen ? faTimes : faBars} />
-                    </button>
-
-                    <nav className={`nav-links-container ${isMobileMenuOpen ? 'open' : ''}`} id="main-nav">
-                        <div className="main-nav-group">
-                            <a href="/#experience" className="interactive nav-link-item" onClick={closeMobileMenu}>Erfahrung</a>
-                            <a href="/#about-founder" className="interactive nav-link-item" onClick={closeMobileMenu}>Über Mich</a>
-                            <a href="/#services-dynamic" className="interactive nav-link-item" onClick={closeMobileMenu}>Services</a>
-                            <a href="/#gallery-journal" className="interactive nav-link-item" onClick={closeMobileMenu}>Galerie</a>
-                            <a href="/#faq" className="interactive nav-link-item" onClick={closeMobileMenu}>FAQ</a>
-                        </div>
-
-                        <div className="nav-auth-actions">
-                            {currentUser ? (
-                                <Link to="/my-account" className="interactive nav-link-item account-link" onClick={closeMobileMenu}>
-                                    <FontAwesomeIcon icon={faUserCircle} /> Mein Account
-                                </Link>
-                            ) : (
-                                <Link to="/login" className="interactive nav-link-item login-link" onClick={closeMobileMenu}>Login</Link>
-                            )}
-                            <Link to="/buchen" className="button-link interactive nav-cta" onClick={closeMobileMenu}>Termin buchen</Link>
-                        </div>
-                    </nav>
-                </div>
-            </header>
+            <Header
+                currentUser={currentUser}
+                isMobileMenuOpen={isMobileMenuOpen}
+                toggleMobileMenu={toggleMobileMenu}
+                closeMobileMenu={closeMobileMenu}
+                isHeaderScrolled={isHeaderScrolled}
+                headerRef={headerRef}
+            />
 
             <Routes>
                 <Route path="/" element={<HomePageLayout />} />
@@ -228,7 +197,6 @@ function App() {
                             </div>
                     }
                 />
-
                 <Route
                     path="/my-account"
                     element={

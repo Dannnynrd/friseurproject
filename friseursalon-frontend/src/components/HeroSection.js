@@ -19,7 +19,7 @@ function HeroSection() {
 
         return () => {
             if (sectionRef.current) {
-                observer.unobserve(sectionRef.current);
+                observer.unobserve(sectionRef.current); // Korrektur: unobserve
             }
         };
     }, []);
