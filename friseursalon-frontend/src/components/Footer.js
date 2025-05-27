@@ -1,51 +1,59 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+// Korrekter Import für Marken-Icons, nachdem das Paket installiert wurde
+import { faFacebookF, faInstagram, faPinterestP } from '@fortawesome/free-brands-svg-icons';
+import './Footer.css';
 
 function Footer() {
-    const yearSpanRef = useRef(null); // Für das Copyright-Jahr
-
-    useEffect(() => {
-        if (yearSpanRef.current) {
-            yearSpanRef.current.textContent = new Date().getFullYear();
-        }
-    }, []); // Nur einmal beim Mount
-
     return (
         <footer className="footer">
             <div className="container">
                 <div className="footer-grid">
                     <div className="footer-column">
                         <h4>IMW Salon</h4>
-                        <p>Die Kunst der Reduktion. Ich kreiere Balance, Form und ein Gefühl von müheloser Eleganz.</p>
+                        <p>Musterstraße 123<br />12345 Berlin<br />Deutschland</p>
+                        <p><a href="tel:+49301234567" className="interactive">+49 30 1234567</a><br />
+                            <a href="mailto:hallo@imw-salon.de" className="interactive">hallo@imw-salon.de</a></p>
                     </div>
                     <div className="footer-column">
-                        <h4>Quick Links</h4>
+                        <h4>Öffnungszeiten</h4>
                         <ul>
-                            <li><a href="#experience" className="interactive">Die Erfahrung</a></li>
-                            <li><a href="#services-dynamic" className="interactive">Services</a></li>
-                            <li><a href="#about-founder" className="interactive">Über Mich</a></li>
-                            <li><a href="#faq" className="interactive">FAQ</a></li>
+                            <li>Di - Fr: 09:00 - 18:00 Uhr</li>
+                            <li>Sa: 09:00 - 15:00 Uhr</li>
+                            <li>So & Mo: Geschlossen</li>
                         </ul>
                     </div>
                     <div className="footer-column">
-                        <h4>Kontakt</h4>
-                        <p>
-                            Musterstraße 123<br />
-                            10115 Berlin, Deutschland<br /><br />
-                            <a href="tel:+49301234567" className="interactive">T: (030) 123 456 7</a><br />
-                            <a href="mailto:hallo@imw-salon.de" className="interactive">E: hallo@imw-salon.de</a>
-                        </p>
+                        <h4>Navigation</h4>
+                        <ul>
+                            <li><a href="/#experience" className="interactive">Erfahrung</a></li>
+                            <li><a href="/#services-dynamic" className="interactive">Services</a></li>
+                            <li><Link to="/buchen" className="interactive">Termin buchen</Link></li>
+                            <li><a href="/#faq" className="interactive">FAQ</a></li>
+                        </ul>
                     </div>
                     <div className="footer-column">
                         <h4>Folgen Sie mir</h4>
                         <div className="social-icons">
-                            <a href="#" className="interactive" aria-label="Instagram"><i className="fab fa-instagram"></i></a>
-                            <a href="#" className="interactive" aria-label="Facebook"><i className="fab fa-facebook-f"></i></a>
-                            <a href="#" className="interactive" aria-label="Pinterest"><i className="fab fa-pinterest-p"></i></a>
+                            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="interactive" aria-label="Instagram">
+                                <FontAwesomeIcon icon={faInstagram} />
+                            </a>
+                            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="interactive" aria-label="Facebook">
+                                <FontAwesomeIcon icon={faFacebookF} />
+                            </a>
+                            <a href="https://pinterest.com" target="_blank" rel="noopener noreferrer" className="interactive" aria-label="Pinterest">
+                                <FontAwesomeIcon icon={faPinterestP} />
+                            </a>
                         </div>
                     </div>
                 </div>
                 <div className="footer-bottom">
-                    <p>&copy; <span id="copyright-year" ref={yearSpanRef}></span> IMW Salon. Alle Rechte vorbehalten. | <a href="#" className="interactive">Impressum</a> | <a href="#" className="interactive">Datenschutz</a></p>
+                    <p>&copy; {new Date().getFullYear()} IMW Friseursalon. Alle Rechte vorbehalten.</p>
+                    <p>
+                        {/* Hier sollten tatsächliche Links zu Impressum/Datenschutz-Seiten sein, falls vorhanden */}
+                        <Link to="/impressum" className="interactive">Impressum</Link> | <Link to="/datenschutz" className="interactive">Datenschutz</Link>
+                    </p>
                 </div>
             </div>
         </footer>

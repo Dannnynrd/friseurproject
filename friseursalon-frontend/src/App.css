@@ -23,29 +23,21 @@
   --focus-ring-color: #007bff;
   --focus-ring-subtle-color: rgba(0, 123, 255, 0.3);
 
-  /* Farben für Schritt-Indikatoren (BookingPage) - Diese sind jetzt in BookingPage.css */
-  /* --step-indicator-default-border: var(--border-color); ... etc. ... */
-
   --font-serif: 'Playfair Display', serif;
   --font-sans: 'Manrope', sans-serif;
   --transition-ease: ease-in-out;
 
+  /* Diese können auch in Header.css/Footer.css, wenn sie nur dort verwendet werden */
   --header-height-desktop: 5rem;
   --header-height-mobile: 4.5rem;
   --footer-height: 14rem;
 }
 
-/* --- LAYOUT & HELPER (Global) --- */
+/* --- LAYOUT & HELPER (Minimal Global) --- */
 .container { max-width: 1280px; margin: 0 auto; padding: 0 1.5rem; }
 main { display: block; position: relative; z-index: 1; }
-section { padding: 4rem 0; position: relative; z-index: 0; } /* Globale Basis für Sektionen */
+section { padding: 4rem 0; position: relative; z-index: 0; }
 @media (max-width: 768px) { section { padding: 2.5rem 0; } }
-
-/* .section-header ist spezifisch für Homepage Sektionen -> in die jeweilige Sektions-CSS */
-.section-header { text-align: center; max-width: 600px; margin: 0 auto 2.5rem auto; }
-.section-header h2 { font-family: var(--font-serif), serif; font-size: 2.2rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--dark-text); }
-@media (max-width: 768px) { .section-header h2 { font-size: 1.8rem; } }
-.section-header .subtitle { color: var(--medium-grey-text); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; font-size: 0.7rem; margin-bottom: 0.3rem; }
 
 /* Globale Hilfsklassen */
 .mb-3 { margin-bottom: 1rem; }
@@ -80,47 +72,15 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   outline: none;
   -webkit-tap-highlight-color: transparent;
 }
-/* Fokus-Stile (bleiben global für Konsistenz) */
-.button-link:focus-visible,
-.nav-cta:focus-visible, /* In Header.css */
-.auth-button:focus-visible, /* In Login.css */
-.modal-actions button:focus-visible,
-.confirm-modal-actions button:focus-visible, /* In ConfirmModal.css */
-.time-slot-button:focus-visible, /* In BookingPage.css */
-.service-card:focus-visible, /* In BookingPage.css für dortige Service-Auswahl */
-.newsletter-form button.interactive:focus-visible, /* In NewsletterSection.css */
-.form-group input:focus-visible,
-.form-group textarea:focus-visible,
-.form-group select:focus-visible,
-.react-datepicker-wrapper input:focus-visible, /* In BookingPage.css */
-.react-datepicker__navigation:focus-visible, /* In BookingPage.css */
-.react-datepicker__day:focus-visible, /* In BookingPage.css */
-.react-datepicker__time-list-item:focus-visible, /* In BookingPage.css */
-.mobile-menu-toggle:focus-visible, /* In Header.css */
-.slider-nav button.interactive:focus-visible, /* In TestimonialsSection.css */
-.toggle-service-form-button:focus-visible, /* In AccountDashboard.css */
-.appointment-filter-controls .button-link-outline:focus-visible, /* In AccountDashboard.css */
-.action-buttons-table button:focus-visible, /* In AccountDashboard.css */
-.mobile-nav-toggle-button:focus-visible,  /* In AccountDashboard.css */
-.mobile-nav-close-button:focus-visible /* In AccountDashboard.css */
-{
+/* Globale Fokus-Stile (bleiben hier für Konsistenz über alle Komponenten) */
+*:focus-visible {
   outline: 2px solid var(--focus-ring-color) !important;
   outline-offset: 2px !important;
   box-shadow: 0 0 0 2px var(--light-bg), 0 0 0 4px var(--focus-ring-color) !important;
 }
-/* Spezifische Fokus-Stile, die von Komponenten-CSS gehandhabt werden */
-.time-slot-button.selected:focus-visible,
-.react-datepicker__day--selected:focus-visible,
-.appointment-filter-controls .button-link-outline.active:focus-visible {
-  box-shadow: 0 0 0 2px var(--dark-text), 0 0 0 4px var(--focus-ring-color) !important;
-}
-.nav-link-item:focus-visible, /* In Header.css */
-.footer a.interactive:focus-visible, /* In Footer.css */
-.faq-item summary.interactive:focus-visible, /* Wird in FAQSection.css relevant */
-.product-card a.interactive:focus-visible, /* Wird in EssentialsSection.css relevant */
-.login-prompt-booking a:not(.button-link):focus-visible, /* Wird in BookingPage.css relevant */
-.edit-selection-button:focus-visible, /* Wird in BookingPage.css relevant */
-.logo:focus-visible { /* In Header.css */
+/* Spezifische Fokus-Stile für Elemente, die anders aussehen müssen (z.B. text-links) */
+a:not(.button-link):not(.button-link-outline):focus-visible,
+.logo:focus-visible { /* .logo ist in Header.css */
   outline: 2px solid var(--focus-ring-subtle-color);
   outline-offset: 1px;
   background-color: var(--light-grey-bg);
@@ -128,9 +88,8 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   box-shadow: none !important;
 }
 
-/* Globale Button-Basisstile */
-.button-link /* Basis für viele Buttons */
-{
+/* Globale Button-Basisstile (Komponenten definieren Varianten und verwenden diese Klassen) */
+.button-link {
   display: inline-flex; align-items: center; justify-content: center;
   background-color: var(--dark-text); color: var(--light-bg);
   padding: 0.7rem 1.5rem; border-radius: 4px; text-decoration: none;
@@ -139,16 +98,16 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   text-align: center; cursor: pointer; line-height: 1.4;
 }
 .button-link:hover:not(:disabled) {
-  background-color: #333333; border-color: #333333; color: var(--light-bg);
+  background-color: #333333; border-color: #333333;
   transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 .button-link-outline {
   background-color: transparent; color: var(--dark-text); border: 1px solid var(--dark-text);
 }
 .button-link-outline:hover:not(:disabled) {
-  background-color: var(--light-grey-bg); color: var(--dark-text); border-color: var(--dark-text);
+  background-color: var(--light-grey-bg); color: var(--dark-text);
 }
-.button-link[disabled], .button-link-outline[disabled] { /* Globale Disabled-Stile */
+.button-link[disabled], .button-link-outline[disabled] {
   background-color: var(--disabled-bg) !important;
   border-color: var(--disabled-border) !important;
   color: var(--disabled-text) !important;
@@ -157,15 +116,12 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 }
 .button-link .svg-inline--fa, .button-link-outline .svg-inline--fa { margin-right: 0.5em; }
 
-/* Kleine Buttons (Variante) */
+/* Kleine Buttons (Variante) - Komponenten-CSS kann dies verwenden */
 .small-button {
-  padding: 0.4rem 0.8rem !important; /* Wichtig für Override */
+  padding: 0.4rem 0.8rem !important;
   font-size: 0.8rem !important;
 }
-.small-button.icon-button .svg-inline--fa { margin-right: 0.35em !important; }
-.small-button.icon-button .button-text-desktop { margin-left: 0.1em !important; }
-
-/* Danger Buttons (Variante) */
+/* Danger Buttons (Variante) - Komponenten-CSS kann dies verwenden */
 .button-link.danger, .button-link-outline.danger {
   color: var(--danger-color);
   border-color: var(--danger-color);
@@ -174,12 +130,6 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .button-link-outline.danger:hover:not(:disabled) {
   background-color: var(--danger-color);
   color: white;
-  border-color: var(--danger-color);
-}
-.button-link.danger:active:not(:disabled),
-.button-link-outline.danger:active:not(:disabled) {
-  background-color: var(--danger-hover-bg);
-  border-color: var(--danger-hover-bg);
 }
 
 
@@ -219,10 +169,6 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 .form-message.info { color: var(--info-color); background-color: var(--info-bg-light); border: 1px solid var(--info-color); }
 .form-message.small { font-size: 0.8rem; padding: 0.5rem 0.8rem; margin-top: 0.5rem; }
 
-/* --- Globale Tabellenstile (Basis für Dashboard-Tabellen) --- */
-/* Diese sind jetzt primär in AccountDashboard.css */
-
-
 /* --- PRELOADER --- */
 #preloader { position: fixed; inset: 0; background: var(--light-bg); z-index: 10002; display: flex; align-items: center; justify-content: center; transition: opacity 0.5s var(--transition-ease) 0.1s, visibility 0s 0.6s linear; }
 #preloader.loaded { opacity: 0; visibility: hidden; pointer-events: none; }
@@ -243,7 +189,7 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
 }
 @keyframes fadeInModalOverlay { from { opacity: 0; } to { opacity: 1; } }
 
-.modal-content { /* Gilt für ServiceEditModal und AppointmentEditModal, Basis für ConfirmModal */
+.modal-content {
   background-color: var(--light-bg);
   padding: 1.5rem 2rem 2rem;
   border-radius: 8px;
@@ -258,26 +204,27 @@ a, button, input, textarea, select, summary, [tabindex]:not([tabindex*="-"]) {
   from { opacity: 0; transform: translateY(-30px) scale(0.95); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
-.modal-content h3 { /* Für ServiceEditModal & AppointmentEditModal Überschriften */
+.modal-content h3 {
   font-family: var(--font-serif), serif; font-size: 1.5rem;
   color: var(--dark-text); margin-top: 0; margin-bottom: 1.5rem;
   text-align: center;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--border-color);
 }
-.modal-actions { /* Für ServiceEditModal & AppointmentEditModal Aktionen */
+.modal-actions {
   display: flex; justify-content: flex-end;
   gap: 0.75rem; margin-top: 1.5rem;
   padding-top: 1rem;
   border-top: 1px solid var(--border-color);
 }
 .modal-actions .button-link-outline.cancel-button {
-  /* Stile werden von .button-link-outline geerbt und in ConfirmModal.css ggf. angepasst */
+  /* Stile werden von .button-link-outline geerbt */
 }
 .modal-content .form-message { margin-top: 1rem; font-size: 0.85rem; }
 
-
-/* Stile für Homepage-Sektionen (z.B. #hero, #trust-bar etc.) sind jetzt in ihren eigenen CSS-Dateien. */
-/* Stile für .footer sind in Footer.css. */
-/* Stile für .header sind in Header.css. */
-/* Stile für .section-header sind jetzt in den jeweiligen Sektions-CSS-Dateien. */
+/* Stile für .section-header bleiben hier, da sie von mehreren Homepage-Sektionen genutzt werden,
+   bis jede Sektion ihr eigenes CSS mitbringt und dies ggf. dupliziert/anpasst. */
+.section-header { text-align: center; max-width: 600px; margin: 0 auto 2.5rem auto; }
+.section-header h2 { font-family: var(--font-serif), serif; font-size: 2.2rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--dark-text); }
+@media (max-width: 768px) { .section-header h2 { font-size: 1.8rem; } }
+.section-header .subtitle { color: var(--medium-grey-text); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; font-size: 0.7rem; margin-bottom: 0.3rem; }

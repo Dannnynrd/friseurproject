@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-
+import "./ExperienceSection.css"
 function ExperienceSection() {
     const sectionRef = useRef(null);
 
