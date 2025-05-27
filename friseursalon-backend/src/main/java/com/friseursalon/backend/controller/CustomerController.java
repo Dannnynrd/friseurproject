@@ -1,12 +1,17 @@
 package com.friseursalon.backend.controller;
 
 import com.friseursalon.backend.model.Customer;
+import com.friseursalon.backend.model.User;
+import com.friseursalon.backend.payload.request.ProfileUpdateRequest;
 import com.friseursalon.backend.service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -43,6 +48,8 @@ public class CustomerController {
     }
 
     // PUT http://localhost:8080/api/customers/{id}
+    // This existing endpoint might be for admin use or a different customer update scenario.
+    // For user profile updates, we'll use the new /profile endpoint.
     @PutMapping("/{id}")
     public ResponseEntity<Customer> updateCustomer(@PathVariable Long id, @RequestBody Customer customerDetails) {
         try {
@@ -50,6 +57,22 @@ public class CustomerController {
             return new ResponseEntity<>(updatedCustomer, HttpStatus.OK);
         } catch (RuntimeException ex) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    // PUT http://localhost:8080/api/customers/profile
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateUserProfile(@Valid @RequestBody ProfileUpdateRequest profileUpdateRequest, @AuthenticationPrincipal UserDetails currentUser) {
+        if (currentUser == null) {
+            return new ResponseEntity<>("User not authenticated", HttpStatus.UNAUTHORIZED);
+        }
+        String email = currentUser.getUsername(); // Assuming email is used as username in UserDetails
+        try {
+            User updatedUser = customerService.updateUserProfile(email, profileUpdateRequest);
+            // Consider creating a UserProfileResponse DTO to avoid sending back the password
+            return new ResponseEntity<>(updatedUser, HttpStatus.OK);
+        } catch (RuntimeException ex) { // Catching a broad exception, consider more specific ones
+            return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND); // Or HttpStatus.BAD_REQUEST for validation
         }
     }
 

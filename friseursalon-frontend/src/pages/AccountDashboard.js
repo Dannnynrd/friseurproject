@@ -7,8 +7,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faClipboardList, faUserCog, faTools, faSignOutAlt,
     faChevronRight, faChevronDown, faPlusCircle, faMinusCircle,
-    faChartBar, faUser, faTimesCircle // Sicherstellen, dass faTimesCircle hier ist
+    faChartBar, faUser, faTimesCircle, faEdit, faSave, faTimes // For profile edit
 } from '@fortawesome/free-solid-svg-icons';
+import api from '../services/api.service'; // Import api service
+import authService from '../services/auth.service'; // Import auth service
 
 
 // ... (Der Rest des Codes aus meiner vorherigen Antwort, in der wir die Navigation überarbeitet haben)
@@ -18,15 +20,37 @@ import {
 function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppointmentsList, onServiceAdded, refreshServicesList }) {
     const initialTab = currentUser?.roles?.includes("ROLE_ADMIN") ? 'adminServices' : 'bookings';
     const [activeTab, setActiveTab] = useState(initialTab);
-    // const [activeMainMenu, setActiveMainMenu] = useState(currentUser?.roles?.includes("ROLE_ADMIN") ? 'verwaltung' : 'user'); // Veraltet durch neue Navigationslogik
-
-
-    // const [activeAccordion, setActiveAccordion] = useState(null); // Veraltet durch neue Navigationslogik
     const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 992);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
     const [showServiceForm, setShowServiceForm] = useState(false);
     const [isSubmittingService, setIsSubmittingService] = useState(false);
+
+    // State for profile editing
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const [profileFormData, setProfileFormData] = useState({
+        firstName: '',
+        lastName: '',
+        phoneNumber: ''
+    });
+    const [profileLoading, setProfileLoading] = useState(false);
+    const [profileError, setProfileError] = useState('');
+    const [profileSuccess, setProfileSuccess] = useState('');
+    
+    // Local copy of currentUser to reflect updates immediately if prop is not directly mutable
+    const [internalCurrentUser, setInternalCurrentUser] = useState(currentUser);
+
+    useEffect(() => {
+        setInternalCurrentUser(currentUser); // Sync with prop
+        if (currentUser) {
+            setProfileFormData({
+                firstName: currentUser.firstName || '',
+                lastName: currentUser.lastName || '',
+                phoneNumber: currentUser.phoneNumber || ''
+            });
+        }
+    }, [currentUser]);
+
 
     const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes("ROLE_ADMIN");
 
@@ -43,9 +67,17 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
 
     useEffect(() => {
         // Beim Benutzerwechsel den initialen Tab setzen und Service-Formular ausblenden
-        setActiveTab(currentUser?.roles?.includes("ROLE_ADMIN") ? 'adminServices' : 'bookings');
+        setActiveTab(internalCurrentUser?.roles?.includes("ROLE_ADMIN") ? 'adminServices' : 'bookings');
         setShowServiceForm(false);
-    }, [currentUser]);
+        setIsEditingProfile(false); // Reset editing state on user change
+         if (internalCurrentUser) {
+            setProfileFormData({
+                firstName: internalCurrentUser.firstName || '',
+                lastName: internalCurrentUser.lastName || '',
+                phoneNumber: internalCurrentUser.phoneNumber || ''
+            });
+        }
+    }, [internalCurrentUser]);
 
     const handleServiceAddedCallback = () => {
         if (onServiceAdded) {
@@ -79,13 +111,71 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                 return (
                     <div className="dashboard-section-content">
                         <h2 className="dashboard-section-heading">Meine Daten</h2>
-                        <div className="dashboard-profile-info">
-                            <p><strong>Vorname:</strong> {currentUser?.firstName || '-'}</p>
-                            <p><strong>Nachname:</strong> {currentUser?.lastName || '-'}</p>
-                            <p><strong>E-Mail:</strong> {currentUser?.email || '-'}</p>
-                            <p><strong>Telefon:</strong> {currentUser?.phoneNumber || 'Nicht angegeben'}</p>
-                            <p><strong>Rollen:</strong> {currentUser?.roles?.join(', ') || '-'}</p>
-                        </div>
+                        {profileError && <div className="alert alert-danger">{profileError}</div>}
+                        {profileSuccess && <div className="alert alert-success">{profileSuccess}</div>}
+
+                        {!isEditingProfile ? (
+                            <div className="dashboard-profile-info">
+                                <p><strong>Vorname:</strong> {internalCurrentUser?.firstName || '-'}</p>
+                                <p><strong>Nachname:</strong> {internalCurrentUser?.lastName || '-'}</p>
+                                <p><strong>E-Mail:</strong> {internalCurrentUser?.email || '-'}</p>
+                                <p><strong>Telefon:</strong> {internalCurrentUser?.phoneNumber || 'Nicht angegeben'}</p>
+                                <p><strong>Rollen:</strong> {internalCurrentUser?.roles?.join(', ') || '-'}</p>
+                                <button onClick={() => {
+                                    setIsEditingProfile(true);
+                                    setProfileError('');
+                                    setProfileSuccess('');
+                                }} className="button-primary edit-profile-button">
+                                    <FontAwesomeIcon icon={faEdit} /> Bearbeiten
+                                </button>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleProfileUpdate} className="profile-edit-form">
+                                <div className="form-group">
+                                    <label htmlFor="firstName">Vorname</label>
+                                    <input
+                                        type="text"
+                                        id="firstName"
+                                        name="firstName"
+                                        className="form-control"
+                                        value={profileFormData.firstName}
+                                        onChange={handleProfileFormChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="lastName">Nachname</label>
+                                    <input
+                                        type="text"
+                                        id="lastName"
+                                        name="lastName"
+                                        className="form-control"
+                                        value={profileFormData.lastName}
+                                        onChange={handleProfileFormChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="phoneNumber">Telefonnummer</label>
+                                    <input
+                                        type="tel"
+                                        id="phoneNumber"
+                                        name="phoneNumber"
+                                        className="form-control"
+                                        value={profileFormData.phoneNumber}
+                                        onChange={handleProfileFormChange}
+                                    />
+                                </div>
+                                <div className="profile-form-actions">
+                                    <button type="submit" className="button-primary" disabled={profileLoading}>
+                                        <FontAwesomeIcon icon={faSave} /> {profileLoading ? 'Speichern...' : 'Speichern'}
+                                    </button>
+                                    <button type="button" className="button-secondary" onClick={handleCancelEditProfile} disabled={profileLoading}>
+                                        <FontAwesomeIcon icon={faTimes} /> Abbrechen
+                                    </button>
+                                </div>
+                            </form>
+                        )}
                     </div>
                 );
             case 'adminServices':
@@ -126,8 +216,58 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                 // Fallback, falls kein Tab aktiv ist (sollte nicht oft vorkommen)
                 if (isAdmin) return renderTabContent('adminServices');
                 return renderTabContent('bookings');
+    };
+    
+    const handleProfileFormChange = (e) => {
+        const { name, value } = e.target;
+        setProfileFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleCancelEditProfile = () => {
+        setIsEditingProfile(false);
+        setProfileError('');
+        setProfileSuccess('');
+        // Reset form data to current user's data
+        if (internalCurrentUser) {
+            setProfileFormData({
+                firstName: internalCurrentUser.firstName || '',
+                lastName: internalCurrentUser.lastName || '',
+                phoneNumber: internalCurrentUser.phoneNumber || ''
+            });
         }
     };
+
+    const handleProfileUpdate = async (e) => {
+        e.preventDefault();
+        setProfileLoading(true);
+        setProfileError('');
+        setProfileSuccess('');
+
+        try {
+            const updatedUserData = await api.updateUserProfile(profileFormData);
+            setProfileSuccess('Profil erfolgreich aktualisiert!');
+            setIsEditingProfile(false);
+            // Update internalCurrentUser to reflect changes immediately in the UI
+            // authService.getCurrentUser() will also return the updated user from localStorage
+            const refreshedUserFromStorage = authService.getCurrentUser();
+            if(refreshedUserFromStorage){
+                 setInternalCurrentUser(refreshedUserFromStorage);
+            } else {
+                 // Fallback if local storage update wasn't immediate or failed
+                 setInternalCurrentUser(prev => ({...prev, ...updatedUserData}));
+            }
+           
+
+            // If an onProfileUpdate prop was available, we'd call it here:
+            // onProfileUpdate(updatedUserData); 
+        } catch (error) {
+            const errorMsg = error.response?.data?.message || error.message || "Fehler beim Aktualisieren des Profils.";
+            setProfileError(errorMsg);
+        } finally {
+            setProfileLoading(false);
+        }
+    };
+
 
     const renderNavItem = (tabName, icon, label) => (
         <li key={tabName} className="dashboard-nav-item">
@@ -141,7 +281,7 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
     );
 
 
-    if (!currentUser) {
+    if (!internalCurrentUser) {
         return <p>Laden...</p>; // Einfache Ladeanzeige
     }
 
@@ -215,7 +355,7 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                     )}
                 </div>
                 <p className="dashboard-welcome-message">
-                    Hallo, {currentUser.firstName || currentUser.email}! Hier verwalten Sie Ihre Daten.
+                    Hallo, {internalCurrentUser.firstName || internalCurrentUser.email}! Hier verwalten Sie Ihre Daten.
                 </p>
 
                 <div className="dashboard-layout">

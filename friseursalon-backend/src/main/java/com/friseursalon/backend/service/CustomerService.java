@@ -1,8 +1,12 @@
 package com.friseursalon.backend.service;
 
 import com.friseursalon.backend.model.Customer;
+import com.friseursalon.backend.model.User;
+import com.friseursalon.backend.payload.request.ProfileUpdateRequest;
 import com.friseursalon.backend.repository.CustomerRepository;
+import com.friseursalon.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // Für Transaktionen
 
@@ -13,10 +17,12 @@ import java.util.Optional;
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final UserRepository userRepository; // Added UserRepository
 
     @Autowired
-    public CustomerService(CustomerRepository customerRepository) {
+    public CustomerService(CustomerRepository customerRepository, UserRepository userRepository) { // Updated constructor
         this.customerRepository = customerRepository;
+        this.userRepository = userRepository;
     }
 
     public List<Customer> getAllCustomers() {
@@ -31,6 +37,25 @@ public class CustomerService {
     public Customer createCustomer(Customer customer) {
         // Hier könnten Validierungen oder zusätzliche Logik stehen, bevor gespeichert wird
         return customerRepository.save(customer);
+    }
+
+    @Transactional
+    public User updateUserProfile(String email, ProfileUpdateRequest profileUpdateRequest) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+
+        // Update fields if they are provided in the request
+        if (profileUpdateRequest.getFirstName() != null) {
+            user.setFirstName(profileUpdateRequest.getFirstName());
+        }
+        if (profileUpdateRequest.getLastName() != null) {
+            user.setLastName(profileUpdateRequest.getLastName());
+        }
+        if (profileUpdateRequest.getPhoneNumber() != null) {
+            user.setPhoneNumber(profileUpdateRequest.getPhoneNumber());
+        }
+
+        return userRepository.save(user);
     }
 
     @Transactional

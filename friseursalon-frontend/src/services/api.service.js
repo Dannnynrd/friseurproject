@@ -30,4 +30,26 @@ api.interceptors.response.use(
     }
 );
 
+// User profile update
+api.updateUserProfile = function(profileData) {
+    return this.put("/customers/profile", profileData)
+        .then(response => {
+            // Update user in localStorage if the API call is successful
+            const storedUser = JSON.parse(localStorage.getItem("user"));
+            if (storedUser) {
+                // The backend returns the updated User object (which might not include the token)
+                // We need to merge carefully: update relevant fields, keep the token.
+                const updatedUser = {
+                    ...storedUser, // Keep existing token, roles, etc.
+                    ...response.data, // Overwrite with new profile data (firstName, lastName, phoneNumber, email)
+                                     // Ensure password is not part of response.data or handle it.
+                };
+                // Remove password from the object before saving to local storage if it's present
+                delete updatedUser.password; 
+                localStorage.setItem("user", JSON.stringify(updatedUser));
+            }
+            return response.data;
+        });
+};
+
 export default api;
