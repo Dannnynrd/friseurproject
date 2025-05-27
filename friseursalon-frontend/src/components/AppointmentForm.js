@@ -15,11 +15,24 @@ const AppointmentForm = forwardRef(({
     const [notes, setNotesState] = useState('');
     const [message, setMessage] = useState({ type: '', text: '' });
 
+    // Hilfsfunktion zur E-Mail-Validierung (einfaches Beispiel)
+    const isValidEmail = (email) => {
+        // Einfache Regex für E-Mail-Validierung
+        // Für eine robustere Lösung könnte man eine Bibliothek verwenden oder eine komplexere Regex
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    };
+
     useImperativeHandle(ref, () => ({
         triggerSubmitAndGetData: () => {
-            setMessage({ type: '', text: '' });
+            setMessage({ type: '', text: '' }); // Fehlermeldung zurücksetzen
             if (!firstName.trim() || !lastName.trim() || !email.trim()) {
                 setMessage({ type: 'error', text: 'Bitte füllen Sie Vorname, Nachname und E-Mail aus.' });
+                return null;
+            }
+            // NEU: E-Mail-Format-Validierung
+            if (!isValidEmail(email.trim())) {
+                setMessage({ type: 'error', text: 'Bitte geben Sie eine gültige E-Mail-Adresse ein.' });
                 return null;
             }
             if (!currentUser && !password.trim()) {
@@ -49,7 +62,7 @@ const AppointmentForm = forwardRef(({
             setEmail(currentUser.email || effectiveInitialData.email || '');
             setPhoneNumber(currentUser.phoneNumber || effectiveInitialData.phoneNumber || '');
             setPassword('');
-            setNotesState(effectiveInitialData.notes || ''); // Notizen aus initialData, falls vorhanden, sonst leer
+            setNotesState(effectiveInitialData.notes || '');
         } else {
             setFirstName(effectiveInitialData.firstName || '');
             setLastName(effectiveInitialData.lastName || '');
@@ -63,7 +76,7 @@ const AppointmentForm = forwardRef(({
     const handleFormInternalSubmit = (e) => {
         if (e) e.preventDefault();
         const formData = ref.current?.triggerSubmitAndGetData();
-        if(formData && onFormSubmit) { // Nur aufrufen, wenn Validierung erfolgreich war
+        if(formData && onFormSubmit) {
             onFormSubmit(formData);
         }
     };
@@ -98,7 +111,7 @@ const AppointmentForm = forwardRef(({
                 <div className="form-group">
                     <label htmlFor="email">E-Mail*</label>
                     <input
-                        type="email"
+                        type="email" // Behält die Browser-interne Validierung, aber wir fügen unsere eigene hinzu
                         id="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -150,6 +163,8 @@ const AppointmentForm = forwardRef(({
                         {message.text}
                     </p>
                 )}
+                {/* Dieser Button ist versteckt und nur für das programmatische Absenden gedacht, falls onFormSubmit extern getriggert wird.
+                    Für den Benutzer ist der "Weiter"-Button in BookingPage.js relevant. */}
                 <button type="submit" style={{ display: 'none' }} aria-hidden="true">Submit Form</button>
             </form>
         </div>
