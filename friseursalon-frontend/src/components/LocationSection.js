@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import "./LocationSection.css"
 
 function LocationSection({ openBookingModal }) {
     const sectionRef = useRef(null);

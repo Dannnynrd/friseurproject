@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import "./TestimonialsSection.css"
 
 function TestimonialsSection() {
     const sectionRef = useRef(null); // Für scroll animation

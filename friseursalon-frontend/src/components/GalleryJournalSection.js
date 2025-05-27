@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import "./GalleryJournalSection.css"
 
 function GalleryJournalSection() {
     const sectionRef = useRef(null); // Für scroll animation

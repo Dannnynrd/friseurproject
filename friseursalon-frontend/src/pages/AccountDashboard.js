@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import "./AccountDashboard.css"
 import AppointmentList from '../components/AppointmentList';
 import ServiceForm from '../components/ServiceForm';
 import ServiceList from '../components/ServiceList';
@@ -8,7 +9,7 @@ import {
     faChevronRight, faChevronDown, faPlusCircle, faMinusCircle,
     faChartBar, faUser, faTimesCircle // Sicherstellen, dass faTimesCircle hier ist
 } from '@fortawesome/free-solid-svg-icons';
-import './AccountDashboard.css'; // Eigene CSS-Datei importieren
+
 
 // ... (Der Rest des Codes aus meiner vorherigen Antwort, in der wir die Navigation überarbeitet haben)
 // Stelle sicher, dass du den gesamten Code aus der vorherigen Antwort hier hast.

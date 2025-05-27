@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import  "./FAQSection.css"
 
 function FAQSection() {
     const sectionRef = useRef(null);

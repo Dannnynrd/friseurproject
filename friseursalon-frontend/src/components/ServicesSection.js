@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import ServiceForm from './ServiceForm'; // HIER FEHLTE DER IMPORT
 import ServiceList from './ServiceList';   // HIER FEHLTE DER IMPORT
+import "./ServicesSection.css"
 
 function ServicesSection({ currentUser, onServiceAdded, refreshServicesList, openBookingModal }) {
     const sectionRef = useRef(null);
