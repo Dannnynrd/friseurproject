@@ -1,23 +1,28 @@
 package com.friseursalon.backend.service;
 
-import com.friseursalon.backend.exception.AppointmentConflictException;
 import com.friseursalon.backend.model.Appointment;
 import com.friseursalon.backend.model.Service;
 import com.friseursalon.backend.repository.AppointmentRepository;
 import com.friseursalon.backend.repository.ServiceRepository;
+import com.friseursalon.backend.exception.AppointmentConflictException; // Korrekter Import
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-// import org.springframework.stereotype.Service; // already there
+import org.springframework.stereotype.Component; // Geändert zu @Component oder @Service
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-// import java.util.stream.Collectors; // Not strictly needed for this method
+import java.util.stream.Collectors;
 
-@org.springframework.stereotype.Service
+@Component // Oder @org.springframework.stereotype.Service
 public class AppointmentService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AppointmentService.class);
 
     private final AppointmentRepository appointmentRepository;
     private final ServiceRepository serviceRepository;
@@ -32,6 +37,13 @@ public class AppointmentService {
         return appointmentRepository.findAll();
     }
 
+    public List<Appointment> getAllAppointmentsSorted() {
+        return appointmentRepository.findAll().stream()
+                .sorted(Comparator.comparing(Appointment::getStartTime))
+                .collect(Collectors.toList());
+    }
+
+
     public List<Appointment> getAppointmentsForDateRange(LocalDateTime start, LocalDateTime end) {
         return appointmentRepository.findByStartTimeBetween(start, end);
     }
@@ -40,54 +52,70 @@ public class AppointmentService {
         return appointmentRepository.findById(id);
     }
 
+    public List<Appointment> getAppointmentsByCustomerEmail(String email) {
+        return appointmentRepository.findByCustomerEmailOrderByStartTimeAsc(email);
+    }
+
     private LocalDateTime calculateEndTime(LocalDateTime startTime, int durationMinutes) {
         if (startTime == null) {
+            logger.error("calculateEndTime: Startzeit ist null.");
             throw new IllegalArgumentException("Startzeit darf nicht null sein für die Endzeitberechnung.");
+        }
+        if (durationMinutes <= 0) {
+            logger.error("calculateEndTime: Ungültige Dauer: {}", durationMinutes);
+            throw new IllegalArgumentException("Dauer der Dienstleistung muss positiv sein.");
         }
         return startTime.plusMinutes(durationMinutes);
     }
 
     private boolean hasConflict(Appointment appointmentToCheck, Service serviceDetails) {
         if (appointmentToCheck.getStartTime() == null || serviceDetails == null) {
+            logger.error("hasConflict: Startzeit oder Service-Details sind null. StartTime: {}, ServiceDetails: {}", appointmentToCheck.getStartTime(), serviceDetails);
             throw new IllegalArgumentException("Startzeit und Service-Details dürfen für die Konfliktprüfung nicht null sein.");
         }
 
         int duration = serviceDetails.getDurationMinutes();
         LocalDateTime proposedStartTime = appointmentToCheck.getStartTime();
         LocalDateTime proposedEndTime = calculateEndTime(proposedStartTime, duration);
-        Long excludeId = appointmentToCheck.getId();
+        Long excludeId = appointmentToCheck.getId(); // Ist null für neue Termine, oder die ID des zu aktualisierenden Termins
+
+        logger.debug("Konfliktprüfung für: Start={}, Ende={}, ExcludeId={}", proposedStartTime, proposedEndTime, excludeId);
 
         List<Appointment> conflictingAppointments = appointmentRepository.findConflictingAppointments(
                 proposedStartTime, proposedEndTime, excludeId
         );
-        return !conflictingAppointments.isEmpty();
+
+        if (!conflictingAppointments.isEmpty()) {
+            logger.warn("Konflikt gefunden für vorgeschlagenen Termin {}-{}. Kollidierende Termine: {}", proposedStartTime, proposedEndTime, conflictingAppointments.stream().map(Appointment::getId).collect(Collectors.toList()));
+            return true;
+        }
+        return false;
     }
 
     public Appointment createAppointment(Appointment appointment) {
-        if (appointment.getService() == null || appointment.getService().getId() == null) {
-            throw new IllegalArgumentException("Service-ID darf nicht null sein, um einen Termin zu erstellen.");
-        }
-        Service serviceDetails = serviceRepository.findById(appointment.getService().getId())
-                .orElseThrow(() -> new RuntimeException("Dienstleistung nicht gefunden für ID: " + appointment.getService().getId()));
-        appointment.setService(serviceDetails);
+        logger.info("Erstelle Termin: ServiceId={}, StartZeit={}", appointment.getService().getId(), appointment.getStartTime());
+        // Service ist bereits im Controller geladen und dem Appointment-Objekt zugewiesen worden.
+        Service serviceDetails = appointment.getService();
 
         if (hasConflict(appointment, serviceDetails)) {
             throw new AppointmentConflictException("Terminkonflikt: Der gewählte Zeitpunkt ist bereits belegt.");
         }
+        // Hier könnten weitere Validierungen stattfinden (z.B. Öffnungszeiten)
         return appointmentRepository.save(appointment);
     }
 
     public Appointment updateAppointment(Long id, Appointment appointmentDetails) {
+        logger.info("Aktualisiere Termin mit ID {}: ServiceId={}, StartZeit={}", id, appointmentDetails.getService().getId(), appointmentDetails.getStartTime());
         Appointment appointmentToUpdate = appointmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Termin nicht gefunden für diese ID :: " + id));
+                .orElseThrow(() -> {
+                    logger.warn("Termin nicht gefunden für Update mit ID: {}", id);
+                    return new RuntimeException("Termin nicht gefunden für diese ID :: " + id);
+                });
 
-        if (appointmentDetails.getService() == null || appointmentDetails.getService().getId() == null) {
-            throw new IllegalArgumentException("Service-ID darf nicht null sein, um einen Termin zu aktualisieren.");
-        }
-        Service serviceDetails = serviceRepository.findById(appointmentDetails.getService().getId())
-                .orElseThrow(() -> new RuntimeException("Dienstleistung nicht gefunden für ID: " + appointmentDetails.getService().getId()));
+        // Service ist bereits im Controller geladen und dem appointmentDetails-Objekt zugewiesen worden.
+        Service serviceDetails = appointmentDetails.getService();
 
-        appointmentDetails.setId(id); // Wichtig für die Konfliktprüfung beim Update
+        appointmentDetails.setId(id); // Wichtig für die Konfliktprüfung
 
         if (hasConflict(appointmentDetails, serviceDetails)) {
             throw new AppointmentConflictException("Terminkonflikt: Der gewählte Zeitpunkt für die Aktualisierung ist bereits belegt.");
@@ -95,51 +123,72 @@ public class AppointmentService {
 
         appointmentToUpdate.setStartTime(appointmentDetails.getStartTime());
         appointmentToUpdate.setService(serviceDetails);
-        appointmentToUpdate.setCustomer(appointmentDetails.getCustomer());
+        appointmentToUpdate.setCustomer(appointmentDetails.getCustomer()); // Annahme: Customer ist korrekt gesetzt
         appointmentToUpdate.setNotes(appointmentDetails.getNotes());
 
         return appointmentRepository.save(appointmentToUpdate);
     }
 
-    public void deleteAppointment(Long id) {
-        Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Termin nicht gefunden für diese ID :: " + id));
-        appointmentRepository.delete(appointment);
+    public boolean deleteUserAppointment(Long appointmentId, String userEmail, boolean isAdmin) {
+        logger.info("Versuch, Termin {} durch User {} (isAdmin: {}) zu löschen.", appointmentId, userEmail, isAdmin);
+        Optional<Appointment> appointmentOpt = appointmentRepository.findById(appointmentId);
+        if (appointmentOpt.isEmpty()) {
+            logger.warn("Termin {} zum Löschen nicht gefunden.", appointmentId);
+            throw new RuntimeException("Termin nicht gefunden für diese ID :: " + appointmentId); // Wird vom GlobalExceptionHandler als 500er gefangen
+        }
+        Appointment appointment = appointmentOpt.get();
+
+        if (isAdmin) {
+            appointmentRepository.delete(appointment);
+            logger.info("Admin hat Termin {} gelöscht.", appointmentId);
+            return true;
+        }
+
+        if (appointment.getCustomer() != null && appointment.getCustomer().getEmail().equals(userEmail)) {
+            // Optional: Stornierungsfrist
+            // if (appointment.getStartTime().isBefore(LocalDateTime.now().plusHours(24))) {
+            //     logger.warn("User {} versuchte, Termin {} außerhalb der Stornierungsfrist zu löschen.", userEmail, appointmentId);
+            //     throw new RuntimeException("Termine können nur bis 24 Stunden im Voraus storniert werden.");
+            // }
+            appointmentRepository.delete(appointment);
+            logger.info("User {} hat eigenen Termin {} gelöscht.", userEmail, appointmentId);
+            return true;
+        }
+        logger.warn("User {} nicht berechtigt, Termin {} zu löschen oder Kunde nicht zugeordnet.", userEmail, appointmentId);
+        return false; // Führt zu 403 im Controller
     }
 
-    public List<String> getAvailableSlotsForServiceOnDate(Long serviceId, LocalDate date) {
-        System.out.println("Service: getAvailableSlotsForServiceOnDate called with serviceId: " + serviceId + ", date: " + date);
 
+    public List<String> getAvailableSlotsForServiceOnDate(Long serviceId, LocalDate date) {
+        logger.debug("getAvailableSlotsForServiceOnDate aufgerufen für Service ID: {} und Datum: {}", serviceId, date);
         Service service = serviceRepository.findById(serviceId)
-                .orElseThrow(() -> new RuntimeException("Dienstleistung nicht gefunden für ID: " + serviceId));
+                .orElseThrow(() -> {
+                    logger.warn("Dienstleistung nicht gefunden für ID {} bei getAvailableSlots", serviceId);
+                    return new RuntimeException("Dienstleistung nicht gefunden für ID: " + serviceId);
+                });
         int duration = service.getDurationMinutes();
 
         if (duration <= 0) {
+            logger.warn("Ungültige Dauer ({}) für Service ID {} bei getAvailableSlots", duration, serviceId);
             throw new IllegalArgumentException("Die Dauer der Dienstleistung muss positiv sein.");
         }
 
-        // Annahme: Feste Öffnungszeiten (könnte später konfigurierbar gemacht werden)
         LocalTime openingTime = LocalTime.of(9, 0);
-        LocalTime closingTime = LocalTime.of(18, 0); // Letzter möglicher Start, sodass der Termin um 18:00 endet
-        int slotInterval = 30; // Intervall für mögliche Startzeiten in Minuten
+        LocalTime closingTime = LocalTime.of(18, 0);
+        int slotInterval = 30;
 
         List<String> availableSlots = new ArrayList<>();
-
         LocalDateTime dayStart = date.atStartOfDay();
-        LocalDateTime dayEnd = date.atTime(LocalTime.MAX); // Ende des Tages
+        LocalDateTime dayEnd = date.atTime(LocalTime.MAX);
         List<Appointment> appointmentsOnDate = appointmentRepository.findByStartTimeBetween(dayStart, dayEnd);
-        System.out.println("Found " + appointmentsOnDate.size() + " appointments for date " + date);
-
+        logger.debug("Anzahl gebuchter Termine an {}: {}", date, appointmentsOnDate.size());
 
         LocalTime currentTimeSlot = openingTime;
-        // Der letzte mögliche Startslot muss so sein, dass der Termin (currentTimeSlot + duration) nicht nach closingTime endet.
         while (currentTimeSlot.plusMinutes(duration).isBefore(closingTime) || currentTimeSlot.plusMinutes(duration).equals(closingTime)) {
             LocalDateTime proposedStartTime = date.atTime(currentTimeSlot);
             LocalDateTime proposedEndTime = proposedStartTime.plusMinutes(duration);
 
-            // Prüfen, ob der Slot in der Vergangenheit liegt (nur für den aktuellen Tag relevant)
-            if (date.isEqual(LocalDate.now()) && proposedStartTime.isBefore(LocalDateTime.now().plusMinutes(1))) { // +1 Minute Puffer
-                System.out.println("Skipping past slot: " + proposedStartTime);
+            if (date.isEqual(LocalDate.now()) && proposedStartTime.isBefore(LocalDateTime.now().plusMinutes(1))) {
                 currentTimeSlot = currentTimeSlot.plusMinutes(slotInterval);
                 continue;
             }
@@ -147,15 +196,15 @@ public class AppointmentService {
             boolean conflict = false;
             for (Appointment existingAppointment : appointmentsOnDate) {
                 LocalDateTime existingStartTime = existingAppointment.getStartTime();
-                Service existingService = existingAppointment.getService(); // Annahme: Service ist hier geladen
-                if(existingService == null || existingService.getId() == null) { // Fallback, falls Service nicht voll geladen
+                Service existingService = existingAppointment.getService();
+                if(existingService == null || existingService.getId() == null) {
                     existingService = serviceRepository.findById(existingAppointment.getService().getId())
                             .orElseThrow(() -> new RuntimeException("Service für bestehenden Termin nicht gefunden."));
                 }
-                LocalDateTime existingEndTime = existingStartTime.plusMinutes(existingService.getDurationMinutes());
+                LocalDateTime existingEndTime = calculateEndTime(existingStartTime, existingService.getDurationMinutes());
+
 
                 if (proposedStartTime.isBefore(existingEndTime) && proposedEndTime.isAfter(existingStartTime)) {
-                    System.out.println("Conflict for slot " + proposedStartTime + " with existing appointment " + existingAppointment.getId() + " (" + existingStartTime + " - " + existingEndTime + ")");
                     conflict = true;
                     break;
                 }
@@ -163,12 +212,10 @@ public class AppointmentService {
 
             if (!conflict) {
                 availableSlots.add(String.format("%02d:%02d", currentTimeSlot.getHour(), currentTimeSlot.getMinute()));
-            } else {
-                System.out.println("Slot " + String.format("%02d:%02d", currentTimeSlot.getHour(), currentTimeSlot.getMinute()) + " on " + date + " is conflicting.");
             }
             currentTimeSlot = currentTimeSlot.plusMinutes(slotInterval);
         }
-        System.out.println("Returning available slots for " + date + ": " + availableSlots);
+        logger.info("Verfügbare Slots für Service {} an {}: {}", serviceId, date, availableSlots);
         return availableSlots;
     }
 }

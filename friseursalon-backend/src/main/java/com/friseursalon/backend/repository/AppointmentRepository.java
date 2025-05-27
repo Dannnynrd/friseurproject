@@ -14,6 +14,9 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     List<Appointment> findByStartTimeAfterOrderByStartTimeAsc(LocalDateTime startTime);
 
+    // Findet Termine, deren Kunde die angegebene E-Mail-Adresse hat, sortiert nach Startzeit
+    List<Appointment> findByCustomerEmailOrderByStartTimeAsc(String email); // NEUE METHODE
+
     @Query("SELECT a FROM Appointment a WHERE " +
             "(:excludeId IS NULL OR a.id <> :excludeId) AND " +
             "a.startTime < :proposedEnd AND " +
