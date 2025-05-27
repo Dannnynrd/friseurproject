@@ -1,27 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import "./AccountDashboard.css"
+import "./AccountDashboard.css";
 import AppointmentList from '../components/AppointmentList';
 import ServiceForm from '../components/ServiceForm';
 import ServiceList from '../components/ServiceList';
+import ReportView from '../components/admin/ReportView'; // Import ReportView
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faClipboardList, faUserCog, faTools, faSignOutAlt,
-    faChevronRight, faChevronDown, faPlusCircle, faMinusCircle,
-    faChartBar, faUser, faTimesCircle // Sicherstellen, dass faTimesCircle hier ist
+    faChevronRight, faPlusCircle, faMinusCircle, // faChevronDown might not be needed if accordion is removed
+    faChartBar, faUser, faTimesCircle, faFileInvoiceDollar // Icon for Reports
 } from '@fortawesome/free-solid-svg-icons';
 
-
-// ... (Der Rest des Codes aus meiner vorherigen Antwort, in der wir die Navigation überarbeitet haben)
-// Stelle sicher, dass du den gesamten Code aus der vorherigen Antwort hier hast.
-// Ich füge ihn hier zur Vollständigkeit noch einmal ein:
 
 function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppointmentsList, onServiceAdded, refreshServicesList }) {
     const initialTab = currentUser?.roles?.includes("ROLE_ADMIN") ? 'adminServices' : 'bookings';
     const [activeTab, setActiveTab] = useState(initialTab);
-    // const [activeMainMenu, setActiveMainMenu] = useState(currentUser?.roles?.includes("ROLE_ADMIN") ? 'verwaltung' : 'user'); // Veraltet durch neue Navigationslogik
 
-
-    // const [activeAccordion, setActiveAccordion] = useState(null); // Veraltet durch neue Navigationslogik
     const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 992);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -37,15 +31,30 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
             if (!mobile) setMobileNavOpen(false);
         };
         window.addEventListener('resize', handleResize);
-        handleResize(); // Initialer Check beim Laden
+        handleResize(); 
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     useEffect(() => {
-        // Beim Benutzerwechsel den initialen Tab setzen und Service-Formular ausblenden
-        setActiveTab(currentUser?.roles?.includes("ROLE_ADMIN") ? 'adminServices' : 'bookings');
-        setShowServiceForm(false);
-    }, [currentUser]);
+        const newInitialTab = isAdmin ? 'adminServices' : 'bookings';
+        // Only reset activeTab if the user changes role or logs in/out
+        // or if the current activeTab is not valid for the new user type
+        if ( (isAdmin && (activeTab === 'bookings' || activeTab === 'profile')) || 
+             (!isAdmin && (activeTab === 'adminServices' || activeTab === 'adminReports' || activeTab === 'adminAnalytics')) ) {
+            setActiveTab(newInitialTab);
+        } else if (!['bookings', 'profile', 'adminServices', 'adminReports', 'adminAnalytics'].includes(activeTab)) {
+            // If current activeTab is somehow invalid, reset to default
+            setActiveTab(newInitialTab);
+        }
+
+        // If not admin and current tab is an admin tab, switch to 'bookings'
+        if (!isAdmin && (activeTab === 'adminServices' || activeTab === 'adminReports' || activeTab === 'adminAnalytics')) {
+             setActiveTab('bookings');
+        }
+
+
+        setShowServiceForm(false); // Always hide form on user change
+    }, [currentUser, isAdmin, activeTab]); // Added activeTab to dependencies for more robust logic
 
     const handleServiceAddedCallback = () => {
         if (onServiceAdded) {
@@ -57,11 +66,11 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
 
     const handleTabClick = (tabName) => {
         setActiveTab(tabName);
-        if (tabName !== 'adminServices') { // Formular schließen, wenn anderer Tab gewählt wird
+        if (tabName !== 'adminServices') { 
             setShowServiceForm(false);
         }
         if (isMobileView) {
-            setMobileNavOpen(false); // Schließe mobiles Menü nach Klick
+            setMobileNavOpen(false); 
         }
     };
 
@@ -95,7 +104,7 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                             <h2 className="dashboard-section-heading">Dienstleistungen verwalten</h2>
                             <button
                                 onClick={() => setShowServiceForm(!showServiceForm)}
-                                className="button-link-outline toggle-service-form-button" // Nutzt globale Button-Stile
+                                className="button-link-outline toggle-service-form-button"
                                 aria-expanded={showServiceForm}
                             >
                                 <FontAwesomeIcon icon={showServiceForm ? faMinusCircle : faPlusCircle} />
@@ -115,6 +124,13 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                         <ServiceList key={refreshServicesList} currentUser={currentUser} />
                     </div>
                 );
+            case 'adminReports': // New case for Reports
+                return isAdmin && (
+                    <div className="dashboard-section-content">
+                        <h2 className="dashboard-section-heading">Berichte</h2>
+                        <ReportView currentUser={currentUser} />
+                    </div>
+                );
             case 'adminAnalytics':
                 return isAdmin && (
                     <div className="dashboard-section-content">
@@ -123,9 +139,8 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                     </div>
                 );
             default:
-                // Fallback, falls kein Tab aktiv ist (sollte nicht oft vorkommen)
-                if (isAdmin) return renderTabContent('adminServices');
-                return renderTabContent('bookings');
+                if (isAdmin) return renderTabContent('adminServices'); // Default for admin
+                return renderTabContent('bookings'); // Default for user
         }
     };
 
@@ -142,7 +157,7 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
 
 
     if (!currentUser) {
-        return <p>Laden...</p>; // Einfache Ladeanzeige
+        return <p className="loading-message text-center p-4">Laden...</p>; 
     }
 
     const DesktopNav = () => (
@@ -157,6 +172,7 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                         <>
                             <li className="nav-category-title mt-4">Verwaltung</li>
                             {renderNavItem('adminServices', faTools, 'Services')}
+                            {renderNavItem('adminReports', faFileInvoiceDollar, 'Berichte')} 
                             {renderNavItem('adminAnalytics', faChartBar, 'Analysen')}
                         </>
                     )}
@@ -185,6 +201,7 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                         <>
                             <li className="nav-category-title mt-4">Verwaltung</li>
                             {renderNavItem('adminServices', faTools, 'Services')}
+                            {renderNavItem('adminReports', faFileInvoiceDollar, 'Berichte')}
                             {renderNavItem('adminAnalytics', faChartBar, 'Analysen')}
                         </>
                     )}
@@ -205,7 +222,7 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                     <h1 className="dashboard-main-heading">Mein Account</h1>
                     {isMobileView && (
                         <button
-                            className="mobile-nav-toggle-button button-link-outline small-button" // Globale Button-Klassen
+                            className="mobile-nav-toggle-button button-link-outline small-button"
                             onClick={() => setMobileNavOpen(true)}
                             aria-expanded={mobileNavOpen}
                             aria-controls="mobile-dashboard-navigation"
