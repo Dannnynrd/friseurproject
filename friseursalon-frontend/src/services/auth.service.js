@@ -42,20 +42,13 @@ class AuthService {
             role: roles || ["user"]
         })
             .then(response => {
-                // Die Registrierung gibt normalerweise eine Erfolgsmeldung zurück
                 return response.data;
             })
             .catch(error => {
-                // Wenn das Backend eine strukturierte Fehlermeldung sendet, diese weitergeben
                 if (error.response && error.response.data) {
-                    // Wirf ein Objekt, das der Struktur unseres GlobalExceptionHandlers ähnelt
-                    // oder zumindest die 'errors' oder 'message' enthält.
-                    // Die Signup-Route im Backend sendet bei "E-Mail bereits vergeben" eine MessageResponse,
-                    // bei Validierungsfehlern durch @Valid aber die Struktur vom GlobalExceptionHandler.
-                    // Wir geben error.response.data weiter, damit die aufrufende Funktion damit umgehen kann.
                     throw error.response.data;
                 }
-                throw error; // Andernfalls den ursprünglichen Fehler weiterwerfen
+                throw error;
             });
     }
 
@@ -71,4 +64,6 @@ class AuthService {
     }
 }
 
-export default new AuthService();
+// Instanz der Klasse erstellen und dann exportieren
+const authService = new AuthService();
+export default authService;

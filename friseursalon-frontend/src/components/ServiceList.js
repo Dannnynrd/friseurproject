@@ -2,24 +2,26 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api.service';
 import ServiceEditModal from './ServiceEditModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faTrashAlt, faSpinner } from '@fortawesome/free-solid-svg-icons';
 
 function ServiceList({ refreshTrigger, currentUser }) {
-    console.log('ServiceList.js: Erhaltene currentUser Prop:', currentUser);
-    console.log('ServiceList.js: Rollenprüfung (isAdmin):', currentUser?.roles?.includes("ROLE_ADMIN"));
-
     const [services, setServices] = useState([]);
     const [error, setError] = useState(null);
     const [selectedService, setSelectedService] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     const fetchServices = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
         try {
             const response = await api.get('services');
-            setServices(response.data);
-            setError(null);
+            setServices(response.data || []); // Stelle sicher, dass es ein Array ist
         } catch (err) {
             console.error("Fehler beim Abrufen der Dienstleistungen:", err);
             setError("Dienstleistungen konnten nicht geladen werden. Bitte versuchen Sie es später erneut.");
+            setServices([]); // Bei Fehler leere Liste setzen
+        } finally {
+            setIsLoading(false);
         }
     }, []);
 
@@ -29,12 +31,14 @@ function ServiceList({ refreshTrigger, currentUser }) {
 
     const handleDelete = async (id) => {
         if (window.confirm('Sind Sie sicher, dass Sie diese Dienstleistung löschen möchten?')) {
+            setIsLoading(true);
             try {
                 await api.delete(`services/${id}`);
                 fetchServices();
             } catch (err) {
                 console.error("Fehler beim Löschen der Dienstleistung:", err);
                 setError("Fehler beim Löschen der Dienstleistung.");
+                setIsLoading(false);
             }
         }
     };
@@ -52,44 +56,60 @@ function ServiceList({ refreshTrigger, currentUser }) {
         fetchServices();
     };
 
+    if (isLoading && services.length === 0) {
+        return <p className="loading-message"><FontAwesomeIcon icon={faSpinner} spin /> Dienstleistungen werden geladen...</p>;
+    }
+
+
     return (
         <div className="service-list-container">
-            {/* <h2>Unsere Dienstleistungen</h2> */} {/* Überschrift wird von ServicesSection gesetzt */}
-            {error && <p className="error-message">{error}</p>}
-            {services.length === 0 && !error ? (
-                <p className="text-center text-gray-600">Keine Dienstleistungen verfügbar. Bitte fügen Sie welche im Backend hinzu.</p>
+            {error && <p className="form-message error mb-3">{error}</p>}
+
+            <div className="list-controls-header">
+                {/* Platzhalter für zukünftige Controls wie Suche/Filter für Services */}
+                {isLoading && services.length > 0 && <FontAwesomeIcon icon={faSpinner} spin className="ml-auto text-xl" />}
+            </div>
+
+            {services.length === 0 && !isLoading ? (
+                <p className="text-center text-gray-600 py-4">Keine Dienstleistungen verfügbar. Bitte fügen Sie welche hinzu.</p>
             ) : (
-                <table className="app-table"> {/* Nutzt globale app-table Klasse */}
-                    <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Beschreibung</th>
-                        <th>Preis</th>
-                        <th>Dauer (Min)</th>
-                        <th>Aktionen</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {services.map(service => (
-                        <tr key={service.id}>
-                            <td>{service.name}</td>
-                            <td>{service.description}</td>
-                            <td>{service.price.toFixed(2)} €</td>
-                            <td>{service.durationMinutes}</td>
-                            <td>
-                                <div className="action-buttons"> {/* Nutzt globale action-buttons Klasse */}
-                                    <button onClick={() => handleEditClick(service)} className="edit-button">
-                                        <FontAwesomeIcon icon={faEdit} />
-                                    </button>
-                                    <button onClick={() => handleDelete(service.id)} className="delete-button">
-                                        <FontAwesomeIcon icon={faTrashAlt} />
-                                    </button>
-                                </div>
-                            </td>
+                <div className="table-responsive-container mt-2"> {/* Leichter oberer Rand, falls keine Controls da sind */}
+                    <table className="app-table services-table">
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Beschreibung</th>
+                            <th>Preis</th>
+                            <th>Dauer (Min)</th>
+                            {currentUser?.roles?.includes("ROLE_ADMIN") && <th>Aktionen</th>}
                         </tr>
-                    ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                        {services.map(service => (
+                            <tr key={service.id}>
+                                <td data-label="Name:">{service.name}</td>
+                                <td data-label="Beschreibung:">{service.description}</td>
+                                <td data-label="Preis:">{typeof service.price === 'number' ? service.price.toFixed(2) + ' €' : 'N/A'}</td>
+                                <td data-label="Dauer:">{service.durationMinutes}</td>
+                                {currentUser?.roles?.includes("ROLE_ADMIN") && (
+                                    <td data-label="Aktionen:">
+                                        <div className="action-buttons-table">
+                                            <button onClick={() => handleEditClick(service)} className="button-link-outline small-button icon-button" title="Dienstleistung bearbeiten">
+                                                <FontAwesomeIcon icon={faEdit} />
+                                                <span className="button-text-desktop">Bearbeiten</span>
+                                            </button>
+                                            <button onClick={() => handleDelete(service.id)} className="button-link-outline small-button danger icon-button" title="Dienstleistung löschen">
+                                                <FontAwesomeIcon icon={faTrashAlt} />
+                                                <span className="button-text-desktop">Löschen</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                )}
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                </div>
             )}
 
             {selectedService && (

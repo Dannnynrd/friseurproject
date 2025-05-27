@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import api from '../services/api.service';
-// import './ServiceForm.css'; // Optional: Styling für diese Komponente - wurde zentralisiert
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 
-function ServiceForm({ onServiceAdded }) {
+function ServiceForm({ onServiceAdded, isSubmitting, setIsSubmitting }) {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [price, setPrice] = useState('');
@@ -11,15 +12,19 @@ function ServiceForm({ onServiceAdded }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setMessage('');
 
         if (!name || !description || !price || !durationMinutes) {
-            setMessage('Bitte füllen Sie alle Felder aus.');
+            setMessage('Bitte füllen Sie alle Pflichtfelder aus.');
             return;
         }
         if (isNaN(price) || parseFloat(price) <= 0 || isNaN(durationMinutes) || parseInt(durationMinutes) <= 0) {
             setMessage('Preis und Dauer müssen positive Zahlen sein.');
             return;
         }
+
+        setIsSubmitting(true);
+        let submissionError = null; // Variable, um den Fehler zu speichern
 
         const newService = {
             name,
@@ -29,16 +34,30 @@ function ServiceForm({ onServiceAdded }) {
         };
 
         try {
-            const response = await api.post('services', newService);
-            setMessage(`Dienstleistung "${response.data.name}" erfolgreich hinzugefügt!`);
+            await api.post('services', newService);
             setName('');
             setDescription('');
             setPrice('');
             setDurationMinutes('');
-            onServiceAdded();
-        } catch (error) {
+            if (onServiceAdded) {
+                onServiceAdded(); // Dies ruft handleServiceAddedCallback auf, was setIsSubmitting(false) macht
+            }
+        } catch (error) { // Fehler hier fangen und speichern
+            submissionError = error; // Fehlerobjekt speichern
             console.error("Fehler beim Hinzufügen der Dienstleistung:", error);
-            setMessage('Fehler beim Hinzufügen der Dienstleistung. Bitte versuchen Sie es erneut.');
+            if (error.response && error.response.data && error.response.data.errors) {
+                setMessage(`Fehler: ${error.response.data.errors.join(', ')}`);
+            } else if (error.response && error.response.data && error.response.data.message) {
+                setMessage(`Fehler: ${error.response.data.message}`);
+            } else {
+                setMessage('Fehler beim Hinzufügen der Dienstleistung. Bitte versuchen Sie es erneut.');
+            }
+        } finally {
+            // setIsSubmitting wird im Erfolgsfall durch onServiceAdded (-> handleServiceAddedCallback) zurückgesetzt.
+            // Hier nur zurücksetzen, wenn ein Fehler aufgetreten ist.
+            if (submissionError) {
+                setIsSubmitting(false);
+            }
         }
     };
 
@@ -54,6 +73,7 @@ function ServiceForm({ onServiceAdded }) {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         required
+                        disabled={isSubmitting}
                     />
                 </div>
                 <div className="form-group">
@@ -63,6 +83,7 @@ function ServiceForm({ onServiceAdded }) {
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         required
+                        disabled={isSubmitting}
                     ></textarea>
                 </div>
                 <div className="form-group">
@@ -74,6 +95,7 @@ function ServiceForm({ onServiceAdded }) {
                         onChange={(e) => setPrice(e.target.value)}
                         step="0.01"
                         required
+                        disabled={isSubmitting}
                     />
                 </div>
                 <div className="form-group">
@@ -84,11 +106,18 @@ function ServiceForm({ onServiceAdded }) {
                         value={durationMinutes}
                         onChange={(e) => setDurationMinutes(e.target.value)}
                         required
+                        disabled={isSubmitting}
                     />
                 </div>
-                <button type="submit" className="submit-button">Dienstleistung hinzufügen</button>
+                <button type="submit" className="button-link" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                        <><FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> Wird hinzugefügt...</>
+                    ) : (
+                        "Dienstleistung hinzufügen"
+                    )}
+                </button>
             </form>
-            {message && <p className="form-message">{message}</p>}
+            {message && <p className="form-message mt-3">{message}</p>}
         </div>
     );
 }
