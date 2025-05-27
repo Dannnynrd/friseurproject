@@ -1,10 +1,15 @@
 import React, { useEffect, useRef } from 'react';
-import ServiceForm from './ServiceForm'; // HIER FEHLTE DER IMPORT
-import ServiceList from './ServiceList';   // HIER FEHLTE DER IMPORT
-import "./ServicesSection.css"
+import ServiceForm from './ServiceForm'; 
+import ServiceList from './ServiceList';   
+import "./ServicesSection.css";
+import api from '../services/api.service'; // Required for fetching services for all users
+import SkeletonLoader from './common/SkeletonLoader'; // Import SkeletonLoader
 
 function ServicesSection({ currentUser, onServiceAdded, refreshServicesList, openBookingModal }) {
     const sectionRef = useRef(null);
+    const [servicesForPublicView, setServicesForPublicView] = useState([]);
+    const [isLoadingPublicServices, setIsLoadingPublicServices] = useState(false); // Initial true if not admin
+    const [publicServicesError, setPublicServicesError] = useState(null);
 
     useEffect(() => {
         const observer = new IntersectionObserver((entries) => {
@@ -26,6 +31,70 @@ function ServicesSection({ currentUser, onServiceAdded, refreshServicesList, ope
         };
     }, []);
 
+    useEffect(() => {
+        // Fetch services for public view if no user is logged in (admin manages via ServiceList directly)
+        if (!currentUser) {
+            const fetchPublicServices = async () => {
+                setIsLoadingPublicServices(true);
+                setPublicServicesError(null);
+                try {
+                    const response = await api.get('/services');
+                    // Group services by category for display if needed, or display flat
+                    // For simplicity, we'll assume a flat list structure for now,
+                    // or that ServiceList component can handle categorization.
+                    // The current static HTML has categories, so we might need to adapt.
+                    // Let's just set them flat, and the display can be adjusted.
+                    setServicesForPublicView(response.data || []);
+                } catch (error) {
+                    console.error("Error fetching public services:", error);
+                    setPublicServicesError("Dienstleistungen konnten nicht geladen werden.");
+                } finally {
+                    setIsLoadingPublicServices(false);
+                }
+            };
+            fetchPublicServices();
+        }
+    }, [currentUser]); // Re-fetch if user logs out, for example
+
+    // Helper to render services in categories for the public view
+    const renderCategorizedServices = (services) => {
+        // Simple categorization logic (can be improved or made data-driven)
+        const categories = {
+            'Schnitt & Styling': services.filter(s => s.name.toLowerCase().includes('cut') || s.name.toLowerCase().includes('blow-dry') || s.name.toLowerCase().includes('styling')),
+            'Farbe': services.filter(s => s.name.toLowerCase().includes('balayage') || s.name.toLowerCase().includes('ombré') || s.name.toLowerCase().includes('farbe') || s.name.toLowerCase().includes('tönung')),
+            'Pflege & Specials': services.filter(s => !s.name.toLowerCase().includes('cut') && !s.name.toLowerCase().includes('blow-dry') && !s.name.toLowerCase().includes('styling') && !s.name.toLowerCase().includes('balayage') && !s.name.toLowerCase().includes('ombré') && !s.name.toLowerCase().includes('farbe') && !s.name.toLowerCase().includes('tönung')),
+        };
+
+        return Object.entries(categories).map(([categoryName, categoryServices]) => {
+            if (categoryServices.length === 0) return null;
+            return (
+                <div key={categoryName} className="service-category">
+                    <h3>{categoryName}</h3>
+                    {categoryServices.map(service => (
+                        <div key={service.id} className="service-item">
+                            <div className="service-info">
+                                <h4>{service.name}</h4>
+                                {service.description && <p>{service.description}</p>}
+                            </div>
+                            <div className="service-action">
+                                <span className="price">
+                                    {typeof service.price === 'number' ? `ab ${service.price.toFixed(2)} €` : 'Preis auf Anfrage'}
+                                </span>
+                                <button 
+                                    className="book-service-btn interactive" 
+                                    onClick={() => openBookingModal(service.name)}
+                                >
+                                    Termin anfragen
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            );
+        }).filter(Boolean); // Remove null entries for empty categories
+    };
+
+
     return (
         <section id="services-dynamic" ref={sectionRef}>
             <div className="container">
@@ -35,44 +104,49 @@ function ServicesSection({ currentUser, onServiceAdded, refreshServicesList, ope
                     <p>Ich biete eine kuratierte Auswahl an Dienstleistungen, die auf Präzision, Qualität und Nachhaltigkeit ausgelegt sind. Alle Preise sind Richtwerte und können je nach Aufwand variieren.</p>
                 </div>
 
-                {/* HIER WIRD DIE SERVICE LIST UND DAS SERVICE FORM KOMPONENTE GERENDERT */}
-                {currentUser && (
-                    <>
+                {currentUser && currentUser.roles?.includes("ROLE_ADMIN") && (
+                    <div className="admin-services-management">
                         <h3>Dienstleistungsverwaltung (Admin)</h3>
                         <ServiceForm onServiceAdded={onServiceAdded} />
-                        <hr />
-                        <h3>Alle Dienstleistungen (Bearbeitbar)</h3>
-                        <ServiceList key={refreshServicesList} />
-                    </>
-                )}
-
-                {/* Wenn nicht eingeloggt, zeige statische Services (oder nur die Liste ohne Bearbeitung) */}
-                {!currentUser && (
-                    <div className="services-container animate-up">
-                        <div className="service-category">
-                            <h3>Schnitt & Styling</h3>
-                            <div className="service-item">
-                                <div className="service-info"><h4>Signature Cut</h4><p>Inklusive Beratung, Wäsche, Schnitt und Styling.</p></div>
-                                <div className="service-action"><span className="price">ab 90 €</span><a href="#" className="book-service-btn interactive" data-service="Signature Cut" onClick={(e) => { e.preventDefault(); openBookingModal('Signature Cut'); }}>Termin anfragen</a></div>
-                            </div>
-                            <div className="service-item">
-                                <div className="service-info"><h4>Wash & Blow-Dry</h4><p>Professionelles Föhnen und Stylen für jeden Anlass.</p></div>
-                                <div className="service-action"><span className="price">ab 55 €</span><a href="#" className="book-service-btn interactive" data-service="Wash & Blow-Dry" onClick={(e) => { e.preventDefault(); openBookingModal('Wash & Blow-Dry'); }}>Termin anfragen</a></div>
-                            </div>
-                        </div>
-                        <div className="service-category">
-                            <h3>Farbe</h3>
-                            <div className="service-item">
-                                <div className="service-info"><h4>Balayage / Ombré</h4><p>Freihandtechnik für natürliche, sonnengeküsste Effekte.</p></div>
-                                <div className="service-action"><span className="price">ab 180 €</span><a href="#" className="book-service-btn interactive" data-service="Balayage / Ombré" onClick={(e) => { e.preventDefault(); openBookingModal('Balayage / Ombré'); }}>Termin anfragen</a></div>
-                            </div>
-                            <div className="service-item">
-                                <div className="service-info"><h4>Globalfarbe / Tönung</h4><p>Ansatz oder komplette Färbung für eine satte, gleichmäßige Farbe.</p></div>
-                                <div className="service-action"><span className="price">ab 80 €</span><a href="#" className="book-service-btn interactive" data-service="Globalfarbe / Tönung" onClick={(e) => { e.preventDefault(); openBookingModal('Globalfarbe / Tönung'); }}>Termin anfragen</a></div>
-                            </div>
-                        </div>
+                        <hr className="my-4" />
+                        {/* ServiceList for admin already handles its own loading and skeleton */}
+                        <ServiceList key={refreshServicesList} currentUser={currentUser} />
                     </div>
                 )}
+                
+                {!currentUser && (
+                    isLoadingPublicServices ? (
+                        // Use the 'service-item' type for skeleton, assuming list-like display
+                        <SkeletonLoader type="service-item" count={4} />
+                    ) : publicServicesError ? (
+                        <p className="form-message error text-center">{publicServicesError}</p>
+                    ) : servicesForPublicView.length > 0 ? (
+                        <div className="services-container animate-up">
+                           {renderCategorizedServices(servicesForPublicView)}
+                        </div>
+                    ) : (
+                        <p className="text-center text-gray-600 py-4">Aktuell sind keine Dienstleistungen online verfügbar.</p>
+                    )
+                )}
+                 {/* If admin is logged in, they see the ServiceList component which has its own skeleton logic.
+                     If no user is logged in, we now fetch and display services with skeleton loader.
+                     If a non-admin user is logged in, they should also see the public list.
+                   */}
+                {currentUser && !currentUser.roles?.includes("ROLE_ADMIN") && (
+                     isLoadingPublicServices ? (
+                        <SkeletonLoader type="service-item" count={4} />
+                    ) : publicServicesError ? (
+                        <p className="form-message error text-center">{publicServicesError}</p>
+                    ) : servicesForPublicView.length > 0 ? (
+                        <div className="services-container animate-up">
+                           {renderCategorizedServices(servicesForPublicView)}
+                        </div>
+                    ) : (
+                        <p className="text-center text-gray-600 py-4">Aktuell sind keine Dienstleistungen online verfügbar.</p>
+                    )
+                )}
+
+
             </div>
         </section>
     );

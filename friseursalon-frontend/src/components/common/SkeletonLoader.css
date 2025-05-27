@@ -1,0 +1,122 @@
+/* friseursalon-frontend/src/components/common/SkeletonLoader.css */
+
+.skeleton-wrapper {
+  width: 100%;
+}
+
+.skeleton-item {
+  background-color: #e0e0e0; /* Base color for skeleton items */
+  border-radius: 6px;      /* Consistent with card radius in the app */
+  margin-bottom: 1.5rem;   /* Spacing between skeleton items */
+  position: relative;
+  overflow: hidden;
+  padding: 1rem;           /* Add some padding to mimic card structure */
+  border: 1px solid #d4d4d4; /* Slight border */
+}
+
+.skeleton-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -200px; /* Start shimmer off-screen to the left */
+  height: 100%;
+  width: 150px; /* Width of the shimmer effect */
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  animation: skeleton-shimmer 1.5s infinite linear;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    left: -200px; /* Start position */
+  }
+  100% {
+    left: calc(100% + 100px); /* End position, ensuring it crosses the entire item */
+  }
+}
+
+/* Generic placeholder elements within a skeleton item */
+.skeleton-line {
+  background-color: #cccccc;
+  border-radius: 4px;
+  height: 16px; /* Default height for a line of text */
+  margin-bottom: 0.75rem; /* Space after a line */
+}
+
+.skeleton-line.title {
+  height: 24px; /* Larger for titles */
+  width: 70%;
+}
+
+.skeleton-line.text {
+  height: 16px;
+}
+
+.skeleton-line.short {
+  width: 60%;
+}
+
+.skeleton-line.medium {
+  width: 80%;
+}
+
+.skeleton-line:last-child {
+  margin-bottom: 0; /* No margin for the last line in a group */
+}
+
+/* Type-specific structures */
+
+/* For Service items (mimicking ServiceCard in BookingPage or ServicesSection) */
+.skeleton-item.skeleton-service-card {
+  /* .service-card structure: name, description, details (price/duration) */
+  /* padding is already on .skeleton-item */
+}
+/* .skeleton-service-card .skeleton-line.title is already defined */
+/* .skeleton-service-card .skeleton-line.text for description (could be multiple) */
+/* .skeleton-service-card .skeleton-line.short for price/duration line */
+
+
+/* For Appointment list items (mimicking structure in AppointmentList) */
+.skeleton-item.skeleton-appointment-item {
+  /* Typical appointment item: Service name, Date/Time, (maybe notes/status) */
+  /* padding is already on .skeleton-item */
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem; /* Space between lines in an appointment item */
+}
+
+/* Table row skeleton for tabular appointment/service lists */
+.skeleton-table-row .skeleton-cell-content {
+  background-color: #cccccc;
+  border-radius: 4px;
+  height: 20px; 
+  width: 100%;
+}
+/* If used in a table, .skeleton-item might be a <tr> and these .skeleton-cell-content are in <td> */
+
+/* Specific to how services are displayed in ServicesSection.js (service-item) */
+.skeleton-item.skeleton-service-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1rem 0; /* Mimic service-item padding */
+    border-bottom: 1px dashed #e0e0e0; /* Mimic service-item border */
+}
+.skeleton-service-item-info {
+    flex-grow: 1;
+    margin-right: 1rem;
+}
+.skeleton-service-item-action {
+    width: 100px; /* Approx width for price + button */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+.skeleton-service-item-action .skeleton-line {
+    margin-bottom: 0.5rem; /* Space between price and button placeholder */
+}
+.skeleton-service-item-action .skeleton-button-placeholder {
+    background-color: #cccccc;
+    border-radius: 4px;
+    height: 30px; 
+    width: 80px; /* Width of the button */
+}

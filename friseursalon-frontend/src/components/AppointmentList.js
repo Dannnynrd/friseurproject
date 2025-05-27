@@ -2,36 +2,40 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api.service';
 import AppointmentEditModal from './AppointmentEditModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrashAlt, faBan } from '@fortawesome/free-solid-svg-icons'; // faBan für Stornieren
+import { faEdit, faTrashAlt, faBan, faSpinner } from '@fortawesome/free-solid-svg-icons'; // faSpinner for loading indicator
+import SkeletonLoader from './common/SkeletonLoader'; // Import SkeletonLoader
 
 function AppointmentList({ refreshTrigger, currentUser }) {
     const [appointments, setAppointments] = useState([]);
+    const [isLoading, setIsLoading] = useState(true); // Added loading state
     const [error, setError] = useState(null);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
     const [deleteError, setDeleteError] = useState(null);
     const [deleteSuccess, setDeleteSuccess] = useState('');
 
     const fetchAppointments = useCallback(async () => {
+        setIsLoading(true); 
         setError(null);
-        setDeleteError(null); // Auch Stornierungsfehler zurücksetzen
-        setDeleteSuccess(''); // Auch Stornierungserfolg zurücksetzen
-        setAppointments([]);
+        setDeleteError(null);
+        setDeleteSuccess('');
+        
+        if (appointments.length === 0) { // Only clear for skeleton if it's an initial load
+             // setAppointments([]); // This line was causing issues, let's manage display via isLoading
+        }
+
         try {
             let response;
             if (currentUser && currentUser.roles && !currentUser.roles.includes("ROLE_ADMIN")) {
-                console.log('AppointmentList.js: Fetching appointments for current user.');
                 response = await api.get('appointments/my-appointments');
             } else if (currentUser && currentUser.roles && currentUser.roles.includes("ROLE_ADMIN")) {
-                console.log('AppointmentList.js: Admin-Benutzer, holt alle Termine.');
-                response = await api.get('appointments/my-appointments'); // Admin kann auch diesen Endpunkt nutzen, wenn er alle Termine sortiert liefert
-                // oder direkt /api/appointments, je nach Backend-Logik
+                response = await api.get('appointments/my-appointments');
             } else {
-                console.log('AppointmentList.js: Kein Benutzer oder keine Rollen, keine Termine abrufen.');
                 setError("Benutzer nicht authentifiziert, um Termine anzuzeigen.");
+                setAppointments([]); 
+                setIsLoading(false); 
                 return;
             }
-            // Backend sortiert jetzt, aber eine clientseitige Sortierung als Fallback schadet nicht
-            const sortedAppointments = response.data.sort((a, b) =>
+            const sortedAppointments = (response.data || []).sort((a, b) =>
                 new Date(a.startTime) - new Date(b.startTime)
             );
             setAppointments(sortedAppointments);
@@ -39,8 +43,11 @@ function AppointmentList({ refreshTrigger, currentUser }) {
             console.error("Fehler beim Abrufen der Termine:", err);
             const errorMessage = err.response?.data?.message || "Termine konnten nicht geladen werden.";
             setError(errorMessage);
+            setAppointments([]); 
+        } finally {
+            setIsLoading(false); 
         }
-    }, [currentUser]);
+    }, [currentUser, appointments.length]); // appointments.length helps differentiate initial load
 
     useEffect(() => {
         fetchAppointments();
@@ -50,16 +57,17 @@ function AppointmentList({ refreshTrigger, currentUser }) {
         if (window.confirm('Sind Sie sicher, dass Sie diesen Termin stornieren möchten?')) {
             setDeleteError(null);
             setDeleteSuccess('');
+            // Consider setting a specific deleting state if needed
             try {
-                await api.delete(`appointments/${id}`); // Der Controller prüft die Berechtigung
-                fetchAppointments(); // Liste neu laden
+                await api.delete(`appointments/${id}`);
+                fetchAppointments(); // Refresh list
                 setDeleteSuccess('Termin erfolgreich storniert.');
                 setTimeout(() => setDeleteSuccess(''), 3000);
             } catch (err) {
                 console.error("Fehler beim Stornieren des Termins:", err);
                 const errorMsg = err.response?.data?.message || "Fehler beim Stornieren des Termins.";
                 setDeleteError(errorMsg);
-                setTimeout(() => setDeleteError(null), 5000); // Fehlermeldung nach 5s ausblenden
+                setTimeout(() => setDeleteError(null), 5000);
             }
         }
     };
@@ -74,20 +82,63 @@ function AppointmentList({ refreshTrigger, currentUser }) {
 
     const handleAppointmentUpdated = () => {
         handleCloseModal();
-        fetchAppointments();
+        fetchAppointments(); // Refresh list
     };
 
     const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes("ROLE_ADMIN");
+    const columnsForSkeleton = isAdmin ? 6 : 4; // Adjusted: Date, Service, Notes, Actions = 4. Admin adds Customer, Email, Phone = 3 more. Total 6 for Admin.
+
+    if (isLoading && appointments.length === 0 && !error) {
+        return (
+            <div className="appointment-list-container">
+                 {/* Desktop Skeleton Table */}
+                 <div className="table-responsive-container hidden md:block">
+                    <table className="app-table">
+                        <thead>
+                            <tr>
+                                <th>Datum & Zeit</th>
+                                <th>Dienstleistung</th>
+                                {isAdmin && (
+                                    <>
+                                        <th>Kunde</th>
+                                        <th>E-Mail</th>
+                                        <th>Telefon</th>
+                                    </>
+                                )}
+                                <th>Notizen</th>
+                                <th>Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <SkeletonLoader type="appointment-row" count={3} columns={columnsForSkeleton} />
+                        </tbody>
+                    </table>
+                </div>
+                {/* Mobile Skeleton Cards */}
+                <div className="md:hidden space-y-4">
+                    <SkeletonLoader type="appointment" count={3} />
+                </div>
+            </div>
+        );
+    }
+    
+    const refreshingIndicator = isLoading && appointments.length > 0 ? (
+        <div className="text-center py-3">
+            <FontAwesomeIcon icon={faSpinner} spin size="lg" />
+        </div>
+    ) : null;
 
     return (
         <div className="appointment-list-container">
             {error && <p className="form-message error small mb-3">{error}</p>}
             {deleteError && <p className="form-message error small mb-3">{deleteError}</p>}
             {deleteSuccess && <p className="form-message success small mb-3">{deleteSuccess}</p>}
+            
+            {refreshingIndicator}
 
-            {appointments.length === 0 && !error ? (
+            {!isLoading && appointments.length === 0 && !error ? (
                 <p className="text-center text-gray-600 py-4">Es sind noch keine Termine gebucht oder sichtbar.</p>
-            ) : (
+            ) : !isLoading && appointments.length > 0 ? (
                 <>
                     {/* Desktop-Ansicht (Tabelle) */}
                     <div className="table-responsive-container hidden md:block">
@@ -132,7 +183,7 @@ function AppointmentList({ refreshTrigger, currentUser }) {
                                                 {(!isPastAppointment || isAdmin) && (
                                                     <button
                                                         onClick={() => handleCancelAppointment(appointment.id)}
-                                                        className="delete-button" // Besser "cancel-button" oder eine spezifischere Klasse
+                                                        className="delete-button"
                                                         title={isAdmin ? "Löschen" : "Stornieren"}>
                                                         <FontAwesomeIcon icon={isAdmin ? faTrashAlt : faBan} />
                                                     </button>
@@ -165,11 +216,11 @@ function AppointmentList({ refreshTrigger, currentUser }) {
                                     {(!isPastAppointment || isAdmin) && (
                                         <div className="action-buttons mt-3 justify-end">
                                             {isAdmin && (
-                                                <button onClick={() => handleEditClick(appointment)} className="edit-button button-link-outline small-button mr-2"> {/* Beispiel für Button-Styling */}
+                                                <button onClick={() => handleEditClick(appointment)} className="edit-button button-link-outline small-button mr-2">
                                                     <FontAwesomeIcon icon={faEdit} /> Bearbeiten
                                                 </button>
                                             )}
-                                            <button onClick={() => handleCancelAppointment(appointment.id)} className="delete-button button-link-outline small-button"> {/* Beispiel für Button-Styling */}
+                                            <button onClick={() => handleCancelAppointment(appointment.id)} className="delete-button button-link-outline small-button">
                                                 <FontAwesomeIcon icon={isAdmin ? faTrashAlt : faBan} /> {isAdmin ? "Löschen" : "Stornieren"}
                                             </button>
                                         </div>
@@ -179,9 +230,9 @@ function AppointmentList({ refreshTrigger, currentUser }) {
                         })}
                     </div>
                 </>
-            )}
+            ) : null }
 
-            {selectedAppointment && isAdmin && ( // Edit Modal nur für Admin
+            {selectedAppointment && isAdmin && (
                 <AppointmentEditModal
                     appointment={selectedAppointment}
                     onClose={handleCloseModal}

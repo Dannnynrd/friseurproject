@@ -1,20 +1,26 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css'; // Stile für den DatePicker
-import './BookingPage.css'; // NEUER IMPORT für BookingPage spezifische Stile
+import { useParams } from 'react-router-dom'; // Link might not be needed directly here anymore
+import { registerLocale, setDefaultLocale } from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import './BookingPage.css';
 import { de } from 'date-fns/locale/de';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faSpinner, faExclamationCircle, faCheckCircle,
-    faArrowLeft, faArrowRight, faCalendarAlt,
-    faClock, faInfoCircle, faEdit,
-    faCheck, faUser, faEnvelope, faPhone, faStickyNote, faCalendarPlus
+    faSpinner, faExclamationCircle, faInfoCircle
+    // Other icons are likely used within the sub-components
 } from '@fortawesome/free-solid-svg-icons';
 
 import api from '../services/api.service';
 import AuthService from '../services/auth.service';
-import AppointmentForm from '../components/AppointmentForm'; // Stellt sicher, dass AppointmentForm generische Formularstile verwendet oder eigene hat
+// AppointmentForm is now used within CustomerDetailsStep
+// import AppointmentForm from '../components/AppointmentForm'; 
+
+// New Sub-Components
+import BookingProgressIndicator from '../components/booking/BookingProgressIndicator';
+import ServiceSelectionStep from '../components/booking/ServiceSelectionStep';
+import DateTimeSelectionStep from '../components/booking/DateTimeSelectionStep';
+import CustomerDetailsStep from '../components/booking/CustomerDetailsStep';
+import BookingConfirmationStep from '../components/booking/BookingConfirmationStep';
 
 registerLocale('de', de);
 setDefaultLocale('de');
@@ -24,10 +30,10 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     const [initialServiceParam, setInitialServiceParam] = useState(initialServiceNameParam ? decodeURIComponent(initialServiceNameParam) : null);
 
     const determineInitialStep = useCallback(() => {
-        if (initialServiceParam && currentUser) return 2;
-        if (initialServiceParam && !currentUser) return 2;
-        if (currentUser && !initialServiceParam) return 1;
-        return 1;
+        if (initialServiceParam && currentUser) return 2; // Service pre-selected, user logged in -> go to date/time
+        if (initialServiceParam && !currentUser) return 2; // Service pre-selected, no user -> go to date/time
+        if (currentUser && !initialServiceParam) return 1; // User logged in, no service -> go to service selection
+        return 1; // Default: start with service selection
     }, [currentUser, initialServiceParam]);
 
     const [step, setStep] = useState(determineInitialStep());
@@ -38,9 +44,9 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     const [availableTimes, setAvailableTimes] = useState([]);
     const [services, setServices] = useState([]);
     const [loadingServices, setLoadingServices] = useState(true);
-    const [loadingAvailableTimes, setLoadingAvailableTimes] = useState(false); // Neuer Ladezustand für Zeiten
+    const [loadingAvailableTimes, setLoadingAvailableTimes] = useState(false);
     const [serviceError, setServiceError] = useState(null);
-    const [timeError, setTimeError] = useState(null); // Neuer Fehlerzustand für Zeiten
+    const [timeError, setTimeError] = useState(null);
     const [registerMessage, setRegisterMessage] = useState({ type: '', text: '' });
 
     const [customerDetails, setCustomerDetails] = useState({
@@ -49,12 +55,13 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
         email: '',
         phoneNumber: '',
         notes: '',
-        password: ''
+        password: '' // For potential registration
     });
-    const [isSubmittingForm, setIsSubmittingForm] = useState(false);
-    const [isSubmittingFinal, setIsSubmittingFinal] = useState(false);
-    const [finalBookingMessage, setFinalBookingMessage] = useState({type: '', text: ''});
-    const appointmentFormRef = useRef(null);
+    const [isSubmittingForm, setIsSubmittingForm] = useState(false); // For step 3 (CustomerDetailsStep)
+    const [isSubmittingFinal, setIsSubmittingFinal] = useState(false); // For step 4 (BookingConfirmationStep)
+    const [finalBookingMessage, setFinalBookingMessage] = useState({ type: '', text: '' });
+    
+    const appointmentFormRef = useRef(null); // Ref for AppointmentForm within CustomerDetailsStep
 
     useEffect(() => {
         if (currentUser) {
@@ -64,14 +71,12 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                 lastName: currentUser.lastName || '',
                 email: currentUser.email || '',
                 phoneNumber: currentUser.phoneNumber || '',
-                password: '' // Passwort nicht vorausfüllen
+                password: '' // Clear password field
             }));
         } else {
-            // Für nicht eingeloggte User, Kundendetails zurücksetzen, falls sie von einem vorherigen Versuch stammen
             setCustomerDetails({ firstName: '', lastName: '', email: '', phoneNumber: '', notes: '', password: '' });
         }
     }, [currentUser]);
-
 
     useEffect(() => {
         const fetchServices = async () => {
@@ -86,43 +91,41 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                     const service = fetchedServices.find(s => s.name.toLowerCase() === initialServiceParam.toLowerCase());
                     if (service) {
                         setSelectedService(service);
+                        // Do not automatically advance step here, let user confirm or change
                     } else {
-                        console.warn(`Vorausgewählter Service "${initialServiceParam}" nicht in der geladenen Liste gefunden.`);
+                        console.warn(`Preselected service "${initialServiceParam}" not found.`);
                         setServiceError(`Der ausgewählte Service "${initialServiceParam}" ist nicht verfügbar. Bitte wählen Sie einen anderen.`);
-                        setInitialServiceParam(null);
+                        setInitialServiceParam(null); // Reset if not found
                     }
                 } else if (initialServiceParam && fetchedServices.length === 0) {
-                    console.warn(`Vorausgewählter Service "${initialServiceParam}" kann nicht gefunden werden, da keine Services geladen wurden.`);
-                    setServiceError('Keine Dienstleistungen verfügbar.');
-                    setInitialServiceParam(null);
+                     setServiceError('Keine Dienstleistungen verfügbar.');
+                     setInitialServiceParam(null);
                 }
             } catch (error) {
-                console.error("Fehler beim Laden der Dienstleistungen:", error);
+                console.error("Error loading services:", error);
                 setServiceError('Dienstleistungen konnten nicht geladen werden. Bitte versuchen Sie es später erneut.');
             } finally {
                 setLoadingServices(false);
             }
         };
         fetchServices();
-    }, [initialServiceParam]);
+    }, [initialServiceParam]); // Re-fetch if param changes (e.g. direct navigation)
 
-
-    // Abrufen verfügbarer Zeiten vom Backend
     useEffect(() => {
         if (selectedDate && selectedService && selectedService.id) {
             const fetchAvailableTimes = async () => {
                 setLoadingAvailableTimes(true);
                 setTimeError(null);
-                setAvailableTimes([]); // Alte Zeiten löschen
+                setAvailableTimes([]);
                 try {
-                    const dateString = selectedDate.toISOString().split('T')[0]; // Format YYYY-MM-DD
+                    const dateString = selectedDate.toISOString().split('T')[0];
                     const response = await api.get(`/appointments/available-slots?serviceId=${selectedService.id}&date=${dateString}`);
                     setAvailableTimes(response.data || []);
                     if (response.data.length === 0) {
                         setTimeError('Für diesen Tag sind online keine Termine für den gewählten Service verfügbar.');
                     }
                 } catch (error) {
-                    console.error("Fehler beim Laden der verfügbaren Zeiten:", error);
+                    console.error("Error loading available times:", error);
                     setTimeError('Verfügbare Zeiten konnten nicht geladen werden.');
                 } finally {
                     setLoadingAvailableTimes(false);
@@ -135,80 +138,105 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
         }
     }, [selectedDate, selectedService]);
 
+    const handleServiceSelection = (service) => {
+        setSelectedService(service);
+        setSelectedDate(null); // Reset date/time when service changes
+        setSelectedTime('');
+        setTimeError(null);
+        setAvailableTimes([]);
+        setStep(2); // Move to date/time selection
+    };
 
+    const handleDateChange = (date) => {
+        setSelectedDate(date);
+        setSelectedTime(''); // Reset time when date changes
+        setTimeError(null);
+        setAvailableTimes([]);
+    };
+
+    const handleTimeChange = (time) => {
+        setSelectedTime(time);
+    };
+    
     const handleRegisterDuringBooking = async (email, firstName, lastName, phoneNumber, password) => {
         setRegisterMessage({ type: '', text: '' });
-        setIsSubmittingFinal(true); // Zeige Ladezustand auch hier
+        setIsSubmittingFinal(true); 
         try {
             await AuthService.register(firstName, lastName, email, password, phoneNumber, ["user"]);
-            return true;
+            return true; // Registration successful
         } catch (error) {
             const errMsg = error.response?.data?.message || error.message || "Unbekannter Fehler bei der Registrierung.";
-            console.error("Fehler bei der Registrierung während der Buchung:", error);
+            console.error("Error during registration in booking:", error);
             setRegisterMessage({ type: 'error', text: `Registrierung fehlgeschlagen: ${errMsg}`});
-            return false;
+            // This message will be displayed in CustomerDetailsStep or BookingConfirmationStep
+            return false; // Registration failed
         } finally {
-            setIsSubmittingFinal(false); // Ladezustand zurücksetzen
+             // setIsSubmittingFinal is primarily for the final booking step,
+             // but registration is part of that if it occurs.
+             // If registration fails here, the final booking won't proceed immediately.
+             // The calling function (handleFinalBooking) should manage setIsSubmittingFinal based on overall success.
         }
     };
 
     const handleDataFromAppointmentForm = (dataFromForm) => {
         setCustomerDetails(dataFromForm);
-        setRegisterMessage({ type: '', text: '' });
-        setFinalBookingMessage({ type: '', text: '' });
-        setStep(4);
-        setIsSubmittingForm(false);
-    };
-
-
-    const isPastDate = (date) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return date < today;
+        setRegisterMessage({ type: '', text: '' }); // Clear any previous registration messages
+        setFinalBookingMessage({ type: '', text: '' }); // Clear final booking messages
+        setStep(4); // Proceed to confirmation step
+        setIsSubmittingForm(false); // Submission from AppointmentForm complete
     };
 
     const handleNextStep = () => {
-        setFinalBookingMessage({ type: '', text: '' }); // Nachrichten zurücksetzen
+        setFinalBookingMessage({ type: '', text: '' });
         setRegisterMessage({ type: '', text: '' });
 
-        if (step === 2 && currentUser && selectedService && selectedDate && selectedTime) {
-            setStep(4);
-        } else if (step === 3) {
-            setIsSubmittingForm(true);
-            if (appointmentFormRef.current) {
-                const formData = appointmentFormRef.current.triggerSubmitAndGetData();
-                if (formData) {
-                    handleDataFromAppointmentForm(formData);
-                } else {
-                    setIsSubmittingForm(false);
-                }
+        if (step === 1 && selectedService) { // From ServiceSelection to DateTimeSelection
+            setStep(2);
+        } else if (step === 2 && selectedService && selectedDate && selectedTime) { // From DateTimeSelection
+            if (currentUser) {
+                setStep(4); // Logged-in user, skip to confirmation
             } else {
-                setIsSubmittingForm(false);
+                setStep(3); // Guest user, go to customer details
             }
-        } else if (step < 4) {
-            setStep(prev => prev + 1);
+        } else if (step === 3) { // From CustomerDetails to Confirmation (validation handled by CustomerDetailsStep)
+            // This case is now primarily handled by CustomerDetailsStep's internal "Next" button
+            // which calls its onFormSubmit prop (handleDataFromAppointmentForm)
+            // For safety, ensure isSubmittingForm is managed if direct calls happen.
+            // setIsSubmittingForm(true); // This will be set in CustomerDetailsStep
+            // appointmentFormRef.current?.triggerSubmitAndGetData(); // This is also called within CustomerDetailsStep
         }
+        // No direct step increment like setStep(prev => prev + 1) anymore for these transitions
     };
+
     const handlePrevStep = () => {
         setFinalBookingMessage({ type: '', text: '' });
         setRegisterMessage({ type: '', text: '' });
-        if (step === 4 && currentUser) {
+
+        if (step === 2) { // From DateTimeSelection back to ServiceSelection
+            setStep(1);
+        } else if (step === 3) { // From CustomerDetails back to DateTimeSelection
             setStep(2);
-        } else if (step > 1) {
-            setStep(prev => prev - 1);
+        } else if (step === 4) { // From Confirmation back
+            if (currentUser) {
+                setStep(2); // Logged-in user, back to DateTimeSelection
+            } else {
+                setStep(3); // Guest user, back to CustomerDetails
+            }
         }
     };
-
+    
     const handleFinalBooking = async () => {
         setIsSubmittingFinal(true);
         setFinalBookingMessage({ type: '', text: '' });
-        setRegisterMessage({ type: '', text: '' });
-
+        // Clear register message for final booking attempt,
+        // it might have success/info from a registration that is now part of the final success message.
+        // setRegisterMessage({ type: '', text: '' }); 
+    
         const year = selectedDate.getFullYear();
         const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
         const day = String(selectedDate.getDate()).padStart(2, '0');
         const dateTimeString = `${year}-${month}-${day}T${selectedTime}:00`;
-
+    
         const appointmentData = {
             startTime: dateTimeString,
             service: { id: parseInt(selectedService.id) },
@@ -216,12 +244,14 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                 firstName: customerDetails.firstName.trim(),
                 lastName: customerDetails.lastName.trim(),
                 email: customerDetails.email.trim(),
-                phoneNumber: customerDetails.phoneNumber.trim() || null,
+                phoneNumber: customerDetails.phoneNumber?.trim() || null,
             },
-            notes: customerDetails.notes.trim(),
+            notes: customerDetails.notes?.trim() || '',
         };
-
+    
         let userJustRegisteredAndLoggedIn = false;
+        let localRegisterMessage = { type: '', text: '' }; // Temporary holder for registration messages
+
         if (!currentUser && customerDetails.password) {
             const registrationSuccessful = await handleRegisterDuringBooking(
                 customerDetails.email,
@@ -230,46 +260,53 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                 customerDetails.phoneNumber,
                 customerDetails.password
             );
+
+            localRegisterMessage = registerMessage; // Capture message from handleRegisterDuringBooking
+
             if (!registrationSuccessful) {
+                setFinalBookingMessage({type: 'error', text: localRegisterMessage.text || 'Registrierung fehlgeschlagen. Bitte überprüfen Sie Ihre Daten.'});
                 setIsSubmittingFinal(false);
-                setFinalBookingMessage({type: 'error', text: registerMessage.text || 'Registrierung fehlgeschlagen. Bitte überprüfen Sie Ihre Daten.'})
-                setStep(3);
+                setStep(3); // Go back to customer details step if registration failed
                 return;
             }
+            // If registration was successful, try to log in
             try {
                 const loginData = await AuthService.login(customerDetails.email, customerDetails.password);
                 if (loginData.token && onLoginSuccess) {
-                    onLoginSuccess();
+                    onLoginSuccess(); // This updates currentUser globally
                     userJustRegisteredAndLoggedIn = true;
-                    setRegisterMessage({ type: 'success', text: `Konto für ${customerDetails.email} erfolgreich erstellt und Sie wurden angemeldet!`});
+                    // Update localRegisterMessage for success, this will be merged into finalBookingMessage
+                    localRegisterMessage = { type: 'success', text: `Konto für ${customerDetails.email} erfolgreich erstellt und Sie wurden angemeldet!`};
                 }
             } catch (loginError) {
-                console.warn("Automatischer Login nach Registrierung fehlgeschlagen:", loginError);
-                setRegisterMessage({type: 'info', text: 'Konto erstellt, aber automatischer Login fehlgeschlagen. Ihre Buchung wird dennoch versucht.'});
+                console.warn("Automatic login after registration failed:", loginError);
+                localRegisterMessage = {type: 'info', text: 'Konto erstellt, aber automatischer Login fehlgeschlagen. Ihre Buchung wird dennoch versucht.'};
             }
         }
-
+    
         try {
             await api.post('/appointments', appointmentData);
             if (onAppointmentAdded) {
                 onAppointmentAdded();
             }
             let successMsg = 'Termin erfolgreich gebucht!';
-            if(userJustRegisteredAndLoggedIn && registerMessage.type === 'success') {
-                successMsg = registerMessage.text + " " + successMsg;
-            } else if (userJustRegisteredAndLoggedIn && registerMessage.type === 'info') {
-                successMsg = registerMessage.text + " " + successMsg;
+            if(userJustRegisteredAndLoggedIn && localRegisterMessage.type === 'success') {
+                successMsg = localRegisterMessage.text + " " + successMsg;
+            } else if (userJustRegisteredAndLoggedIn && localRegisterMessage.type === 'info') {
+                 successMsg = localRegisterMessage.text + " " + successMsg;
+            } else if (localRegisterMessage.text) { // If there was a registration attempt with a message (even if not logged in)
+                 successMsg = localRegisterMessage.text + (localRegisterMessage.type === 'error' ? " Dennoch: " : " ") + successMsg;
             }
             setFinalBookingMessage({type: 'success', text: successMsg});
         } catch (error) {
-            console.error("Fehler beim Buchen des Termins:", error);
+            console.error("Error booking appointment:", error);
             let errorMsg = "Ein Fehler ist beim Buchen des Termins aufgetreten. Bitte versuchen Sie es erneut.";
             if (error.response) {
                 errorMsg = error.response.data?.message || errorMsg;
-                if (error.response.status === 409 && !userJustRegisteredAndLoggedIn) {
+                if (error.response.status === 409 && !userJustRegisteredAndLoggedIn) { // 409 Conflict (e.g. email exists)
                     errorMsg = `${errorMsg} Diese E-Mail ist bereits registriert. Bitte melden Sie sich an oder gehen Sie zurück, um Ihre Daten zu ändern.`;
                 } else if (userJustRegisteredAndLoggedIn && error.response.status !== 409) {
-                    errorMsg = `Ihr Konto wurde erstellt und Sie sind angemeldet, aber die Terminbuchung schlug fehl: ${errorMsg}`;
+                     errorMsg = `Ihr Konto wurde erstellt und Sie sind angemeldet, aber die Terminbuchung schlug fehl: ${errorMsg}`;
                 }
             }
             setFinalBookingMessage({ type: 'error', text: errorMsg });
@@ -293,7 +330,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
             if (durationMinutes && !isNaN(parseInt(durationMinutes))) {
                 d.setMinutes(d.getMinutes() + parseInt(durationMinutes));
             } else {
-                d.setHours(d.getHours() + 1);
+                d.setHours(d.getHours() + 1); // Default to 1 hour if duration is invalid
             }
             return d.toISOString().replace(/-|:|\.\d{3}/g, "");
         };
@@ -312,7 +349,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
             `DTEND:${endDateStr}`,
             `SUMMARY:Friseurtermin: ${selectedService.name}`,
             `DESCRIPTION:Ihr Termin für ${selectedService.name}.${customerDetails.notes ? ' Ihre Anmerkungen: ' + customerDetails.notes : ''}`,
-            "LOCATION:Friseursalon IMW, Musterstraße 1, 12345 Musterstadt",
+            "LOCATION:Friseursalon IMW, Musterstraße 1, 12345 Musterstadt", // Consider making this configurable
             "END:VEVENT",
             "END:VCALENDAR"
         ].join("\r\n");
@@ -327,9 +364,8 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
         URL.revokeObjectURL(link.href);
     };
 
-
     const resetBookingProcess = () => {
-        setInitialServiceParam(null);
+        setInitialServiceParam(null); // Reset initial service param if it was used
         setSelectedService(null);
         setSelectedDate(null);
         setSelectedTime('');
@@ -338,13 +374,16 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
         setFinalBookingMessage({ type: '', text: '' });
         setServiceError(null);
         setTimeError(null);
-        setStep(determineInitialStep());
+        setAvailableTimes([]);
+        // Determine step based on current user and if an initial service was passed (which is now reset)
+        setStep(currentUser ? 1 : 1); // Always go back to step 1 for service selection
     };
-
-
+    
+    // Initial loading message for services (step 1)
     if (loadingServices && !initialServiceParam && step === 1) {
         return <div className="page-center-content"><p className="loading-message"><FontAwesomeIcon icon={faSpinner} spin /> Dienstleistungen werden geladen...</p></div>;
     }
+    // Error message if services fail to load and no services are available (step 1)
     if (serviceError && services.length === 0 && !loadingServices && step === 1) {
         return <div className="page-center-content"><p className="form-message error"><FontAwesomeIcon icon={faExclamationCircle} /> {serviceError}</p></div>;
     }
@@ -353,281 +392,81 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
         ? ["Dienstleistung", "Datum und Zeit", "Bestätigung"]
         : ["Dienstleistung", "Datum und Zeit", "Ihre Daten", "Bestätigung"];
 
-    const getInternalStepForVisibleStep = (visibleStep) => {
-        if (currentUser && visibleStep >= 3) return visibleStep + 1;
-        return visibleStep;
-    };
-
-
     return (
         <div className="booking-page-container container">
             <div className="booking-form-container">
                 <h1 className="booking-page-main-heading">Termin buchen</h1>
 
-                <div className={`booking-step-indicators ${currentUser ? 'three-steps' : ''}`}>
-                    {visibleStepLabels.map((label, index) => {
-                        const visibleStepNumber = index + 1;
-                        const internalStepForIndicator = getInternalStepForVisibleStep(visibleStepNumber);
+                <BookingProgressIndicator
+                    currentStep={step}
+                    currentUser={currentUser}
+                    stepLabels={visibleStepLabels}
+                    finalBookingMessage={finalBookingMessage}
+                />
 
-                        const isCurrentStepActive = step === internalStepForIndicator;
-                        let isStepCompleted = step > internalStepForIndicator;
-
-                        if (internalStepForIndicator === 4 && finalBookingMessage.type === 'success') {
-                            isStepCompleted = true;
-                        } else if (internalStepForIndicator === 4 && finalBookingMessage.type !== 'success') {
-                            isStepCompleted = false;
-                        }
-                        if (internalStepForIndicator < 4 && step === 4 && finalBookingMessage.type === 'success') {
-                            isStepCompleted = true;
-                        }
-
-                        return (
-                            <div key={visibleStepNumber} className={`booking-step-indicator ${isCurrentStepActive ? 'active' : ''} ${isStepCompleted ? 'completed' : ''}`}>
-                                <div className="step-number-wrapper">
-                                    <span className="step-number">
-                                        {isStepCompleted ? <FontAwesomeIcon icon={faCheck} /> : visibleStepNumber}
-                                    </span>
-                                </div>
-                                <span className="step-label">{label}</span>
-                            </div>
-                        );
-                    })}
-                </div>
-
+                {/* Display general service error if services were loaded but a preselected one was not found, and we are before customer details */}
                 {serviceError && services.length > 0 && step < (currentUser ? 4 : 3) && (
                     <p className="form-message error mb-4"><FontAwesomeIcon icon={faExclamationCircle} /> {serviceError}</p>
                 )}
 
-
                 {step === 1 && (
-                    <div className="booking-step-content animate-step">
-                        <h2 className="booking-step-heading">1. Dienstleistung auswählen</h2>
-                        {loadingServices && <p className="loading-message small"><FontAwesomeIcon icon={faSpinner} spin /> Lade Dienste...</p>}
-                        {!loadingServices && !serviceError && services.length === 0 && (
-                            <p className="form-message info"><FontAwesomeIcon icon={faInfoCircle} /> Aktuell sind keine Dienstleistungen online buchbar.</p>
-                        )}
-                        <div className="services-grid">
-                            {services.map(service => (
-                                <div
-                                    key={service.id}
-                                    onClick={() => { setSelectedService(service); setSelectedDate(null); setSelectedTime(''); setStep(2); }}
-                                    className={`service-card ${selectedService?.id === service.id ? 'selected' : ''}`}
-                                    role="button" tabIndex={0}
-                                    onKeyPress={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedService(service); setSelectedDate(null); setSelectedTime(''); setStep(2); }}}
-                                >
-                                    <h3 className="service-name">{service.name}</h3>
-                                    {service.description && <p className="service-description">{service.description}</p>}
-                                    <p className="service-details">
-                                        {typeof service.price === 'number' ? service.price.toFixed(2) : 'N/A'} €
-                                        <span className="service-duration">/ {service.durationMinutes || '-'} Min</span>
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    <ServiceSelectionStep
+                        services={services}
+                        selectedService={selectedService}
+                        onServiceSelect={handleServiceSelection}
+                        loadingServices={loadingServices}
+                        serviceError={serviceError && services.length === 0 ? serviceError : null} // Only pass error if no services displayed
+                    />
                 )}
 
                 {step === 2 && selectedService && (
-                    <div className="booking-step-content animate-step">
-                        <h2 className="booking-step-heading">2. Datum und Uhrzeit wählen</h2>
-                        <div className="booking-step-subheading">
-                            <div className="service-info-text">
-                                <strong>{selectedService.name}</strong>
-                                <span className="service-price-duration">
-                                    ({typeof selectedService.price === 'number' ? selectedService.price.toFixed(2) : 'N/A'} € / {selectedService.durationMinutes || '-'} Min)
-                                </span>
-                            </div>
-                            <button type="button" onClick={resetBookingProcess} className="edit-selection-button small-edit">
-                                <FontAwesomeIcon icon={faEdit} /> Ändern
-                            </button>
-                        </div>
-
-                        <div className={`selected-datetime-info summary-above-datepicker ${!(selectedDate && selectedTime) ? 'placeholder' : ''}`}>
-                            {selectedDate && selectedTime ? (
-                                <>
-                                    Ihr Termin: <strong>{selectedDate.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })}</strong> um <strong>{selectedTime} Uhr</strong>
-                                </>
-                            ) : (
-                                <>
-                                    Bitte Datum und Uhrzeit auswählen.
-                                </>
-                            )}
-                        </div>
-
-
-                        <div className="datepicker-time-container">
-                            <div className="datepicker-wrapper-outer">
-                                <h3 className="sub-heading"><FontAwesomeIcon icon={faCalendarAlt} /> Datum wählen:</h3>
-                                <div className="datepicker-wrapper">
-                                    <DatePicker
-                                        selected={selectedDate}
-                                        onChange={(date) => { setSelectedDate(date); setSelectedTime(''); }}
-                                        locale="de"
-                                        dateFormat="dd.MM.yyyy"
-                                        minDate={new Date()}
-                                        filterDate={date => !isPastDate(date)}
-                                        inline
-                                        calendarClassName="booking-datepicker"
-                                    />
-                                </div>
-                            </div>
-                            <div className="time-slots-wrapper-outer">
-                                <h3 className="sub-heading">
-                                    <FontAwesomeIcon icon={faClock} /> Verfügbare Zeiten
-                                    {selectedDate ? ` für den ${selectedDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}` : ''}:
-                                </h3>
-                                <div className="time-slots-wrapper">
-                                    {loadingAvailableTimes && <p className="loading-message small"><FontAwesomeIcon icon={faSpinner} spin /> Lade Zeiten...</p>}
-                                    {!loadingAvailableTimes && timeError && <p className="form-message error small">{timeError}</p>}
-                                    {!loadingAvailableTimes && !timeError && selectedDate && availableTimes.length === 0 && (
-                                        <p className="no-times-message">Keine Online-Zeiten für diesen Tag verfügbar.</p>
-                                    )}
-                                    {!loadingAvailableTimes && !timeError && selectedDate && availableTimes.length > 0 && (
-                                        <div className="time-slots-grid">
-                                            {availableTimes.map(time => (
-                                                <button
-                                                    key={time} type="button"
-                                                    onClick={() => setSelectedTime(time)}
-                                                    className={`time-slot-button ${selectedTime === time ? 'selected' : ''}`}
-                                                >
-                                                    {time}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                    {!selectedDate && !loadingAvailableTimes && <p className="select-date-message">Bitte wählen Sie zuerst ein Datum.</p>}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="booking-navigation-buttons">
-                            <button type="button" onClick={resetBookingProcess} className="button-link-outline">
-                                <FontAwesomeIcon icon={faArrowLeft} /> Dienstleistung ändern
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleNextStep}
-                                disabled={!selectedDate || !selectedTime || loadingAvailableTimes}
-                                className="button-link"
-                            >
-                                {currentUser ? "Weiter zur Bestätigung" : "Weiter zu Ihren Daten"} <FontAwesomeIcon icon={faArrowRight} />
-                            </button>
-                        </div>
-                    </div>
+                    <DateTimeSelectionStep
+                        selectedService={selectedService}
+                        selectedDate={selectedDate}
+                        selectedTime={selectedTime}
+                        availableTimes={availableTimes}
+                        onDateChange={handleDateChange}
+                        onTimeChange={handleTimeChange}
+                        loadingAvailableTimes={loadingAvailableTimes}
+                        timeError={timeError}
+                        onResetBookingProcess={resetBookingProcess} // To go back to step 1
+                        onNextStep={handleNextStep} // To proceed to step 3 or 4
+                        currentUser={currentUser}
+                    />
                 )}
 
                 {step === 3 && !currentUser && selectedService && selectedDate && selectedTime && (
-                    <div className="booking-step-content animate-step">
-                        <h2 className="booking-step-heading">3. Ihre persönlichen Daten</h2>
-                        <div className="appointment-summary-inline">
-                            <p>
-                                <FontAwesomeIcon icon={faCheckCircle} className="summary-icon" />
-                                Termin für: <strong>{selectedService.name}</strong>
-                                am {selectedDate.toLocaleDateString('de-DE')} um {selectedTime} Uhr.
-                                <button type="button" onClick={() => setStep(2)} className="edit-selection-button subtle-edit">
-                                    <FontAwesomeIcon icon={faEdit} /> Ändern
-                                </button>
-                            </p>
-                        </div>
-                        {registerMessage.text && registerMessage.type === 'error' && (
-                            <p className={`form-message ${registerMessage.type} mb-4`}>
-                                <FontAwesomeIcon icon={faExclamationCircle} /> {registerMessage.text}
-                            </p>
-                        )}
-                        <AppointmentForm
-                            ref={appointmentFormRef}
-                            currentUser={currentUser}
-                            initialData={customerDetails}
-                            onFormSubmit={handleDataFromAppointmentForm}
-                        />
-                        <div className="booking-navigation-buttons">
-                            <button type="button" onClick={handlePrevStep} className="button-link-outline" disabled={isSubmittingForm}>
-                                <FontAwesomeIcon icon={faArrowLeft} /> Zurück zu Datum und Zeit
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleNextStep}
-                                className="button-link"
-                                disabled={isSubmittingForm}
-                            >
-                                {isSubmittingForm ? <><FontAwesomeIcon icon={faSpinner} spin /> Verarbeite...</> : <>Weiter zur Zusammenfassung <FontAwesomeIcon icon={faArrowRight} /></> }
-                            </button>
-                        </div>
-                    </div>
+                    <CustomerDetailsStep
+                        appointmentFormRef={appointmentFormRef}
+                        currentUser={currentUser}
+                        initialData={customerDetails}
+                        onFormSubmit={handleDataFromAppointmentForm}
+                        isSubmittingForm={isSubmittingForm}
+                        onPrevStep={handlePrevStep}
+                        // onNextStep is handled by the component's own submit button triggering onFormSubmit
+                        selectedService={selectedService}
+                        selectedDate={selectedDate}
+                        selectedTime={selectedTime}
+                        onNavigateToDateTimeStep={() => setStep(2)} // For the "Ändern" link
+                        registerMessage={registerMessage} // Pass register message for display
+                    />
                 )}
 
                 {step === 4 && selectedService && selectedDate && selectedTime && (
-                    <div className="booking-step-content animate-step">
-                        {finalBookingMessage.type === 'success' ? (
-                            <div className="booking-confirmation">
-                                <FontAwesomeIcon icon={faCheckCircle} className="confirmation-icon" />
-                                <h2 className="booking-step-heading">Termin erfolgreich gebucht!</h2>
-                                <p>Vielen Dank für Ihre Buchung. {AuthService.getCurrentUser() || customerDetails.email ? 'Eine Bestätigung wurde an Ihre E-Mail-Adresse gesendet und Sie finden den Termin ggf. unter "Meine Termine".' : ''}</p>
-                                <div className="appointment-summary light">
-                                    <h4>Ihre Buchungsdetails:</h4>
-                                    <p><strong>Dienstleistung:</strong> {selectedService.name}</p>
-                                    <p><strong>Datum:</strong> {selectedDate.toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                                    <p><strong>Uhrzeit:</strong> {selectedTime} Uhr</p>
-                                    {customerDetails.notes && <p><strong>Anmerkungen:</strong> {customerDetails.notes}</p>}
-                                </div>
-                                <div className="calendar-actions">
-                                    <button type="button" onClick={generateICal} className="button-link-outline small-button">
-                                        <FontAwesomeIcon icon={faCalendarPlus} /> Zum Kalender hinzufügen (.ics)
-                                    </button>
-                                </div>
-                                <div className="booking-navigation-buttons confirmation-buttons">
-                                    {AuthService.getCurrentUser() && <Link to="/my-account" className="button-link">Meine Termine</Link>}
-                                    <button type="button" onClick={resetBookingProcess} className="button-link-outline">Neuen Termin buchen</button>
-                                    {!AuthService.getCurrentUser() && <Link to="/" className="button-link-outline">Zur Startseite</Link>}
-                                </div>
-                            </div>
-                        ) : (
-                            <>
-                                <h2 className="booking-step-heading">4. Buchung überprüfen und bestätigen</h2>
-                                <div className="appointment-summary-final">
-                                    <h3>Ihre Auswahl:</h3>
-                                    <p><FontAwesomeIcon icon={faCheckCircle} /> <strong>Dienstleistung:</strong> {selectedService.name} ({typeof selectedService.price === 'number' ? selectedService.price.toFixed(2) : 'N/A'} € / {selectedService.durationMinutes || '-'} Min)</p>
-                                    <p><FontAwesomeIcon icon={faCalendarAlt} /> <strong>Datum:</strong> {selectedDate.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                                    <p><FontAwesomeIcon icon={faClock} /> <strong>Uhrzeit:</strong> {selectedTime} Uhr</p>
-
-                                    <h3 className="mt-4">Ihre Daten:</h3>
-                                    <p><FontAwesomeIcon icon={faUser} /> <strong>Name:</strong> {customerDetails.firstName} {customerDetails.lastName}</p>
-                                    <p><FontAwesomeIcon icon={faEnvelope} /> <strong>E-Mail:</strong> {customerDetails.email}</p>
-                                    {customerDetails.phoneNumber && <p><FontAwesomeIcon icon={faPhone} /> <strong>Telefon:</strong> {customerDetails.phoneNumber}</p>}
-                                    {customerDetails.notes && <p><FontAwesomeIcon icon={faStickyNote} /> <strong>Anmerkungen:</strong> {customerDetails.notes}</p>}
-                                </div>
-
-                                {registerMessage.text && registerMessage.type !== 'error' && (
-                                    <p className={`form-message ${registerMessage.type} mt-4`}>
-                                        <FontAwesomeIcon icon={registerMessage.type === 'success' ? faCheckCircle : faInfoCircle} /> {registerMessage.text}
-                                    </p>
-                                )}
-                                {finalBookingMessage.text && finalBookingMessage.type !== 'success' && (
-                                    <p className={`form-message ${finalBookingMessage.type} mt-4`}>
-                                        <FontAwesomeIcon icon={finalBookingMessage.type === 'info' ? faInfoCircle : faExclamationCircle} />
-                                        {finalBookingMessage.text}
-                                    </p>
-                                )}
-
-                                <div className="booking-navigation-buttons">
-                                    <button type="button" onClick={handlePrevStep} className="button-link-outline" disabled={isSubmittingFinal}>
-                                        <FontAwesomeIcon icon={faArrowLeft} /> Zurück {currentUser ? "zu Datum und Zeit" : "zu Ihren Daten"}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={handleFinalBooking}
-                                        disabled={isSubmittingFinal}
-                                        className="button-link"
-                                    >
-                                        {isSubmittingFinal ? (
-                                            <><FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> Wird gebucht...</>
-                                        ) : (
-                                            "Termin verbindlich buchen"
-                                        )}
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                    </div>
+                    <BookingConfirmationStep
+                        selectedService={selectedService}
+                        selectedDate={selectedDate}
+                        selectedTime={selectedTime}
+                        customerDetails={customerDetails}
+                        finalBookingMessage={finalBookingMessage}
+                        isSubmittingFinal={isSubmittingFinal}
+                        onConfirmBooking={handleFinalBooking}
+                        onPrevStep={handlePrevStep}
+                        onResetBookingProcess={resetBookingProcess}
+                        generateICal={generateICal}
+                        currentUser={currentUser}
+                        // registerMessage={registerMessage} // Pass register message for display
+                    />
                 )}
             </div>
         </div>
