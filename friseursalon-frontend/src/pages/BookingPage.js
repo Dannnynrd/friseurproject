@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import './BookingPage.css'; // NEU: Eigene CSS-Datei importieren
-
 import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+import 'react-datepicker/dist/react-datepicker.css'; // Stile für den DatePicker
+import './BookingPage.css'; // NEUER IMPORT für BookingPage spezifische Stile
 import { de } from 'date-fns/locale/de';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -15,7 +14,7 @@ import {
 
 import api from '../services/api.service';
 import AuthService from '../services/auth.service';
-import AppointmentForm from '../components/AppointmentForm';
+import AppointmentForm from '../components/AppointmentForm'; // Stellt sicher, dass AppointmentForm generische Formularstile verwendet oder eigene hat
 
 registerLocale('de', de);
 setDefaultLocale('de');
@@ -39,12 +38,10 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     const [availableTimes, setAvailableTimes] = useState([]);
     const [services, setServices] = useState([]);
     const [loadingServices, setLoadingServices] = useState(true);
+    const [loadingAvailableTimes, setLoadingAvailableTimes] = useState(false); // Neuer Ladezustand für Zeiten
     const [serviceError, setServiceError] = useState(null);
-
-    // registerMessage und finalBookingMessage können jetzt Strings oder Arrays sein
+    const [timeError, setTimeError] = useState(null); // Neuer Fehlerzustand für Zeiten
     const [registerMessage, setRegisterMessage] = useState({ type: '', text: '' });
-    const [finalBookingMessage, setFinalBookingMessage] = useState({type: '', text: ''});
-
 
     const [customerDetails, setCustomerDetails] = useState({
         firstName: '',
@@ -56,6 +53,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     });
     const [isSubmittingForm, setIsSubmittingForm] = useState(false);
     const [isSubmittingFinal, setIsSubmittingFinal] = useState(false);
+    const [finalBookingMessage, setFinalBookingMessage] = useState({type: '', text: ''});
     const appointmentFormRef = useRef(null);
 
     useEffect(() => {
@@ -66,19 +64,11 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                 lastName: currentUser.lastName || '',
                 email: currentUser.email || '',
                 phoneNumber: currentUser.phoneNumber || '',
-                password: '' // Passwort sollte bei eingeloggten Usern nicht vorausgefüllt sein
+                password: '' // Passwort nicht vorausfüllen
             }));
         } else {
-            // Wenn der Benutzer ausgeloggt ist, die Kundendetails auf den ursprünglichen Zustand zurücksetzen,
-            // es sei denn, sie wurden bereits durch das Formular geändert.
-            setCustomerDetails(prevDetails => ({
-                firstName: prevDetails.firstName || '',
-                lastName: prevDetails.lastName || '',
-                email: prevDetails.email || '',
-                phoneNumber: prevDetails.phoneNumber || '',
-                notes: prevDetails.notes || '',
-                password: prevDetails.password || ''
-            }));
+            // Für nicht eingeloggte User, Kundendetails zurücksetzen, falls sie von einem vorherigen Versuch stammen
+            setCustomerDetails({ firstName: '', lastName: '', email: '', phoneNumber: '', notes: '', password: '' });
         }
     }, [currentUser]);
 
@@ -98,12 +88,13 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                         setSelectedService(service);
                     } else {
                         console.warn(`Vorausgewählter Service "${initialServiceParam}" nicht in der geladenen Liste gefunden.`);
+                        setServiceError(`Der ausgewählte Service "${initialServiceParam}" ist nicht verfügbar. Bitte wählen Sie einen anderen.`);
                         setInitialServiceParam(null);
                     }
-                } else if (initialServiceParam) {
+                } else if (initialServiceParam && fetchedServices.length === 0) {
                     console.warn(`Vorausgewählter Service "${initialServiceParam}" kann nicht gefunden werden, da keine Services geladen wurden.`);
+                    setServiceError('Keine Dienstleistungen verfügbar.');
                     setInitialServiceParam(null);
-                    setServiceError('Keine Dienstleistungen verfügbar, um den vorausgewählten Service zu prüfen.');
                 }
             } catch (error) {
                 console.error("Fehler beim Laden der Dienstleistungen:", error);
@@ -116,73 +107,55 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     }, [initialServiceParam]);
 
 
-    const generateTimeSlots = useCallback((serviceDurationMinutes) => {
-        const slots = [];
-        if (!selectedDate || !serviceDurationMinutes) return slots;
-        const openingHour = 9; const closingHour = 18;
-        const slotInterval = 30;
-        const dayOfWeek = selectedDate.getDay();
-        if (dayOfWeek === 0) return slots;
-
-        for (let hour = openingHour; hour < closingHour; hour++) {
-            for (let minute = 0; minute < 60; minute += slotInterval) {
-                const slotTime = new Date(selectedDate);
-                slotTime.setHours(hour, minute, 0, 0);
-                const now = new Date();
-                if (selectedDate.toDateString() === now.toDateString() && slotTime < now) continue;
-                const endTime = new Date(slotTime.getTime() + serviceDurationMinutes * 60000);
-                if (endTime.getHours() < closingHour || (endTime.getHours() === closingHour && endTime.getMinutes() === 0)) {
-                    slots.push(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
-                }
-            }
-        }
-        return slots;
-    }, [selectedDate]);
-
+    // Abrufen verfügbarer Zeiten vom Backend
     useEffect(() => {
-        if (selectedDate && selectedService) {
-            const times = generateTimeSlots(selectedService.durationMinutes);
-            setAvailableTimes(times);
+        if (selectedDate && selectedService && selectedService.id) {
+            const fetchAvailableTimes = async () => {
+                setLoadingAvailableTimes(true);
+                setTimeError(null);
+                setAvailableTimes([]); // Alte Zeiten löschen
+                try {
+                    const dateString = selectedDate.toISOString().split('T')[0]; // Format YYYY-MM-DD
+                    const response = await api.get(`/appointments/available-slots?serviceId=${selectedService.id}&date=${dateString}`);
+                    setAvailableTimes(response.data || []);
+                    if (response.data.length === 0) {
+                        setTimeError('Für diesen Tag sind online keine Termine für den gewählten Service verfügbar.');
+                    }
+                } catch (error) {
+                    console.error("Fehler beim Laden der verfügbaren Zeiten:", error);
+                    setTimeError('Verfügbare Zeiten konnten nicht geladen werden.');
+                } finally {
+                    setLoadingAvailableTimes(false);
+                }
+            };
+            fetchAvailableTimes();
         } else {
             setAvailableTimes([]);
+            setTimeError(null);
         }
-    }, [selectedDate, selectedService, generateTimeSlots]);
-
-    // Hilfsfunktion zur Verarbeitung und Anzeige von Fehlermeldungen
-    const formatErrorMessage = (error) => {
-        if (error && error.errors && Array.isArray(error.errors)) {
-            // Strukturierte Fehler vom GlobalExceptionHandler
-            return error.errors.join("; "); // Zeigt alle Feldfehler, durch Semikolon getrennt
-        } else if (error && error.message) {
-            // Einfache MessageResponse oder andere Fehler mit 'message'-Property
-            return error.message;
-        } else if (typeof error === 'string') {
-            return error;
-        }
-        return "Ein unbekannter Fehler ist aufgetreten.";
-    };
+    }, [selectedDate, selectedService]);
 
 
     const handleRegisterDuringBooking = async (email, firstName, lastName, phoneNumber, password) => {
         setRegisterMessage({ type: '', text: '' });
+        setIsSubmittingFinal(true); // Zeige Ladezustand auch hier
         try {
-            // AuthService.register gibt bei Erfolg response.data zurück
-            const response = await AuthService.register(firstName, lastName, email, password, phoneNumber, ["user"]);
-            // Erfolgsmeldung aus der Antwort nehmen, falls vorhanden
-            setRegisterMessage({ type: 'success', text: response.message || "Registrierung erfolgreich!" });
+            await AuthService.register(firstName, lastName, email, password, phoneNumber, ["user"]);
             return true;
         } catch (error) {
+            const errMsg = error.response?.data?.message || error.message || "Unbekannter Fehler bei der Registrierung.";
             console.error("Fehler bei der Registrierung während der Buchung:", error);
-            const formattedError = formatErrorMessage(error);
-            setRegisterMessage({ type: 'error', text: `Registrierung fehlgeschlagen: ${formattedError}`});
+            setRegisterMessage({ type: 'error', text: `Registrierung fehlgeschlagen: ${errMsg}`});
             return false;
+        } finally {
+            setIsSubmittingFinal(false); // Ladezustand zurücksetzen
         }
     };
 
     const handleDataFromAppointmentForm = (dataFromForm) => {
         setCustomerDetails(dataFromForm);
-        setRegisterMessage({ type: '', text: '' }); // Zurücksetzen, da hier keine Registrierung erfolgt
-        setFinalBookingMessage({ type: '', text: '' }); // Zurücksetzen für den nächsten Schritt
+        setRegisterMessage({ type: '', text: '' });
+        setFinalBookingMessage({ type: '', text: '' });
         setStep(4);
         setIsSubmittingForm(false);
     };
@@ -195,6 +168,9 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
     };
 
     const handleNextStep = () => {
+        setFinalBookingMessage({ type: '', text: '' }); // Nachrichten zurücksetzen
+        setRegisterMessage({ type: '', text: '' });
+
         if (step === 2 && currentUser && selectedService && selectedDate && selectedTime) {
             setStep(4);
         } else if (step === 3) {
@@ -204,7 +180,6 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                 if (formData) {
                     handleDataFromAppointmentForm(formData);
                 } else {
-                    // Fehlermeldung wird im AppointmentForm selbst durch setMessage gesetzt
                     setIsSubmittingForm(false);
                 }
             } else {
@@ -215,19 +190,19 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
         }
     };
     const handlePrevStep = () => {
+        setFinalBookingMessage({ type: '', text: '' });
+        setRegisterMessage({ type: '', text: '' });
         if (step === 4 && currentUser) {
             setStep(2);
         } else if (step > 1) {
             setStep(prev => prev - 1);
         }
-        setFinalBookingMessage({ type: '', text: '' });
-        setRegisterMessage({ type: '', text: '' });
     };
 
     const handleFinalBooking = async () => {
         setIsSubmittingFinal(true);
         setFinalBookingMessage({ type: '', text: '' });
-        // registerMessage wird in handleRegisterDuringBooking gesetzt und hier ggf. angezeigt/verwendet
+        setRegisterMessage({ type: '', text: '' });
 
         const year = selectedDate.getFullYear();
         const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
@@ -257,27 +232,20 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
             );
             if (!registrationSuccessful) {
                 setIsSubmittingFinal(false);
-                // registerMessage enthält bereits die detaillierte Fehlermeldung
                 setFinalBookingMessage({type: 'error', text: registerMessage.text || 'Registrierung fehlgeschlagen. Bitte überprüfen Sie Ihre Daten.'})
-                setStep(3); // Zurück zu Schritt 3, um Fehler anzuzeigen/zu korrigieren
+                setStep(3);
                 return;
             }
-            // Wenn Registrierung erfolgreich war, versuche Login
             try {
                 const loginData = await AuthService.login(customerDetails.email, customerDetails.password);
                 if (loginData.token && onLoginSuccess) {
                     onLoginSuccess();
                     userJustRegisteredAndLoggedIn = true;
-                    // Kombiniere Erfolgsmeldung der Registrierung mit Login-Info
-                    setRegisterMessage(prev => ({
-                        type: 'success',
-                        text: (prev.text ? prev.text + " " : "") + "Sie wurden erfolgreich angemeldet!"
-                    }));
+                    setRegisterMessage({ type: 'success', text: `Konto für ${customerDetails.email} erfolgreich erstellt und Sie wurden angemeldet!`});
                 }
             } catch (loginError) {
                 console.warn("Automatischer Login nach Registrierung fehlgeschlagen:", loginError);
-                const formattedLoginError = formatErrorMessage(loginError);
-                setRegisterMessage({type: 'info', text: `Konto erstellt, aber automatischer Login fehlgeschlagen: ${formattedLoginError}. Ihre Buchung wird dennoch versucht.`});
+                setRegisterMessage({type: 'info', text: 'Konto erstellt, aber automatischer Login fehlgeschlagen. Ihre Buchung wird dennoch versucht.'});
             }
         }
 
@@ -287,27 +255,24 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                 onAppointmentAdded();
             }
             let successMsg = 'Termin erfolgreich gebucht!';
-            if(userJustRegisteredAndLoggedIn && registerMessage.type === 'success' && registerMessage.text) {
+            if(userJustRegisteredAndLoggedIn && registerMessage.type === 'success') {
                 successMsg = registerMessage.text + " " + successMsg;
-            } else if (userJustRegisteredAndLoggedIn && registerMessage.type === 'info' && registerMessage.text) {
+            } else if (userJustRegisteredAndLoggedIn && registerMessage.type === 'info') {
                 successMsg = registerMessage.text + " " + successMsg;
             }
             setFinalBookingMessage({type: 'success', text: successMsg});
         } catch (error) {
             console.error("Fehler beim Buchen des Termins:", error);
-            let errorMsgText = "Ein Fehler ist beim Buchen des Termins aufgetreten. Bitte versuchen Sie es erneut.";
-            if (error.response && error.response.data) { // Axios Fehler mit Backend-Antwort
-                errorMsgText = formatErrorMessage(error.response.data);
-            } else if (error.message) { // Generischer JS-Fehler oder Axios-Fehler ohne response.data
-                errorMsgText = error.message;
+            let errorMsg = "Ein Fehler ist beim Buchen des Termins aufgetreten. Bitte versuchen Sie es erneut.";
+            if (error.response) {
+                errorMsg = error.response.data?.message || errorMsg;
+                if (error.response.status === 409 && !userJustRegisteredAndLoggedIn) {
+                    errorMsg = `${errorMsg} Diese E-Mail ist bereits registriert. Bitte melden Sie sich an oder gehen Sie zurück, um Ihre Daten zu ändern.`;
+                } else if (userJustRegisteredAndLoggedIn && error.response.status !== 409) {
+                    errorMsg = `Ihr Konto wurde erstellt und Sie sind angemeldet, aber die Terminbuchung schlug fehl: ${errorMsg}`;
+                }
             }
-
-            if (error.response && error.response.status === 409 && !userJustRegisteredAndLoggedIn) {
-                errorMsgText = `${errorMsgText} Diese E-Mail ist bereits registriert. Bitte melden Sie sich an oder gehen Sie zurück, um Ihre Daten zu ändern.`;
-            } else if (userJustRegisteredAndLoggedIn && error.response && error.response.status !== 409) {
-                errorMsgText = `Ihr Konto wurde erstellt und Sie sind angemeldet, aber die Terminbuchung schlug fehl: ${errorMsgText}`;
-            }
-            setFinalBookingMessage({ type: 'error', text: errorMsgText });
+            setFinalBookingMessage({ type: 'error', text: errorMsg });
         } finally {
             setIsSubmittingFinal(false);
         }
@@ -372,6 +337,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
         setRegisterMessage({ type: '', text: '' });
         setFinalBookingMessage({ type: '', text: '' });
         setServiceError(null);
+        setTimeError(null);
         setStep(determineInitialStep());
     };
 
@@ -402,8 +368,10 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                     {visibleStepLabels.map((label, index) => {
                         const visibleStepNumber = index + 1;
                         const internalStepForIndicator = getInternalStepForVisibleStep(visibleStepNumber);
+
                         const isCurrentStepActive = step === internalStepForIndicator;
                         let isStepCompleted = step > internalStepForIndicator;
+
                         if (internalStepForIndicator === 4 && finalBookingMessage.type === 'success') {
                             isStepCompleted = true;
                         } else if (internalStepForIndicator === 4 && finalBookingMessage.type !== 'success') {
@@ -509,21 +477,25 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                                     {selectedDate ? ` für den ${selectedDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}` : ''}:
                                 </h3>
                                 <div className="time-slots-wrapper">
-                                    {selectedDate ? ( availableTimes.length > 0 ? (
-                                            <div className="time-slots-grid">
-                                                {availableTimes.map(time => (
-                                                    <button
-                                                        key={time} type="button"
-                                                        onClick={() => setSelectedTime(time)}
-                                                        className={`time-slot-button ${selectedTime === time ? 'selected' : ''}`}
-                                                    >
-                                                        {time}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        ) : <p className="no-times-message">Keine Online-Zeiten für diesen Tag verfügbar.</p>
-                                    ) : <p className="select-date-message">Bitte wählen Sie zuerst ein Datum.</p>
-                                    }
+                                    {loadingAvailableTimes && <p className="loading-message small"><FontAwesomeIcon icon={faSpinner} spin /> Lade Zeiten...</p>}
+                                    {!loadingAvailableTimes && timeError && <p className="form-message error small">{timeError}</p>}
+                                    {!loadingAvailableTimes && !timeError && selectedDate && availableTimes.length === 0 && (
+                                        <p className="no-times-message">Keine Online-Zeiten für diesen Tag verfügbar.</p>
+                                    )}
+                                    {!loadingAvailableTimes && !timeError && selectedDate && availableTimes.length > 0 && (
+                                        <div className="time-slots-grid">
+                                            {availableTimes.map(time => (
+                                                <button
+                                                    key={time} type="button"
+                                                    onClick={() => setSelectedTime(time)}
+                                                    className={`time-slot-button ${selectedTime === time ? 'selected' : ''}`}
+                                                >
+                                                    {time}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {!selectedDate && !loadingAvailableTimes && <p className="select-date-message">Bitte wählen Sie zuerst ein Datum.</p>}
                                 </div>
                             </div>
                         </div>
@@ -534,7 +506,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                             <button
                                 type="button"
                                 onClick={handleNextStep}
-                                disabled={!selectedDate || !selectedTime}
+                                disabled={!selectedDate || !selectedTime || loadingAvailableTimes}
                                 className="button-link"
                             >
                                 {currentUser ? "Weiter zur Bestätigung" : "Weiter zu Ihren Daten"} <FontAwesomeIcon icon={faArrowRight} />
@@ -556,8 +528,11 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                                 </button>
                             </p>
                         </div>
-                        {/* Fehlermeldung von AppointmentForm wird direkt im Formular angezeigt */}
-                        {/* registerMessage wird erst in Schritt 4 relevant oder wenn handleFinalBooking fehlschlägt */}
+                        {registerMessage.text && registerMessage.type === 'error' && (
+                            <p className={`form-message ${registerMessage.type} mb-4`}>
+                                <FontAwesomeIcon icon={faExclamationCircle} /> {registerMessage.text}
+                            </p>
+                        )}
                         <AppointmentForm
                             ref={appointmentFormRef}
                             currentUser={currentUser}
@@ -570,7 +545,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                             </button>
                             <button
                                 type="button"
-                                onClick={handleNextStep} // Dieser Button löst triggerSubmitAndGetData aus
+                                onClick={handleNextStep}
                                 className="button-link"
                                 disabled={isSubmittingForm}
                             >
@@ -586,7 +561,7 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                             <div className="booking-confirmation">
                                 <FontAwesomeIcon icon={faCheckCircle} className="confirmation-icon" />
                                 <h2 className="booking-step-heading">Termin erfolgreich gebucht!</h2>
-                                <p>{finalBookingMessage.text}</p>
+                                <p>Vielen Dank für Ihre Buchung. {AuthService.getCurrentUser() || customerDetails.email ? 'Eine Bestätigung wurde an Ihre E-Mail-Adresse gesendet und Sie finden den Termin ggf. unter "Meine Termine".' : ''}</p>
                                 <div className="appointment-summary light">
                                     <h4>Ihre Buchungsdetails:</h4>
                                     <p><strong>Dienstleistung:</strong> {selectedService.name}</p>
@@ -621,21 +596,17 @@ function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
                                     {customerDetails.notes && <p><FontAwesomeIcon icon={faStickyNote} /> <strong>Anmerkungen:</strong> {customerDetails.notes}</p>}
                                 </div>
 
-                                {/* Anzeige für Registrierungs-Feedback (Erfolg/Info, Fehler werden in Schritt 3 oder in finalBookingMessage angezeigt) */}
                                 {registerMessage.text && registerMessage.type !== 'error' && (
                                     <p className={`form-message ${registerMessage.type} mt-4`}>
                                         <FontAwesomeIcon icon={registerMessage.type === 'success' ? faCheckCircle : faInfoCircle} /> {registerMessage.text}
                                     </p>
                                 )}
-
-                                {/* Anzeige für finale Buchungsfehler */}
-                                {finalBookingMessage.text && finalBookingMessage.type === 'error' && (
+                                {finalBookingMessage.text && finalBookingMessage.type !== 'success' && (
                                     <p className={`form-message ${finalBookingMessage.type} mt-4`}>
-                                        <FontAwesomeIcon icon={faExclamationCircle} />
+                                        <FontAwesomeIcon icon={finalBookingMessage.type === 'info' ? faInfoCircle : faExclamationCircle} />
                                         {finalBookingMessage.text}
                                     </p>
                                 )}
-
 
                                 <div className="booking-navigation-buttons">
                                     <button type="button" onClick={handlePrevStep} className="button-link-outline" disabled={isSubmittingFinal}>

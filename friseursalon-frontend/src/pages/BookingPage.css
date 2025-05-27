@@ -1,14 +1,38 @@
-/* src/pages/BookingPage.css */
+/* /Users/dan/Desktop/friseurproject/friseursalon-frontend/src/pages/BookingPage.css */
+
+/* CSS Variablen spezifisch für die BookingPage Schritt-Indikatoren */
+:root {
+    --step-indicator-default-border: var(--border-color, #e7e7e7); /* Fallback zu globaler Variable */
+    --step-indicator-default-text: var(--light-grey-text, #8c8c8c);
+    --step-indicator-line-default: #e0e0e0;
+    --step-indicator-line-height: 3px;
+
+    --step-indicator-active-bg: var(--dark-text, #1f1f1f);
+    --step-indicator-active-border: var(--dark-text, #1f1f1f);
+    --step-indicator-active-text-in-circle: var(--light-bg, #ffffff);
+    --step-indicator-active-label-text: var(--dark-text, #1f1f1f);
+
+    --step-indicator-completed-bg: var(--success-color, #28a745);
+    --step-indicator-completed-border: var(--success-color, #28a745);
+    --step-indicator-completed-text-in-circle: var(--light-bg, #ffffff);
+    --step-indicator-completed-label-text: var(--dark-text, #1f1f1f);
+    --step-indicator-line-completed: var(--success-color, #28a745);
+}
 
 .booking-page-container {
     padding: 2rem 0;
     background-color: var(--light-bg);
-    min-height: calc(100vh - var(--header-height-desktop) - var(--footer-height) - 4rem); /* Annahme: Header und Footer Höhen sind in :root definiert */
+    /* Stellt sicher, dass die Seite auch bei wenig Inhalt eine Mindesthöhe hat.
+       Berechnung: 100vh - Höhe des Headers - Höhe des Footers - oberes/unteres Padding der Page.
+       Die exakten Werte für Header/Footer müssen ggf. angepasst werden, falls sie dynamisch sind.
+       Wir verwenden hier die in App.css definierten Variablen, falls vorhanden, oder Fallbacks.
+    */
+    min-height: calc(100vh - var(--header-height-desktop, 5rem) - var(--footer-height, 14rem) - 4rem);
 }
 
 @media (max-width: 992px) {
     .booking-page-container {
-        min-height: calc(100vh - var(--header-height-mobile) - var(--footer-height) - 2rem);
+        min-height: calc(100vh - var(--header-height-mobile, 4.5rem) - var(--footer-height, 14rem) - 2rem);
         padding: 1rem 0;
     }
 }
@@ -30,7 +54,7 @@
 }
 
 .booking-page-main-heading {
-    font-family: var(--font-serif), serif;
+    font-family: var(--font-serif, serif);
     font-size: 2.2rem;
     color: var(--dark-text);
     text-align: center;
@@ -43,7 +67,7 @@
     }
 }
 
-/* Schritt-Indikatoren */
+/* --- Modernisierte Schritt-Indikatoren --- */
 .booking-step-indicators {
     display: flex;
     justify-content: space-between;
@@ -58,125 +82,836 @@
 .booking-step-indicators::before {
     content: '';
     position: absolute;
-    top: calc(1.125rem - (var(--step-indicator-line-height) / 2));
+    top: calc(1.125rem - (var(--step-indicator-line-height) / 2)); /* Zentriert die Linie vertikal mit dem Kreis */
     left: 0;
     right: 0;
     height: var(--step-indicator-line-height);
     background-color: var(--step-indicator-line-default);
-    z-index: 1;
-    width: calc(100% - (100% / 4)); /* Standard für 4 Schritte */
-    margin: 0 auto;
+    z-index: 1; /* Hinter den Kreisen */
+    /* Breite anpassen, sodass die Linie nicht ganz bis zum Rand geht */
+    width: calc(100% - (100% / 4)); /* Standard für 4 Schritte, angepasst an die Anzahl der Schritte */
+    margin: 0 auto; /* Zentriert die Linie horizontal */
 }
+/* Anpassung für 3 Schritte (eingeloggter User) */
 .booking-step-indicators.three-steps::before {
-    width: calc(100% - (100% / 3));
+    width: calc(100% - (100% / 3)); /* Breite für 3 Schritte */
 }
+
 
 .booking-step-indicator {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    flex-basis: 0;
+    flex-basis: 0; /* Erlaubt gleichmäßige Verteilung */
     flex-grow: 1;
-    position: relative;
-    z-index: 2;
-    min-width: 60px;
+    position: relative; /* Für z-index */
+    z-index: 2; /* Über der Linie */
+    min-width: 60px; /* Verhindert zu starkes Schrumpfen */
 }
+
 .booking-step-indicator .step-number-wrapper {
-    width: 2.25rem; height: 2.25rem; border-radius: 50%;
+    width: 2.25rem; /* 36px */
+    height: 2.25rem; /* 36px */
+    border-radius: 50%;
     border: 2px solid var(--step-indicator-default-border);
-    background-color: var(--light-bg); color: var(--step-indicator-default-text);
-    display: flex; align-items: center; justify-content: center;
-    margin-bottom: 0.4rem; transition: all 0.3s var(--transition-ease);
-    font-weight: 600; position: relative; z-index: 3;
+    background-color: var(--light-bg); /* Hintergrund, um die Linie darunter zu verdecken */
+    color: var(--step-indicator-default-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.4rem;
+    transition: all 0.3s var(--transition-ease, ease-in-out);
+    font-weight: 600;
+    position: relative; /* Stellt sicher, dass es über ::before liegt */
+    z-index: 3;
 }
-.booking-step-indicator .step-number { font-size: 0.85rem; }
-.booking-step-indicator .step-number .svg-inline--fa { font-size: 0.9rem; color: var(--step-indicator-completed-text-in-circle); }
+
+.booking-step-indicator .step-number {
+    font-size: 0.85rem;
+}
+.booking-step-indicator .step-number .svg-inline--fa { /* Für das Häkchen-Icon */
+    font-size: 0.9rem;
+    color: var(--step-indicator-completed-text-in-circle);
+}
+
 .booking-step-indicator .step-label {
-    font-size: 0.75rem; font-weight: 500; color: var(--step-indicator-default-text);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--step-indicator-default-text);
     transition: color 0.3s ease, font-weight 0.3s ease;
-    line-height: 1.2; padding: 0 0.1rem;
+    line-height: 1.2;
+    padding: 0 0.1rem; /* Kleiner horizontaler Abstand, falls Text umbricht */
 }
-.booking-step-indicator.completed .step-number-wrapper { background-color: var(--step-indicator-completed-bg); border-color: var(--step-indicator-completed-border); }
-.booking-step-indicator.completed .step-label { color: var(--step-indicator-completed-label-text); }
+
+/* Abgeschlossener Schritt */
+.booking-step-indicator.completed .step-number-wrapper {
+    background-color: var(--step-indicator-completed-bg);
+    border-color: var(--step-indicator-completed-border);
+    /* color: var(--step-indicator-completed-text-in-circle); Icon hat eigene Farbe */
+}
+.booking-step-indicator.completed .step-label {
+    color: var(--step-indicator-completed-label-text);
+    /* font-weight: 600; Optional, um abgeschlossene Labels hervorzuheben */
+}
+
+/* Linie für abgeschlossene Schritte */
 .booking-step-indicator.completed::after {
-    content: ''; position: absolute; top: calc(1.125rem - (var(--step-indicator-line-height) / 2));
-    left: 50%; width: 100%; height: var(--step-indicator-line-height);
-    background-color: var(--step-indicator-line-completed); z-index: 1;
+    content: '';
+    position: absolute;
+    top: calc(1.125rem - (var(--step-indicator-line-height) / 2));
+    left: 50%; /* Startet in der Mitte des aktuellen Schritts */
+    width: 100%; /* Erstreckt sich bis zur Mitte des nächsten Schritts */
+    height: var(--step-indicator-line-height);
+    background-color: var(--step-indicator-line-completed);
+    z-index: 1; /* Unter dem Kreis des nächsten Schritts, aber über der grauen Basislinie */
 }
-.booking-step-indicator:last-child.completed::after { width: 0; }
+.booking-step-indicator:last-child.completed::after {
+    width: 0; /* Letzter Schritt hat keine ausgehende Linie */
+}
+
+
+/* Aktiver Schritt */
 .booking-step-indicator.active .step-number-wrapper {
-    background-color: var(--step-indicator-active-bg); border-color: var(--step-indicator-active-border);
-    color: var(--step-indicator-active-text-in-circle); transform: scale(1.1);
+    background-color: var(--step-indicator-active-bg);
+    border-color: var(--step-indicator-active-border);
+    color: var(--step-indicator-active-text-in-circle);
+    transform: scale(1.1);
     box-shadow: 0 0 8px rgba(0,0,0,0.1);
 }
-.booking-step-indicator.active .step-label { color: var(--step-indicator-active-label-text); font-weight: 700; }
+.booking-step-indicator.active .step-label {
+    color: var(--step-indicator-active-label-text);
+    font-weight: 700;
+}
 
+/* Anpassungen für kleinere Bildschirme */
 @media (max-width: 576px) {
-    .booking-step-indicators::before { margin: 0 calc(25% / 2 - 0.5rem); }
-    .booking-step-indicators.three-steps::before { margin: 0 calc(33.33% / 2 - 0.5rem); }
-    .booking-step-indicator .step-number-wrapper { width: 2rem; height: 2rem; }
-    .booking-step-indicator .step-number { font-size: 0.75rem; }
-    .booking-step-indicator .step-number .svg-inline--fa { font-size: 0.8rem; }
-    .booking-step-indicator .step-label { font-size: 0.7rem; }
+    .booking-step-indicators::before {
+        /* Die Linie soll nur zwischen den Kreisen sein, nicht bis zum Rand des Containers */
+        margin: 0 calc(25% / 2 - 0.5rem); /* Anpassung für 4 Schritte */
+    }
+    .booking-step-indicators.three-steps::before {
+        margin: 0 calc(33.33% / 2 - 0.5rem); /* Anpassung für 3 Schritte */
+    }
+
+    .booking-step-indicator .step-number-wrapper {
+        width: 2rem; /* 32px */
+        height: 2rem; /* 32px */
+    }
+    .booking-step-indicator .step-number {
+        font-size: 0.75rem;
+    }
+    .booking-step-indicator .step-number .svg-inline--fa {
+        font-size: 0.8rem;
+    }
+    .booking-step-indicator .step-label {
+        font-size: 0.7rem;
+    }
     .booking-step-indicators::before,
     .booking-step-indicator.completed::after {
-        top: calc(1rem - (var(--step-indicator-line-height) / 2) + 1px);
-        height: calc(var(--step-indicator-line-height) - 1px);
+        top: calc(1rem - (var(--step-indicator-line-height) / 2) + 1px); /* Anpassung an kleinere Kreise */
+        height: calc(var(--step-indicator-line-height) - 1px); /* Etwas dünnere Linie auf Mobile */
     }
 }
-@media (max-width: 420px) {
-    .booking-step-indicator .step-label { display: none; }
-    .booking-step-indicator .step-number-wrapper { margin-bottom: 0; }
-    .booking-step-indicators { padding-bottom: 0.5rem; margin-bottom: 2rem; }
-    .booking-step-indicators::before,
-    .booking-step-indicator.completed::after { top: calc(1rem - (var(--step-indicator-line-height) / 2) + 1px); }
-}
 
-.booking-step-content { padding-top: 1rem; }
-.animate-step { animation: fadeInStep 0.4s var(--transition-ease) forwards; opacity: 0; }
-@keyframes fadeInStep { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 420px) {
+    .booking-step-indicator .step-label {
+        display: none; /* Labels auf sehr kleinen Bildschirmen ausblenden */
+    }
+    .booking-step-indicator .step-number-wrapper {
+        margin-bottom: 0; /* Kein Abstand mehr, da Label weg ist */
+    }
+    .booking-step-indicators {
+        padding-bottom: 0.5rem; /* Weniger Abstand nach unten */
+        margin-bottom: 2rem;
+    }
+    .booking-step-indicators::before,
+    .booking-step-indicator.completed::after {
+        top: calc(1rem - (var(--step-indicator-line-height) / 2) + 1px); /* Position der Linie anpassen */
+    }
+}
+/* --- Ende Modernisierte Schritt-Indikatoren --- */
+
+
+.booking-step-content {
+    padding-top: 1rem; /* Etwas Platz nach den Indikatoren */
+}
+.animate-step {
+    animation: fadeInStep 0.4s var(--transition-ease, ease-in-out) forwards;
+    opacity: 0;
+}
+@keyframes fadeInStep {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
 .booking-step-heading {
-    font-family: var(--font-serif), serif; font-size: 1.8rem; color: var(--dark-text);
-    text-align: left; margin-bottom: 1.5rem;
+    font-family: var(--font-serif, serif);
+    font-size: 1.8rem;
+    color: var(--dark-text);
+    text-align: left; /* Standardmäßig linksbündig */
+    margin-bottom: 1.5rem;
 }
-.booking-confirmation .booking-step-heading { text-align: center; }
+.booking-confirmation .booking-step-heading { /* Spezifisch für die Bestätigungsseite */
+    text-align: center;
+}
+
 
 .booking-step-subheading {
-    font-size: 0.9rem; color: var(--medium-grey-text); margin-bottom: 1.5rem;
-    padding: 1rem 1.25rem; border: 1px solid var(--border-color); border-radius: 6px;
-    background-color: var(--light-grey-bg); display: flex; justify-content: space-between;
-    align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--medium-grey-text);
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--light-grey-bg);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* Besser für mehrzeiligen Text */
+    flex-wrap: wrap; /* Erlaubt Umbruch bei wenig Platz */
+    gap: 0.5rem;
 }
-.booking-step-subheading .service-info-text { flex-grow: 1; line-height: 1.5; }
+.booking-step-subheading .service-info-text {
+    flex-grow: 1; /* Nimmt verfügbaren Platz ein */
+    line-height: 1.5;
+}
 .booking-step-subheading .service-info-text strong {
-    color: var(--dark-text); font-weight: 600; display: block;
-    font-size: 1.1rem; margin-bottom: 0.25rem;
+    color: var(--dark-text);
+    font-weight: 600;
+    display: block; /* Sorgt dafür, dass der Preis darunter steht */
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
 }
-.booking-step-subheading .service-price-duration { display: block; font-size: 0.85rem; color: var(--medium-grey-text); }
-.booking-step-subheading .edit-selection-button { margin-left: 1rem; flex-shrink: 0; align-self: center; }
+.booking-step-subheading .service-price-duration {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--medium-grey-text);
+}
+.booking-step-subheading .edit-selection-button {
+    margin-left: 1rem; /* Abstand zum Text */
+    flex-shrink: 0; /* Verhindert Schrumpfen des Buttons */
+    align-self: center; /* Vertikal zentrieren, falls Text mehrzeilig */
+}
 
-.services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; }
-.service-card { /* ... (bleibt gleich wie in App.css, kann aber hierher verschoben werden für Spezifität) ... */ }
-.service-name { /* ... */ }
-.service-description { /* ... */ }
-.service-details { /* ... */ }
-.service-duration { /* ... */ }
 
-.datepicker-time-container { /* ... */ }
-.datepicker-wrapper .react-datepicker { /* ... */ }
-/* ... (alle Datepicker und Time-Slot Stile) ... */
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.25rem;
+}
+.service-card {
+    padding: 1.2rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s var(--transition-ease, ease-in-out);
+    background-color: var(--light-bg);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Sorgt dafür, dass Preis/Dauer unten bleibt */
+    position: relative; /* Für das ::after Pseudo-Element */
+}
+.service-card:hover {
+    border-color: var(--medium-grey-text, #5f5f5f);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transform: translateY(-3px);
+}
+.service-card.selected {
+    border-color: var(--dark-text, #1f1f1f);
+    background-color: var(--light-grey-bg, #f8f8f8);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-3px);
+}
+.service-card.selected::after {
+    content: '\\f00c'; /* FontAwesome check icon */
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    color: var(--success-color, #28a745);
+    font-size: 1rem;
+    background-color: var(--light-bg); /* Kleiner Hintergrund für besseren Kontrast */
+    border-radius: 50%;
+    padding: 0.2rem; /* Kleiner Innenabstand */
+    line-height: 1; /* Verhindert zusätzliche Höhe */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
 
-.selected-datetime-info.summary-above-datepicker { /* ... */ }
 
-.booking-navigation-buttons { /* ... */ }
-.login-prompt-booking { /* ... */ }
-.appointment-summary-inline { /* ... */ }
-.appointment-summary-final { /* ... */ }
-.edit-selection-button { /* ... */ }
-.booking-confirmation { /* ... */ }
-.calendar-actions { /* ... */ }
-.confirmation-buttons { /* ... */ }
+.service-name {
+    font-family: var(--font-sans, sans-serif);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    color: var(--dark-text);
+}
+.service-description {
+    font-family: var(--font-sans, sans-serif);
+    font-size: 0.88rem;
+    color: var(--medium-grey-text);
+    margin-bottom: 0.6rem;
+    flex-grow: 1; /* Stellt sicher, dass die Beschreibung den Platz füllt */
+    line-height: 1.5;
+}
+.service-details {
+    font-family: var(--font-sans, sans-serif);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--dark-text);
+    margin-top: 0.75rem; /* Abstand nach oben zur Beschreibung */
+}
+.service-duration {
+    color: var(--medium-grey-text);
+    font-size: 0.8em; /* Etwas kleiner als der Preis */
+}
 
-/* Globale .loading-message und .form-message könnten in App.css bleiben oder hierher kopiert werden, wenn sie spezifisch sind */
+
+.datepicker-time-container {
+    display: flex;
+    flex-direction: column; /* Standard für Mobile */
+    gap: 1.5rem;
+    margin-top: 0; /* Kein zusätzlicher oberer Rand, da .selected-datetime-info darüber ist */
+}
+@media (min-width: 768px) { /* Nebeneinander auf größeren Bildschirmen */
+    .datepicker-time-container {
+        flex-direction: row;
+        align-items: stretch; /* Sorgt dafür, dass beide Boxen gleich hoch sind, wenn möglich */
+    }
+    .datepicker-wrapper-outer, .time-slots-wrapper-outer {
+        flex: 1; /* Beide nehmen gleich viel Platz ein */
+        min-width: 0; /* Wichtig für Flexbox-Verhalten bei schmalen Inhalten */
+        display: flex; /* Ermöglicht internes Flex-Layout */
+        flex-direction: column; /* Damit .sub-heading und .datepicker-wrapper untereinander sind */
+    }
+    .datepicker-wrapper, .time-slots-wrapper {
+        flex-grow: 1; /* Nimmt den verfügbaren Platz in der Outer-Box ein */
+        display: flex;
+        flex-direction: column; /* Für den Fall, dass der Inhalt scrollbar werden muss */
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 0.75rem;
+        background-color: var(--light-bg);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    /* Spezifische Anpassung, damit die Timeslots-Grid und die Nachrichten den Platz füllen */
+    .time-slots-grid, .no-times-message, .select-date-message {
+        flex-grow: 1;
+        background-color: transparent; /* Kein doppelter Hintergrund */
+        border: none; /* Kein doppelter Rand */
+        padding: 0; /* Kein doppeltes Padding */
+        border-radius: 0;
+    }
+    .time-slots-grid { /* Nur die Grid selbst bekommt einen leichten Hintergrund */
+        padding: 0.5rem;
+        background-color: var(--light-grey-bg);
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+    }
+}
+
+/* --- Verbesserte Kalender-Stile --- */
+.datepicker-wrapper .react-datepicker {
+    width: 100%;
+    font-family: var(--font-sans, sans-serif) !important;
+    font-size: 0.9rem;
+    border: none !important; /* Entfernt Standard-Rand von react-datepicker */
+    border-radius: 4px !important; /* Konsistente Rundung */
+    box-shadow: none !important; /* Entfernt Standard-Schatten */
+    display: block !important; /* Stellt sicher, dass es die volle Breite einnimmt */
+}
+
+.react-datepicker__month-container {
+    width: 100%;
+    float: none !important; /* Verhindert Float-Probleme */
+}
+.react-datepicker__header {
+    background-color: transparent !important; /* Kein eigener Hintergrund für Header */
+    border-bottom: 1px solid var(--border-color) !important;
+    border-top-left-radius: 3px !important; /* Abrundung oben */
+    border-top-right-radius: 3px !important;
+    padding: 0.8rem 0.5rem !important;
+}
+.react-datepicker__current-month {
+    color: var(--dark-text) !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    padding-bottom: 0.3rem;
+}
+.react-datepicker__day-name, .react-datepicker__day {
+    color: var(--medium-grey-text) !important;
+    font-size: 0.85rem !important;
+    line-height: 2.1rem !important; /* Höhe der Zellen anpassen */
+    width: 2.1rem !important;      /* Breite der Zellen anpassen */
+    margin: 0.2rem 0.15rem !important; /* Etwas Abstand zwischen den Zellen */
+    border-radius: 3px !important;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    border: 1px solid transparent; /* Für Hover-Effekt */
+    padding: 0 !important; /* react-datepicker setzt hier manchmal Padding */
+}
+.react-datepicker__day--selected, .react-datepicker__day--keyboard-selected {
+    background-color: var(--dark-text) !important;
+    color: var(--light-bg) !important;
+    border-color: var(--dark-text) !important;
+}
+.react-datepicker__day:hover:not(.react-datepicker__day--disabled):not(.react-datepicker__day--selected) {
+    background-color: var(--light-grey-bg) !important;
+    color: var(--dark-text) !important;
+    border-color: var(--medium-grey-text) !important;
+}
+.react-datepicker__day--outside-month {
+    color: var(--light-grey-text) !important;
+    opacity: 0.4;
+}
+.react-datepicker__day--disabled {
+    opacity: 0.3 !important;
+    cursor: not-allowed !important;
+    background-color: transparent !important;
+    border-color: transparent !important;
+}
+.react-datepicker__day--today {
+    font-weight: bold;
+    border-color: var(--dark-text) !important;
+    background-color: rgba(0,0,0,0.03) !important;
+    color: var(--dark-text) !important; /* Sicherstellen, dass Text sichtbar ist */
+}
+
+
+.react-datepicker__navigation {
+    top: 1rem !important; /* Vertikale Position der Pfeile */
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+}
+.react-datepicker__navigation:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+.react-datepicker__navigation--previous {
+    border-right-color: var(--dark-text) !important;
+    left: 0.75rem;
+}
+.react-datepicker__navigation--next {
+    border-left-color: var(--dark-text) !important;
+    right: 0.75rem;
+}
+.react-datepicker__navigation-icon::before {
+    border-width: 2px 2px 0 0 !important;
+    height: 7px !important;
+    width: 7px !important;
+}
+.react-datepicker__navigation--next .react-datepicker__navigation-icon::before {
+    left: -1px; /* Feinjustierung für Pfeilposition */
+}
+.react-datepicker__navigation--previous .react-datepicker__navigation-icon::before {
+    right: -1px; /* Feinjustierung für Pfeilposition */
+}
+
+/* Kalender auf Mobilgeräten */
+@media (max-width: 768px) {
+    .datepicker-wrapper .react-datepicker {
+        font-size: 0.85rem; /* Kleinere Schrift auf Mobile */
+    }
+    .react-datepicker__current-month {
+        font-size: 0.9rem !important;
+    }
+    .react-datepicker__day-name, .react-datepicker__day {
+        line-height: 1.8rem !important;
+        width: 1.8rem !important;
+        font-size: 0.8rem !important;
+        margin: 0.1rem 0.25rem !important; /* Mehr horizontalen Abstand für Mobile */
+    }
+    .react-datepicker__navigation {
+        width: 2rem;
+        height: 2rem;
+        top: 0.8rem !important;
+    }
+}
+/* --- Ende Verbesserte Kalender-Stile --- */
+
+
+/* Konsistente Platzierung für Sub-Headings */
+.sub-heading {
+    font-family: var(--font-sans), sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+    color: var(--dark-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.sub-heading .svg-inline--fa {
+    font-size: 0.9em;
+    color: var(--medium-grey-text);
+}
+
+.time-slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 0.75rem;
+    max-height: 280px; /* Verhindert, dass die Box zu hoch wird */
+    overflow-y: auto; /* Scrollbar, falls viele Zeiten */
+    padding: 0.75rem; /* Innenabstand für die Grid */
+}
+.time-slot-button {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.9rem;
+    background-color: var(--light-bg);
+    color: var(--dark-text);
+    border: 1px solid var(--border-color);
+    font-weight: 500;
+    border-radius: 4px;
+}
+.time-slot-button:hover:not(.selected):not(:disabled) {
+    background-color: #e9e9e9;
+    border-color: var(--medium-grey-text);
+    color: var(--dark-text);
+    transform: translateY(-1px);
+}
+.time-slot-button.selected {
+    background-color: var(--dark-text);
+    color: var(--light-bg);
+    border-color: var(--dark-text);
+    font-weight: 600;
+}
+
+
+.no-times-message, .select-date-message {
+    text-align: center;
+    color: var(--medium-grey-text);
+    padding: 2rem 1rem;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 150px; /* Sorgt für eine Mindesthöhe der Box */
+    flex-grow: 1; /* Nimmt verfügbaren Platz ein, wenn .time-slots-wrapper ein Flex-Container ist */
+}
+/* Styling für die "Ihr Termin"-Info und den Platzhalter */
+.selected-datetime-info.summary-above-datepicker {
+    margin-bottom: 1.5rem; /* Abstand zum Kalender/Zeit-Container */
+    border-radius: 6px;
+    padding: 0.8rem 1.25rem;
+    text-align: left;
+    font-size: 0.9rem;
+    min-height: 45px; /* Feste Höhe, um Springen zu vermeiden */
+    display: flex;
+    align-items: center;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+.selected-datetime-info.summary-above-datepicker.placeholder {
+    background-color: var(--info-bg-light, #cce5ff);
+    border: 1px solid var(--info-color, #004085);
+    color: var(--info-color, #004085);
+}
+.selected-datetime-info.summary-above-datepicker:not(.placeholder) {
+    background-color: var(--success-bg-light, #e2f0e6);
+    border: 1px solid var(--success-color, #28a745);
+    color: var(--success-color, #28a745);
+}
+.selected-datetime-info.summary-above-datepicker strong {
+    font-weight: 600;
+    margin: 0 0.25em; /* Kleiner horizontaler Abstand */
+}
+
+
+.booking-navigation-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+.booking-navigation-buttons .button-link,
+.booking-navigation-buttons .button-link-outline {
+    padding: 0.8rem 1.5rem; /* Konsistente Button-Größe */
+    font-size: 0.9rem;
+    display: inline-flex; /* Für Icon-Ausrichtung */
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.login-prompt-booking {
+    text-align: center;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    background-color: var(--light-grey-bg);
+}
+.login-prompt-booking p {
+    margin-bottom: 0.8rem;
+    color: var(--medium-grey-text);
+    font-size: 0.9rem;
+}
+.login-prompt-booking .button-link { /* Spezifisch für den Button im Prompt */
+    font-size: 0.85rem;
+    padding: 0.6rem 1rem;
+}
+.login-prompt-booking a:not(.button-link) { /* Für Text-Links */
+    color: var(--dark-text);
+    text-decoration: underline;
+    font-weight: 500;
+}
+.login-prompt-booking a:not(.button-link):hover {
+    color: var(--medium-grey-text);
+}
+
+/* Styling für die Zusammenfassungen in Schritt 3 (inline) und Schritt 4 (final) */
+.appointment-summary-inline {
+    padding: 0.8rem 1.25rem;
+    background-color: var(--light-grey-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+.appointment-summary-inline p {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Für kleinere Bildschirme */
+    gap: 0.5rem;
+    margin-bottom: 0; /* Entfernt Standard-Absatzabstand */
+}
+.appointment-summary-inline .summary-icon {
+    color: var(--success-color);
+    margin-right: 0.5rem;
+    font-size: 1.1em;
+    width: 1.2em; /* Gibt dem Icon etwas Platz */
+    text-align: center;
+}
+.appointment-summary-inline .edit-selection-button {
+    margin-left: auto; /* Schiebt den Button nach rechts */
+}
+
+/* Styling für die finale Zusammenfassung in Schritt 4 */
+.appointment-summary-final {
+    padding: 1.5rem;
+    background-color: var(--light-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+}
+.appointment-summary-final h3 {
+    font-family: var(--font-serif), serif;
+    font-size: 1.3rem;
+    color: var(--dark-text);
+    margin-top: 1.25rem; /* Abstand zwischen den Datenblöcken */
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed var(--border-color);
+}
+.appointment-summary-final h3:first-of-type {
+    margin-top: 0; /* Kein oberer Rand für die erste Überschrift */
+}
+.appointment-summary-final p {
+    display: flex;
+    align-items: flex-start; /* Besser für mehrzeilige Anmerkungen */
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+    line-height: 1.6;
+}
+.appointment-summary-final p .svg-inline--fa {
+    margin-right: 0.5rem;
+    color: var(--medium-grey-text);
+    width: 1.2em; /* Gibt dem Icon etwas Platz */
+    text-align: center;
+    margin-top: 0.15em; /* Vertikale Ausrichtung des Icons anpassen */
+}
+.appointment-summary-final strong {
+    color: var(--dark-text);
+    font-weight: 600;
+}
+
+
+.edit-selection-button {
+    background: none;
+    border: none;
+    color: var(--medium-grey-text);
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+}
+.edit-selection-button:hover {
+    color: var(--dark-text);
+    background-color: var(--border-color);
+}
+
+.edit-selection-button.small-edit {
+    font-size: 0.75rem;
+    padding: 0.1rem 0.3rem;
+    margin-left: 0.5rem; /* Für den Button neben dem Servicenamen */
+}
+.edit-selection-button.subtle-edit {
+    font-size: 0.85rem;
+    padding: 0.1rem 0.2rem; /* Weniger Padding für subtilere Links */
+    text-decoration: underline;
+}
+.edit-selection-button.subtle-edit:hover,
+.edit-selection-button.subtle-edit:focus-visible {
+    background-color: transparent; /* Kein Hintergrund-Hover für subtile Links */
+    color: var(--dark-text);
+    text-decoration: underline;
+}
+
+.booking-confirmation {
+    text-align: center;
+    padding: 2rem 0;
+}
+.confirmation-icon {
+    font-size: 4rem;
+    color: var(--success-color);
+    margin-bottom: 1.2rem;
+}
+.booking-confirmation .booking-step-heading {
+    font-family: var(--font-serif), serif;
+    border-bottom: none; /* Keine Linie unter der Hauptüberschrift der Bestätigung */
+    margin-bottom: 1rem;
+    font-size: 2rem;
+    text-align: center;
+}
+.booking-confirmation p {
+    color: var(--medium-grey-text);
+    margin-bottom: 1.8rem;
+    font-size: 1.05rem;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.booking-confirmation .appointment-summary.light {
+    background-color: var(--light-bg);
+    border: 1px solid var(--border-color);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-top: 1.5rem; /* Abstand zur oberen Nachricht */
+    margin-bottom: 2rem; /* Abstand zu den Buttons */
+    text-align: left; /* Text in der Zusammenfassung linksbündig */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.booking-confirmation .appointment-summary.light h4 {
+    font-family: var(--font-sans), sans-serif;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--dark-text);
+    font-size: 1.1rem;
+}
+.booking-confirmation .appointment-summary.light p {
+    font-size: 0.9rem;
+    color: var(--medium-grey-text);
+    margin-bottom: 0.5rem;
+}
+.booking-confirmation .appointment-summary.light p strong {
+    color: var(--dark-text);
+}
+
+/* Buttons für Kalender-Aktionen */
+.calendar-actions {
+    margin-top: 1.5rem; /* Abstand zur Zusammenfassung */
+    margin-bottom: 1.5rem; /* Abstand zu den Navigationsbuttons */
+    display: flex;
+    flex-direction: column; /* Untereinander auf Mobile */
+    align-items: center;
+    gap: 0.75rem;
+}
+@media (min-width: 576px) {
+    .calendar-actions {
+        flex-direction: row; /* Nebeneinander auf größeren Bildschirmen */
+        justify-content: center;
+    }
+}
+.calendar-actions .button-link-outline.small-button {
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    min-width: 200px; /* Damit der Button nicht zu klein wird */
+}
+.calendar-actions .button-link-outline.small-button .svg-inline--fa {
+    margin-right: 0.4rem;
+}
+
+
+.confirmation-buttons {
+    justify-content: center;
+    gap: 1rem;
+    display: flex;
+    flex-wrap: wrap; /* Buttons umbrechen, falls nicht genug Platz */
+}
+.confirmation-buttons .button-link, .confirmation-buttons .button-link-outline {
+    min-width: 180px; /* Mindestbreite für die Buttons */
+}
+
+/* Stile für AppointmentForm, die spezifisch für BookingPage sein könnten */
+.appointment-form-fields .form-group {
+    /* Hier könnten spezifische Abstände oder Layouts für die BookingPage definiert werden,
+       falls sie sich von anderen Formularen unterscheiden sollen.
+       Die allgemeinen .form-group Stile kommen aus App.css */
+}
+
+.appointment-form-fields .form-grid {
+    /* Stile für das 2-spaltige Layout von Vorname/Nachname */
+}
+
+.appointment-form-fields .form-hint {
+    /* Stile für den Hinweis unter dem Passwortfeld */
+}
+
+/* Allgemeine Lade- und Fehlermeldungen (könnten auch global in App.css bleiben,
+   aber hier zur Vollständigkeit für BookingPage, falls spezifisch angepasst) */
+.loading-message {
+    text-align: center;
+    padding: 2rem;
+    font-size: 1rem;
+    color: var(--medium-grey-text);
+}
+.loading-message .svg-inline--fa {
+    margin-right: 0.5rem;
+    font-size: 1.2em;
+}
+.loading-message.small {
+    font-size: 0.9rem;
+    padding: 0.5rem;
+}
+
+/* Die .form-message Stile sind wahrscheinlich globaler,
+   aber hier als Referenz, falls sie in BookingPage.css benötigt werden. */
+/*
+.form-message {
+  margin-top: 1rem;
+  padding: 0.7rem 1rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.form-message.error {
+  color: var(--danger-color);
+  background-color: var(--danger-bg-light);
+  border: 1px solid var(--danger-color);
+}
+.form-message.success {
+  color: var(--success-color);
+  background-color: var(--success-bg-light);
+  border: 1px solid var(--success-color);
+}
+.form-message.info {
+  color: var(--info-color);
+  background-color: var(--info-bg-light);
+  border: 1px solid var(--info-color);
+}
+.form-message.small {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.8rem;
+  margin-top: 0.5rem;
+}
+*/
