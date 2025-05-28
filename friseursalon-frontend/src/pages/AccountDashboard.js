@@ -7,26 +7,26 @@ import ServiceForm from '../components/ServiceForm';
 import ServiceList from '../components/ServiceList';
 import WorkingHoursManager from '../components/WorkingHoursManager';
 import BlockedTimeSlotManager from '../components/BlockedTimeSlotManager';
-import AdminDashboardStats from '../components/AdminDashboardStats'; // NEUER IMPORT
+import AdminDashboardStats from '../components/AdminDashboardStats';
+import AppointmentEditModal from '../components/AppointmentEditModal'; // Stellen Sie sicher, dass dies importiert ist
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faClipboardList, faUserCog, faTools, faSignOutAlt,
     faChevronRight, faChevronDown, faPlusCircle, faMinusCircle,
     faChartBar, faUser, faTimesCircle, faClock, faCalendarTimes,
-    faCalendarAlt, faListAlt, faTachometerAlt // NEUE Icons
+    faCalendarAlt, faListAlt, faTachometerAlt
 } from '@fortawesome/free-solid-svg-icons';
 
 
 function AccountDashboard({
                               currentUser,
                               logOut,
-                              onAppointmentAdded,
-                              refreshAppointmentsList,
+                              onAppointmentAdded, // Wird jetzt onAppointmentAction genannt für generischere Nutzung
+                              refreshAppointmentsList, // Wird jetzt refreshTrigger genannt
                               onServiceAdded,
                               refreshServicesList
                           }) {
-    // Admin startet standardmäßig auf der neuen Übersichtsseite
-    const initialAdminTab = 'adminDashboardStats'; // GEÄNDERT
+    const initialAdminTab = 'adminDashboardStats';
     const initialUserTab = 'bookings';
 
     const [activeTab, setActiveTab] = useState(
@@ -41,10 +41,17 @@ function AccountDashboard({
 
     const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes("ROLE_ADMIN");
 
-    const handleAppointmentChangeInCalendarOrList = useCallback(() => {
-        if (onAppointmentAdded) {
+    // NEU: State für das AppointmentEditModal, das von AdminDashboardStats getriggert werden kann
+    const [selectedAppointmentForEditFromStats, setSelectedAppointmentForEditFromStats] = useState(null);
+
+    // Wrapper-Callback, der von AdminDashboardStats aufgerufen wird
+    const handleAppointmentActionFromStats = useCallback(() => {
+        if (onAppointmentAdded) { // onAppointmentAdded ist jetzt der refreshTrigger im Grunde
             onAppointmentAdded();
         }
+        // Falls die Stats-Komponente die Appointment-Liste selbst aktualisiert,
+        // könnte hier der Aufruf für das Neuladen der Appointments in AdminDashboardStats stehen.
+        // Aber die Props refreshAppointmentsList (jetzt refreshTrigger) sollte das globaler handhaben.
     }, [onAppointmentAdded]);
 
 
@@ -61,7 +68,6 @@ function AccountDashboard({
 
     useEffect(() => {
         if (currentUser) {
-            // 'adminAnalytics' wurde zu 'adminDashboardStats' umbenannt/ersetzt
             const adminTabs = ['adminDashboardStats', 'adminCalendar', 'adminAppointmentList', 'adminServices', 'adminWorkingHours', 'adminBlockedSlots', 'profile'];
             const userTabs = ['bookings', 'profile'];
 
@@ -81,6 +87,8 @@ function AccountDashboard({
         if (activeTab !== 'adminServices') {
             setShowServiceForm(false);
         }
+        // Schließe das Edit-Modal, wenn der Tab gewechselt wird
+        setSelectedAppointmentForEditFromStats(null);
     }, [currentUser, isAdmin, activeTab, initialAdminTab, initialUserTab]);
 
 
@@ -99,14 +107,30 @@ function AccountDashboard({
         }
     };
 
+    const handleCloseAppointmentEditModalFromStats = () => {
+        setSelectedAppointmentForEditFromStats(null);
+    };
+
+    const handleAppointmentUpdatedFromStatsModal = () => {
+        handleCloseAppointmentEditModalFromStats();
+        if (onAppointmentAdded) { // Dies ist der refreshTrigger
+            onAppointmentAdded();
+        }
+        // Optional: Direkten Refresh für die Stats-Komponente hier auslösen, falls nötig.
+    };
+
 
     const renderTabContent = (tabName) => {
         switch (tabName) {
-            case 'adminDashboardStats': // NEUER TAB
+            case 'adminDashboardStats':
                 return isAdmin && (
                     <div className="dashboard-section-content admin-stats-tab-content">
                         <h2 className="dashboard-section-heading">Dashboard Übersicht</h2>
-                        <AdminDashboardStats />
+                        <AdminDashboardStats
+                            currentUser={currentUser}
+                            // Prop, um das Modal in AccountDashboard zu öffnen
+                            onAppointmentAction={handleAppointmentActionFromStats} // Wird genutzt, um einen Refresh zu signalisieren
+                        />
                     </div>
                 );
             case 'bookings':
@@ -114,7 +138,7 @@ function AccountDashboard({
                     <div className="dashboard-section-content">
                         <h2 className="dashboard-section-heading">Meine Termine</h2>
                         <AppointmentList
-                            refreshTrigger={refreshAppointmentsList}
+                            refreshTrigger={refreshAppointmentsList} // refreshAppointmentsList ist der generische Trigger
                             currentUser={currentUser}
                         />
                     </div>
@@ -126,7 +150,7 @@ function AccountDashboard({
                         <AdminCalendarView
                             currentUser={currentUser}
                             refreshTrigger={refreshAppointmentsList}
-                            onAppointmentUpdated={handleAppointmentChangeInCalendarOrList}
+                            onAppointmentUpdated={handleAppointmentActionFromStats} // Wiederverwendung
                         />
                     </div>
                 );
@@ -151,7 +175,6 @@ function AccountDashboard({
                             <p><strong>Telefon:</strong> {currentUser?.phoneNumber || 'Nicht angegeben'}</p>
                             <p><strong>Rollen:</strong> {currentUser?.roles?.join(', ') || '-'}</p>
                         </div>
-                        {/* Hier könnte später ein Formular zum Bearbeiten der Profildaten hinzukommen */}
                     </div>
                 );
             case 'adminServices':
@@ -195,13 +218,6 @@ function AccountDashboard({
                         <BlockedTimeSlotManager />
                     </div>
                 );
-            // case 'adminAnalytics': // Alter Analytics-Tab, kann entfernt oder umbenannt werden
-            //     return isAdmin && (
-            //         <div className="dashboard-section-content">
-            //             <h2 className="dashboard-section-heading">Analysen</h2>
-            //             <p className="text-center text-gray-600 py-4">Dieser Bereich ist in Entwicklung.</p>
-            //         </div>
-            //     );
             default:
                 if (isAdmin) return renderTabContent(initialAdminTab);
                 return renderTabContent(initialUserTab);
@@ -238,20 +254,14 @@ function AccountDashboard({
 
                     {isAdmin && (
                         <>
-                            {/* NEUER TAB "ÜBERSICHT" GANZ OBEN FÜR ADMINS */}
                             {renderNavItem('adminDashboardStats', faTachometerAlt, 'Übersicht')}
-
                             <li className="nav-category-title mt-4">Terminplanung</li>
                             {renderNavItem('adminCalendar', faCalendarAlt, 'Kalender')}
                             {renderNavItem('adminAppointmentList', faListAlt, 'Terminliste')}
-
                             <li className="nav-category-title mt-4">Verwaltung</li>
                             {renderNavItem('adminServices', faTools, 'Services')}
                             {renderNavItem('adminWorkingHours', faClock, 'Arbeitszeiten')}
                             {renderNavItem('adminBlockedSlots', faCalendarTimes, 'Abwesenheiten')}
-                            {/* {renderNavItem('adminAnalytics', faChartBar, 'Analysen')} ALT */}
-
-
                             <li className="nav-category-title mt-4">Mein Account (Admin)</li>
                             {renderNavItem('profile', faUser, 'Meine Daten')}
                         </>
@@ -280,21 +290,16 @@ function AccountDashboard({
                             {renderNavItem('profile', faUser, 'Meine Daten')}
                         </>
                     )}
-
                     {isAdmin && (
                         <>
                             {renderNavItem('adminDashboardStats', faTachometerAlt, 'Übersicht')}
-
                             <li className="nav-category-title mt-4">Terminplanung</li>
                             {renderNavItem('adminCalendar', faCalendarAlt, 'Kalender')}
                             {renderNavItem('adminAppointmentList', faListAlt, 'Terminliste')}
-
                             <li className="nav-category-title mt-4">Verwaltung</li>
                             {renderNavItem('adminServices', faTools, 'Services')}
                             {renderNavItem('adminWorkingHours', faClock, 'Arbeitszeiten')}
                             {renderNavItem('adminBlockedSlots', faCalendarTimes, 'Abwesenheiten')}
-                            {/* {renderNavItem('adminAnalytics', faChartBar, 'Analysen')} ALT */}
-
                             <li className="nav-category-title mt-4">Mein Account (Admin)</li>
                             {renderNavItem('profile', faUser, 'Meine Daten')}
                         </>
@@ -337,6 +342,14 @@ function AccountDashboard({
                     </section>
                 </div>
             </div>
+            {/* AppointmentEditModal wird hier auf Top-Level des Dashboards gerendert */}
+            {selectedAppointmentForEditFromStats && currentUser?.roles?.includes("ROLE_ADMIN") && (
+                <AppointmentEditModal
+                    appointment={selectedAppointmentForEditFromStats}
+                    onClose={handleCloseAppointmentEditModalFromStats}
+                    onAppointmentUpdated={handleAppointmentUpdatedFromStatsModal}
+                />
+            )}
         </div>
     );
 }
