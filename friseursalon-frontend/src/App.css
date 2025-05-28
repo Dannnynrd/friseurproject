@@ -22,21 +22,7 @@
   --focus-ring-color: #007bff;
   --focus-ring-subtle-color: rgba(0, 123, 255, 0.3);
 
-  /* Diese BookingPage spezifischen Variablen wurden nach BookingPage.css verschoben:
-  --step-indicator-default-border: var(--border-color);
-  --step-indicator-default-text: var(--light-grey-text);
-  --step-indicator-line-default: #e0e0e0;
-  --step-indicator-line-height: 3px;
-  --step-indicator-active-bg: var(--dark-text);
-  --step-indicator-active-border: var(--dark-text);
-  --step-indicator-active-text-in-circle: var(--light-bg);
-  --step-indicator-active-label-text: var(--dark-text);
-  --step-indicator-completed-bg: var(--success-color);
-  --step-indicator-completed-border: var(--success-color);
-  --step-indicator-completed-text-in-circle: var(--light-bg);
-  --step-indicator-completed-label-text: var(--dark-text);
-  --step-indicator-line-completed: var(--success-color);
-  */
+
 
   --font-serif: 'Playfair Display', serif;
   --font-sans: 'Manrope', sans-serif;
@@ -46,7 +32,40 @@
   --header-height-mobile: 4.5rem;
   --footer-height: 14rem; /* Beispielwert, anpassen falls nötig */
 }
+/* In App.css oder einer spezifischen CSS-Datei für das Modal */
+.appointment-edit-modal-content .modal-actions {
+  display: flex;
+  justify-content: space-between; /* Buttons an entgegengesetzte Enden */
+  align-items: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
 
+.appointment-edit-modal-content .modal-actions-right {
+  display: flex;
+  gap: 0.75rem; /* Abstand zwischen Abbrechen und Speichern */
+}
+
+.appointment-edit-modal-content .button-link-outline.danger {
+  color: var(--danger-color);
+  border-color: var(--danger-color);
+}
+
+.appointment-edit-modal-content .button-link-outline.danger:hover:not(:disabled),
+.appointment-edit-modal-content .button-link-outline.danger:focus-visible:not(:disabled) {
+  background-color: var(--danger-bg-light);
+  color: var(--danger-color);
+}
+.appointment-edit-modal-content .button-link-outline.danger .svg-inline--fa {
+  margin-right: 0.4rem;
+}
+
+.appointment-edit-modal-content .form-input-disabled {
+  background-color: var(--light-grey-bg);
+  color: var(--medium-grey-text);
+  cursor: not-allowed;
+}
 /* --- CSS Reset & Global Styles --- */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; font-size: 16px; }

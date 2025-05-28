@@ -1,29 +1,31 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import "./AccountDashboard.css";
-import AppointmentList from '../components/AppointmentList';
+// import AppointmentList from '../components/AppointmentList'; // Wird für Admin durch Kalender ersetzt
+import AdminCalendarView from '../components/AdminCalendarView'; // NEU: Kalender importieren
+import AppointmentList from '../components/AppointmentList'; // Bleibt für normale User
 import ServiceForm from '../components/ServiceForm';
 import ServiceList from '../components/ServiceList';
 import WorkingHoursManager from '../components/WorkingHoursManager';
-import BlockedTimeSlotManager from '../components/BlockedTimeSlotManager'; // NEU: Importieren
+import BlockedTimeSlotManager from '../components/BlockedTimeSlotManager';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faClipboardList, faUserCog, faTools, faSignOutAlt,
     faChevronRight, faChevronDown, faPlusCircle, faMinusCircle,
-    faChartBar, faUser, faTimesCircle, faClock, faCalendarTimes // NEU: Icon für Abwesenheiten
+    faChartBar, faUser, faTimesCircle, faClock, faCalendarTimes,
+    faCalendarAlt // NEU: Icon für Kalender-Tab
 } from '@fortawesome/free-solid-svg-icons';
 
 
 function AccountDashboard({
                               currentUser,
                               logOut,
-                              onAppointmentAdded,
-                              refreshAppointmentsList,
+                              onAppointmentAdded, // Wird an Kalender weitergegeben, um refresh zu triggern
+                              refreshAppointmentsList, // Wird vom Kalender genutzt
                               onServiceAdded,
                               refreshServicesList
-                              // onWorkingHoursUpdated, // Falls benötigt für Arbeitszeiten
-                              // onBlockedSlotsUpdated // NEU, falls benötigt
                           }) {
-    const initialTab = currentUser?.roles?.includes("ROLE_ADMIN") ? 'adminServices' : 'bookings';
+    // Wenn Admin, starte auf Kalender-Tab, sonst auf "Meine Termine" (Liste)
+    const initialTab = currentUser?.roles?.includes("ROLE_ADMIN") ? 'adminCalendar' : 'bookings';
     const [activeTab, setActiveTab] = useState(initialTab);
 
     const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 992);
@@ -33,6 +35,15 @@ function AccountDashboard({
     const [isSubmittingService, setIsSubmittingService] = useState(false);
 
     const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes("ROLE_ADMIN");
+
+    // Callback, der vom AdminCalendarView aufgerufen wird, wenn ein Termin aktualisiert/gelöscht wurde
+    // Dies triggert den refreshAppointmentsList state in App.js, der dann an den Kalender weitergegeben wird.
+    const handleAppointmentChangeInCalendar = useCallback(() => {
+        if (onAppointmentAdded) { // onAppointmentAdded ist der Callback, der refreshAppointmentsList erhöht
+            onAppointmentAdded();
+        }
+    }, [onAppointmentAdded]);
+
 
     useEffect(() => {
         const handleResize = () => {
@@ -46,35 +57,34 @@ function AccountDashboard({
     }, []);
 
     useEffect(() => {
-        // Setzt den initialen oder Fallback-Tab basierend auf der Rolle
         if (currentUser) {
-            const adminTabs = ['adminServices', 'adminWorkingHours', 'adminBlockedSlots', 'adminAnalytics'];
-            const userTabs = ['bookings', 'profile'];
+            const adminTabs = ['adminCalendar', 'adminServices', 'adminWorkingHours', 'adminBlockedSlots', 'adminAnalytics'];
+            const userTabs = ['bookings', 'profile']; // 'bookings' ist die Liste für User
 
             if (isAdmin) {
+                // Wenn Admin einen User-Tab aktiv hat (z.B. 'profile'), ist das ok.
+                // Wenn ein Admin einen ungültigen oder nicht-Admin-Termin-Tab hat, setze auf 'adminCalendar'.
                 if (!adminTabs.includes(activeTab) && !userTabs.includes(activeTab)) {
-                    // Wenn ein Admin einen ungültigen Tab hat, auf den ersten Admin-Tab setzen
-                    setActiveTab('adminServices');
-                } else if (!adminTabs.includes(activeTab) && userTabs.includes(activeTab)){
+                    setActiveTab('adminCalendar');
+                } else if (activeTab === 'bookings' && isAdmin) { // Falls Admin auf dem alten "Meine Termine" Tab war
+                    setActiveTab('adminCalendar');
+                } else if (!adminTabs.includes(activeTab) && userTabs.includes(activeTab)) {
                     // Admin ist auf einem User-Tab, das ist okay
-                } else if (!adminTabs.includes(activeTab)) {
-                    setActiveTab('adminServices'); // Fallback
+                } else if (!adminTabs.includes(activeTab) && !userTabs.includes(activeTab)) {
+                    setActiveTab('adminCalendar'); // Fallback
                 }
             } else { // Ist User
                 if (!userTabs.includes(activeTab)) {
-                    setActiveTab('bookings');
+                    setActiveTab('bookings'); // User Fallback zur Terminliste
                 }
             }
         } else {
-            // Falls kein currentUser, was im ProtectedRoute eigentlich nicht passieren sollte
             setActiveTab('bookings');
         }
 
-        // Schließe Formulare, wenn der Tab nicht passt
         if (activeTab !== 'adminServices') {
             setShowServiceForm(false);
         }
-
     }, [currentUser, isAdmin, activeTab]);
 
 
@@ -96,11 +106,22 @@ function AccountDashboard({
 
     const renderTabContent = (tabName) => {
         switch (tabName) {
-            case 'bookings':
+            case 'bookings': // Für normale User, zeigt die Terminliste
                 return (
                     <div className="dashboard-section-content">
                         <h2 className="dashboard-section-heading">Meine Termine</h2>
                         <AppointmentList refreshTrigger={refreshAppointmentsList} currentUser={currentUser} />
+                    </div>
+                );
+            case 'adminCalendar': // NEU: Für Admin, zeigt den Kalender
+                return isAdmin && (
+                    <div className="dashboard-section-content admin-calendar-tab-content">
+                        <h2 className="dashboard-section-heading">Terminkalender</h2>
+                        <AdminCalendarView
+                            currentUser={currentUser}
+                            refreshTrigger={refreshAppointmentsList} // Wird genutzt, um Kalender neu zu laden
+                            onAppointmentUpdated={handleAppointmentChangeInCalendar} // Callback, um refresh zu triggern
+                        />
                     </div>
                 );
             case 'profile':
@@ -150,7 +171,6 @@ function AccountDashboard({
                         <WorkingHoursManager />
                     </div>
                 );
-            // NEU: Tab für Blockaden/Abwesenheiten
             case 'adminBlockedSlots':
                 return isAdmin && (
                     <div className="dashboard-section-content">
@@ -166,8 +186,8 @@ function AccountDashboard({
                     </div>
                 );
             default:
-                if (isAdmin) return renderTabContent('adminServices');
-                return renderTabContent('bookings');
+                if (isAdmin) return renderTabContent('adminCalendar'); // Admin Default zu Kalender
+                return renderTabContent('bookings'); // User Default zur Liste
         }
     };
 
@@ -191,17 +211,30 @@ function AccountDashboard({
         <aside className="dashboard-sidebar">
             <nav>
                 <ul>
-                    <li className="nav-category-title">Mein Bereich</li>
-                    {renderNavItem('bookings', faClipboardList, 'Meine Termine')}
-                    {renderNavItem('profile', faUser, 'Meine Daten')}
+                    {!isAdmin && ( // User spezifische Tabs zuerst
+                        <>
+                            <li className="nav-category-title">Mein Bereich</li>
+                            {renderNavItem('bookings', faClipboardList, 'Meine Termine')}
+                            {renderNavItem('profile', faUser, 'Meine Daten')}
+                        </>
+                    )}
 
                     {isAdmin && (
                         <>
+                            <li className="nav-category-title">Terminplanung</li>
+                            {renderNavItem('adminCalendar', faCalendarAlt, 'Kalender')}
+                            {/* Man könnte hier auch die AppointmentList für Admin zugänglich machen, falls gewünscht */}
+                            {/* {renderNavItem('adminAppointmentList', faClipboardList, 'Terminliste (Admin)')} */}
+
                             <li className="nav-category-title mt-4">Verwaltung</li>
                             {renderNavItem('adminServices', faTools, 'Services')}
                             {renderNavItem('adminWorkingHours', faClock, 'Arbeitszeiten')}
-                            {renderNavItem('adminBlockedSlots', faCalendarTimes, 'Abwesenheiten')} {/* NEU */}
+                            {renderNavItem('adminBlockedSlots', faCalendarTimes, 'Abwesenheiten')}
                             {renderNavItem('adminAnalytics', faChartBar, 'Analysen')}
+
+                            {/* Admin kann auch sein Profil sehen */}
+                            <li className="nav-category-title mt-4">Mein Account</li>
+                            {renderNavItem('profile', faUser, 'Meine Daten (Admin)')}
                         </>
                     )}
                     <li className="dashboard-nav-item logout-button-container">
@@ -221,17 +254,27 @@ function AccountDashboard({
             </button>
             <nav>
                 <ul>
-                    <li className="nav-category-title">Mein Bereich</li>
-                    {renderNavItem('bookings', faClipboardList, 'Meine Termine')}
-                    {renderNavItem('profile', faUser, 'Meine Daten')}
+                    {!isAdmin && (
+                        <>
+                            <li className="nav-category-title">Mein Bereich</li>
+                            {renderNavItem('bookings', faClipboardList, 'Meine Termine')}
+                            {renderNavItem('profile', faUser, 'Meine Daten')}
+                        </>
+                    )}
 
                     {isAdmin && (
                         <>
+                            <li className="nav-category-title">Terminplanung</li>
+                            {renderNavItem('adminCalendar', faCalendarAlt, 'Kalender')}
+
                             <li className="nav-category-title mt-4">Verwaltung</li>
                             {renderNavItem('adminServices', faTools, 'Services')}
                             {renderNavItem('adminWorkingHours', faClock, 'Arbeitszeiten')}
-                            {renderNavItem('adminBlockedSlots', faCalendarTimes, 'Abwesenheiten')} {/* NEU */}
+                            {renderNavItem('adminBlockedSlots', faCalendarTimes, 'Abwesenheiten')}
                             {renderNavItem('adminAnalytics', faChartBar, 'Analysen')}
+
+                            <li className="nav-category-title mt-4">Mein Account</li>
+                            {renderNavItem('profile', faUser, 'Meine Daten (Admin)')}
                         </>
                     )}
                     <li className="dashboard-nav-item logout-button-container">
