@@ -7,12 +7,13 @@ import com.friseursalon.backend.payload.response.MessageResponse;
 import com.friseursalon.backend.service.AppointmentService;
 import com.friseursalon.backend.service.CustomerService;
 import com.friseursalon.backend.service.ServiceService;
-import com.friseursalon.backend.exception.AppointmentConflictException; // Korrekter Import, wenn Exception im 'exception'-Paket liegt
+import com.friseursalon.backend.exception.AppointmentConflictException;
 import com.friseursalon.backend.security.details.UserDetailsImpl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
@@ -45,7 +47,7 @@ public class AppointmentController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')") // Nur Admins sollten alle Termine sehen
+    @PreAuthorize("hasRole('ADMIN')")
     public List<Appointment> getAllAppointments() {
         logger.info("GET /api/appointments - getAllAppointments called by admin");
         return appointmentService.getAllAppointments();
@@ -61,7 +63,6 @@ public class AppointmentController {
         }
         Appointment appointment = appointmentOptional.get();
 
-        // Sicherheitscheck: User darf nur eigenen Termin sehen, Admin jeden
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         boolean isAdmin = userDetails.getAuthorities().stream()
@@ -75,32 +76,29 @@ public class AppointmentController {
         }
     }
 
-    @GetMapping("/by-date-range") // Dieser Endpunkt könnte für Admins nützlich sein
+    @GetMapping("/by-date-range")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAppointmentsByDateRange(
-            @RequestParam String start,
-            @RequestParam String end) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         logger.info("GET /api/appointments/by-date-range called with start: {}, end: {}", start, end);
         try {
-            LocalDateTime startTime = LocalDateTime.parse(start);
-            LocalDateTime endTime = LocalDateTime.parse(end);
+            LocalDateTime startTime = start.atStartOfDay();
+            LocalDateTime endTime = end.atTime(LocalTime.MAX);
             List<Appointment> appointments = appointmentService.getAppointmentsForDateRange(startTime, endTime);
             return new ResponseEntity<>(appointments, HttpStatus.OK);
         } catch (DateTimeParseException e) {
             logger.warn("Error parsing date range for /by-date-range: {}", e.getMessage());
             return new ResponseEntity<>(new MessageResponse("Ungültiges Datumsformat für Datumsbereich: " + e.getMessage()), HttpStatus.BAD_REQUEST);
         }
-        // Andere Exceptions werden vom GlobalExceptionHandler gefangen
     }
 
-    @GetMapping("/available-slots") // Öffentlich, da vor der Buchung benötigt
+    @GetMapping("/available-slots")
     public ResponseEntity<?> getAvailableSlots(
             @RequestParam Long serviceId,
-            @RequestParam String date) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         logger.info("GET /api/appointments/available-slots called with serviceId: {}, date: {}", serviceId, date);
-        // Validierung des serviceId ist im Service, DateTimeParseException wird vom GlobalHandler gefangen
-        LocalDate localDate = LocalDate.parse(date); // Kann DateTimeParseException werfen
-        List<String> availableTimes = appointmentService.getAvailableSlotsForServiceOnDate(serviceId, localDate);
+        List<String> availableTimes = appointmentService.getAvailableSlotsForServiceOnDate(serviceId, date);
         return new ResponseEntity<>(availableTimes, HttpStatus.OK);
     }
 
@@ -122,7 +120,7 @@ public class AppointmentController {
 
         if (isAdmin) {
             logger.info("Admin {} fetching all appointments via /my-appointments", userEmail);
-            return ResponseEntity.ok(appointmentService.getAllAppointmentsSorted()); // Eigene Methode für sortierte Termine
+            return ResponseEntity.ok(appointmentService.getAllAppointmentsSorted());
         } else {
             List<Appointment> userAppointments = appointmentService.getAppointmentsByCustomerEmail(userEmail);
             return ResponseEntity.ok(userAppointments);
@@ -132,9 +130,6 @@ public class AppointmentController {
     @PostMapping
     public ResponseEntity<?> createAppointment(@RequestBody Appointment appointment) {
         logger.info("POST /api/appointments called with appointment for customer email: {}", (appointment.getCustomer() != null ? appointment.getCustomer().getEmail() : "N/A"));
-        // Die Validierung der Eingabefelder und das Laden der Entitäten
-        // sowie das Werfen von Exceptions (IllegalArgumentException, AppointmentConflictException)
-        // geschieht nun primär im AppointmentService oder wird vom GlobalExceptionHandler abgefangen.
 
         if (appointment.getService() == null || appointment.getService().getId() == null) {
             return new ResponseEntity<>(new MessageResponse("Dienstleistungs-ID fehlt."), HttpStatus.BAD_REQUEST);
@@ -144,12 +139,10 @@ public class AppointmentController {
             return new ResponseEntity<>(new MessageResponse("Unvollständige Kundeninformationen (E-Mail, Vorname, Nachname benötigt)."), HttpStatus.BAD_REQUEST);
         }
 
-        // Service laden
         Service serviceFromDb = serviceService.getServiceById(appointment.getService().getId())
                 .orElseThrow(() -> new RuntimeException("Dienstleistung mit ID " + appointment.getService().getId() + " nicht gefunden."));
         appointment.setService(serviceFromDb);
 
-        // Kunden behandeln
         Customer customerToSave = new Customer();
         customerToSave.setEmail(appointment.getCustomer().getEmail().trim());
         customerToSave.setFirstName(appointment.getCustomer().getFirstName().trim());
@@ -164,7 +157,7 @@ public class AppointmentController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')") // Nur Admins dürfen Termine direkt bearbeiten
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateAppointment(@PathVariable Long id, @RequestBody Appointment appointmentDetails) {
         logger.info("PUT /api/appointments/{} called by admin with details: {}", id, appointmentDetails);
 
@@ -201,9 +194,6 @@ public class AppointmentController {
         if (success) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } else {
-            // Der Service sollte hier idealerweise eine spezifischere Exception werfen
-            // (z.B. ResourceNotFound oder UnauthorizedAccess), die dann vom GlobalExceptionHandler gefangen wird.
-            // Wenn der Service nur 'false' zurückgibt, müssen wir hier reagieren.
             return new ResponseEntity<>(new MessageResponse("Termin konnte nicht storniert werden. Entweder nicht gefunden oder keine Berechtigung."), HttpStatus.FORBIDDEN);
         }
     }
