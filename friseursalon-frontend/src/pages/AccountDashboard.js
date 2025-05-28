@@ -8,24 +8,29 @@ import ServiceList from '../components/ServiceList';
 import WorkingHoursManager from '../components/WorkingHoursManager';
 import BlockedTimeSlotManager from '../components/BlockedTimeSlotManager';
 import AdminDashboardStats from '../components/AdminDashboardStats';
-import AppointmentEditModal from '../components/AppointmentEditModal'; // Stellen Sie sicher, dass dies importiert ist
+import AppointmentEditModal from '../components/AppointmentEditModal';
+// NEUER IMPORT: CustomerManagement
+import CustomerManagement from '../components/CustomerManagement';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faClipboardList, faUserCog, faTools, faSignOutAlt,
     faChevronRight, faChevronDown, faPlusCircle, faMinusCircle,
     faChartBar, faUser, faTimesCircle, faClock, faCalendarTimes,
-    faCalendarAlt, faListAlt, faTachometerAlt
+    faCalendarAlt, faListAlt, faTachometerAlt,
+    // NEUES ICON für Kundenmanagement
+    faUsers // Bereits importiert, aber hier zur Verdeutlichung
 } from '@fortawesome/free-solid-svg-icons';
 
 
 function AccountDashboard({
                               currentUser,
                               logOut,
-                              onAppointmentAdded, // Wird jetzt onAppointmentAction genannt für generischere Nutzung
-                              refreshAppointmentsList, // Wird jetzt refreshTrigger genannt
+                              onAppointmentAdded,
+                              refreshAppointmentsList,
                               onServiceAdded,
                               refreshServicesList
                           }) {
+    // ... (bestehender State und useEffects bleiben erhalten) ...
     const initialAdminTab = 'adminDashboardStats';
     const initialUserTab = 'bookings';
 
@@ -41,17 +46,12 @@ function AccountDashboard({
 
     const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes("ROLE_ADMIN");
 
-    // NEU: State für das AppointmentEditModal, das von AdminDashboardStats getriggert werden kann
     const [selectedAppointmentForEditFromStats, setSelectedAppointmentForEditFromStats] = useState(null);
 
-    // Wrapper-Callback, der von AdminDashboardStats aufgerufen wird
     const handleAppointmentActionFromStats = useCallback(() => {
-        if (onAppointmentAdded) { // onAppointmentAdded ist jetzt der refreshTrigger im Grunde
+        if (onAppointmentAdded) {
             onAppointmentAdded();
         }
-        // Falls die Stats-Komponente die Appointment-Liste selbst aktualisiert,
-        // könnte hier der Aufruf für das Neuladen der Appointments in AdminDashboardStats stehen.
-        // Aber die Props refreshAppointmentsList (jetzt refreshTrigger) sollte das globaler handhaben.
     }, [onAppointmentAdded]);
 
 
@@ -68,7 +68,8 @@ function AccountDashboard({
 
     useEffect(() => {
         if (currentUser) {
-            const adminTabs = ['adminDashboardStats', 'adminCalendar', 'adminAppointmentList', 'adminServices', 'adminWorkingHours', 'adminBlockedSlots', 'profile'];
+            // NEU: 'adminCustomerManagement' zu den Admin-Tabs hinzufügen
+            const adminTabs = ['adminDashboardStats', 'adminCalendar', 'adminAppointmentList', 'adminServices', 'adminWorkingHours', 'adminBlockedSlots', 'adminCustomerManagement', 'profile'];
             const userTabs = ['bookings', 'profile'];
 
             if (isAdmin) {
@@ -87,7 +88,6 @@ function AccountDashboard({
         if (activeTab !== 'adminServices') {
             setShowServiceForm(false);
         }
-        // Schließe das Edit-Modal, wenn der Tab gewechselt wird
         setSelectedAppointmentForEditFromStats(null);
     }, [currentUser, isAdmin, activeTab, initialAdminTab, initialUserTab]);
 
@@ -113,12 +113,10 @@ function AccountDashboard({
 
     const handleAppointmentUpdatedFromStatsModal = () => {
         handleCloseAppointmentEditModalFromStats();
-        if (onAppointmentAdded) { // Dies ist der refreshTrigger
+        if (onAppointmentAdded) {
             onAppointmentAdded();
         }
-        // Optional: Direkten Refresh für die Stats-Komponente hier auslösen, falls nötig.
     };
-
 
     const renderTabContent = (tabName) => {
         switch (tabName) {
@@ -128,8 +126,7 @@ function AccountDashboard({
                         <h2 className="dashboard-section-heading">Dashboard Übersicht</h2>
                         <AdminDashboardStats
                             currentUser={currentUser}
-                            // Prop, um das Modal in AccountDashboard zu öffnen
-                            onAppointmentAction={handleAppointmentActionFromStats} // Wird genutzt, um einen Refresh zu signalisieren
+                            onAppointmentAction={handleAppointmentActionFromStats}
                         />
                     </div>
                 );
@@ -138,7 +135,7 @@ function AccountDashboard({
                     <div className="dashboard-section-content">
                         <h2 className="dashboard-section-heading">Meine Termine</h2>
                         <AppointmentList
-                            refreshTrigger={refreshAppointmentsList} // refreshAppointmentsList ist der generische Trigger
+                            refreshTrigger={refreshAppointmentsList}
                             currentUser={currentUser}
                         />
                     </div>
@@ -150,7 +147,7 @@ function AccountDashboard({
                         <AdminCalendarView
                             currentUser={currentUser}
                             refreshTrigger={refreshAppointmentsList}
-                            onAppointmentUpdated={handleAppointmentActionFromStats} // Wiederverwendung
+                            onAppointmentUpdated={handleAppointmentActionFromStats}
                         />
                     </div>
                 );
@@ -202,6 +199,17 @@ function AccountDashboard({
                         )}
                         <hr className="dashboard-section-hr" />
                         <ServiceList key={refreshServicesList} currentUser={currentUser} />
+                    </div>
+                );
+            // NEUER CASE für Kundenverwaltung
+            case 'adminCustomerManagement':
+                return isAdmin && (
+                    <div className="dashboard-section-content">
+                        {/* Kein separater H2-Titel hier, da die Komponente ihren eigenen hat */}
+                        <CustomerManagement currentUser={currentUser} refreshTrigger={refreshAppointmentsList} />
+                        {/* refreshAppointmentsList wird hier als generischer Trigger wiederverwendet,
+                            könnte aber auch ein spezifischer 'refreshCustomerList' Trigger sein,
+                            wenn die Aktionen sich stark unterscheiden. */}
                     </div>
                 );
             case 'adminWorkingHours':
@@ -260,6 +268,8 @@ function AccountDashboard({
                             {renderNavItem('adminAppointmentList', faListAlt, 'Terminliste')}
                             <li className="nav-category-title mt-4">Verwaltung</li>
                             {renderNavItem('adminServices', faTools, 'Services')}
+                            {/* NEUER NAV ITEM für Kunden */}
+                            {renderNavItem('adminCustomerManagement', faUsers, 'Kunden')}
                             {renderNavItem('adminWorkingHours', faClock, 'Arbeitszeiten')}
                             {renderNavItem('adminBlockedSlots', faCalendarTimes, 'Abwesenheiten')}
                             <li className="nav-category-title mt-4">Mein Account (Admin)</li>
@@ -298,6 +308,8 @@ function AccountDashboard({
                             {renderNavItem('adminAppointmentList', faListAlt, 'Terminliste')}
                             <li className="nav-category-title mt-4">Verwaltung</li>
                             {renderNavItem('adminServices', faTools, 'Services')}
+                            {/* NEUER NAV ITEM für Kunden */}
+                            {renderNavItem('adminCustomerManagement', faUsers, 'Kunden')}
                             {renderNavItem('adminWorkingHours', faClock, 'Arbeitszeiten')}
                             {renderNavItem('adminBlockedSlots', faCalendarTimes, 'Abwesenheiten')}
                             <li className="nav-category-title mt-4">Mein Account (Admin)</li>
@@ -342,7 +354,6 @@ function AccountDashboard({
                     </section>
                 </div>
             </div>
-            {/* AppointmentEditModal wird hier auf Top-Level des Dashboards gerendert */}
             {selectedAppointmentForEditFromStats && currentUser?.roles?.includes("ROLE_ADMIN") && (
                 <AppointmentEditModal
                     appointment={selectedAppointmentForEditFromStats}

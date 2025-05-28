@@ -1,5 +1,6 @@
 package com.friseursalon.backend.service;
 
+import com.friseursalon.backend.model.Customer; // Import für Customer hinzufügen
 import com.friseursalon.backend.model.ERole;
 import com.friseursalon.backend.model.Role;
 import com.friseursalon.backend.model.User;
@@ -12,7 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.friseursalon.backend.security.details.UserDetailsImpl; // Wichtiger Import für deine Custom UserDetails
+import com.friseursalon.backend.security.details.UserDetailsImpl;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -23,36 +24,37 @@ public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CustomerService customerService; // CustomerService injizieren
 
     @Autowired
-    public UserService(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository,
+                       RoleRepository roleRepository,
+                       PasswordEncoder passwordEncoder,
+                       CustomerService customerService) { // CustomerService im Konstruktor hinzufügen
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.customerService = customerService; // CustomerService zuweisen
     }
 
     @Override
     @Transactional
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException { // Parameter von 'username' zu 'email' ändern
-        User user = userRepository.findByEmail(email) // HIER findByEmail nutzen
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Benutzer nicht gefunden mit E-Mail: " + email));
 
         return UserDetailsImpl.build(user);
     }
 
-    // registerNewUser Methode anpassen: nimmt Vorname, Nachname, Telefonnummer
     @Transactional
     public User registerNewUser(String firstName, String lastName, String email, String password, String phoneNumber, Set<String> strRoles) {
-        // Prüfung auf E-Mail-Eindeutigkeit
-        if (userRepository.existsByEmail(email)) { // existsByUsername entfernt
+        if (userRepository.existsByEmail(email)) {
             throw new RuntimeException("Fehler: E-Mail ist bereits vergeben!");
         }
 
-        // Neues Benutzerobjekt erstellen: Email als "Benutzername"
-        User user = new User(email, passwordEncoder.encode(password), firstName, lastName, phoneNumber); // Konstruktor anpassen
+        User user = new User(email, passwordEncoder.encode(password), firstName, lastName, phoneNumber);
 
         Set<Role> roles = new HashSet<>();
-
         if (strRoles == null || strRoles.isEmpty()) {
             Role userRole = roleRepository.findByName(ERole.ROLE_USER)
                     .orElseThrow(() -> new RuntimeException("Fehler: Rolle ROLE_USER nicht gefunden."));
@@ -75,17 +77,23 @@ public class UserService implements UserDetailsService {
                 }
             });
         }
-
         user.setRoles(roles);
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        // NEU: Customer-Eintrag erstellen oder finden, nachdem der User gespeichert wurde
+        Customer customerDetailsForService = new Customer();
+        customerDetailsForService.setFirstName(savedUser.getFirstName());
+        customerDetailsForService.setLastName(savedUser.getLastName());
+        customerDetailsForService.setEmail(savedUser.getEmail());
+        customerDetailsForService.setPhoneNumber(savedUser.getPhoneNumber());
+        // Notizen bleiben hier erstmal null, da sie primär vom Admin gepflegt werden.
+        // findOrCreateCustomer wird den Kunden anlegen, falls er nicht existiert.
+        customerService.findOrCreateCustomer(customerDetailsForService);
+
+        return savedUser;
     }
 
-    // existsByUsername entfernen, da Email jetzt der Login-Name ist
-    // public Boolean existsByUsername(String username) {
-    //     return userRepository.existsByUsername(username);
-    // }
-
-    public Boolean existsByEmail(String email) { // Diese Methode bleibt
+    public Boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
     }
 }

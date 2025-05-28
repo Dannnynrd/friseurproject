@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api.service'; // API Service
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSave, faTimes, faSpinner } from '@fortawesome/free-solid-svg-icons';
-// import './CustomerEditModal.css'; // Optional, falls spezifische Stile benötigt werden
+import { faSave, faTimes, faSpinner, faExclamationCircle, faCheckCircle } from '@fortawesome/free-solid-svg-icons'; // faCheckCircle HINZUGEFÜGT
+// import './CustomerEditModal.css'; // Stelle sicher, dass die CSS importiert wird, falls spezifisch
 
 function CustomerEditModal({ customer, onClose, onCustomerUpdated }) {
     const [formData, setFormData] = useState({
@@ -14,9 +14,11 @@ function CustomerEditModal({ customer, onClose, onCustomerUpdated }) {
         phoneNumber: '',
         notes: ''
     });
-    const [message, setMessage] = useState('');
+    // HINWEIS: message wird zu error umbenannt für Klarheit
+    const [error, setError] = useState(''); // Für Fehlermeldungen
+    const [successMessage, setSuccessMessage] = useState(''); // Für Erfolgsmeldungen
+
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [error, setError] = useState('');
 
     useEffect(() => {
         if (customer) {
@@ -28,8 +30,8 @@ function CustomerEditModal({ customer, onClose, onCustomerUpdated }) {
                 phoneNumber: customer.phoneNumber || '',
                 notes: customer.notes || ''
             });
-            setMessage('');
-            setError('');
+            setError(''); // Fehler zurücksetzen, wenn Modal mit neuem Kunden geöffnet wird
+            setSuccessMessage(''); // Erfolgsmeldung zurücksetzen
         }
     }, [customer]);
 
@@ -40,8 +42,8 @@ function CustomerEditModal({ customer, onClose, onCustomerUpdated }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setMessage('');
         setError('');
+        setSuccessMessage('');
         setIsSubmitting(true);
 
         if (!formData.firstName || !formData.lastName || !formData.email) {
@@ -49,7 +51,7 @@ function CustomerEditModal({ customer, onClose, onCustomerUpdated }) {
             setIsSubmitting(false);
             return;
         }
-        // Optional: E-Mail-Validierung
+        // Optionale E-Mail-Validierung (einfach)
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(formData.email)) {
             setError('Bitte geben Sie eine gültige E-Mail-Adresse ein.');
@@ -60,13 +62,13 @@ function CustomerEditModal({ customer, onClose, onCustomerUpdated }) {
         try {
             // Sendet das gesamte formData Objekt, das die ID enthält
             await api.put(`/customers/${formData.id}`, formData);
-            setMessage('Kundendaten erfolgreich aktualisiert!');
+            setSuccessMessage('Kundendaten erfolgreich aktualisiert!');
             if (onCustomerUpdated) {
                 onCustomerUpdated(); // Ruft Callback auf, um die Liste in der Elternkomponente zu aktualisieren
             }
             setTimeout(() => {
                 onClose(); // Schließt das Modal nach einer kurzen Verzögerung
-            }, 1500);
+            }, 1500); // 1.5 Sekunden Verzögerung
         } catch (err) {
             console.error("Fehler beim Aktualisieren der Kundendaten:", err.response || err);
             const errMsg = err.response?.data?.message || 'Fehler beim Aktualisieren der Kundendaten.';
@@ -77,14 +79,16 @@ function CustomerEditModal({ customer, onClose, onCustomerUpdated }) {
     };
 
     if (!customer) {
-        return null; // Rendert nichts, wenn kein Kunde zum Bearbeiten ausgewählt ist
+        return null;
     }
 
     return (
         <div className="modal-overlay">
-            <div className="modal-content customer-edit-modal-content"> {/* Eigene Klasse für spezifisches Styling */}
+            {/* Es ist besser, .modal-content beizubehalten und spezifische Klassen für Overrides hinzuzufügen */}
+            <div className="modal-content customer-edit-modal-content">
                 <h3>Kundendaten bearbeiten</h3>
-                <form onSubmit={handleSubmit} className="app-form"> {/* Generische Formular-Klasse */}
+                {/* Globale Klasse .app-form für konsistentes Styling von Formularen */}
+                <form onSubmit={handleSubmit} className="app-form service-edit-form">
                     <div className="form-group">
                         <label htmlFor="editModalFirstName">Vorname*</label>
                         <input
@@ -139,26 +143,35 @@ function CustomerEditModal({ customer, onClose, onCustomerUpdated }) {
                             name="notes"
                             value={formData.notes}
                             onChange={handleChange}
-                            rows="4"
+                            rows="4" // Etwas mehr Platz für Notizen
                             disabled={isSubmitting}
                         />
                     </div>
 
-                    {message && <p className="form-message success small mt-3">{message}</p>}
-                    {error && <p className="form-message error small mt-3">{error}</p>}
+                    {/* Nachrichtenanzeige */}
+                    {error && (
+                        <p className="form-message error small mt-3">
+                            <FontAwesomeIcon icon={faExclamationCircle} /> {error}
+                        </p>
+                    )}
+                    {successMessage && (
+                        <p className="form-message success small mt-3">
+                            <FontAwesomeIcon icon={faCheckCircle} /> {successMessage}
+                        </p>
+                    )}
 
                     <div className="modal-actions">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="button-link-outline" // Standard Outline-Button
+                            className="button-link-outline"
                             disabled={isSubmitting}
                         >
                             <FontAwesomeIcon icon={faTimes} /> Abbrechen
                         </button>
                         <button
                             type="submit"
-                            className="button-link" // Standard Primary-Button
+                            className="button-link"
                             disabled={isSubmitting}
                         >
                             {isSubmitting ? <FontAwesomeIcon icon={faSpinner} spin /> : <FontAwesomeIcon icon={faSave} />}

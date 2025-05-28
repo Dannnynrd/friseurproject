@@ -1,0 +1,104 @@
+/* src/components/CustomerManagement.css */
+.customer-management-container {
+    padding: 1rem 0; /* Konsistent mit anderen Dashboard-Sektionen */
+}
+
+/* Header für die Kundenliste (Suchfeld etc.) */
+.list-controls-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.search-input-container {
+    position: relative;
+    flex-grow: 1;
+    max-width: 450px; /* Maximale Breite für das Suchfeld */
+}
+
+.search-input-container .form-control { /* Annahme: .form-control ist eine globale Klasse */
+    padding-left: 2.5rem; /* Platz für das Icon */
+    width: 100%;
+    /* Weitere Stile werden von globalen .form-group input Stilen geerbt oder hier definiert */
+    padding: 0.7rem 0.8rem 0.7rem 2.5rem; /* Padding angepasst für Icon */
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: var(--font-sans), sans-serif;
+    font-size: 0.9rem;
+    background-color: var(--light-bg);
+    color: var(--dark-text);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.search-input-container .form-control:focus-visible {
+    border-color: var(--focus-ring-color);
+    box-shadow: 0 0 0 2px var(--focus-ring-subtle-color);
+    outline: none;
+}
+
+
+.search-input-container .svg-inline--fa {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--medium-grey-text);
+    font-size: 0.9rem;
+}
+
+
+/* Tabellen-Styling (erbt von .app-table aus App.css) */
+.customers-table th,
+.customers-table td {
+    /* Ggf. spezifische Anpassungen hier */
+}
+
+.customers-table .notes-cell {
+    max-width: 200px; /* Begrenzt die Breite der Notizenzelle */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.customers-table .notes-cell div[title] { /* Ermöglicht Tooltip für lange Notizen */
+    cursor: help;
+}
+
+
+/* Modal-Styling für CustomerEditModal (kann auch global sein, wenn konsistent) */
+.customer-edit-modal-content { /* Stellt sicher, dass es von .modal-content erbt oder eigene Basis hat */
+    /* max-width: 550px; */ /* Optional: Breite anpassen */
+}
+.customer-edit-modal-content .app-form .form-group {
+    margin-bottom: 1rem; /* Konsistenter Abstand zwischen Formularfeldern */
+}
+.customer-edit-modal-content .app-form label {
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: var(--medium-grey-text);
+    margin-bottom: 0.4rem;
+}
+.customer-edit-modal-content .app-form input,
+.customer-edit-modal-content .app-form textarea {
+    /* Stile werden von globalen .form-group input/textarea Stilen geerbt */
+    width: 100%;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: var(--font-sans), sans-serif;
+    font-size: 0.9rem;
+    background-color: var(--light-bg);
+    color: var(--dark-text);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.customer-edit-modal-content .app-form input:focus-visible,
+.customer-edit-modal-content .app-form textarea:focus-visible {
+    border-color: var(--focus-ring-color);
+    box-shadow: 0 0 0 2px var(--focus-ring-subtle-color);
+    outline: none;
+}
+
+.customer-edit-modal-content .modal-actions {
+    /* Erbt Stile von .modal-actions aus App.css oder BookingPage.css */
+}
