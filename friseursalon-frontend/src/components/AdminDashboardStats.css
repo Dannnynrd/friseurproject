@@ -1,159 +1,265 @@
-/* src/components/AdminDashboardStats.css - Design-Iteration 4 */
+/* src/components/AdminDashboardStats.css - Design-Iteration 9 (Filter UI) */
 .admin-dashboard-stats {
-    padding: 1.5rem 0;
+    padding: 1rem 0;
     font-family: var(--font-sans);
-    background-color: var(--light-bg); /* Stellt sicher, dass der Tab-Inhalt weiß ist */
+    background-color: var(--light-bg);
+    max-width: 1400px; /* Maximale Breite für den gesamten Statistikbereich */
+    margin-left: auto;   /* Zentrierung des Statistikbereichs */
+    margin-right: auto;  /* Zentrierung des Statistikbereichs */
+    box-sizing: border-box;
 }
 
-/* --- Globale Sektionsüberschriften --- */
+/* --- Filterleiste --- */
+.stats-period-filter-bar {
+    display: flex;
+    flex-wrap: wrap; /* Erlaubt Umbruch auf kleineren Bildschirmen */
+    align-items: center;
+    gap: 0.75rem; /* Abstand zwischen Button-Gruppe und DatePickern */
+    margin-bottom: 2rem;
+    padding: 0.75rem;
+    background-color: var(--light-grey-bg);
+    border-radius: var(--border-radius-lg, 12px);
+    border: 1px solid var(--border-color-light);
+}
+
+.period-buttons {
+    display: flex;
+    flex-wrap: wrap; /* Buttons können umbrechen */
+    gap: 0.5rem; /* Abstand zwischen den Buttons */
+}
+
+.period-buttons button {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+    background-color: var(--light-bg);
+    color: var(--medium-grey-text);
+    border-radius: var(--border-radius-md, 8px);
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.period-buttons button:hover {
+    background-color: #e9e9e9;
+    border-color: var(--medium-grey-text);
+    color: var(--dark-text);
+}
+.period-buttons button.active {
+    background-color: var(--dark-text);
+    color: var(--light-bg);
+    border-color: var(--dark-text);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.period-buttons button .svg-inline--fa {
+    font-size: 0.9em;
+}
+
+.custom-date-pickers {
+    display: flex;
+    flex-wrap: wrap; /* Erlaubt Umbruch der DatePicker */
+    align-items: center;
+    gap: 0.75rem; /* Abstand zwischen DatePickern und Button */
+    margin-left: auto; /* Schiebt die DatePicker nach rechts, wenn Platz ist */
+}
+
+.custom-date-pickers .date-picker-input {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md, 8px);
+    max-width: 130px; /* Begrenzt die Breite der DatePicker-Inputs */
+}
+.custom-date-pickers .apply-custom-date {
+    padding: 0.5rem 1rem; /* Gleiche Größe wie andere Filterbuttons */
+}
+
+
+/* --- Globale Sektionsüberschriften innerhalb der Stats-Seite --- */
 .stats-section-title {
     font-family: var(--font-serif);
-    font-size: 1.25rem; /* Etwas kompakter */
+    font-size: 1.4rem;
     color: var(--dark-text);
-    margin: 0 0 1.25rem 0;
-    padding-bottom: 0.6rem;
-    border-bottom: 1px solid var(--border-color-light, #f1f1f1);
+    margin: 0 0 1.5rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
-    gap: 0.5rem; /* Kleinerer Abstand Icon-Text */
+    justify-content: space-between; /* Titel links, Zeitraum rechts */
+    flex-wrap: wrap; /* Erlaubt Umbruch */
+    gap: 0.6rem;
 }
 .stats-section-title .svg-inline--fa {
     color: var(--medium-grey-text);
-    font-size: 1rem; /* Angepasste Icon-Größe */
+    font-size: 1.1rem;
+    margin-right: 0.4rem; /* Abstand Icon zu Text */
 }
+.stats-period-display {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--medium-grey-text);
+    margin-left: 0.5rem; /* Abstand zum Titel */
+}
+
 
 /* --- Lade- und Fehlermeldungen --- */
 .loading-indicator-top {
     text-align: center;
-    padding: 0.6rem;
-    font-size: 0.8rem;
+    padding: 0.75rem;
+    font-size: 0.85rem;
     color: var(--medium-grey-text);
     background-color: var(--light-grey-bg);
-    border-bottom: 1px solid var(--border-color-light);
-    margin-bottom: 1.25rem;
-    border-radius: var(--border-radius-sm, 4px);
+    border: 1px dashed var(--border-color-light);
+    margin-bottom: 1.5rem;
+    border-radius: var(--border-radius-md, 8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
 }
-.loading-indicator-top .svg-inline--fa { margin-right: 0.4rem; }
 
 .loading-message-stats,
 .stats-error-message {
     text-align: center;
-    padding: 1.5rem;
-    margin: 1.5rem 0;
-    border-radius: var(--border-radius-md, 8px);
-    background-color: var(--light-bg);
-    border: 1px solid var(--border-color);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-}
-.stats-error-message pre {
+    padding: 2rem;
+    margin: 1rem 0;
+    border-radius: var(--border-radius-lg, 12px);
     background-color: var(--light-grey-bg);
     border: 1px solid var(--border-color);
-    padding: 0.5rem 0.75rem;
+}
+.loading-message-stats .svg-inline--fa {
+    margin-right: 0.5rem;
+    font-size: 1.5em;
+}
+.stats-error-message {
+    color: var(--danger-color);
+    background-color: var(--danger-bg-light);
+    border-color: var(--danger-color);
+}
+.stats-error-message .svg-inline--fa {
+    margin-right: 0.5rem;
+    font-size: 1.2em;
+}
+.stats-error-message p { margin-bottom: 0.5rem; }
+.stats-error-message pre {
+    background-color: var(--light-bg);
+    border: 1px solid var(--border-color);
+    padding: 0.75rem 1rem;
     border-radius: var(--border-radius-sm, 4px);
-    font-size: 0.75rem; text-align: left;
-    max-height: 100px; overflow-y: auto;
-    margin-top: 0.5rem;
+    font-size: 0.8rem; text-align: left;
+    max-height: 120px; overflow-y: auto;
+    margin-top: 0.75rem;
+    white-space: pre-wrap;
+    word-break: break-all;
 }
 
 /* --- Layout für Statistiken und Charts --- */
 .stats-main-layout {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1024px) { /* lg Breakpoint */
     .stats-main-layout {
-        grid-template-columns: 1fr 1fr; /* KPIs und Charts nebeneinander */
+        grid-template-columns: minmax(320px, 1.5fr) minmax(420px, 2fr); /* Mindestbreiten leicht erhöht */
+        align-items: flex-start;
     }
 }
 
+
 /* --- Statistik-Karten (KPIs) --- */
 .stats-overview-cards-wrapper {
-    /* Container für die KPI-Karten, falls benötigt */
+    /* Container für die KPI-Karten */
 }
 .stats-overview-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Kleinere Min-Breite */
-    gap: 0.85rem; /* Etwas weniger Abstand */
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Angepasst für bessere Responsivität */
+    gap: 1rem;
 }
 
 .stat-card {
     background-color: var(--light-bg, #ffffff);
-    border: 1px solid var(--border-color-light, #f1f1f1);
-    border-radius: var(--border-radius-md, 8px); /* Konsistente Rundung */
-    padding: 1rem; /* Kompakteres Padding */
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg, 12px);
+    padding: 1rem;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start; /* Inhalt oben ausrichten */
-    min-height: 90px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    justify-content: space-between;
+    min-height: 100px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
 .stat-card:hover {
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
-    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    transform: translateY(-3px);
 }
 .stat-card.is-loading-skeleton {
     background-color: var(--light-grey-bg);
     box-shadow: none;
-    border-color: var(--border-color);
+    border-color: var(--border-color-light);
 }
-.stat-card-header-skeleton { height: 14px; width: 70%; background-color: var(--border-color); border-radius: 3px; margin-bottom: 0.4rem; }
-.stat-value-skeleton { height: 22px; width: 45%; background-color: var(--border-color); border-radius: 3px; margin-top: 0.5rem; }
+.stat-card-header-skeleton { height: 14px; width: 70%; background-color: var(--border-color-light); border-radius: 4px; margin-bottom: 0.5rem; }
+.stat-value-skeleton { height: 24px; width: 45%; background-color: var(--border-color-light); border-radius: 4px; margin-top: 0.6rem; }
 
 .stat-card-header {
     display: flex;
     align-items: center;
-    gap: 0.5rem; /* Weniger Abstand Icon-Label */
-    margin-bottom: 0.4rem; /* Weniger Abstand zum Wert */
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
 }
 
-.stat-icon { /* Minimalistische Icons */
-    font-size: 1rem; /* Klein und fein */
-    width: 20px;
-    height: 20px;
+.stat-icon {
+    font-size: 1rem;
+    width: 26px;
+    height: 26px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    color: var(--medium-grey-text); /* Standard-Icon-Farbe, kann überschrieben werden */
+    color: var(--medium-grey-text);
+    background-color: var(--light-grey-bg);
+    border-radius: 50%;
+    padding: 0.25rem;
 }
-/* Spezifische Icon-Farben (nur das Icon selbst) */
-.stat-icon.today { color: var(--success-color); }
-.stat-icon.week { color: #17a2b8; }
-.stat-icon.month { color: #ffc107; }
-.stat-icon.upcoming { color: #6f42c1; }
-.stat-icon.revenue { color: #fd7e14; }
-.stat-icon.new-customers { color: #0dcaf0; }
+.stat-icon.today { color: #28a745; background-color: #e2f0e6; }
+.stat-icon.week { color: #17a2b8; background-color: #d1ecf1; }
+.stat-icon.month { color: #ffc107; background-color: #fff3cd; }
+.stat-icon.upcoming { color: #6f42c1; background-color: #e9d8fd; }
+.stat-icon.revenue { color: #fd7e14; background-color: #ffe8d6; }
 
 .stat-label {
-    font-size: 0.7rem; /* Sehr klein, aber lesbar */
+    font-size: 0.7rem;
     color: var(--medium-grey-text);
     font-weight: 500;
     line-height: 1.2;
-    text-transform: uppercase; /* Für einen cleanen Look */
-    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
 }
 
 .stat-value {
-    font-size: 1.5rem; /* Klar und fokussiert */
+    font-size: 1.6rem;
     font-weight: 600;
     color: var(--dark-text);
     line-height: 1.1;
-    margin-top: 0.1rem; /* Kleiner Abstand zum Label */
+    margin-top: 0.2rem;
     font-family: var(--font-sans);
     align-self: flex-start;
 }
 .stat-card-no-data {
-    padding: 1rem; text-align: center; color: var(--medium-grey-text);
-    font-size: 0.8rem; width: 100%;
+    grid-column: 1 / -1;
+    padding: 1.25rem; text-align: center; color: var(--medium-grey-text);
+    font-size: 0.85rem;
+    border: 1px dashed var(--border-color);
+    border-radius: var(--border-radius-md);
 }
 
 /* --- Chart-Bereich --- */
 .charts-section-wrapper {
-    /* Keine speziellen Styles */
+    /* Container für die Charts */
 }
 .charts-grid {
     display: grid;
@@ -163,11 +269,12 @@
 
 @media (min-width: 768px) {
     .charts-grid {
-        /* Bleibt 1fr, da stats-main-layout die Spaltenaufteilung macht */
+        grid-template-columns: 1fr;
     }
 }
-@media (min-width: 1200px) { /* Auf sehr großen Bildschirmen könnten Charts nebeneinander */
-    .stats-main-layout.two-column-layout .charts-grid {
+@media (min-width: 1200px) {
+    .stats-main-layout[style*="grid-template-columns: repeat(2"] .charts-grid,
+    .stats-main-layout:not([style*="grid-template-columns: 1fr"]) .charts-grid {
         grid-template-columns: 1fr 1fr;
     }
 }
@@ -175,28 +282,48 @@
 
 .chart-card {
     background-color: var(--light-bg, #ffffff);
-    border: 1px solid var(--border-color-light, #f1f1f1);
-    border-radius: var(--border-radius-md, 8px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg, 12px);
     padding: 1.25rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-    min-height: 280px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    min-height: 340px;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
+
+.chart-title {
+    font-family: var(--font-sans, sans-serif);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--dark-text, #1f1f1f);
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.chart-title .svg-inline--fa {
+    color: var(--medium-grey-text);
+    font-size: 1em;
+}
+
+
 .chart-card .chart-canvas-container {
     flex-grow: 1;
     position: relative;
     width: 100%;
-    min-height: 200px; /* Mindesthöhe für die Canvas */
+    min-height: 220px;
 }
+
 .chart-loading-placeholder {
     display: flex; justify-content: center; align-items: center;
-    height: 100%; min-height: 100px; color: var(--medium-grey-text);
+    height: 100%; min-height: 120px; color: var(--medium-grey-text);
 }
-.chart-loading-placeholder .svg-inline--fa { font-size: 1.2rem; }
+.chart-loading-placeholder .svg-inline--fa { font-size: 1.3rem; }
 .chart-no-data-message {
     margin: auto; color: var(--medium-grey-text);
-    font-size: 0.8rem; text-align: center; padding: 1rem 0;
+    font-size: 0.85rem; text-align: center; padding: 1.25rem 0;
 }
 
 
@@ -204,19 +331,32 @@
 .daily-appointments-section {
     margin-top: 2rem;
     background-color: var(--light-bg, #ffffff);
-    border: 1px solid var(--border-color-light, #f1f1f1);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius-lg, 12px);
     padding: 1.25rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .daily-appointments-heading {
     font-family: var(--font-serif, serif);
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     color: var(--dark-text);
-    margin: 0 0 1rem 0;
-    padding-bottom: 0.6rem;
-    border-bottom: 1px solid var(--border-color-light, #f1f1f1);
+    margin: 0 0 1.25rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+.daily-appointments-heading .svg-inline--fa {
+    color: var(--medium-grey-text);
+    font-size: 1.1rem;
+}
+
+.loading-message-stats.small-list-loader {
+    font-size: 0.85rem; padding: 1rem;
+    color: var(--medium-grey-text);
+    text-align: left;
 }
 
 .daily-appointments-list { list-style: none; padding: 0; margin: 0; }
@@ -224,19 +364,25 @@
 .daily-appointment-item {
     display: flex;
     align-items: center;
-    padding: 0.7rem 0.25rem;
+    justify-content: space-between;
+    padding: 0.75rem 0.4rem;
     border-bottom: 1px solid var(--border-color-light, #f1f1f1);
-    transition: background-color 0.15s ease-in-out;
+    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     cursor: pointer;
     position: relative;
+    border-radius: var(--border-radius-sm, 4px);
+    margin-bottom: 0.2rem;
+    gap: 0.5rem;
 }
-.daily-appointment-item:last-child { border-bottom: none; }
-.daily-appointment-item:hover { background-color: var(--light-grey-bg, #f8f8f8); border-radius: var(--border-radius-sm, 4px); }
+.daily-appointment-item:last-child { border-bottom: none; margin-bottom: 0;}
+.daily-appointment-item:hover,
+.daily-appointment-item:focus-visible {
+    background-color: var(--light-grey-bg, #f8f8f8);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
 .daily-appointment-item:focus-visible {
     outline: 2px solid var(--focus-ring-color, #007bff);
     outline-offset: -1px;
-    background-color: var(--light-grey-bg, #f8f8f8);
-    border-radius: var(--border-radius-sm, 4px);
 }
 .item-loader-icon {
     color: var(--medium-grey-text);
@@ -247,87 +393,216 @@
 .daily-appointment-item .appointment-time {
     font-weight: 500;
     color: var(--dark-text);
-    font-size: 0.8rem;
-    width: 50px;
+    font-size: 0.85rem;
+    min-width: 55px;
     flex-shrink: 0;
     text-align: left;
 }
 
 .daily-appointment-item .appointment-info-group {
     flex-grow: 1;
-    margin: 0 0.6rem;
+    margin: 0 0.5rem;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    gap: 0;
 }
 .daily-appointment-item .appointment-service {
     font-size: 0.85rem;
     font-weight: 500;
     color: var(--dark-text);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    line-height: 1.3;
 }
 .daily-appointment-item .appointment-customer {
     font-size: 0.75rem;
     color: var(--medium-grey-text);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    line-height: 1.3;
 }
 
 .appointment-status-tag {
     padding: 0.2em 0.6em;
-    border-radius: 10px;
+    border-radius: var(--border-radius-round, 10px);
     font-size: 0.65rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     white-space: nowrap;
-    margin-left: auto;
     flex-shrink: 0;
     border: 1px solid transparent;
     min-width: 55px;
     text-align: center;
+    line-height: 1.2;
 }
 .appointment-status-tag.status-heute {
     background-color: var(--info-bg-light, #cce5ff);
     color: var(--info-color, #004085);
+    border-color: var(--info-color, #004085);
 }
 .appointment-status-tag.status-morgen {
     background-color: var(--success-bg-light, #e2f0e6);
     color: var(--success-color, #28a745);
+    border-color: var(--success-color, #28a745);
 }
-.appointment-status-tag:not(.status-heute):not(.status-morgen) {
+.appointment-status-tag.status-datum {
     background-color: var(--light-grey-bg, #f8f8f8);
     color: var(--medium-grey-text, #5f5f5f);
-    border-color: var(--border-color-light, #f1f1f1);
+    border-color: var(--border-color, #e7e7e7);
 }
+
 
 .no-upcoming-appointments {
     text-align: center;
     padding: 1.25rem 1rem;
     color: var(--medium-grey-text);
     font-size: 0.85rem;
-    border: 1px dashed var(--border-color, #e7e7e7);
-    border-radius: var(--border-radius-md, 8px);
-    margin-top: 1rem;
+    border: 1px dashed var(--border-color);
+    border-radius: var(--border-radius-lg, 12px);
+    margin-top: 1.25rem;
 }
 
-/* --- Responsive Anpassungen --- */
-@media (max-width: 768px) {
-    .stats-main-layout {
+/* --- Responsive Anpassungen für kleinere Bildschirme --- */
+@media (max-width: 767px) { /* Geändert zu 767px für klarere Abgrenzung zu md */
+    .stats-overview-cards {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+    .stat-card { padding: 0.75rem; min-height: 90px;}
+    .stat-value { font-size: 1.4rem; }
+    .stat-label { font-size: 0.65rem; }
+    .stat-icon { width: 22px; height: 22px; font-size: 0.9rem; }
+
+
+    .charts-grid {
         grid-template-columns: 1fr;
     }
-    .stats-overview-cards {
-        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); /* Noch kleinere Karten */
-        gap: 0.6rem;
-    }
-    .stat-card { padding: 0.75rem; min-height: 85px;}
-    .stat-icon { width: 24px; height: 24px; font-size: 0.8rem; margin-right: 0.4rem;}
-    .stat-value { font-size: 1.3rem; }
-    .stat-label { font-size: 0.65rem; }
-
-    .charts-grid { grid-template-columns: 1fr; }
-    .chart-card { min-height: 240px; padding: 1rem;}
+    .chart-card { min-height: 220px; padding: 1rem;}
 
     .daily-appointments-section { padding: 1rem; }
-    .daily-appointments-heading { font-size: 1.1rem; }
+    .daily-appointments-heading { font-size: 1.15rem; }
+
+    .daily-appointment-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.3rem;
+    }
+    .daily-appointment-item .appointment-time {
+        font-size: 0.9rem;
+        min-width: auto;
+        margin-bottom: 0.2rem;
+    }
+    .daily-appointment-item .appointment-info-group {
+        margin: 0;
+        width: 100%;
+    }
+    .appointment-status-tag {
+        margin-top: 0.4rem;
+        align-self: flex-start;
+        width: auto;
+        padding: 0.2em 0.5em;
+    }
+
+    .stats-period-filter-bar {
+        flex-direction: column;
+        align-items: stretch; /* Filter-Elemente nehmen volle Breite ein */
+    }
+    .period-buttons {
+        justify-content: center; /* Buttons zentrieren, wenn sie umbrechen */
+    }
+    .custom-date-pickers {
+        margin-left: 0; /* Kein linker Rand auf Mobile */
+        width: 100%;
+        justify-content: space-between; /* Datepicker und Button verteilen */
+    }
+    .custom-date-pickers .date-picker-input {
+        max-width: none; /* Erlaubt den DatePickern, sich anzupassen */
+        flex-grow: 1; /* Nimmt verfügbaren Platz ein */
+    }
+    .custom-date-pickers .apply-custom-date {
+        flex-grow: 1; /* Button nimmt auch Platz ein */
+        max-width: 120px; /* Aber nicht zu breit werden */
+    }
 }
 
+/* Spezifische Anpassungen für sehr kleine Bildschirme, falls nötig */
+@media (max-width: 480px) {
+    .period-buttons button {
+        flex-grow: 1; /* Buttons nehmen mehr Platz ein */
+        font-size: 0.75rem;
+        padding: 0.4rem 0.6rem;
+    }
+    .custom-date-pickers {
+        flex-direction: column; /* Alles untereinander */
+        align-items: stretch;
+    }
+    .custom-date-pickers .apply-custom-date {
+        max-width: none; /* Button volle Breite */
+        margin-top: 0.5rem;
+    }
+}
+/* src/components/AdminDashboardStats.css - Ergänzung für Vergleichsdaten */
+
+/* ... bestehende Stile ... */
+
+.stat-card {
+    /* ... bestehende .stat-card Stile ... */
+    /* Stelle sicher, dass genug Platz für die Vergleichsdaten ist, ggf. min-height anpassen */
+    min-height: 110px; /* War vorher 100px, evtl. etwas mehr Platz */
+}
+
+.stat-value {
+    font-size: 1.6rem; /* Hauptwert */
+    font-weight: 600;
+    color: var(--dark-text);
+    line-height: 1.1;
+    margin-top: 0.2rem;
+    font-family: var(--font-sans);
+    align-self: flex-start;
+    margin-bottom: 0.25rem; /* Kleiner Abstand zum Vergleichswert */
+}
+
+.stat-comparison {
+    font-size: 0.75rem; /* Kleinere Schrift für Vergleichsdaten */
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: auto; /* Schiebt den Vergleich nach unten, wenn Platz ist */
+    padding-top: 0.25rem; /* Kleiner Abstand nach oben */
+}
+
+.stat-comparison .comparison-data.positive {
+    color: var(--success-color, #28a745);
+}
+.stat-comparison .comparison-data.negative {
+    color: var(--danger-color, #c82333);
+}
+.stat-comparison .comparison-data.neutral {
+    color: var(--medium-grey-text, #5f5f5f);
+}
+.stat-comparison .comparison-data .svg-inline--fa {
+    margin-right: 0.15rem;
+}
+.stat-comparison .comparison-label {
+    color: var(--light-grey-text);
+    font-size: 0.9em; /* Relativ zur Schriftgröße von .stat-comparison */
+    margin-left: 0.2rem;
+}
+.stat-comparison .comparison-data.no-data {
+    color: var(--light-grey-text);
+    font-style: italic;
+}
+
+.stat-card.small-kpi .stat-value {
+    font-size: 1.3rem; /* Kleinere Schrift für Zusatz-KPIs */
+}
+.stat-card.small-kpi .stat-comparison { /* Kein Vergleich für kleine KPIs */
+    display: none;
+}
+.stat-card-header-skeleton { height: 14px; width: 70%; background-color: var(--border-color-light); border-radius: 4px; margin-bottom: 0.5rem; }
+.stat-value-skeleton { height: 24px; width: 45%; background-color: var(--border-color-light); border-radius: 4px; margin-top: 0.6rem; }
+.stat-comparison-skeleton { height: 12px; width: 60%; background-color: var(--border-color-light); border-radius: 3px; margin-top: 0.4rem; }
+
+
+/* ... restliche Stile ... */

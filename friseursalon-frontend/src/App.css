@@ -42,6 +42,27 @@
   border-top: 1px solid var(--border-color);
 }
 
+.custom-recharts-tooltip {
+  background-color: rgba(31, 31, 31, 0.9); /* var(--dark-text) mit Transparenz */
+  border: 1px solid rgba(255, 255, 255, 0.2); /* Heller Rand auf dunklem Grund */
+  border-radius: 4px;
+  padding: 8px 12px;
+  color: var(--light-text-on-dark, #f5f5f5);
+  font-size: 0.85rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.custom-recharts-tooltip .label {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #fff; /* Reines Weiß für besseren Kontrast im Tooltip */
+}
+
+.custom-recharts-tooltip .intro {
+  margin: 0;
+  color: #eee; /* Etwas gedämpfteres Weiß */
+}
+
 .appointment-edit-modal-content .modal-actions-right {
   display: flex;
   gap: 0.75rem; /* Abstand zwischen Abbrechen und Speichern */

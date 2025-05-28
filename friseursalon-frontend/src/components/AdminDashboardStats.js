@@ -4,25 +4,83 @@ import api from '../services/api.service';
 import './AdminDashboardStats.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faChartLine,
-    faCalendarCheck,
-    faCalendarWeek,
-    faSpinner,
-    faExclamationCircle,
-    faClockFour,
-    faUsers,
-    faEuroSign,
-    faChartPie,
-    faChartColumn,
-    faChartSimple
+    faChartLine, faCalendarCheck, faCalendarWeek, faSpinner,
+    faExclamationCircle, faClockFour, faEuroSign,
+    faChartPie, faChartBar, faListAlt, faCalendarAlt,
+    faFilter, faArrowUp, faArrowDown, faEquals, faCoins // faCoins für Ø-Umsatz
 } from '@fortawesome/free-solid-svg-icons';
 import AppointmentEditModal from './AppointmentEditModal';
-import { format as formatDateFns, parseISO, isValid as isValidDate } from 'date-fns';
-// import { de as deLocale } from 'date-fns/locale'; // Nicht unbedingt für Formatierung hier benötigt
+import { format as formatDateFns, parseISO, isValid as isValidDate, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, addMonths, formatISO } from 'date-fns';
+import { de as deLocale } from 'date-fns/locale';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
 
-// Chart Komponenten importieren
-import AppointmentsByDayChart from './charts/AppointmentsByDayChart';
-import AppointmentsByServiceChart from './charts/AppointmentsByServiceChart';
+import AppointmentsByDayRechart from './charts/AppointmentsByDayRechart';
+import AppointmentsByServiceRechart from './charts/AppointmentsByServiceRechart';
+
+registerLocale('de', deLocale);
+
+const PERIOD_OPTIONS = {
+    TODAY: 'today',
+    LAST_7_DAYS: 'last7days',
+    LAST_30_DAYS: 'last30days',
+    THIS_MONTH: 'thisMonth',
+    NEXT_MONTH: 'nextMonth', // NEU
+    LAST_MONTH: 'lastMonth',
+    CUSTOM: 'custom',
+};
+
+const PERIOD_LABELS = {
+    [PERIOD_OPTIONS.TODAY]: 'Heute',
+    [PERIOD_OPTIONS.LAST_7_DAYS]: 'Letzte 7 Tage',
+    [PERIOD_OPTIONS.LAST_30_DAYS]: 'Letzte 30 Tage',
+    [PERIOD_OPTIONS.THIS_MONTH]: 'Dieser Monat',
+    [PERIOD_OPTIONS.NEXT_MONTH]: 'Nächster Monat',
+    [PERIOD_OPTIONS.LAST_MONTH]: 'Letzter Monat',
+    [PERIOD_OPTIONS.CUSTOM]: 'Benutzerdefiniert',
+};
+
+const getDatesForPeriod = (period) => {
+    const today = new Date();
+    let startDate, endDate = today;
+
+    switch (period) {
+        case PERIOD_OPTIONS.TODAY:
+            startDate = today;
+            endDate = today;
+            break;
+        case PERIOD_OPTIONS.LAST_7_DAYS:
+            startDate = subDays(today, 6);
+            endDate = today;
+            break;
+        case PERIOD_OPTIONS.LAST_30_DAYS:
+            startDate = subDays(today, 29);
+            endDate = today;
+            break;
+        case PERIOD_OPTIONS.THIS_MONTH:
+            startDate = startOfMonth(today);
+            endDate = endOfMonth(today);
+            break;
+        case PERIOD_OPTIONS.NEXT_MONTH: // NEU
+            const firstDayNextMonth = startOfMonth(addMonths(today, 1));
+            startDate = firstDayNextMonth;
+            endDate = endOfMonth(firstDayNextMonth);
+            break;
+        case PERIOD_OPTIONS.LAST_MONTH:
+            const firstDayLastMonth = startOfMonth(subMonths(today, 1));
+            startDate = firstDayLastMonth;
+            endDate = endOfMonth(firstDayLastMonth);
+            break;
+        default:
+            startDate = today;
+            endDate = today;
+    }
+    return {
+        startDate: formatISO(startDate, { representation: 'date' }),
+        endDate: formatISO(endDate, { representation: 'date' })
+    };
+};
+
 
 function AdminDashboardStats({ currentUser, onAppointmentAction }) {
     const [detailedStats, setDetailedStats] = useState(null);
@@ -35,57 +93,58 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
     const [error, setError] = useState('');
     const [selectedAppointmentForEdit, setSelectedAppointmentForEdit] = useState(null);
 
-    const fetchData = useCallback(async () => {
+    const [selectedPeriod, setSelectedPeriod] = useState(PERIOD_OPTIONS.THIS_MONTH);
+    const [customStartDate, setCustomStartDate] = useState(null);
+    const [customEndDate, setCustomEndDate] = useState(null);
+    const [showCustomDatePickers, setShowCustomDatePickers] = useState(false);
+
+    const fetchData = useCallback(async (period, sDate, eDate) => {
         setIsLoading(true);
         setError('');
-        let errorsOccurred = [];
-        console.log("[AdminDashboardStats] fetchData gestartet...");
 
-        const todayForAPI = formatDateFns(new Date(), 'yyyy-MM-dd');
+        let queryStartDate, queryEndDate;
+
+        if (period === PERIOD_OPTIONS.CUSTOM) {
+            if (sDate && eDate) {
+                queryStartDate = formatISO(sDate, { representation: 'date' });
+                queryEndDate = formatISO(eDate, { representation: 'date' });
+            } else {
+                setIsLoading(false);
+                return;
+            }
+        } else {
+            const dates = getDatesForPeriod(period);
+            queryStartDate = dates.startDate;
+            queryEndDate = dates.endDate;
+        }
+
+        console.log(`[AdminDashboardStats] Abfrage für Zeitraum: ${queryStartDate} bis ${queryEndDate}`);
 
         const promises = [
-            api.get('/statistics/detailed-counts').catch(err => {
-                console.error("API Fehler: /statistics/detailed-counts:", err.response?.data || err.message);
-                errorsOccurred.push('Kennzahlen');
-                return { data: null };
-            }),
-            api.get('/statistics/today-upcoming-appointments').catch(err => {
-                console.error("API Fehler: /statistics/today-upcoming-appointments:", err.response?.data || err.message);
-                errorsOccurred.push('Tägliche Termine');
-                return { data: [] };
-            }),
-            api.get(`/statistics/by-day-of-week?date=${todayForAPI}`).catch(err => {
-                console.error("API Fehler: /statistics/by-day-of-week:", err.response?.data || err.message);
-                errorsOccurred.push('Wochentags-Statistik');
-                return { data: null };
-            }),
-            api.get(`/statistics/by-service?date=${todayForAPI}&topN=5`).catch(err => {
-                console.error("API Fehler: /statistics/by-service:", err.response?.data || err.message);
-                errorsOccurred.push('Service-Statistik');
-                return { data: null };
-            })
+            api.get('/statistics/detailed-counts', { params: { startDate: queryStartDate, endDate: queryEndDate } }),
+            api.get('/statistics/today-upcoming-appointments'),
+            api.get(`/statistics/by-day-of-week`, { params: { startDate: queryStartDate, endDate: queryEndDate } }), // Backend muss das unterstützen
+            api.get(`/statistics/by-service`, { params: { startDate: queryStartDate, endDate: queryEndDate, topN: 5 } }) // Backend muss das unterstützen
         ];
 
         try {
+            const responses = await Promise.allSettled(promises);
             const [
                 detailedStatsRes,
                 dailyAppointmentsRes,
                 appByDayRes,
                 appByServiceRes
-            ] = await Promise.all(promises);
+            ] = responses;
 
-            console.log("[AdminDashboardStats] API Responses:", { detailedStatsRes, dailyAppointmentsRes, appByDayRes, appByServiceRes });
-
-            if (detailedStatsRes && detailedStatsRes.data) {
-                setDetailedStats(detailedStatsRes.data);
-                console.log("[AdminDashboardStats] Verarbeitete Detailed Stats:", detailedStatsRes.data);
+            if (detailedStatsRes.status === 'fulfilled' && detailedStatsRes.value.data) {
+                setDetailedStats(detailedStatsRes.value.data);
             } else {
                 setDetailedStats(null);
+                setError(prev => prev ? `${prev}, Kennzahlen` : 'Fehler beim Laden: Kennzahlen');
             }
 
-            if (dailyAppointmentsRes && dailyAppointmentsRes.data && Array.isArray(dailyAppointmentsRes.data)) {
-                console.log("[AdminDashboardStats] Verarbeitete Rohdaten tägliche Termine:", dailyAppointmentsRes.data);
-                setDailyAppointments(dailyAppointmentsRes.data.map(dto => {
+            if (dailyAppointmentsRes.status === 'fulfilled' && dailyAppointmentsRes.value.data) {
+                setDailyAppointments(dailyAppointmentsRes.value.data.map(dto => {
                     let reconstructedStartTime;
                     if (dto.appointmentDate && dto.startTime) {
                         const datePart = String(dto.appointmentDate);
@@ -94,164 +153,184 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                             : String(dto.startTime).substring(0,5);
                         reconstructedStartTime = `${datePart}T${timePart}:00`;
                     } else {
-                        console.warn("[AdminDashboardStats] Unvollständige Datums/Zeit-Info für DTO:", dto);
                         reconstructedStartTime = new Date().toISOString();
                     }
                     return { ...dto, reconstructedStartTime };
                 }));
-            } else {
-                console.log("[AdminDashboardStats] Keine täglichen Termine empfangen oder Fehlerhafte Datenstruktur.");
-                setDailyAppointments([]);
             }
 
-            if (appByDayRes && appByDayRes.data && Array.isArray(appByDayRes.data)) {
-                console.log("[AdminDashboardStats] Verarbeitete Wochentags-Statistik Rohdaten:", appByDayRes.data);
+            if (appByDayRes.status === 'fulfilled' && appByDayRes.value.data) {
                 setAppointmentsByDayData({
-                    labels: appByDayRes.data.map(d => d.dayName ? d.dayName.substring(0, 2) : "Unb."),
-                    data: appByDayRes.data.map(d => d.appointmentCount || 0),
+                    labels: appByDayRes.value.data.map(d => d.dayName ? d.dayName.substring(0, 2) : "Unb."),
+                    data: appByDayRes.value.data.map(d => d.appointmentCount || 0),
                 });
             } else {
                 setAppointmentsByDayData({ labels: [], data: [] });
             }
 
-            if (appByServiceRes && appByServiceRes.data && Array.isArray(appByServiceRes.data)) {
-                console.log("[AdminDashboardStats] Verarbeitete Service-Statistik Rohdaten:", appByServiceRes.data);
+            if (appByServiceRes.status === 'fulfilled' && appByServiceRes.value.data) {
                 setAppointmentsByServiceData({
-                    labels: appByServiceRes.data.map(s => s.serviceName || "Unbekannt"),
-                    data: appByServiceRes.data.map(s => s.appointmentCount || 0),
+                    labels: appByServiceRes.value.data.map(s => s.serviceName || "Unbekannt"),
+                    data: appByServiceRes.value.data.map(s => s.appointmentCount || 0),
                 });
             } else {
                 setAppointmentsByServiceData({ labels: [], data: [] });
             }
 
         } catch (generalError) {
-            console.error("[AdminDashboardStats] Allgemeiner Fehler beim Verarbeiten der Statistikdaten:", generalError);
-            errorsOccurred.push('Allgemeiner Datenverarbeitungsfehler.');
+            setError('Ein allgemeiner Fehler ist aufgetreten.');
+        } finally {
+            setIsLoading(false);
         }
-
-        if (errorsOccurred.length > 0) {
-            setError(`Fehler beim Laden: ${errorsOccurred.join(', ')}.`);
-        }
-        setIsLoading(false);
-        console.log("[AdminDashboardStats] fetchData abgeschlossen. Aktueller Error State:", error);
-        console.log("[AdminDashboardStats] Aktuelle Chart Daten (Tag):", appointmentsByDayData);
-        console.log("[AdminDashboardStats] Aktuelle Chart Daten (Service):", appointmentsByServiceData);
-        console.log("[AdminDashboardStats] Aktuelle Tägliche Termine:", dailyAppointments);
-
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Entferne Abhängigkeiten, um Endlosschleife zu vermeiden, wenn error/chartData sich ändern
+    }, []); // Leeres Array, da Abhängigkeiten in handlePeriodChange etc. verwaltet werden
 
     useEffect(() => {
-        fetchData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [onAppointmentAction]);
+        if (selectedPeriod === PERIOD_OPTIONS.CUSTOM) {
+            if (customStartDate && customEndDate && customEndDate >= customStartDate) {
+                fetchData(selectedPeriod, customStartDate, customEndDate);
+            }
+        } else {
+            fetchData(selectedPeriod);
+        }
+    }, [selectedPeriod, customStartDate, customEndDate, onAppointmentAction, fetchData]);
+
+
+    const handlePeriodChange = (period) => {
+        setSelectedPeriod(period);
+        if (period === PERIOD_OPTIONS.CUSTOM) {
+            setShowCustomDatePickers(true);
+        } else {
+            setShowCustomDatePickers(false);
+            setCustomStartDate(null);
+            setCustomEndDate(null);
+        }
+    };
 
     const handleViewDetails = async (appointmentDTO) => {
         if (!appointmentDTO || !appointmentDTO.appointmentId) {
-            setError("Fehler: Details für diesen Termin konnten nicht geladen werden (fehlende ID).");
+            setError("Details für diesen Termin konnten nicht geladen werden (fehlende ID).");
             return;
         }
         setIsLoadingModalAppointment(true);
         try {
-            // KORREKTUR HIER: Entferne das doppelte /api
             const response = await api.get(`/appointments/${appointmentDTO.appointmentId}`);
-            if (response.data) {
-                setSelectedAppointmentForEdit(response.data);
-            } else {
-                throw new Error("Keine vollständigen Termindaten vom Server erhalten.");
-            }
+            setSelectedAppointmentForEdit(response.data || null);
         } catch (err) {
-            console.error(`Fehler beim Laden der Termindetails für ID ${appointmentDTO.appointmentId}:`, err);
             setError(`Details für Termin konnten nicht geladen werden. Grund: ${err.response?.data?.message || err.message}`);
             setSelectedAppointmentForEdit(null);
         } finally {
             setIsLoadingModalAppointment(false);
         }
     };
-
     const handleCloseEditModal = () => setSelectedAppointmentForEdit(null);
-
     const handleAppointmentUpdatedFromModal = () => {
         handleCloseEditModal();
         if (onAppointmentAction) onAppointmentAction();
     };
 
     const formatCurrency = (value) => {
-        if (value == null || isNaN(parseFloat(value))) return 'N/A';
-        return `${parseFloat(value).toFixed(2)} €`;
+        if (value == null || isNaN(parseFloat(value))) return '0,00 €';
+        return `${parseFloat(value).toFixed(2).replace('.', ',')} €`;
+    };
+
+    const renderComparison = (changePercentage, previousValue) => {
+        const hasPreviousData = previousValue !== null && previousValue !== undefined;
+        let changeText = 'vs. Vorp.: N/A';
+        let icon = faEquals;
+        let colorClass = 'neutral';
+
+        if(hasPreviousData){
+            if (changePercentage === null || changePercentage === undefined) {
+                changeText = 'vs. 0';
+                icon = faArrowUp;
+                colorClass = 'positive';
+            } else {
+                const isPositive = changePercentage > 0;
+                const isNegative = changePercentage < 0;
+                icon = isPositive ? faArrowUp : (isNegative ? faArrowDown : faEquals);
+                colorClass = isPositive ? 'positive' : (isNegative ? 'negative' : 'neutral');
+                changeText = `${changePercentage.toFixed(1).replace('.', ',')}%`;
+            }
+        }
+
+        return (
+            <span className={`comparison-data ${colorClass}`}>
+                <FontAwesomeIcon icon={icon} /> {changeText}
+            </span>
+        );
     };
 
     const renderStatCards = () => {
-        if (!detailedStats && isLoading) {
-            return Array(7).fill(null).map((_, i) => (
+        if (!detailedStats && isLoading && selectedPeriod !== PERIOD_OPTIONS.CUSTOM) {
+            return Array(6).fill(null).map((_, i) => (
                 <div key={`skeleton-stat-${i}`} className="stat-card is-loading-skeleton">
                     <div className="stat-card-header-skeleton"></div>
                     <div className="stat-value-skeleton"></div>
+                    <div className="stat-comparison-skeleton"></div>
                 </div>
             ));
         }
-        if (!detailedStats) return <p className="stat-card-no-data">Kennzahlen nicht verfügbar.</p>;
+        if (!detailedStats) return <p className="stat-card-no-data">Keine Kennzahlen verfügbar für den gewählten Zeitraum.</p>;
+
+        const avgRevenue = (detailedStats.totalAppointmentsInPeriod > 0)
+            ? (parseFloat(detailedStats.totalRevenueInPeriod) / detailedStats.totalAppointmentsInPeriod)
+            : 0;
+
+        const mainKpis = [
+            {
+                label: "Termine",
+                value: detailedStats.totalAppointmentsInPeriod ?? 'N/A',
+                icon: faCalendarCheck,
+                comparison: renderComparison(detailedStats.appointmentCountChangePercentage, detailedStats.previousPeriodTotalAppointments),
+            },
+            {
+                label: "Umsatz",
+                value: formatCurrency(detailedStats.totalRevenueInPeriod),
+                icon: faEuroSign,
+                comparison: renderComparison(detailedStats.revenueChangePercentage, detailedStats.previousPeriodTotalRevenue),
+            },
+            {
+                label: "Ø-Umsatz / Termin",
+                value: formatCurrency(avgRevenue),
+                icon: faCoins,
+            }
+        ];
+
+        const additionalKpis = [
+            { label: "Termine Heute", value: detailedStats.todayCount ?? 'N/A', icon: faCalendarCheck },
+            { label: "Umsatz Heute", value: formatCurrency(detailedStats.revenueToday ?? 0), icon: faEuroSign },
+            { label: "Bevorstehend", value: detailedStats.totalUpcomingCount ?? 'N/A', icon: faClockFour },
+        ];
+
 
         return (
             <>
-                <div className="stat-card">
-                    <div className="stat-card-header">
-                        <FontAwesomeIcon icon={faCalendarCheck} className="stat-icon today" />
-                        <span className="stat-label">Termine Heute</span>
+                {mainKpis.map(kpi => (
+                    <div key={kpi.label} className="stat-card">
+                        <div className="stat-card-header">
+                            <FontAwesomeIcon icon={kpi.icon} className="stat-icon" />
+                            <span className="stat-label">{kpi.label}</span>
+                        </div>
+                        <div className="stat-value">{kpi.value}</div>
+                        {kpi.comparison && <div className="stat-comparison">{kpi.comparison}</div>}
                     </div>
-                    <div className="stat-value">{detailedStats.todayCount}</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-card-header">
-                        <FontAwesomeIcon icon={faCalendarWeek} className="stat-icon week" />
-                        <span className="stat-label">Termine diese Woche</span>
+                ))}
+                {additionalKpis.map(kpi => (
+                    <div key={kpi.label} className="stat-card small-kpi">
+                        <div className="stat-card-header">
+                            <FontAwesomeIcon icon={kpi.icon} className="stat-icon" />
+                            <span className="stat-label">{kpi.label}</span>
+                        </div>
+                        <div className="stat-value">{kpi.value}</div>
                     </div>
-                    <div className="stat-value">{detailedStats.thisWeekCount}</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-card-header">
-                        <FontAwesomeIcon icon={faChartSimple} className="stat-icon month" />
-                        <span className="stat-label">Termine dieser Monat</span>
-                    </div>
-                    <div className="stat-value">{detailedStats.thisMonthCount}</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-card-header">
-                        <FontAwesomeIcon icon={faEuroSign} className="stat-icon revenue" />
-                        <span className="stat-label">Umsatz Heute</span>
-                    </div>
-                    <div className="stat-value">{formatCurrency(detailedStats.revenueToday)}</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-card-header">
-                        <FontAwesomeIcon icon={faEuroSign} className="stat-icon revenue" />
-                        <span className="stat-label">Umsatz diese Woche</span>
-                    </div>
-                    <div className="stat-value">{formatCurrency(detailedStats.revenueThisWeek)}</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-card-header">
-                        <FontAwesomeIcon icon={faEuroSign} className="stat-icon revenue" />
-                        <span className="stat-label">Umsatz dieser Monat</span>
-                    </div>
-                    <div className="stat-value">{formatCurrency(detailedStats.revenueThisMonth)}</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-card-header">
-                        <FontAwesomeIcon icon={faClockFour} className="stat-icon upcoming" />
-                        <span className="stat-label">Alle Bevorstehenden</span>
-                    </div>
-                    <div className="stat-value">{detailedStats.totalUpcomingCount}</div>
-                </div>
+                ))}
             </>
         );
     };
 
-    const showInitialLoader = isLoading && !detailedStats && dailyAppointments.length === 0 &&
-        (!appointmentsByDayData || appointmentsByDayData.labels.length === 0) &&
-        (!appointmentsByServiceData || appointmentsByServiceData.labels.length === 0);
+    const showInitialLoader = isLoading && !detailedStats;
 
-    if (showInitialLoader) {
+    if (showInitialLoader && !(selectedPeriod === PERIOD_OPTIONS.CUSTOM && (!customStartDate || !customEndDate))) {
         return (
             <div className="loading-message-stats">
                 <FontAwesomeIcon icon={faSpinner} spin size="2x" />
@@ -260,52 +339,105 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         );
     }
 
-    if (error && !isLoading) {
-        return (
-            <div className="stats-error-message">
-                <FontAwesomeIcon icon={faExclamationCircle} size="lg" />
-                <p>Fehler beim Laden der Dashboard-Daten:</p>
-                <pre>{error}</pre>
-            </div>
-        );
-    }
-
     return (
         <div className="admin-dashboard-stats">
-            {(isLoading && !selectedAppointmentForEdit) && (
+            <div className="stats-period-filter-bar">
+                <div className="period-buttons">
+                    {Object.entries(PERIOD_LABELS).map(([key, label]) => (
+                        key !== PERIOD_OPTIONS.CUSTOM &&
+                        <button key={key} onClick={() => handlePeriodChange(key)} className={selectedPeriod === key ? 'active' : ''}>
+                            {label}
+                        </button>
+                    ))}
+                    <button onClick={() => handlePeriodChange(PERIOD_OPTIONS.CUSTOM)} className={selectedPeriod === PERIOD_OPTIONS.CUSTOM ? 'active' : ''}>
+                        <FontAwesomeIcon icon={faCalendarAlt} /> {PERIOD_LABELS.CUSTOM}
+                    </button>
+                </div>
+                {showCustomDatePickers && (
+                    <div className="custom-date-pickers">
+                        <DatePicker
+                            selected={customStartDate}
+                            onChange={(date) => setCustomStartDate(date)}
+                            selectsStart
+                            startDate={customStartDate}
+                            endDate={customEndDate}
+                            dateFormat="dd.MM.yyyy"
+                            locale="de"
+                            placeholderText="Startdatum"
+                            className="date-picker-input"
+                            maxDate={addMonths(new Date(), 6)}
+                        />
+                        <DatePicker
+                            selected={customEndDate}
+                            onChange={(date) => setCustomEndDate(date)}
+                            selectsEnd
+                            startDate={customStartDate}
+                            endDate={customEndDate}
+                            minDate={customStartDate}
+                            maxDate={addMonths(new Date(), 6)}
+                            dateFormat="dd.MM.yyyy"
+                            locale="de"
+                            placeholderText="Enddatum"
+                            className="date-picker-input"
+                        />
+                    </div>
+                )}
+            </div>
+
+            {(isLoading && !showInitialLoader) && (
                 <div className="loading-indicator-top">
                     <FontAwesomeIcon icon={faSpinner} spin /> Daten werden aktualisiert...
                 </div>
+            )}
+            {error && (
+                <p className="form-message error mb-4" style={{ marginBottom: '1rem' }}>
+                    <FontAwesomeIcon icon={faExclamationCircle} style={{ marginRight: '0.5rem' }} /> {error}
+                </p>
             )}
 
             <div className="stats-main-layout">
                 <div className="stats-overview-cards-wrapper">
                     <h3 className="stats-section-title">
-                        <FontAwesomeIcon icon={faChartLine} /> Kennzahlen
+                        <span><FontAwesomeIcon icon={faChartLine} /> Kennzahlen</span>
+                        {detailedStats && detailedStats.periodStartDateFormatted && (
+                            <span className="stats-period-display">
+                                ({detailedStats.periodStartDateFormatted} - {detailedStats.periodEndDateFormatted})
+                             </span>
+                        )}
                     </h3>
-                    {(!isLoading && !detailedStats && !error) && <p className="stat-card-no-data">Keine Kennzahlen verfügbar.</p>}
-                    {detailedStats && <div className="stats-overview-cards">{renderStatCards()}</div>}
+                    <div className="stats-overview-cards">{renderStatCards()}</div>
                 </div>
 
                 <div className="charts-section-wrapper">
                     <h3 className="stats-section-title">
-                        <FontAwesomeIcon icon={faChartPie} /> Visuelle Analysen
+                        <span><FontAwesomeIcon icon={faChartPie} /> Visuelle Analysen</span>
+                        {detailedStats && (
+                            <span className="stats-period-display">
+                                ({PERIOD_LABELS[selectedPeriod]}{selectedPeriod === PERIOD_OPTIONS.CUSTOM && detailedStats.periodStartDateFormatted ? `: ${detailedStats.periodStartDateFormatted} - ${detailedStats.periodEndDateFormatted}` : ''})
+                             </span>
+                        )}
                     </h3>
                     <div className="charts-grid">
                         <div className="chart-card">
-                            {isLoading && (!appointmentsByDayData || appointmentsByDayData.labels.length === 0) ? <div className="chart-loading-placeholder"><FontAwesomeIcon icon={faSpinner} spin /></div> :
-                                (appointmentsByDayData && appointmentsByDayData.labels.length > 0) ? <AppointmentsByDayChart chartData={appointmentsByDayData} /> : <p className="chart-no-data-message">Keine Wochentagsdaten für Chart.</p>}
+                            <AppointmentsByDayRechart
+                                chartData={appointmentsByDayData}
+                                title={`Terminverteilung`}
+                            />
                         </div>
                         <div className="chart-card">
-                            {isLoading && (!appointmentsByServiceData || appointmentsByServiceData.labels.length === 0) ? <div className="chart-loading-placeholder"><FontAwesomeIcon icon={faSpinner} spin /></div> :
-                                (appointmentsByServiceData && appointmentsByServiceData.labels.length > 0) ? <AppointmentsByServiceChart chartData={appointmentsByServiceData} /> : <p className="chart-no-data-message">Keine Servicedaten für Chart.</p>}
+                            <AppointmentsByServiceRechart
+                                chartData={appointmentsByServiceData}
+                                title={`Top 5 Dienstleistungen`}
+                            />
                         </div>
                     </div>
                 </div>
             </div>
 
             <div className="daily-appointments-section">
-                <h3 className="daily-appointments-heading">Heutige & Nächste Termine</h3>
+                <h3 className="daily-appointments-heading">
+                    <FontAwesomeIcon icon={faListAlt} /> Heutige & Nächste Termine
+                </h3>
                 {isLoading && dailyAppointments.length === 0 ? (
                     <div className="loading-message-stats small-list-loader">
                         <FontAwesomeIcon icon={faSpinner} spin /> Termine werden geladen...
@@ -314,21 +446,17 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                     <ul className="daily-appointments-list">
                         {dailyAppointments.map(apt => {
                             let displayTime = 'N/A';
-                            if (apt.appointmentDate && apt.startTime) {
-                                const timeStr = typeof apt.startTime === 'object'
-                                    ? `${String(apt.startTime.hour).padStart(2, '0')}:${String(apt.startTime.minute).padStart(2, '0')}`
-                                    : String(apt.startTime).substring(0,5);
-                                const dateToParse = `${String(apt.appointmentDate)}T${timeStr}`;
-                                if (isValidDate(parseISO(dateToParse))) {
-                                    displayTime = formatDateFns(parseISO(dateToParse), 'HH:mm');
-                                } else {
-                                    console.warn("[AdminDashboardStats] Ungültiges Datum für Formatierung in Terminliste:", dateToParse, "Original DTO:", apt);
-                                    displayTime = timeStr;
-                                }
+                            if (apt.reconstructedStartTime && isValidDate(parseISO(apt.reconstructedStartTime))) {
+                                displayTime = formatDateFns(parseISO(apt.reconstructedStartTime), 'HH:mm');
                             } else if (apt.startTime) {
                                 displayTime = typeof apt.startTime === 'object'
                                     ? `${String(apt.startTime.hour).padStart(2, '0')}:${String(apt.startTime.minute).padStart(2, '0')}`
                                     : String(apt.startTime).substring(0,5);
+                            }
+
+                            let statusClass = `status-${apt.status.toLowerCase().replace(/\./g, '')}`;
+                            if (apt.status !== "Heute" && apt.status !== "Morgen") {
+                                statusClass = "status-datum";
                             }
 
                             return (
@@ -339,6 +467,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                                     role="button"
                                     tabIndex={0}
                                     onKeyPress={(e) => { if (e.key === 'Enter' || e.key === ' ') handleViewDetails(apt); }}
+                                    aria-label={`Termin ansehen: ${apt.serviceName} mit ${apt.customerFirstName} ${apt.customerLastName} um ${displayTime} Uhr, Status: ${apt.status}`}
                                 >
                                     {isLoadingModalAppointment && selectedAppointmentForEdit?.id === apt.appointmentId && <FontAwesomeIcon icon={faSpinner} spin className="item-loader-icon" />}
                                     <span className="appointment-time">{displayTime} Uhr</span>
@@ -346,7 +475,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                                         <span className="appointment-service">{apt.serviceName}</span>
                                         <span className="appointment-customer">{apt.customerFirstName} {apt.customerLastName}</span>
                                     </div>
-                                    <span className={`appointment-status-tag status-${apt.status.toLowerCase().replace(/\./g, '')}`}>{apt.status}</span>
+                                    <span className={`appointment-status-tag ${statusClass}`}>{apt.status}</span>
                                 </li>
                             );
                         })}

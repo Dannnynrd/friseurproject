@@ -10,20 +10,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +32,8 @@ public class StatisticsService {
 
     private static final Logger logger = LoggerFactory.getLogger(StatisticsService.class);
     private final AppointmentRepository appointmentRepository;
+    private final DateTimeFormatter GERMAN_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.GERMAN);
+
 
     @Autowired
     public StatisticsService(AppointmentRepository appointmentRepository) {
@@ -38,33 +41,102 @@ public class StatisticsService {
     }
 
     public DetailedAppointmentStatsDTO getDetailedAppointmentStats() {
+        LocalDate today = LocalDate.now();
+        LocalDate startOfMonth = today.withDayOfMonth(1);
+        LocalDate endOfMonth = today.with(TemporalAdjusters.lastDayOfMonth());
+        return getDetailedAppointmentStats(startOfMonth, endOfMonth);
+    }
+
+
+    public DetailedAppointmentStatsDTO getDetailedAppointmentStats(LocalDate startDate, LocalDate endDate) {
+        logger.info("Berechne detaillierte Statistiken für Zeitraum: {} bis {}", startDate, endDate);
+
+        LocalDateTime periodStartDateTime = startDate.atStartOfDay();
+        LocalDateTime periodEndDateTime = endDate.atTime(LocalTime.MAX);
+
+        long totalAppointmentsInPeriod = appointmentRepository.countByStartTimeBetween(periodStartDateTime, periodEndDateTime);
+        BigDecimal totalRevenueInPeriod = calculateRevenueForPeriod(periodStartDateTime, periodEndDateTime);
+
+        long daysInPeriod = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        LocalDate previousPeriodStartDate = startDate.minusDays(daysInPeriod);
+        LocalDate previousPeriodEndDate = startDate.minusDays(1);
+
+        LocalDateTime previousPeriodStartDateTime = previousPeriodStartDate.atStartOfDay();
+        LocalDateTime previousPeriodEndDateTime = previousPeriodEndDate.atTime(LocalTime.MAX);
+
+        logger.info("Vorperiode für Vergleich: {} bis {}", previousPeriodStartDate, previousPeriodEndDate);
+
+        Long previousPeriodTotalAppointments = appointmentRepository.countByStartTimeBetween(previousPeriodStartDateTime, previousPeriodEndDateTime);
+        BigDecimal previousPeriodTotalRevenue = calculateRevenueForPeriod(previousPeriodStartDateTime, previousPeriodEndDateTime);
+
+        Double appointmentCountChangePercentage = calculatePercentageChange(
+                BigDecimal.valueOf(totalAppointmentsInPeriod),
+                BigDecimal.valueOf(previousPeriodTotalAppointments)
+        );
+        Double revenueChangePercentage = calculatePercentageChange(
+                totalRevenueInPeriod,
+                previousPeriodTotalRevenue
+        );
+
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = LocalDate.now();
-
         LocalDateTime startOfToday = today.atStartOfDay();
         LocalDateTime endOfToday = today.atTime(LocalTime.MAX);
+        WeekFields weekFields = WeekFields.of(Locale.GERMANY); // Montag als erster Tag der Woche
+        LocalDateTime startOfWeek = today.with(weekFields.dayOfWeek(), 1).atStartOfDay(); // Erster Tag der aktuellen Woche (Montag)
+        LocalDateTime endOfWeek = today.with(weekFields.dayOfWeek(), 7).atTime(LocalTime.MAX); // Letzter Tag der aktuellen Woche (Sonntag)
 
-        WeekFields weekFields = WeekFields.of(Locale.GERMANY);
-        LocalDateTime startOfWeek = today.with(weekFields.dayOfWeek(), 1).atStartOfDay();
-        LocalDateTime endOfWeek = today.with(weekFields.dayOfWeek(), 7).atTime(LocalTime.MAX);
-
-        LocalDateTime startOfMonth = today.withDayOfMonth(1).atStartOfDay();
-        LocalDateTime endOfMonth = today.with(TemporalAdjusters.lastDayOfMonth()).atTime(LocalTime.MAX);
+        LocalDateTime startOfMonthLDT = today.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endOfMonthLDT = today.with(TemporalAdjusters.lastDayOfMonth()).atTime(LocalTime.MAX);
 
         long todayCount = appointmentRepository.countByStartTimeBetween(startOfToday, endOfToday);
         long thisWeekCount = appointmentRepository.countByStartTimeBetween(startOfWeek, endOfWeek);
-        long thisMonthCount = appointmentRepository.countByStartTimeBetween(startOfMonth, endOfMonth);
+        long thisMonthCount = appointmentRepository.countByStartTimeBetween(startOfMonthLDT, endOfMonthLDT);
         long totalUpcomingCount = appointmentRepository.countByStartTimeAfter(now);
 
         BigDecimal revenueToday = calculateRevenueForPeriod(startOfToday, endOfToday);
         BigDecimal revenueThisWeek = calculateRevenueForPeriod(startOfWeek, endOfWeek);
-        BigDecimal revenueThisMonth = calculateRevenueForPeriod(startOfMonth, endOfMonth);
+        BigDecimal revenueThisMonth = calculateRevenueForPeriod(startOfMonthLDT, endOfMonthLDT);
 
         return new DetailedAppointmentStatsDTO(
-                todayCount, thisWeekCount, thisMonthCount, totalUpcomingCount,
-                revenueToday, revenueThisWeek, revenueThisMonth
+                totalAppointmentsInPeriod,
+                totalRevenueInPeriod,
+                startDate.format(GERMAN_DATE_FORMATTER),
+                endDate.format(GERMAN_DATE_FORMATTER),
+                previousPeriodTotalAppointments,
+                previousPeriodTotalRevenue,
+                appointmentCountChangePercentage,
+                revenueChangePercentage,
+                todayCount,
+                thisWeekCount,
+                thisMonthCount,
+                totalUpcomingCount,
+                revenueToday,
+                revenueThisWeek,
+                revenueThisMonth
         );
     }
+
+    private Double calculatePercentageChange(BigDecimal currentValue, BigDecimal previousValue) {
+        if (previousValue == null) { // Wenn es keine Vorperiode gab (z.B. allererste Daten)
+            if (currentValue == null || currentValue.compareTo(BigDecimal.ZERO) == 0) return 0.0; // Keine Änderung
+            return null; // Kann nicht sinnvoll berechnet werden (oder als "Neu" interpretieren)
+        }
+        if (previousValue.compareTo(BigDecimal.ZERO) == 0) {
+            if (currentValue == null || currentValue.compareTo(BigDecimal.ZERO) == 0) {
+                return 0.0;
+            }
+            // Wachstum von 0 auf X ist im Grunde "unendlich", aber wir geben einen hohen Wert oder null zurück
+            // Für eine Anzeige wie "+X (von 0)" wäre eine andere Logik im Frontend nötig
+            return null;
+        }
+        if (currentValue == null) {
+            currentValue = BigDecimal.ZERO;
+        }
+        BigDecimal difference = currentValue.subtract(previousValue);
+        return difference.divide(previousValue, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue();
+    }
+
 
     private BigDecimal calculateRevenueForPeriod(LocalDateTime start, LocalDateTime end) {
         List<Appointment> appointmentsInPeriod = appointmentRepository.findByStartTimeBetween(start, end);
@@ -78,17 +150,10 @@ public class StatisticsService {
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = now.toLocalDate();
         LocalDateTime todayStart = today.atStartOfDay();
-        LocalDateTime upcomingEndRange = today.plusDays(2).atTime(LocalTime.MAX); // Termine für heute und die nächsten 2 Tage
+        LocalDateTime upcomingEndRange = today.plusDays(2).atTime(LocalTime.MAX); // Heute, Morgen, Übermorgen
 
         logger.info("Suche tägliche Termine von {} bis {}", todayStart, upcomingEndRange);
         List<Appointment> appointments = appointmentRepository.findUpcomingAppointmentsForNextDays(todayStart, upcomingEndRange);
-        logger.info("{} tägliche Termine gefunden.", appointments.size());
-        if (appointments.isEmpty()) {
-            logger.info("Keine Termine im Bereich {} bis {} in der Datenbank gefunden.", todayStart, upcomingEndRange);
-        } else {
-            appointments.forEach(apt -> logger.debug("Gefundener Termin: ID {}, Startzeit {}, Service: {}", apt.getId(), apt.getStartTime(), (apt.getService() != null ? apt.getService().getName() : "KEIN SERVICE")));
-        }
-
 
         return appointments.stream()
                 .map(apt -> {
@@ -99,11 +164,11 @@ public class StatisticsService {
                     } else if (appointmentDate.isEqual(today.plusDays(1))) {
                         status = "Morgen";
                     } else {
-                        status = appointmentDate.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM."));
+                        status = appointmentDate.format(DateTimeFormatter.ofPattern("dd.MM."));
                     }
                     return new DailyAppointmentsDTO(
                             apt.getId(),
-                            appointmentDate, // Das tatsächliche Datum des Termins
+                            appointmentDate,
                             apt.getStartTime().toLocalTime(),
                             apt.getService() != null ? apt.getService().getName() : "N/A",
                             apt.getCustomer() != null ? apt.getCustomer().getFirstName() : "N/A",
@@ -114,13 +179,13 @@ public class StatisticsService {
                 .collect(Collectors.toList());
     }
 
-    public List<AppointmentsPerDayOfWeekDTO> getAppointmentsPerDayOfWeek(LocalDate forDate) {
-        WeekFields weekFields = WeekFields.of(Locale.GERMANY);
-        LocalDateTime startOfWeek = forDate.with(weekFields.dayOfWeek(), 1).atStartOfDay();
-        LocalDateTime endOfWeek = forDate.with(weekFields.dayOfWeek(), 7).atTime(LocalTime.MAX);
+    // ANGEPASST: Akzeptiert startDate und endDate
+    public List<AppointmentsPerDayOfWeekDTO> getAppointmentsPerDayOfWeek(LocalDate startDate, LocalDate endDate) {
+        LocalDateTime periodStartDateTime = startDate.atStartOfDay();
+        LocalDateTime periodEndDateTime = endDate.atTime(LocalTime.MAX);
 
-        logger.info("Suche Termine pro Wochentag von {} bis {}", startOfWeek, endOfWeek);
-        List<Map<String, Object>> results = appointmentRepository.countAppointmentsPerDayOfWeekBetweenNative(startOfWeek, endOfWeek);
+        logger.info("Suche Termine pro Wochentag von {} bis {}", periodStartDateTime, periodEndDateTime);
+        List<Map<String, Object>> results = appointmentRepository.countAppointmentsPerDayOfWeekBetweenNative(periodStartDateTime, periodEndDateTime);
         logger.info("Ergebnis für Termine pro Wochentag (roh aus DB): {}", results);
 
         List<AppointmentsPerDayOfWeekDTO> dailyStats = new ArrayList<>();
@@ -134,7 +199,7 @@ public class StatisticsService {
         }
 
         results.forEach(result -> {
-            Object dayOfWeekFromDbObj = result.get("DAYOFWEEK");
+            Object dayOfWeekFromDbObj = result.get("DAYOFWEEK"); // H2 gibt Integer zurück
             if (dayOfWeekFromDbObj == null) dayOfWeekFromDbObj = result.get("dayofweek");
 
             Object countFromDbObj = result.get("COUNT");
@@ -154,10 +219,11 @@ public class StatisticsService {
                 return;
             }
 
+            // Konvertierung von H2 DAY_OF_WEEK (Sunday=1, ..., Saturday=7) zu Java DayOfWeek (MONDAY=1, ..., SUNDAY=7)
             DayOfWeek actualDayOfWeek;
-            if (dayOfWeekFromDb == 1) {
+            if (dayOfWeekFromDb == 1) { // H2 Sonntag
                 actualDayOfWeek = DayOfWeek.SUNDAY;
-            } else {
+            } else { // H2 Montag (2) bis Samstag (7) -> Java Montag (1) bis Samstag (6)
                 actualDayOfWeek = DayOfWeek.of(dayOfWeekFromDb - 1);
             }
 
@@ -174,12 +240,13 @@ public class StatisticsService {
     }
 
 
-    public List<AppointmentsPerServiceDTO> getAppointmentsPerService(LocalDate forDate, int topN) {
-        LocalDateTime startOfMonth = forDate.withDayOfMonth(1).atStartOfDay();
-        LocalDateTime endOfMonth = forDate.with(TemporalAdjusters.lastDayOfMonth()).atTime(LocalTime.MAX);
+    // ANGEPASST: Akzeptiert startDate und endDate
+    public List<AppointmentsPerServiceDTO> getAppointmentsPerService(LocalDate startDate, LocalDate endDate, int topN) {
+        LocalDateTime periodStartDateTime = startDate.atStartOfDay();
+        LocalDateTime periodEndDateTime = endDate.atTime(LocalTime.MAX);
 
-        logger.info("Suche Termine pro Service von {} bis {}", startOfMonth, endOfMonth);
-        List<Map<String, Object>> results = appointmentRepository.countAppointmentsPerServiceBetween(startOfMonth, endOfMonth);
+        logger.info("Suche Termine pro Service von {} bis {}", periodStartDateTime, periodEndDateTime);
+        List<Map<String, Object>> results = appointmentRepository.countAppointmentsPerServiceBetween(periodStartDateTime, periodEndDateTime);
         logger.info("Ergebnis für Termine pro Service (roh aus DB): {}", results);
 
         if (results == null || results.isEmpty()) {
@@ -190,43 +257,28 @@ public class StatisticsService {
         long totalAppointmentsInPeriod = results.stream().mapToLong(r -> {
             Object countObj = r.get("COUNT");
             if (countObj == null) countObj = r.get("count");
-
-            if (countObj instanceof Number) {
-                return ((Number) countObj).longValue();
-            }
-            logger.warn("Unerwarteter Typ oder fehlender Wert für COUNT in getAppointmentsPerService (Summe): {} für Ergebnis-Map: {}. Vorhandene Schlüssel: {}",
-                    (countObj != null ? countObj.getClass().getName() : "null"), r, r.keySet());
+            if (countObj instanceof Number) return ((Number) countObj).longValue();
             return 0L;
         }).sum();
         logger.info("Gesamtzahl Termine im Zeitraum für Service-Statistik: {}", totalAppointmentsInPeriod);
 
         return results.stream()
+                .sorted((r1, r2) -> {
+                    long count1 = ((Number) (r1.get("COUNT") != null ? r1.get("COUNT") : r1.getOrDefault("count", 0L))).longValue();
+                    long count2 = ((Number) (r2.get("COUNT") != null ? r2.get("COUNT") : r2.getOrDefault("count", 0L))).longValue();
+                    return Long.compare(count2, count1);
+                })
                 .limit(topN)
                 .map(result -> {
                     Object serviceNameObj = result.get("SERVICENAME");
                     if (serviceNameObj == null) serviceNameObj = result.get("serviceName");
-                    if (serviceNameObj == null) serviceNameObj = result.get("NAME"); // Weiterer Fallback für s.name
+                    if (serviceNameObj == null) serviceNameObj = result.get("NAME");
 
                     Object countObj = result.get("COUNT");
                     if (countObj == null) countObj = result.get("count");
 
-                    String serviceName = "Unbekannt";
-                    if (serviceNameObj instanceof String) {
-                        serviceName = (String) serviceNameObj;
-                    } else if (serviceNameObj != null) {
-                        logger.warn("Unerwarteter Typ für SERVICENAME: {} in Ergebnis-Map: {}. Vorhandene Schlüssel: {}", serviceNameObj.getClass().getName(), result, result.keySet());
-                    } else {
-                        logger.warn("SERVICENAME nicht gefunden in Ergebnis-Map: {}. Vorhandene Schlüssel: {}", result, result.keySet());
-                    }
-
-
-                    long count = 0L;
-                    if (countObj instanceof Number) {
-                        count = ((Number) countObj).longValue();
-                    } else {
-                        logger.warn("Unerwarteter Typ oder fehlender Wert für COUNT (Detail) in getAppointmentsPerService: {} für Service: {} in Ergebnis-Map: {}. Vorhandene Schlüssel: {}",
-                                (countObj != null ? countObj.getClass().getName() : "null"), serviceName, result, result.keySet());
-                    }
+                    String serviceName = (serviceNameObj instanceof String) ? (String) serviceNameObj : "Unbekannt";
+                    long count = (countObj instanceof Number) ? ((Number) countObj).longValue() : 0L;
 
                     double percentage = totalAppointmentsInPeriod > 0 ? ( (double) count / totalAppointmentsInPeriod) * 100 : 0;
                     return new AppointmentsPerServiceDTO(serviceName, count, Math.round(percentage * 100.0) / 100.0);
