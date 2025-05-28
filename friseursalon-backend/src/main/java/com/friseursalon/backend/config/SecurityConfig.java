@@ -6,7 +6,7 @@ import com.friseursalon.backend.security.jwt.AuthTokenFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod; // Import für HttpMethod
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -27,7 +27,6 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
-    // ... bestehende Felder und Konstruktor ...
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final AuthEntryPointJwt unauthorizedHandler;
@@ -42,8 +41,6 @@ public class SecurityConfig {
         this.authTokenFilter = authTokenFilter;
     }
 
-
-    // ... authenticationProvider() und authenticationManager() bleiben gleich ...
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -56,7 +53,6 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
-
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -82,7 +78,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/hello").permitAll()
                         .requestMatchers("/api/services/**").permitAll()
-                        .requestMatchers("/api/workinghours/**").permitAll() // NEU: Erlaube Zugriff auf Arbeitszeiten
+                        .requestMatchers("/api/workinghours/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/blockedtimeslots/date/**").permitAll() // NEU: Erlaube GET für spezifische Daten
+                        .requestMatchers("/api/blockedtimeslots/**").hasRole("ADMIN") // NEU: Restliche BlockedTimeSlot-Endpunkte für Admin
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/appointments").permitAll()
                         .anyRequest().authenticated()

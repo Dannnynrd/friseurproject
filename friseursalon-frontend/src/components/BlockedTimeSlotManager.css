@@ -1,0 +1,84 @@
+/* src/components/BlockedTimeSlotManager.css */
+
+.blocked-time-slot-manager .dashboard-section-header-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.blocked-time-slot-manager .form-section-heading-compact {
+    font-size: 1.25rem; /* Konsistent mit ServiceForm */
+    font-family: var(--font-serif), serif;
+    color: var(--dark-text);
+}
+
+.blocked-slot-form.card-style {
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+    background-color: var(--light-grey-bg);
+    animation: fadeInForm 0.3s ease-out; /* Wiederverwendung der Animation von AccountDashboard.css */
+}
+
+.blocked-slot-form .form-grid-halved {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.blocked-slot-form .form-group,
+.blocked-slot-form .form-group-checkbox {
+    margin-bottom: 1rem; /* Standardabstand für Formulargruppen */
+}
+.blocked-slot-form .form-group:last-child,
+.blocked-slot-form .form-group-checkbox:last-child {
+    margin-bottom: 0;
+}
+
+
+.blocked-slot-form .form-group-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.blocked-slot-form .form-group-checkbox input[type="checkbox"] {
+    width: auto; /* Standardgröße für Checkboxen */
+    height: auto;
+    margin-right: 0.3rem;
+    accent-color: var(--dark-text);
+}
+.blocked-slot-form .form-group-checkbox label {
+    margin-bottom: 0; /* Label direkt neben Checkbox */
+    font-weight: normal;
+    color: var(--dark-text);
+}
+
+
+.blocked-slot-form .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.blocked-slots-table th,
+.blocked-slots-table td {
+    /* Ggf. spezifische Tabellenstile, falls von app-table abweichend */
+}
+
+/* Responsive Anpassungen für das Formular, falls nötig */
+@media (max-width: 576px) {
+    .blocked-slot-form .form-grid-halved {
+        grid-template-columns: 1fr; /* Untereinander auf kleinen Bildschirmen */
+    }
+    .blocked-time-slot-manager .dashboard-section-header-controls {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+}

@@ -1,20 +1,28 @@
-import React, { useState, useEffect, useCallback } from 'react'; // useCallback hinzugefügt, falls noch nicht da
+import React, { useState, useEffect, useCallback } from 'react';
 import "./AccountDashboard.css";
 import AppointmentList from '../components/AppointmentList';
 import ServiceForm from '../components/ServiceForm';
 import ServiceList from '../components/ServiceList';
-import WorkingHoursManager from '../components/WorkingHoursManager'; // NEU: Importieren
+import WorkingHoursManager from '../components/WorkingHoursManager';
+import BlockedTimeSlotManager from '../components/BlockedTimeSlotManager'; // NEU: Importieren
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faClipboardList, faUserCog, faTools, faSignOutAlt,
     faChevronRight, faChevronDown, faPlusCircle, faMinusCircle,
-    faChartBar, faUser, faTimesCircle, faClock // faClock für Arbeitszeiten
+    faChartBar, faUser, faTimesCircle, faClock, faCalendarTimes // NEU: Icon für Abwesenheiten
 } from '@fortawesome/free-solid-svg-icons';
 
-// ... (Rest der Komponente bleibt gleich bis zur renderTabContent Funktion) ...
 
-function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppointmentsList, onServiceAdded, refreshServicesList, onWorkingHoursUpdated /* NEU, falls benötigt */ }) {
-    // NEU: 'adminWorkingHours' als möglichen Initial-Tab oder Fallback
+function AccountDashboard({
+                              currentUser,
+                              logOut,
+                              onAppointmentAdded,
+                              refreshAppointmentsList,
+                              onServiceAdded,
+                              refreshServicesList
+                              // onWorkingHoursUpdated, // Falls benötigt für Arbeitszeiten
+                              // onBlockedSlotsUpdated // NEU, falls benötigt
+                          }) {
     const initialTab = currentUser?.roles?.includes("ROLE_ADMIN") ? 'adminServices' : 'bookings';
     const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -38,35 +46,36 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
     }, []);
 
     useEffect(() => {
-        const newInitialTab = currentUser?.roles?.includes("ROLE_ADMIN") ? 'adminServices' : 'bookings';
-        // Nur setzen, wenn der aktuelle Tab nicht mehr gültig ist oder der User wechselt
-        if (activeTab === 'adminAnalytics' && !isAdmin) setActiveTab('bookings');
-        else if (activeTab === 'adminServices' && !isAdmin) setActiveTab('bookings');
-        else if (activeTab === 'adminWorkingHours' && !isAdmin) setActiveTab('bookings'); // NEU
-        else if (currentUser && activeTab !== newInitialTab && (activeTab === 'bookings' || activeTab === 'profile')) {
-            // Wenn der User von Nicht-Admin zu Admin wird oder umgekehrt, und war auf einem User-Tab
-            // Hier könnte man überlegen, ob man den Tab beibehält oder zum Admin-Default wechselt.
-            // Fürs Erste bleibt es so, dass der Admin-Default nur bei initialem Laden/Benutzerwechsel gesetzt wird.
+        // Setzt den initialen oder Fallback-Tab basierend auf der Rolle
+        if (currentUser) {
+            const adminTabs = ['adminServices', 'adminWorkingHours', 'adminBlockedSlots', 'adminAnalytics'];
+            const userTabs = ['bookings', 'profile'];
+
+            if (isAdmin) {
+                if (!adminTabs.includes(activeTab) && !userTabs.includes(activeTab)) {
+                    // Wenn ein Admin einen ungültigen Tab hat, auf den ersten Admin-Tab setzen
+                    setActiveTab('adminServices');
+                } else if (!adminTabs.includes(activeTab) && userTabs.includes(activeTab)){
+                    // Admin ist auf einem User-Tab, das ist okay
+                } else if (!adminTabs.includes(activeTab)) {
+                    setActiveTab('adminServices'); // Fallback
+                }
+            } else { // Ist User
+                if (!userTabs.includes(activeTab)) {
+                    setActiveTab('bookings');
+                }
+            }
+        } else {
+            // Falls kein currentUser, was im ProtectedRoute eigentlich nicht passieren sollte
+            setActiveTab('bookings');
         }
 
-
-        if (!isAdmin && (showServiceForm )) {
+        // Schließe Formulare, wenn der Tab nicht passt
+        if (activeTab !== 'adminServices') {
             setShowServiceForm(false);
         }
-        // Ggf. setActiveTab hier setzen, falls sich currentUser ändert und der alte Tab nicht mehr passt.
-        if (currentUser) {
-            const currentAdminTabs = ['adminServices', 'adminAnalytics', 'adminWorkingHours'];
-            if (!isAdmin && currentAdminTabs.includes(activeTab)) {
-                setActiveTab('bookings');
-            } else if (isAdmin && !currentAdminTabs.includes(activeTab) && (activeTab === 'bookings' || activeTab === 'profile')) {
-                // Behalte den Tab bei, wenn Admin auf User-Tabs ist
-            } else if (isAdmin && !currentAdminTabs.includes(activeTab)) {
-                setActiveTab('adminServices'); // Fallback für Admin
-            }
-        }
 
-
-    }, [currentUser, isAdmin, activeTab, showServiceForm]); // isAdmin und activeTab hinzugefügt
+    }, [currentUser, isAdmin, activeTab]);
 
 
     const handleServiceAddedCallback = () => {
@@ -79,9 +88,6 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
 
     const handleTabClick = (tabName) => {
         setActiveTab(tabName);
-        if (tabName !== 'adminServices') {
-            setShowServiceForm(false);
-        }
         if (isMobileView) {
             setMobileNavOpen(false);
         }
@@ -137,12 +143,19 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                         <ServiceList key={refreshServicesList} currentUser={currentUser} />
                     </div>
                 );
-            // NEU: Tab für Arbeitszeiten
             case 'adminWorkingHours':
                 return isAdmin && (
                     <div className="dashboard-section-content">
                         <h2 className="dashboard-section-heading">Arbeitszeiten verwalten</h2>
                         <WorkingHoursManager />
+                    </div>
+                );
+            // NEU: Tab für Blockaden/Abwesenheiten
+            case 'adminBlockedSlots':
+                return isAdmin && (
+                    <div className="dashboard-section-content">
+                        <h2 className="dashboard-section-heading">Abwesenheiten & Pausen</h2>
+                        <BlockedTimeSlotManager />
                     </div>
                 );
             case 'adminAnalytics':
@@ -153,8 +166,8 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                     </div>
                 );
             default:
-                if (isAdmin) return renderTabContent('adminServices'); // Fallback für Admin
-                return renderTabContent('bookings'); // Fallback für User
+                if (isAdmin) return renderTabContent('adminServices');
+                return renderTabContent('bookings');
         }
     };
 
@@ -186,7 +199,8 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                         <>
                             <li className="nav-category-title mt-4">Verwaltung</li>
                             {renderNavItem('adminServices', faTools, 'Services')}
-                            {renderNavItem('adminWorkingHours', faClock, 'Arbeitszeiten')} {/* NEU */}
+                            {renderNavItem('adminWorkingHours', faClock, 'Arbeitszeiten')}
+                            {renderNavItem('adminBlockedSlots', faCalendarTimes, 'Abwesenheiten')} {/* NEU */}
                             {renderNavItem('adminAnalytics', faChartBar, 'Analysen')}
                         </>
                     )}
@@ -215,7 +229,8 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                         <>
                             <li className="nav-category-title mt-4">Verwaltung</li>
                             {renderNavItem('adminServices', faTools, 'Services')}
-                            {renderNavItem('adminWorkingHours', faClock, 'Arbeitszeiten')} {/* NEU */}
+                            {renderNavItem('adminWorkingHours', faClock, 'Arbeitszeiten')}
+                            {renderNavItem('adminBlockedSlots', faCalendarTimes, 'Abwesenheiten')} {/* NEU */}
                             {renderNavItem('adminAnalytics', faChartBar, 'Analysen')}
                         </>
                     )}
