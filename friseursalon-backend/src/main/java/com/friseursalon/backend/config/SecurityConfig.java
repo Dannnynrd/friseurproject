@@ -27,6 +27,7 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
+    // ... bestehende Felder und Konstruktor ...
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final AuthEntryPointJwt unauthorizedHandler;
@@ -41,6 +42,8 @@ public class SecurityConfig {
         this.authTokenFilter = authTokenFilter;
     }
 
+
+    // ... authenticationProvider() und authenticationManager() bleiben gleich ...
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -54,12 +57,13 @@ public class SecurityConfig {
         return authConfig.getAuthenticationManager();
     }
 
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.addAllowedOrigin("http://localhost:3000"); // Dein Frontend-Host
+        config.addAllowedOrigin("http://localhost:3000");
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         source.registerCorsConfiguration("/**", config);
@@ -71,21 +75,16 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
-                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)) // WICHTIG für H2-Konsole
+                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Öffentliche Endpunkte (keine Authentifizierung erforderlich)
-                        .requestMatchers("/api/auth/**").permitAll() // Registrierung und Login
-                        .requestMatchers("/api/hello").permitAll() // Dein Hello World Endpunkt
-                        .requestMatchers("/api/services/**").permitAll() // Dienstleistungen (Frontend kann diese ohne Login anzeigen)
-                        .requestMatchers("/h2-console/**").permitAll() // H2-Konsole (NUR FÜR ENTWICKLUNG!)
-
-                        // NEU: Nur POST-Anfragen an /api/appointments sind für Gäste erlaubt (Terminbuchung)
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/hello").permitAll()
+                        .requestMatchers("/api/services/**").permitAll()
+                        .requestMatchers("/api/workinghours/**").permitAll() // NEU: Erlaube Zugriff auf Arbeitszeiten
+                        .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/appointments").permitAll()
-
-                        // Alle anderen Anfragen (GET, PUT, DELETE für /api/appointments)
-                        // sowie alle Anfragen an /api/customers benötigen Authentifizierung
                         .anyRequest().authenticated()
                 );
 

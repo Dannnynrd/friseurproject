@@ -1,0 +1,106 @@
+/* src/components/WorkingHoursManager.css */
+
+.working-hours-manager {
+    padding: 1rem 0;
+}
+
+.day-config-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+    gap: 1rem; /* Abstand zwischen Elementen, wenn sie umbrechen */
+}
+
+.day-config-row:last-child {
+    border-bottom: none;
+}
+
+.day-label {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--dark-text);
+    flex-basis: 120px; /* Mindestbreite für den Tag */
+    flex-grow: 0;
+    margin-right: 1rem;
+}
+
+.time-inputs {
+    display: flex;
+    gap: 1rem;
+    flex-grow: 1;
+    min-width: 280px; /* Verhindert zu starkes Quetschen */
+}
+
+.time-inputs .form-group {
+    flex: 1; /* Beide Zeit-Inputs nehmen gleich viel Platz ein */
+    margin-bottom: 0; /* Standard-Margin entfernen, da durch gap geregelt */
+}
+
+.time-inputs .form-group label {
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+    color: var(--medium-grey-text);
+}
+
+.time-inputs .form-group input[type="time"] {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.9rem;
+    /* Weitere Stile werden von globalen .form-group input Stilen geerbt */
+}
+
+.form-group-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: 1rem; /* Abstand zu den Zeit-Inputs */
+    flex-shrink: 0; /* Verhindert Schrumpfen */
+}
+
+.form-group-checkbox input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--dark-text);
+}
+
+.form-group-checkbox label {
+    font-size: 0.9rem;
+    color: var(--medium-grey-text);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.working-hours-manager .form-actions {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.working-hours-manager .form-actions .button-link .svg-inline--fa {
+    margin-right: 0.5rem;
+}
+
+/* Responsive Anpassungen */
+@media (max-width: 768px) {
+    .day-config-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .day-label {
+        margin-bottom: 0.5rem;
+        margin-right: 0;
+    }
+    .time-inputs {
+        width: 100%;
+    }
+    .form-group-checkbox {
+        margin-left: 0;
+        margin-top: 0.75rem;
+        width: 100%;
+    }
+}

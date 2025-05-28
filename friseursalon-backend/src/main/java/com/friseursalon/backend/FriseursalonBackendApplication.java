@@ -8,10 +8,14 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
+// Import für DayOfWeek und LocalTime, falls noch nicht vorhanden
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.Set;
+// Import für WorkingHoursService
+import com.friseursalon.backend.service.WorkingHoursService;
+
 
 @SpringBootApplication
 public class FriseursalonBackendApplication {
@@ -20,9 +24,8 @@ public class FriseursalonBackendApplication {
         SpringApplication.run(FriseursalonBackendApplication.class, args);
     }
 
-    // CommandLineRunner zum Initialisieren von Rollen und einem Admin-Benutzer
     @Bean
-    public CommandLineRunner initData(RoleRepository roleRepository, UserService userService) {
+    public CommandLineRunner initData(RoleRepository roleRepository, UserService userService, WorkingHoursService workingHoursService) {
         return args -> {
             // Rollen erstellen, falls sie noch nicht existieren
             if (roleRepository.findByName(ERole.ROLE_USER).isEmpty()) {
@@ -35,30 +38,30 @@ public class FriseursalonBackendApplication {
             }
 
             // Admin-Benutzer erstellen, falls er noch nicht existiert
-            if (!userService.existsByEmail("admin@friseursalon.com")) { // HIER existsByEmail nutzen
+            if (!userService.existsByEmail("admin@friseursalon.com")) {
                 Set<String> roles = new HashSet<>();
                 roles.add("admin");
-                // NEU: Vorname, Nachname, Telefonnummer hinzufügen
                 userService.registerNewUser("Admin", "User", "admin@friseursalon.com", "adminpass", "0123456789", roles);
                 System.out.println("Initialer Admin-Benutzer erstellt: admin@friseursalon.com / adminpass");
             } else {
                 System.out.println("Admin-Benutzer existiert bereits.");
             }
+
+            // Standard-Arbeitszeiten initialisieren, falls noch nicht vorhanden
+            System.out.println("Prüfe und initialisiere Standard-Arbeitszeiten...");
+            for (DayOfWeek day : DayOfWeek.values()) {
+                if (workingHoursService.getWorkingHoursForDay(day).isEmpty()) {
+                    boolean isClosed = (day == DayOfWeek.SUNDAY || day == DayOfWeek.MONDAY);
+                    LocalTime startTime = isClosed ? null : LocalTime.of(9, 0);
+                    LocalTime endTime = isClosed ? null : LocalTime.of(18, 0);
+                    workingHoursService.setWorkingHours(day, startTime, endTime, isClosed);
+                    System.out.println("Standard-Arbeitszeit für " + day + " erstellt: " +
+                            (isClosed ? "Geschlossen" : startTime + " - " + endTime));
+                }
+            }
+            System.out.println("Initialisierung der Arbeitszeiten abgeschlossen.");
         };
     }
-
-    // Optional: Die testPasswordEncoder Methode kann entfernt werden, wenn sie nicht mehr gebraucht wird
-    // @Bean
-    // public CommandLineRunner testPasswordEncoder(PasswordEncoder passwordEncoder) {
-    //     return args -> {
-    //         String rawPassword = "adminpass";
-    //         String hashedPasswordFromDb = "$2a$10$OgeQqSRlrlatcGNce1KqLuqc6kv/0SXZQH3OfM4um3rp2z6RAG9WC"; // Dein Hash aus der H2-Konsole
-    //
-    //         System.out.println("--- PasswordEncoder Test ---");
-    //         System.out.println("Raw Password provided: " + rawPassword);
-    //         System.out.println("Hashed Password from DB: " + hashedPasswordFromDb);
-    //         System.out.println("Does raw password match DB hash? " + passwordEncoder.matches(rawPassword, hashedPasswordFromDb));
-    //         System.out.println("--- End PasswordEncoder Test ---");
-    //     };
-    // }
-}
+    // Die Methode testPasswordEncoder wurde entfernt, falls sie nicht mehr benötigt wird.
+    // Falls doch, kann sie hier wieder eingefügt werden.
+} // Diese schließende Klammer beendet die Klasse FriseursalonBackendApplication

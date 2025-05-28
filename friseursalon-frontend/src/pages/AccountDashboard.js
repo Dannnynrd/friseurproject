@@ -1,18 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // useCallback hinzugefügt, falls noch nicht da
 import "./AccountDashboard.css";
 import AppointmentList from '../components/AppointmentList';
 import ServiceForm from '../components/ServiceForm';
 import ServiceList from '../components/ServiceList';
-import ReportView from '../components/admin/ReportView'; // Import ReportView
+import WorkingHoursManager from '../components/WorkingHoursManager'; // NEU: Importieren
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faClipboardList, faUserCog, faTools, faSignOutAlt,
-    faChevronRight, faPlusCircle, faMinusCircle, // faChevronDown might not be needed if accordion is removed
-    faChartBar, faUser, faTimesCircle, faFileInvoiceDollar // Icon for Reports
+    faChevronRight, faChevronDown, faPlusCircle, faMinusCircle,
+    faChartBar, faUser, faTimesCircle, faClock // faClock für Arbeitszeiten
 } from '@fortawesome/free-solid-svg-icons';
 
+// ... (Rest der Komponente bleibt gleich bis zur renderTabContent Funktion) ...
 
-function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppointmentsList, onServiceAdded, refreshServicesList }) {
+function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppointmentsList, onServiceAdded, refreshServicesList, onWorkingHoursUpdated /* NEU, falls benötigt */ }) {
+    // NEU: 'adminWorkingHours' als möglichen Initial-Tab oder Fallback
     const initialTab = currentUser?.roles?.includes("ROLE_ADMIN") ? 'adminServices' : 'bookings';
     const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -31,30 +33,41 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
             if (!mobile) setMobileNavOpen(false);
         };
         window.addEventListener('resize', handleResize);
-        handleResize(); 
+        handleResize();
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     useEffect(() => {
-        const newInitialTab = isAdmin ? 'adminServices' : 'bookings';
-        // Only reset activeTab if the user changes role or logs in/out
-        // or if the current activeTab is not valid for the new user type
-        if ( (isAdmin && (activeTab === 'bookings' || activeTab === 'profile')) || 
-             (!isAdmin && (activeTab === 'adminServices' || activeTab === 'adminReports' || activeTab === 'adminAnalytics')) ) {
-            setActiveTab(newInitialTab);
-        } else if (!['bookings', 'profile', 'adminServices', 'adminReports', 'adminAnalytics'].includes(activeTab)) {
-            // If current activeTab is somehow invalid, reset to default
-            setActiveTab(newInitialTab);
-        }
-
-        // If not admin and current tab is an admin tab, switch to 'bookings'
-        if (!isAdmin && (activeTab === 'adminServices' || activeTab === 'adminReports' || activeTab === 'adminAnalytics')) {
-             setActiveTab('bookings');
+        const newInitialTab = currentUser?.roles?.includes("ROLE_ADMIN") ? 'adminServices' : 'bookings';
+        // Nur setzen, wenn der aktuelle Tab nicht mehr gültig ist oder der User wechselt
+        if (activeTab === 'adminAnalytics' && !isAdmin) setActiveTab('bookings');
+        else if (activeTab === 'adminServices' && !isAdmin) setActiveTab('bookings');
+        else if (activeTab === 'adminWorkingHours' && !isAdmin) setActiveTab('bookings'); // NEU
+        else if (currentUser && activeTab !== newInitialTab && (activeTab === 'bookings' || activeTab === 'profile')) {
+            // Wenn der User von Nicht-Admin zu Admin wird oder umgekehrt, und war auf einem User-Tab
+            // Hier könnte man überlegen, ob man den Tab beibehält oder zum Admin-Default wechselt.
+            // Fürs Erste bleibt es so, dass der Admin-Default nur bei initialem Laden/Benutzerwechsel gesetzt wird.
         }
 
 
-        setShowServiceForm(false); // Always hide form on user change
-    }, [currentUser, isAdmin, activeTab]); // Added activeTab to dependencies for more robust logic
+        if (!isAdmin && (showServiceForm )) {
+            setShowServiceForm(false);
+        }
+        // Ggf. setActiveTab hier setzen, falls sich currentUser ändert und der alte Tab nicht mehr passt.
+        if (currentUser) {
+            const currentAdminTabs = ['adminServices', 'adminAnalytics', 'adminWorkingHours'];
+            if (!isAdmin && currentAdminTabs.includes(activeTab)) {
+                setActiveTab('bookings');
+            } else if (isAdmin && !currentAdminTabs.includes(activeTab) && (activeTab === 'bookings' || activeTab === 'profile')) {
+                // Behalte den Tab bei, wenn Admin auf User-Tabs ist
+            } else if (isAdmin && !currentAdminTabs.includes(activeTab)) {
+                setActiveTab('adminServices'); // Fallback für Admin
+            }
+        }
+
+
+    }, [currentUser, isAdmin, activeTab, showServiceForm]); // isAdmin und activeTab hinzugefügt
+
 
     const handleServiceAddedCallback = () => {
         if (onServiceAdded) {
@@ -66,11 +79,11 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
 
     const handleTabClick = (tabName) => {
         setActiveTab(tabName);
-        if (tabName !== 'adminServices') { 
+        if (tabName !== 'adminServices') {
             setShowServiceForm(false);
         }
         if (isMobileView) {
-            setMobileNavOpen(false); 
+            setMobileNavOpen(false);
         }
     };
 
@@ -124,11 +137,12 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                         <ServiceList key={refreshServicesList} currentUser={currentUser} />
                     </div>
                 );
-            case 'adminReports': // New case for Reports
+            // NEU: Tab für Arbeitszeiten
+            case 'adminWorkingHours':
                 return isAdmin && (
                     <div className="dashboard-section-content">
-                        <h2 className="dashboard-section-heading">Berichte</h2>
-                        <ReportView currentUser={currentUser} />
+                        <h2 className="dashboard-section-heading">Arbeitszeiten verwalten</h2>
+                        <WorkingHoursManager />
                     </div>
                 );
             case 'adminAnalytics':
@@ -139,8 +153,8 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                     </div>
                 );
             default:
-                if (isAdmin) return renderTabContent('adminServices'); // Default for admin
-                return renderTabContent('bookings'); // Default for user
+                if (isAdmin) return renderTabContent('adminServices'); // Fallback für Admin
+                return renderTabContent('bookings'); // Fallback für User
         }
     };
 
@@ -157,7 +171,7 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
 
 
     if (!currentUser) {
-        return <p className="loading-message text-center p-4">Laden...</p>; 
+        return <div className="page-center-content"><p>Laden...</p></div>;
     }
 
     const DesktopNav = () => (
@@ -172,7 +186,7 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                         <>
                             <li className="nav-category-title mt-4">Verwaltung</li>
                             {renderNavItem('adminServices', faTools, 'Services')}
-                            {renderNavItem('adminReports', faFileInvoiceDollar, 'Berichte')} 
+                            {renderNavItem('adminWorkingHours', faClock, 'Arbeitszeiten')} {/* NEU */}
                             {renderNavItem('adminAnalytics', faChartBar, 'Analysen')}
                         </>
                     )}
@@ -201,7 +215,7 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                         <>
                             <li className="nav-category-title mt-4">Verwaltung</li>
                             {renderNavItem('adminServices', faTools, 'Services')}
-                            {renderNavItem('adminReports', faFileInvoiceDollar, 'Berichte')}
+                            {renderNavItem('adminWorkingHours', faClock, 'Arbeitszeiten')} {/* NEU */}
                             {renderNavItem('adminAnalytics', faChartBar, 'Analysen')}
                         </>
                     )}

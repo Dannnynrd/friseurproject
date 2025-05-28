@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import './App.css'; // Globale Stile (wird stark reduziert)
+import './App.css'; // Globale Stile
 import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
 
-// Layout Komponenten (jetzt direkt aus components/)
+// Layout Komponenten
 import Header from './components/Header';
 import Footer from './components/Footer';
 
@@ -18,17 +18,18 @@ import TrustBarSection from './components/TrustBarSection';
 import ExperienceSection from './components/ExperienceSection';
 import TestimonialsSection from './components/TestimonialsSection';
 import AboutFounderSection from './components/AboutFounderSection';
-import ServicesSection from './components/ServicesSection'; // Die für die Homepage-Ansicht
+import ServicesSection from './components/ServicesSection'; // Angepasste ServicesSection
 import GalleryJournalSection from './components/GalleryJournalSection';
 import EssentialsSection from './components/EssentialsSection';
 import FAQSection from './components/FAQSection';
 import LocationSection from './components/LocationSection';
 import NewsletterSection from './components/NewsletterSection';
 
-
 // Seiten
 import BookingPage from './pages/BookingPage';
 import AccountDashboard from './pages/AccountDashboard';
+// NEU: Admin spezifische Seiten importieren (Beispiel, falls ausgelagert)
+// import AdminWorkingHoursPage from './pages/AdminWorkingHoursPage'; // Beispiel
 
 const ProtectedRoute = ({ children, currentUser, redirectPath = '/login' }) => {
     if (!currentUser) {
@@ -44,6 +45,8 @@ function App() {
 
     const [refreshServicesList, setRefreshServicesList] = useState(0);
     const [refreshAppointmentsList, setRefreshAppointmentsList] = useState(0);
+    // NEU: State für Arbeitszeiten-Aktualisierung (falls benötigt für globale Komponenten)
+    // const [refreshWorkingHours, setRefreshWorkingHours] = useState(0);
 
     const headerRef = useRef(null);
     const preloaderRef = useRef(null);
@@ -78,6 +81,9 @@ function App() {
 
     const handleServiceAdded = useCallback(() => setRefreshServicesList(p => p + 1), []);
     const handleAppointmentAdded = useCallback(() => setRefreshAppointmentsList(p => p + 1), []);
+    // NEU: Callback für Arbeitszeiten (falls benötigt)
+    // const handleWorkingHoursUpdated = useCallback(() => setRefreshWorkingHours(p => p + 1), []);
+
 
     const handleLoginSuccess = useCallback(() => {
         const user = AuthService.getCurrentUser();
@@ -156,10 +162,10 @@ function App() {
             <ExperienceSection />
             <TestimonialsSection />
             <AboutFounderSection />
-            <ServicesSection
+            <ServicesSection // Diese ServicesSection lädt jetzt dynamisch
                 currentUser={currentUser}
-                onServiceAdded={handleServiceAdded}
-                refreshServicesList={refreshServicesList}
+                onServiceAdded={handleServiceAdded} // Für Admin-Funktionalität in AccountDashboard relevant
+                refreshServicesList={refreshServicesList} // Für Admin-Funktionalität in AccountDashboard relevant
                 openBookingModal={openBookingModal}
             />
             <GalleryJournalSection />
@@ -208,10 +214,25 @@ function App() {
                                 refreshAppointmentsList={refreshAppointmentsList}
                                 onServiceAdded={handleServiceAdded}
                                 refreshServicesList={refreshServicesList}
+                                // onWorkingHoursUpdated={handleWorkingHoursUpdated} // NEU: Für Arbeitszeiten, falls benötigt
                             />
                         </ProtectedRoute>
                     }
                 />
+                {/* Beispielroute für Admin-Arbeitszeiten-Seite */}
+                {/*
+                <Route
+                    path="/admin/working-hours"
+                    element={
+                        <ProtectedRoute currentUser={currentUser} redirectPath="/login">
+                             {currentUser && currentUser.roles.includes("ROLE_ADMIN") ?
+                                <AdminWorkingHoursPage onWorkingHoursUpdated={handleWorkingHoursUpdated} /> :
+                                <Navigate to="/my-account" replace />
+                             }
+                        </ProtectedRoute>
+                    }
+                />
+                */}
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
 
