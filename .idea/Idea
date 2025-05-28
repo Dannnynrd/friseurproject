@@ -1,0 +1,46 @@
+Weitere Feature-Vorschläge für den Admin-Terminkalender
+
+Nachdem die grundlegende Anzeige und Navigation im Kalender nun funktionieren, hier eine aktualisierte Liste von möglichen Erweiterungen:
+
+Arbeitszeiten und geblockte Zeiten anzeigen:
+
+Visuelle Darstellung deiner regulären Arbeitszeiten und manuell erstellten BlockedTimeSlots (Pausen, Abwesenheiten etc.) im Kalender, z.B. als Hintergrundereignisse oder durch farbliche Hervorhebung nicht verfügbarer Zeiten. Dies verbessert die Übersicht über deine Verfügbarkeit erheblich. (Wir hatten hiermit schon begonnen, könnten es jetzt finalisieren und testen).
+
+Neue Termine direkt im Kalender erstellen:
+
+Ermögliche das Anlegen eines neuen Termins durch Klicken auf einen freien Zeitschlitz. Ein Modal könnte sich öffnen, in dem Kunde und Dienstleistung ausgewählt werden.
+
+Termine per Drag & Drop verschieben/verlängern (Fortgeschritten):
+
+Bestehende Termine per Drag & Drop auf eine neue Zeit/einen neuen Tag verschieben.
+
+Optional: Dauer von Terminen durch Ziehen am Rand des Events ändern. Dies erfordert serverseitige Validierung.
+
+Farbcodierung für Termine:
+
+Unterschiedliche Farben für Termine basierend auf dem Typ der Dienstleistung oder einem (später einzuführenden) Status (z.B. "bestätigt", "Kunde anwesend", "abgeschlossen").
+
+Schnellansicht/Tooltip für Termine:
+
+Beim Überfahren eines Termins mit der Maus einen Tooltip mit den wichtigsten Infos (Kunde, Service, Zeit) anzeigen, ohne das Modal zu öffnen.
+
+Schnelles Blockieren von Zeiten aus dem Kalender:
+
+Eine Funktion, um direkt aus der Kalenderansicht schnell einen Zeitraum zu blockieren (z.B. Rechtsklick auf einen Zeitschlitz -> "Zeit blockieren").
+
+Druckansicht für den Kalender:
+
+Optimierung des Kalenders für eine saubere Druckausgabe (Tages-/Wochenpläne).
+
+Verbesserte Kundenauswahl beim Erstellen von Terminen:
+
+Beim Erstellen eines neuen Termins (besonders wenn direkt im Kalender) eine Kundenauswahl mit Autovervollständigung aus deiner Kundendatenbank.
+
+Filteroptionen im Kalender-Header:
+
+Möglichkeit, die angezeigten Termine schnell nach bestimmten Dienstleistungen zu filtern.
+
+Deutlichere Anzeige von Terminkonflikten/Warnungen:
+
+Wenn beim manuellen Erstellen oder Verschieben serverseitig ein Konflikt erkannt wird, diesen direkt im Kalender oder Modal besser hervorheben.
+
