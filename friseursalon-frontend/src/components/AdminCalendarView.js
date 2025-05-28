@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'; // useMemo hinzugefügt
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -17,44 +17,49 @@ function AdminCalendarView({ currentUser, refreshTrigger, onAppointmentUpdated }
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
+    const calendarRef = useRef(null);
 
-    // currentViewDate speichert den Start des aktuell angezeigten Intervalls (z.B. erster Tag der Woche/Monat)
-    const [currentCalendarViewDate, setCurrentCalendarViewDate] = useState(new Date());
+    // This state holds the start date of the current view (e.g., first day of the month/week)
+    // It's updated by FullCalendar's datesSet callback.
+    const [currentCalendarApiViewStart, setCurrentCalendarApiViewStart] = useState(new Date());
 
-    // Memoize den abgeleiteten String für die Dependency-Array
-    const currentViewFetchKey = useMemo(() => {
-        // Wir verwenden Jahr und Monat als Schlüssel für den Datenabruf,
-        // um sicherzustellen, dass wir nur neu laden, wenn sich der Monat ändert.
-        // Für Wochen- oder Tagesansichten, die monatsübergreifend sein können,
-        // ist es wichtig, den Start- und Endtag des sichtbaren Bereichs zu berücksichtigen.
-        // FullCalendar's datesSet gibt uns startStr und endStr, die wir nutzen könnten.
-        // Für die Logik hier, die auf currentCalendarViewDate basiert, ist YYYY-MM ein guter Anfang.
-        return formatDateFns(currentCalendarViewDate, 'yyyy-MM');
-    }, [currentCalendarViewDate]);
+    // Memoized key for the useEffect dependency, changes only when year/month of currentCalendarApiViewStart changes.
+    const currentFetchKey = useMemo(() => {
+        if (!isValidDate(currentCalendarApiViewStart)) return new Date().toISOString(); // Fallback
+        return formatDateFns(currentCalendarApiViewStart, 'yyyy-MM'); // Key based on year and month
+    }, [currentCalendarApiViewStart]);
 
-    const fetchAppointmentsForCalendar = useCallback(async (viewStart, viewEnd) => {
+    const fetchAppointmentsForCalendar = useCallback(async (viewStartDate, viewEndDate) => {
+        console.log(`[AdminCalendarView] fetchAppointmentsForCalendar called with: Start=${viewStartDate}, End=${viewEndDate}`);
         setIsLoading(true);
-        setError(null);
+        setError(null); // Reset error at the beginning of a fetch attempt
 
-        if (!isValidDate(viewStart) || !isValidDate(viewEnd)) {
-            setError("Ungültiger Datumsbereich für Kalenderabruf.");
+        if (!isValidDate(viewStartDate) || !isValidDate(viewEndDate)) {
+            const errMsg = "Ungültiger Datumsbereich für Kalenderabruf.";
+            console.error("[AdminCalendarView]", errMsg, "Raw Start:", viewStartDate, "Raw End:", viewEndDate);
+            setError(errMsg);
             setIsLoading(false);
             setEvents([]);
             return;
         }
 
-        const startDateParam = formatDateFns(viewStart, 'yyyy-MM-dd');
-        const endDateParam = formatDateFns(viewEnd, 'yyyy-MM-dd');
-
-        console.log(`Fetching appointments from: ${startDateParam} to ${endDateParam}`);
+        const startDateParam = formatDateFns(viewStartDate, 'yyyy-MM-dd');
+        const endDateParam = formatDateFns(viewEndDate, 'yyyy-MM-dd');
+        console.log(`[AdminCalendarView] API Call Params: start=${startDateParam}, end=${endDateParam}`);
 
         try {
             const response = await api.get('appointments/by-date-range', {
-                params: {
-                    start: startDateParam,
-                    end: endDateParam,
-                },
+                params: { start: startDateParam, end: endDateParam },
             });
+            console.log("[AdminCalendarView] API response received:", response);
+
+            if (!Array.isArray(response.data)) {
+                console.error("[AdminCalendarView] API response data is not an array:", response.data);
+                setError("Ungültige Antwort vom Server erhalten.");
+                setEvents([]);
+                setIsLoading(false); // Ensure loading is false if we exit early
+                return;
+            }
 
             const fetchedAppointments = response.data.map(apt => {
                 let title = 'Unbekannter Termin';
@@ -70,12 +75,12 @@ function AdminCalendarView({ currentUser, refreshTrigger, onAppointmentUpdated }
                 if (isValidDate(appointmentStart) && apt.service && typeof apt.service.durationMinutes === 'number' && apt.service.durationMinutes > 0) {
                     eventEnd = addMinutes(appointmentStart, apt.service.durationMinutes);
                 } else {
-                    console.warn(`Ungültige oder fehlende Dauer für Termin ID ${apt.id}. Start: ${apt.startTime}`);
+                    console.warn(`[AdminCalendarView] Ungültige oder fehlende Dauer für Termin ID ${apt.id}. Start: ${apt.startTime}, Dauer: ${apt.service?.durationMinutes}`);
                     eventEnd = isValidDate(appointmentStart) ? addMinutes(appointmentStart, 60) : null;
                 }
 
-                if (!isValidDate(appointmentStart) || !eventEnd || !isValidDate(eventEnd) ) {
-                    console.error("Ungültige Termindaten für Kalender-Event:", apt);
+                if (!isValidDate(appointmentStart) || !eventEnd || !isValidDate(eventEnd)) {
+                    console.error("[AdminCalendarView] Ungültige Termindaten (Start/Ende) für Kalender-Event:", apt);
                     return null;
                 }
 
@@ -85,49 +90,64 @@ function AdminCalendarView({ currentUser, refreshTrigger, onAppointmentUpdated }
                     start: appointmentStart,
                     end: eventEnd,
                     allDay: false,
-                    extendedProps: {
-                        appointmentData: apt,
-                    },
+                    extendedProps: { appointmentData: apt },
                 };
             }).filter(event => event !== null);
 
             setEvents(fetchedAppointments);
+            console.log("[AdminCalendarView] Processed events, count:", fetchedAppointments.length);
         } catch (err) {
-            console.error("Fehler beim Laden der Termine für den Kalender:", err);
-            let errorMessage = "Termine konnten nicht geladen werden. Bitte Konsole prüfen.";
-            if (err.response && err.response.data) {
-                if (err.response.data.message) {
-                    errorMessage = err.response.data.message;
-                } else if (err.response.data.errors && Array.isArray(err.response.data.errors)) {
-                    errorMessage = err.response.data.errors.join("; ");
-                } else if (typeof err.response.data === 'string') {
-                    errorMessage = err.response.data;
-                } else if (err.response.statusText) {
-                    errorMessage = `Fehler: ${err.response.status} ${err.response.statusText}`;
+            console.error("[AdminCalendarView] Fehler beim Laden der Termine:", err.response || err.request || err.message);
+            let errorMessage = "Termine konnten nicht geladen werden. Details in der Konsole.";
+            if (err.response) {
+                errorMessage = `Fehler ${err.response.status}: ${err.response.data?.message || err.response.statusText || 'Serverfehler'}`;
+                if (err.response.data?.errors && Array.isArray(err.response.data.errors)) {
+                    errorMessage += ` Details: ${err.response.data.errors.join("; ")}`;
                 }
-            } else if (err.message) {
+            } else if (err.request) {
+                errorMessage = "Keine Antwort vom Server. Netzwerk prüfen.";
+            } else {
                 errorMessage = err.message;
             }
             setError(errorMessage);
-            setEvents([]);
+            setEvents([]); // Clear events on error
         } finally {
             setIsLoading(false);
+            console.log("[AdminCalendarView] fetchAppointmentsForCalendar finished. isLoading set to false.");
         }
-    }, []); // fetchAppointmentsForCalendar selbst hat keine direkten state/prop Abhängigkeiten für seine Definition
+    }, []); // useCallback with empty dependency array as it's a stable function definition
 
+    // Effect for fetching data based on currentFetchKey (derived from currentCalendarApiViewStart) and refreshTrigger
     useEffect(() => {
-        // Bestimme den Datumsbereich basierend auf currentCalendarViewDate
-        // Für Monatsansicht: den ganzen Monat. Für andere Ansichten könnte man das anpassen.
-        // FullCalendar's `datesSet` liefert präzisere Start/End-Daten der aktuellen Ansicht.
-        // Wir verwenden hier currentCalendarViewDate, um den Start des Abrufs zu definieren.
-        // Der `datesSet` Handler aktualisiert `currentCalendarViewDate`.
+        console.log(`[AdminCalendarView] useEffect for data fetch triggered. Key: ${currentFetchKey}, Refresh: ${refreshTrigger}`);
+        // Determine the actual start and end of the period to fetch.
+        // For month view, this would be start and end of the month currentFetchKey refers to.
+        // For week/day view, it's more complex if we only want to fetch for that exact small range.
+        // For simplicity, let's fetch for the whole month containing currentCalendarApiViewStart.
+        // FullCalendar's datesSet provides more precise start/end for the current view, which is better.
 
-        const firstDayOfViewMonth = startOfMonth(currentCalendarViewDate);
-        const lastDayOfViewMonth = endOfMonth(currentCalendarViewDate);
+        // This effect is now primarily driven by currentFetchKey (when month/year changes)
+        // or refreshTrigger. The initial load is handled by datesSet.
+        // If we want this to also handle initial load based on currentFetchKey:
+        const dateForFetch = currentCalendarApiViewStart; // Use the state that's updated by datesSet
+        const viewStart = startOfMonth(dateForFetch);
+        const viewEnd = endOfMonth(dateForFetch);
 
-        fetchAppointmentsForCalendar(firstDayOfViewMonth, lastDayOfViewMonth);
+        fetchAppointmentsForCalendar(viewStart, viewEnd);
 
-    }, [currentViewFetchKey, refreshTrigger, fetchAppointmentsForCalendar]); // Abhängigkeit von currentViewFetchKey
+    }, [currentFetchKey, refreshTrigger, fetchAppointmentsForCalendar]);
+
+    // Called by FullCalendar when the date range or view changes (including initial load)
+    const handleDatesSet = useCallback((dateInfo) => {
+        console.log(`[AdminCalendarView] datesSet triggered. View Start: ${dateInfo.startStr}, View End: ${dateInfo.endStr}, View CurrentStart: ${dateInfo.view.currentStart.toISOString()}`);
+        // Update the state that drives the fetchKey.
+        // Using dateInfo.view.currentStart is often a good reference for the "current" date of the view.
+        setCurrentCalendarApiViewStart(new Date(dateInfo.view.currentStart));
+        // The fetch will be triggered by the useEffect above due to currentFetchKey changing.
+        // OR, if we don't want to rely on currentFetchKey for this specific trigger:
+        // fetchAppointmentsForCalendar(dateInfo.start, dateInfo.end); // Direct fetch
+    }, []); // No dependency on fetchAppointmentsForCalendar to avoid re-creating this callback if fetchAppointmentsForCalendar changes.
+    // This is fine if fetchAppointmentsForCalendar is stable (which it is with useCallback([])).
 
 
     const handleEventClick = (clickInfo) => {
@@ -147,27 +167,31 @@ function AdminCalendarView({ currentUser, refreshTrigger, onAppointmentUpdated }
         }
     };
 
-    const handleDatesSet = (dateSetInfo) => {
-        // dateSetInfo.view.currentStart ist der erste sichtbare Tag der aktuellen Ansicht.
-        // dateSetInfo.start und dateSetInfo.end sind die tatsächlichen Start-/Enddaten des Intervalls.
-        console.log("datesSet - Start:", dateSetInfo.start, "End:", dateSetInfo.end, "View CurrentStart:", dateSetInfo.view.currentStart);
-        setCurrentCalendarViewDate(new Date(dateSetInfo.startStr)); // Oder dateSetInfo.view.currentStart
-        // Wichtig ist, dass dies den `currentViewFetchKey` ändert,
-        // wenn sich der Monat/Jahr ändert.
-    };
+    console.log('[AdminCalendarView] Render state - isLoading:', isLoading, 'events.length:', events.length, 'error:', error);
 
-    if (isLoading && events.length === 0) {
+    if (isLoading && events.length === 0 && !error) {
+        console.log('[AdminCalendarView] Rendering: Loading message (initial)');
         return <div className="loading-message"><FontAwesomeIcon icon={faSpinner} spin /> Kalenderdaten werden geladen...</div>;
     }
 
-    if (error) {
+    if (error && events.length === 0) {
+        console.log('[AdminCalendarView] Rendering: Error message (no events, error present)');
         return <p className="form-message error">{error}</p>;
     }
 
+    if (!isLoading && events.length === 0 && !error) {
+        console.log('[AdminCalendarView] Rendering: No appointments message');
+        return <p className="text-center text-gray-600 py-4">Keine Termine für den ausgewählten Zeitraum gefunden oder vorhanden.</p>;
+    }
+
+    console.log('[AdminCalendarView] Rendering: FullCalendar');
     return (
         <div className="admin-calendar-container">
-            {isLoading && events.length > 0 && <p className="loading-message small absolute-loader"><FontAwesomeIcon icon={faSpinner} spin /> Aktualisiere...</p>}
+            {isLoading && <p className="loading-message small absolute-loader"><FontAwesomeIcon icon={faSpinner} spin /> Aktualisiere...</p>}
+            {error && <p className="form-message error small absolute-loader" style={{top: '60px', right: '10px', zIndex: 25, background: 'var(--danger-bg-light)', padding: '0.5rem', borderRadius: '4px'}}>{error}</p>}
+
             <FullCalendar
+                ref={calendarRef}
                 plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
                 headerToolbar={{
                     left: 'prev,next today',
@@ -193,7 +217,7 @@ function AdminCalendarView({ currentUser, refreshTrigger, onAppointmentUpdated }
                 slotMaxTime="21:00:00"
                 allDaySlot={false}
                 height="auto"
-                datesSet={handleDatesSet} // Dieser Callback ist entscheidend
+                datesSet={handleDatesSet} // This callback is crucial
             />
             {selectedAppointment && currentUser?.roles?.includes("ROLE_ADMIN") && (
                 <AppointmentEditModal
