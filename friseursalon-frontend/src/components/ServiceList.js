@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api.service';
 import ServiceEditModal from './ServiceEditModal';
-import ConfirmModal from './ConfirmModal';
+import ConfirmModal from './ConfirmModal'; // NEU: Importieren
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faTrashAlt, faSpinner } from '@fortawesome/free-solid-svg-icons';
-import SkeletonLoader from './common/SkeletonLoader'; // Import SkeletonLoader
 
 function ServiceList({ refreshTrigger, currentUser }) {
     const [services, setServices] = useState([]);
@@ -12,19 +11,12 @@ function ServiceList({ refreshTrigger, currentUser }) {
     const [selectedService, setSelectedService] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    // NEU: State für Bestätigungsmodal
     const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
     const [serviceToDelete, setServiceToDelete] = useState(null);
 
     const fetchServices = useCallback(async () => {
-        // For initial load, ensure isLoading is true before fetching
-        if (services.length === 0) { // Check if it's the first load
-            setIsLoading(true);
-        } else {
-            // For subsequent refreshes, we might not want a full page skeleton,
-            // but the spinner in list-controls-header will indicate loading.
-            // Or, set a different loading state e.g. isRefreshing
-            setIsLoading(true); // Still set to true to show spinner
-        }
+        setIsLoading(true);
         setError(null);
         try {
             const response = await api.get('services');
@@ -32,38 +24,39 @@ function ServiceList({ refreshTrigger, currentUser }) {
         } catch (err) {
             console.error("Fehler beim Abrufen der Dienstleistungen:", err);
             setError("Dienstleistungen konnten nicht geladen werden. Bitte versuchen Sie es später erneut.");
-            setServices([]); // Clear services on error
+            setServices([]);
         } finally {
             setIsLoading(false);
         }
-    }, [services.length]); // services.length ensures setIsLoading(true) is correctly set on initial load
+    }, []);
 
     useEffect(() => {
         fetchServices();
     }, [fetchServices, refreshTrigger]);
 
+    // NEU: Handler für Klick auf "Löschen"-Button
     const handleDeleteClick = (service) => {
         setServiceToDelete(service);
         setShowConfirmDeleteModal(true);
     };
 
+    // NEU: Handler für Bestätigung im Modal
     const confirmDeleteService = async () => {
         if (!serviceToDelete) return;
-        // Consider a more specific loading state for delete, e.g., isDeleting
-        // For now, global isLoading might show skeletons briefly, which is acceptable.
-        setIsLoading(true); 
+        setIsLoading(true); // Oder einen spezifischen Ladezustand für die Löschaktion
         setShowConfirmDeleteModal(false);
         try {
             await api.delete(`services/${serviceToDelete.id}`);
             setServiceToDelete(null);
-            await fetchServices(); // Re-fetch services after deletion
+            fetchServices();
         } catch (err) {
             console.error("Fehler beim Löschen der Dienstleistung:", err);
             setError("Fehler beim Löschen der Dienstleistung.");
-            setIsLoading(false); // Ensure loading stops on error
+            setIsLoading(false);
             setServiceToDelete(null);
         }
     };
+
 
     const handleEditClick = (service) => {
         setSelectedService(service);
@@ -75,43 +68,22 @@ function ServiceList({ refreshTrigger, currentUser }) {
 
     const handleServiceUpdated = () => {
         handleCloseModal();
-        fetchServices(); // Re-fetch services after update
+        fetchServices();
     };
 
-
-    // Render Skeleton Loader if loading and no services are yet available
-    // The table structure will be part of the main return for non-loading state
-    const renderTableWithSkeleton = (columns) => (
-        <div className="table-responsive-container mt-2">
-            <table className="app-table services-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Beschreibung</th>
-                        <th>Preis</th>
-                        <th>Dauer (Min)</th>
-                        {currentUser?.roles?.includes("ROLE_ADMIN") && <th>Aktionen</th>}
-                    </tr>
-                </thead>
-                <tbody>
-                    <SkeletonLoader type="service-row" count={3} columns={columns} />
-                </tbody>
-            </table>
-        </div>
-    );
+    if (isLoading && services.length === 0) {
+        return <p className="loading-message"><FontAwesomeIcon icon={faSpinner} spin /> Dienstleistungen werden geladen...</p>;
+    }
 
     return (
         <div className="service-list-container">
             {error && <p className="form-message error mb-3">{error}</p>}
 
             <div className="list-controls-header">
-                {/* Show spinner if loading more data while some data is already present */}
                 {isLoading && services.length > 0 && <FontAwesomeIcon icon={faSpinner} spin className="ml-auto text-xl" />}
             </div>
 
-            {isLoading && services.length === 0 ? (
-                renderTableWithSkeleton(currentUser?.roles?.includes("ROLE_ADMIN") ? 5 : 4)
-            ) : services.length === 0 && !isLoading ? (
+            {services.length === 0 && !isLoading ? (
                 <p className="text-center text-gray-600 py-4">Keine Dienstleistungen verfügbar. Bitte fügen Sie welche hinzu.</p>
             ) : (
                 <div className="table-responsive-container mt-2">
