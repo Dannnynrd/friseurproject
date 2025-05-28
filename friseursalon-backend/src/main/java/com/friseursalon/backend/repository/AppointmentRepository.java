@@ -26,4 +26,9 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             @Param("proposedEnd") LocalDateTime proposedEnd,
             @Param("excludeId") Long excludeId
     );
+    // NEUE METHODEN FÜR STATISTIKEN
+    Long countByStartTimeBetween(LocalDateTime start, LocalDateTime end);
+    Long countByStartTimeAfter(LocalDateTime start);
+    @Query("SELECT a FROM Appointment a WHERE a.startTime >= :startOfDay AND a.startTime < :endOfDayPlusBuffer ORDER BY a.startTime ASC")
+    List<Appointment> findUpcomingAppointmentsForNextDays(@Param("startOfDay") LocalDateTime startOfDay, @Param("endOfDayPlusBuffer") LocalDateTime endOfDayPlusBuffer);
 }

@@ -1,0 +1,223 @@
+/* src/components/AdminDashboardStats.css */
+.admin-dashboard-stats {
+    padding: 1rem 0;
+}
+
+.loading-message-stats,
+.stats-error-message {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--medium-grey-text);
+}
+.loading-message-stats .svg-inline--fa {
+    margin-bottom: 1rem;
+}
+.stats-error-message .svg-inline--fa {
+    color: var(--danger-color);
+    margin-bottom: 0.75rem;
+}
+.stats-error-message pre {
+    white-space: pre-wrap;
+    word-break: break-all;
+    background-color: var(--light-grey-bg);
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    text-align: left;
+    color: var(--dark-text);
+    margin-top: 0.5rem;
+}
+
+.stats-overview-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.stat-card {
+    background-color: var(--light-bg);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+}
+
+.stat-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 50%;
+    color: var(--light-bg);
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-icon.today { background-color: #28a745; } /* Grün */
+.stat-icon.week { background-color: #17a2b8; } /* Blaugrün */
+.stat-icon.month { background-color: #ffc107; } /* Gelb */
+.stat-icon.upcoming { background-color: #6f42c1; } /* Lila */
+
+
+.stat-value {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--dark-text);
+    margin-bottom: 0.25rem;
+    font-family: var(--font-serif);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--medium-grey-text);
+    font-weight: 500;
+}
+
+.daily-appointments-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: var(--light-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.daily-appointments-heading {
+    font-family: var(--font-serif);
+    font-size: 1.4rem;
+    color: var(--dark-text);
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color-light);
+    padding-bottom: 0.75rem;
+}
+
+.daily-appointments-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.daily-appointment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.9rem 0.5rem;
+    border-bottom: 1px solid var(--border-color-light);
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease;
+}
+
+.daily-appointment-item:last-child {
+    border-bottom: none;
+}
+.daily-appointment-item:hover {
+    background-color: var(--light-grey-bg);
+}
+
+.daily-appointment-item .appointment-time {
+    font-weight: 600;
+    color: var(--dark-text);
+    min-width: 70px;
+}
+
+.daily-appointment-item .appointment-service {
+    flex-grow: 1;
+    margin: 0 1rem;
+    color: var(--medium-grey-text);
+}
+.daily-appointment-item .appointment-customer {
+    color: var(--dark-text);
+    font-weight: 500;
+    margin-right: 1rem;
+    white-space: nowrap;
+}
+
+
+.appointment-status-tag {
+    padding: 0.25em 0.6em;
+    border-radius: 12px; /* Mehr abgerundet */
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 60px;
+    text-align: center;
+}
+
+.appointment-status-tag.status-heute {
+    background-color: var(--success-bg-light);
+    color: var(--success-color);
+    border: 1px solid var(--success-color);
+}
+
+.appointment-status-tag.status-morgen {
+    background-color: var(--info-bg-light);
+    color: var(--info-color);
+    border: 1px solid var(--info-color);
+}
+/* Fallback für andere Datumsformate, falls benötigt */
+.appointment-status-tag:not(.status-heute):not(.status-morgen) {
+    background-color: var(--light-grey-bg);
+    color: var(--medium-grey-text);
+    border: 1px solid var(--border-color);
+}
+
+
+@media (max-width: 768px) {
+    .stats-overview-cards {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+    .stat-card {
+        padding: 1rem;
+    }
+    .stat-icon {
+        font-size: 1.5rem;
+        width: 50px;
+        height: 50px;
+        margin-bottom: 0.5rem;
+    }
+    .stat-value {
+        font-size: 1.8rem;
+    }
+    .stat-label {
+        font-size: 0.8rem;
+    }
+
+    .daily-appointment-item {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+    .daily-appointment-item .appointment-service {
+        width: 100%;
+        margin: 0.25rem 0;
+        order: 3; /* Service unter Zeit und Kunde */
+    }
+    .daily-appointment-item .appointment-customer {
+        order: 2;
+        flex-grow: 1; /* Kunde nimmt mehr Platz ein */
+    }
+    .daily-appointment-item .appointment-time {
+        order: 1;
+    }
+    .daily-appointment-item .appointment-status-tag {
+        order: 4;
+        margin-top: 0.25rem;
+        width: 100%; /* Volle Breite für den Tag auf Mobile */
+    }
+}

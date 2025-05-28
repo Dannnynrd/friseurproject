@@ -1,3 +1,4 @@
+// src/main/java/com/friseursalon/backend/config/SecurityConfig.java
 package com.friseursalon.backend.config;
 
 import com.friseursalon.backend.service.UserService;
@@ -59,7 +60,8 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.addAllowedOrigin("http://localhost:3000");
+        config.addAllowedOrigin("http://localhost:3000"); // Frontend-URL
+        config.addAllowedOrigin("http://localhost:8080"); // Backend-URL für interne Weiterleitungen (falls relevant)
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         source.registerCorsConfiguration("/**", config);
@@ -71,7 +73,7 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
-                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
+                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)) // Für H2 Konsole
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
@@ -79,10 +81,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/hello").permitAll()
                         .requestMatchers("/api/services/**").permitAll()
                         .requestMatchers("/api/workinghours/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/blockedtimeslots/date/**").permitAll() // NEU: Erlaube GET für spezifische Daten
-                        .requestMatchers("/api/blockedtimeslots/**").hasRole("ADMIN") // NEU: Restliche BlockedTimeSlot-Endpunkte für Admin
+                        .requestMatchers(HttpMethod.GET, "/api/blockedtimeslots/date/**").permitAll()
+                        .requestMatchers("/api/blockedtimeslots/**").hasRole("ADMIN")
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/appointments").permitAll()
+                        // NEUER EINTRAG FÜR STATISTIKEN
+                        .requestMatchers("/api/statistics/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 );
 

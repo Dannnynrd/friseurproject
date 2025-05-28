@@ -25,6 +25,7 @@ import FAQSection from './components/FAQSection';
 import LocationSection from './components/LocationSection';
 import NewsletterSection from './components/NewsletterSection';
 
+
 // Seiten
 import BookingPage from './pages/BookingPage';
 import AccountDashboard from './pages/AccountDashboard';

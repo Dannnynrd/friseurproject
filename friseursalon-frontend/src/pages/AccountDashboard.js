@@ -1,34 +1,33 @@
 // src/pages/AccountDashboard.js
-
 import React, { useState, useEffect, useCallback } from 'react';
-import "./AccountDashboard.css"; // Stile für das Dashboard UND AppointmentList
-// import "../components/AppointmentList.css"; // ENTFERNT - Stile sind in AccountDashboard.css
+import "./AccountDashboard.css";
 import AdminCalendarView from '../components/AdminCalendarView';
 import AppointmentList from '../components/AppointmentList';
 import ServiceForm from '../components/ServiceForm';
 import ServiceList from '../components/ServiceList';
 import WorkingHoursManager from '../components/WorkingHoursManager';
 import BlockedTimeSlotManager from '../components/BlockedTimeSlotManager';
+import AdminDashboardStats from '../components/AdminDashboardStats'; // NEUER IMPORT
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faClipboardList, faUserCog, faTools, faSignOutAlt,
     faChevronRight, faChevronDown, faPlusCircle, faMinusCircle,
     faChartBar, faUser, faTimesCircle, faClock, faCalendarTimes,
-    faCalendarAlt, faListAlt // Neues Icon für Terminliste
+    faCalendarAlt, faListAlt, faTachometerAlt // NEUE Icons
 } from '@fortawesome/free-solid-svg-icons';
 
 
 function AccountDashboard({
                               currentUser,
                               logOut,
-                              onAppointmentAdded, // Wird an Kalender/Liste weitergegeben, um refresh zu triggern
-                              refreshAppointmentsList, // Wird vom Kalender/Liste genutzt
+                              onAppointmentAdded,
+                              refreshAppointmentsList,
                               onServiceAdded,
                               refreshServicesList
                           }) {
-    // Wenn Admin, starte auf Kalender-Tab, sonst auf "Meine Termine" (Liste)
-    const initialAdminTab = 'adminCalendar'; // Admin startet standardmäßig im Kalender
-    const initialUserTab = 'bookings';       // User startet standardmäßig in "Meine Termine" (Liste)
+    // Admin startet standardmäßig auf der neuen Übersichtsseite
+    const initialAdminTab = 'adminDashboardStats'; // GEÄNDERT
+    const initialUserTab = 'bookings';
 
     const [activeTab, setActiveTab] = useState(
         currentUser?.roles?.includes("ROLE_ADMIN") ? initialAdminTab : initialUserTab
@@ -37,17 +36,13 @@ function AccountDashboard({
     const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 992);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-    // States für Admin-spezifische Formulare
     const [showServiceForm, setShowServiceForm] = useState(false);
     const [isSubmittingService, setIsSubmittingService] = useState(false);
 
     const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes("ROLE_ADMIN");
 
-    // Callback, der vom AdminCalendarView oder AppointmentList aufgerufen wird,
-    // wenn ein Termin geändert wurde.
-    // Dies triggert den refreshAppointmentsList State in App.js.
     const handleAppointmentChangeInCalendarOrList = useCallback(() => {
-        if (onAppointmentAdded) { // onAppointmentAdded ist der Callback, der refreshAppointmentsList erhöht
+        if (onAppointmentAdded) {
             onAppointmentAdded();
         }
     }, [onAppointmentAdded]);
@@ -57,36 +52,32 @@ function AccountDashboard({
         const handleResize = () => {
             const mobile = window.innerWidth <= 992;
             setIsMobileView(mobile);
-            if (!mobile) setMobileNavOpen(false); // Schließe mobiles Menü bei Vergrößerung
+            if (!mobile) setMobileNavOpen(false);
         };
         window.addEventListener('resize', handleResize);
-        handleResize(); // Initialer Check beim Laden
+        handleResize();
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     useEffect(() => {
-        // Stellt sicher, dass der Tab gültig ist, wenn sich currentUser oder isAdmin-Status ändert.
         if (currentUser) {
-            const adminTabs = ['adminCalendar', 'adminAppointmentList', 'adminServices', 'adminWorkingHours', 'adminBlockedSlots', 'adminAnalytics', 'profile'];
+            // 'adminAnalytics' wurde zu 'adminDashboardStats' umbenannt/ersetzt
+            const adminTabs = ['adminDashboardStats', 'adminCalendar', 'adminAppointmentList', 'adminServices', 'adminWorkingHours', 'adminBlockedSlots', 'profile'];
             const userTabs = ['bookings', 'profile'];
 
             if (isAdmin) {
-                // Wenn der aktuelle Tab kein gültiger Admin-Tab ist (oder ein reiner User-Tab außer 'profile'),
-                // setze auf den initialen Admin-Tab.
                 if (!adminTabs.includes(activeTab)) {
                     setActiveTab(initialAdminTab);
                 }
-            } else { // Ist User
+            } else {
                 if (!userTabs.includes(activeTab)) {
-                    setActiveTab(initialUserTab); // User Fallback zur Terminliste
+                    setActiveTab(initialUserTab);
                 }
             }
         } else {
-            // Sollte nicht passieren, da dies eine geschützte Route ist, aber als Fallback
             setActiveTab(initialUserTab);
         }
 
-        // Service-Formular schließen, wenn der Tab gewechselt wird und es nicht der Service-Tab ist
         if (activeTab !== 'adminServices') {
             setShowServiceForm(false);
         }
@@ -95,53 +86,57 @@ function AccountDashboard({
 
     const handleServiceAddedCallback = () => {
         if (onServiceAdded) {
-            onServiceAdded(); // Triggert refreshServicesList in App.js
+            onServiceAdded();
         }
-        setShowServiceForm(false); // Schließt das Formular nach erfolgreichem Hinzufügen
-        setIsSubmittingService(false); // Setzt den Ladezustand zurück
+        setShowServiceForm(false);
+        setIsSubmittingService(false);
     };
 
     const handleTabClick = (tabName) => {
         setActiveTab(tabName);
         if (isMobileView) {
-            setMobileNavOpen(false); // Schließt das mobile Menü nach Auswahl eines Tabs
+            setMobileNavOpen(false);
         }
     };
 
 
     const renderTabContent = (tabName) => {
         switch (tabName) {
-            case 'bookings': // Für normale User, zeigt die Terminliste
+            case 'adminDashboardStats': // NEUER TAB
+                return isAdmin && (
+                    <div className="dashboard-section-content admin-stats-tab-content">
+                        <h2 className="dashboard-section-heading">Dashboard Übersicht</h2>
+                        <AdminDashboardStats />
+                    </div>
+                );
+            case 'bookings':
                 return (
                     <div className="dashboard-section-content">
                         <h2 className="dashboard-section-heading">Meine Termine</h2>
                         <AppointmentList
                             refreshTrigger={refreshAppointmentsList}
                             currentUser={currentUser}
-                            // onAppointmentUpdated wird hier nicht direkt benötigt,
-                            // da Aktionen (Löschen) in AppointmentList selbst einen Refetch auslösen sollten
-                            // oder über refreshAppointmentsList global getriggert werden.
                         />
                     </div>
                 );
-            case 'adminCalendar': // NEU: Für Admin, zeigt den Kalender
+            case 'adminCalendar':
                 return isAdmin && (
                     <div className="dashboard-section-content admin-calendar-tab-content">
                         <h2 className="dashboard-section-heading">Terminkalender</h2>
                         <AdminCalendarView
                             currentUser={currentUser}
-                            refreshTrigger={refreshAppointmentsList} // Wird genutzt, um Kalender neu zu laden bei globalen Änderungen
-                            onAppointmentUpdated={handleAppointmentChangeInCalendarOrList} // Callback, um refresh zu triggern
+                            refreshTrigger={refreshAppointmentsList}
+                            onAppointmentUpdated={handleAppointmentChangeInCalendarOrList}
                         />
                     </div>
                 );
-            case 'adminAppointmentList': // NEUER TAB für Admin Terminliste
+            case 'adminAppointmentList':
                 return isAdmin && (
                     <div className="dashboard-section-content">
                         <h2 className="dashboard-section-heading">Terminübersicht (Liste)</h2>
                         <AppointmentList
                             refreshTrigger={refreshAppointmentsList}
-                            currentUser={currentUser} // Stellt sicher, dass Admin-Ansicht geladen wird
+                            currentUser={currentUser}
                         />
                     </div>
                 );
@@ -156,6 +151,7 @@ function AccountDashboard({
                             <p><strong>Telefon:</strong> {currentUser?.phoneNumber || 'Nicht angegeben'}</p>
                             <p><strong>Rollen:</strong> {currentUser?.roles?.join(', ') || '-'}</p>
                         </div>
+                        {/* Hier könnte später ein Formular zum Bearbeiten der Profildaten hinzukommen */}
                     </div>
                 );
             case 'adminServices':
@@ -165,7 +161,7 @@ function AccountDashboard({
                             <h2 className="dashboard-section-heading">Dienstleistungen verwalten</h2>
                             <button
                                 onClick={() => setShowServiceForm(!showServiceForm)}
-                                className="button-link-outline toggle-service-form-button" // Klasse für Styling
+                                className="button-link-outline toggle-service-form-button"
                                 aria-expanded={showServiceForm}
                             >
                                 <FontAwesomeIcon icon={showServiceForm ? faMinusCircle : faPlusCircle} />
@@ -173,15 +169,15 @@ function AccountDashboard({
                             </button>
                         </div>
                         {showServiceForm && (
-                            <div className="service-form-wrapper"> {/* Wrapper für Styling des Formularbereichs */}
+                            <div className="service-form-wrapper">
                                 <ServiceForm
                                     onServiceAdded={handleServiceAddedCallback}
-                                    setIsSubmitting={setIsSubmittingService} // Übergabe der Setter-Funktion
-                                    isSubmitting={isSubmittingService}     // Übergabe des Ladezustands
+                                    setIsSubmitting={setIsSubmittingService}
+                                    isSubmitting={isSubmittingService}
                                 />
                             </div>
                         )}
-                        <hr className="dashboard-section-hr" /> {/* Trennlinie */}
+                        <hr className="dashboard-section-hr" />
                         <ServiceList key={refreshServicesList} currentUser={currentUser} />
                     </div>
                 );
@@ -199,17 +195,16 @@ function AccountDashboard({
                         <BlockedTimeSlotManager />
                     </div>
                 );
-            case 'adminAnalytics':
-                return isAdmin && (
-                    <div className="dashboard-section-content">
-                        <h2 className="dashboard-section-heading">Analysen</h2>
-                        <p className="text-center text-gray-600 py-4">Dieser Bereich ist in Entwicklung.</p>
-                    </div>
-                );
+            // case 'adminAnalytics': // Alter Analytics-Tab, kann entfernt oder umbenannt werden
+            //     return isAdmin && (
+            //         <div className="dashboard-section-content">
+            //             <h2 className="dashboard-section-heading">Analysen</h2>
+            //             <p className="text-center text-gray-600 py-4">Dieser Bereich ist in Entwicklung.</p>
+            //         </div>
+            //     );
             default:
-                // Fallback-Logik, falls ein ungültiger Tab aktiv ist
-                if (isAdmin) return renderTabContent('adminCalendar');
-                return renderTabContent('bookings');
+                if (isAdmin) return renderTabContent(initialAdminTab);
+                return renderTabContent(initialUserTab);
         }
     };
 
@@ -226,16 +221,14 @@ function AccountDashboard({
 
 
     if (!currentUser) {
-        // Sollte durch ProtectedRoute in App.js abgefangen werden, aber als Sicherheit
         return <div className="page-center-content"><p>Laden...</p></div>;
     }
 
-    // Desktop Navigation
     const DesktopNav = () => (
         <aside className="dashboard-sidebar">
             <nav>
                 <ul>
-                    {!isAdmin && ( // User spezifische Tabs zuerst
+                    {!isAdmin && (
                         <>
                             <li className="nav-category-title">Mein Bereich</li>
                             {renderNavItem('bookings', faClipboardList, 'Meine Termine')}
@@ -245,17 +238,20 @@ function AccountDashboard({
 
                     {isAdmin && (
                         <>
-                            <li className="nav-category-title">Terminplanung</li>
+                            {/* NEUER TAB "ÜBERSICHT" GANZ OBEN FÜR ADMINS */}
+                            {renderNavItem('adminDashboardStats', faTachometerAlt, 'Übersicht')}
+
+                            <li className="nav-category-title mt-4">Terminplanung</li>
                             {renderNavItem('adminCalendar', faCalendarAlt, 'Kalender')}
-                            {renderNavItem('adminAppointmentList', faListAlt, 'Terminliste')} {/* NEUER TAB */}
+                            {renderNavItem('adminAppointmentList', faListAlt, 'Terminliste')}
 
                             <li className="nav-category-title mt-4">Verwaltung</li>
                             {renderNavItem('adminServices', faTools, 'Services')}
                             {renderNavItem('adminWorkingHours', faClock, 'Arbeitszeiten')}
                             {renderNavItem('adminBlockedSlots', faCalendarTimes, 'Abwesenheiten')}
-                            {renderNavItem('adminAnalytics', faChartBar, 'Analysen')}
+                            {/* {renderNavItem('adminAnalytics', faChartBar, 'Analysen')} ALT */}
 
-                            {/* Admin kann auch sein Profil sehen, daher unter einer eigenen Kategorie */}
+
                             <li className="nav-category-title mt-4">Mein Account (Admin)</li>
                             {renderNavItem('profile', faUser, 'Meine Daten')}
                         </>
@@ -270,7 +266,6 @@ function AccountDashboard({
         </aside>
     );
 
-    // Mobile Navigation
     const MobileNav = () => (
         <div className={`mobile-dashboard-nav ${mobileNavOpen ? 'open' : ''}`} id="mobile-dashboard-navigation">
             <button className="mobile-nav-close-button" onClick={() => setMobileNavOpen(false)}>
@@ -278,7 +273,6 @@ function AccountDashboard({
             </button>
             <nav>
                 <ul>
-                    {/* Die Logik für User und Admin Tabs ist identisch zur Desktop-Nav */}
                     {!isAdmin && (
                         <>
                             <li className="nav-category-title">Mein Bereich</li>
@@ -289,15 +283,17 @@ function AccountDashboard({
 
                     {isAdmin && (
                         <>
-                            <li className="nav-category-title">Terminplanung</li>
+                            {renderNavItem('adminDashboardStats', faTachometerAlt, 'Übersicht')}
+
+                            <li className="nav-category-title mt-4">Terminplanung</li>
                             {renderNavItem('adminCalendar', faCalendarAlt, 'Kalender')}
-                            {renderNavItem('adminAppointmentList', faListAlt, 'Terminliste')} {/* NEUER TAB */}
+                            {renderNavItem('adminAppointmentList', faListAlt, 'Terminliste')}
 
                             <li className="nav-category-title mt-4">Verwaltung</li>
                             {renderNavItem('adminServices', faTools, 'Services')}
                             {renderNavItem('adminWorkingHours', faClock, 'Arbeitszeiten')}
                             {renderNavItem('adminBlockedSlots', faCalendarTimes, 'Abwesenheiten')}
-                            {renderNavItem('adminAnalytics', faChartBar, 'Analysen')}
+                            {/* {renderNavItem('adminAnalytics', faChartBar, 'Analysen')} ALT */}
 
                             <li className="nav-category-title mt-4">Mein Account (Admin)</li>
                             {renderNavItem('profile', faUser, 'Meine Daten')}
