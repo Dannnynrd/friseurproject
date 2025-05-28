@@ -2,7 +2,7 @@
 #location {
     background-color: var(--light-grey-bg);
 }
-#location .section-header {
+#location .section-header { /* Behalte dies, falls du es woanders verwendest */
     text-align: center; max-width: 600px; margin: 0 auto 2.5rem auto;
 }
 #location .section-header h2 { font-family: var(--font-serif), serif; font-size: 2.2rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--dark-text); }
@@ -13,11 +13,11 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: 2.5rem;
-    align-items: center;
+    align-items: flex-start; /* Geändert von center zu flex-start */
 }
 @media (min-width: 992px) {
     .location-container {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: minmax(auto, 400px) 1fr; /* Adress-Info bekommt max. 400px, Karte den Rest */
     }
 }
 .address-info h3 {
@@ -28,15 +28,52 @@
 }
 .address-info p {
     font-size: 0.9rem;
-    color: var(--dark-text);
+    color: var(--dark-text); /* Geändert von medium-grey-text für bessere Lesbarkeit */
     margin-bottom: 1rem;
     line-height: 1.7;
 }
-.address-info p strong {
-    font-weight: 600;
+.address-info p.location-address { /* Spezifischer für die Adresse */
+    margin-bottom: 1.5rem;
 }
+
+.address-info h4 { /* Für "Öffnungszeiten:" Überschrift */
+    font-family: var(--font-sans), sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--dark-text);
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.opening-hours-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem 0;
+    font-size: 0.9rem;
+}
+.opening-hours-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.3rem 0;
+    color: var(--medium-grey-text);
+    border-bottom: 1px dotted var(--border-color);
+}
+.opening-hours-list li:last-child {
+    border-bottom: none;
+}
+.opening-hours-list .day-name {
+    font-weight: 500;
+    color: var(--dark-text);
+    margin-right: 1em;
+}
+.opening-hours-list .time-range.closed {
+    color: var(--light-grey-text);
+    font-style: italic;
+}
+
+
 .address-info .button-link { /* Nutzt globale Stile */
-    margin-top: 1rem;
+    margin-top: 1rem; /* Stellt sicher, dass der Button etwas Abstand hat */
 }
 .address-info a.interactive:not(.button-link) { /* Für normale Links in der Adresse */
     color: var(--dark-text);
@@ -59,12 +96,13 @@
 
 
 #map {
-    height: 350px;
+    height: 380px; /* Etwas höher gemacht */
+    min-height: 300px;
     border-radius: 6px;
     background-color: #e0e0e0;
     border: 1px solid var(--border-color);
     box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
-#map > div { /* Für das eigentliche Karten-Div, um sicherzustellen, dass der Radius angewendet wird */
+#map > div {
     border-radius: 6px !important;
 }

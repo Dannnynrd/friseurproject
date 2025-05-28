@@ -1,11 +1,49 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // useState, useEffect, useCallback hinzugefügt
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// Korrekter Import für Marken-Icons, nachdem das Paket installiert wurde
 import { faFacebookF, faInstagram, faPinterestP } from '@fortawesome/free-brands-svg-icons';
+import api from '../services/api.service'; // API Service importieren
 import './Footer.css';
 
+const germanDaysShortFooter = { // Eigene Konstante, um Konflikte zu vermeiden, falls unterschiedlich benötigt
+    MONDAY: "Mo",
+    TUESDAY: "Di",
+    WEDNESDAY: "Mi",
+    THURSDAY: "Do",
+    FRIDAY: "Fr",
+    SATURDAY: "Sa",
+    SUNDAY: "So"
+};
+const getOrderedDaysFooter = () => {
+    return ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
+};
+
 function Footer() {
+    const [footerWorkingHours, setFooterWorkingHours] = useState([]);
+    const [loadingFooterHours, setLoadingFooterHours] = useState(true);
+    // Optional: error state für Footer
+
+    const fetchFooterWorkingHours = useCallback(async () => {
+        setLoadingFooterHours(true);
+        try {
+            const response = await api.get('/workinghours');
+            const orderedDays = getOrderedDaysFooter();
+            const sortedHours = (response.data || []).sort((a, b) => {
+                return orderedDays.indexOf(a.dayOfWeek) - orderedDays.indexOf(b.dayOfWeek);
+            });
+            setFooterWorkingHours(sortedHours);
+        } catch (err) {
+            console.error("Fehler beim Laden der Öffnungszeiten für Footer:", err);
+            // Hier könntest du einen Fehlerstatus setzen, wenn gewünscht
+        } finally {
+            setLoadingFooterHours(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchFooterWorkingHours();
+    }, [fetchFooterWorkingHours]);
+
     return (
         <footer className="footer">
             <div className="container">
@@ -18,11 +56,24 @@ function Footer() {
                     </div>
                     <div className="footer-column">
                         <h4>Öffnungszeiten</h4>
-                        <ul>
-                            <li>Di - Fr: 09:00 - 18:00 Uhr</li>
-                            <li>Sa: 09:00 - 15:00 Uhr</li>
-                            <li>So & Mo: Geschlossen</li>
-                        </ul>
+                        {loadingFooterHours ? (
+                            <p>Lade...</p>
+                        ) : footerWorkingHours.length > 0 ? (
+                            <ul className="footer-opening-hours">
+                                {footerWorkingHours.map(wh => (
+                                    <li key={`footer-${wh.dayOfWeek}`}>
+                                        <span className="day">{germanDaysShortFooter[wh.dayOfWeek]}:</span>
+                                        {wh.isClosed || !wh.startTime || !wh.endTime ? (
+                                            <span className="time closed">Geschlossen</span>
+                                        ) : (
+                                            <span className="time">{wh.startTime} - {wh.endTime}</span>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p>Zeiten nicht verfügbar.</p>
+                        )}
                     </div>
                     <div className="footer-column">
                         <h4>Navigation</h4>
@@ -51,7 +102,6 @@ function Footer() {
                 <div className="footer-bottom">
                     <p>&copy; {new Date().getFullYear()} IMW Friseursalon. Alle Rechte vorbehalten.</p>
                     <p>
-                        {/* Hier sollten tatsächliche Links zu Impressum/Datenschutz-Seiten sein, falls vorhanden */}
                         <Link to="/impressum" className="interactive">Impressum</Link> | <Link to="/datenschutz" className="interactive">Datenschutz</Link>
                     </p>
                 </div>
