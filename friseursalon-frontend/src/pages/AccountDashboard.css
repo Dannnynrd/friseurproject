@@ -1,6 +1,326 @@
-/* src/pages/AccountDashboard.css OR a new AppointmentList.css */
+/* src/pages/AccountDashboard.css */
 
-/* Admin Appointment Controls */
+/* Globale Dashboard-Struktur */
+.account-dashboard-container {
+    padding: 2rem 0 4rem; /* Mehr Padding unten */
+    background-color: var(--light-bg);
+    min-height: calc(100vh - var(--header-height-desktop, 5rem) - var(--footer-height, 14rem));
+}
+@media (max-width: 992px) {
+    .account-dashboard-container {
+        min-height: calc(100vh - var(--header-height-mobile, 4.5rem) - var(--footer-height, 14rem));
+        padding: 1.5rem 0 3rem;
+    }
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-main-heading {
+    font-family: var(--font-serif), serif;
+    font-size: 2rem; /* Etwas größer */
+    color: var(--dark-text);
+    margin: 0; /* Entfernt Standard-Margin, da durch dashboard-header gesteuert */
+}
+
+.mobile-nav-toggle-button {
+    /* Stile für den Button zum Öffnen des mobilen Menüs */
+    display: none; /* Standardmäßig versteckt, nur für Mobile sichtbar */
+}
+
+.dashboard-welcome-message {
+    text-align: left; /* Links ausgerichtet */
+    max-width: none; /* Nimmt volle Breite ein */
+    margin: 0 0 2rem 0; /* Abstand nach unten */
+    color: var(--medium-grey-text);
+    font-size: 0.9rem;
+}
+
+.dashboard-layout {
+    display: flex;
+    flex-direction: row;
+    gap: 2rem; /* Größerer Abstand zwischen Sidebar und Content */
+    align-items: flex-start;
+}
+
+/* Sidebar-Styling (Desktop) */
+.dashboard-sidebar {
+    flex: 0 0 250px; /* Etwas breiter */
+    background-color: var(--light-bg);
+    border-radius: 8px; /* Größere Rundung */
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    align-self: flex-start;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); /* Dezenter Schatten */
+}
+
+.dashboard-sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.dashboard-sidebar .nav-category-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--light-grey-text);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+    padding: 0 0.25rem;
+}
+.dashboard-sidebar .nav-category-title:first-of-type {
+    margin-top: 0;
+}
+
+.dashboard-sidebar .dashboard-nav-item {
+    margin-bottom: 0.25rem; /* Kleinerer Abstand zwischen Items */
+}
+
+.dashboard-nav-button {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem; /* Mehr Platz für Icon */
+    width: 100%;
+    padding: 0.8rem 1rem; /* Mehr Padding */
+    border: 1px solid transparent;
+    border-radius: 5px; /* Abgerundete Ecken */
+    background: transparent;
+    color: var(--dark-text);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    font-weight: 500;
+}
+.dashboard-nav-button .svg-inline--fa {
+    font-size: 1em; /* Icon-Größe relativ zur Schrift */
+    width: 1.25em; /* Feste Breite für Ausrichtung */
+    text-align: center;
+    color: var(--medium-grey-text); /* Standard-Icon-Farbe */
+    transition: color 0.2s ease;
+}
+.dashboard-nav-button:hover {
+    background-color: var(--light-grey-bg);
+    color: var(--dark-text);
+}
+.dashboard-nav-button:hover .svg-inline--fa {
+    color: var(--dark-text);
+}
+
+.dashboard-nav-button.active {
+    background: var(--dark-text);
+    color: var(--light-bg);
+    font-weight: 600; /* Stärkerer Fokus */
+    border-color: var(--dark-text);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.dashboard-nav-button.active .svg-inline--fa {
+    color: var(--light-bg); /* Icon-Farbe im aktiven Zustand */
+}
+.dashboard-nav-button.active:hover,
+.dashboard-nav-button.active:focus-visible {
+    background: #333333; /* Dunklerer Hover für aktiven Button */
+    border-color: #333333;
+}
+
+.dashboard-nav-item.logout-button-container {
+    margin-top: 1.5rem; /* Mehr Abstand für Logout */
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+.dashboard-nav-button.logout-button {
+    color: var(--dark-text); /* Standard-Textfarbe */
+}
+.dashboard-nav-button.logout-button:hover,
+.dashboard-nav-button.logout-button:focus-visible {
+    background-color: var(--danger-bg-light); /* Heller roter Hintergrund */
+    border-color: var(--danger-color);
+    color: var(--danger-color); /* Rote Schrift */
+    font-weight: 600;
+}
+.dashboard-nav-button.logout-button:hover .svg-inline--fa,
+.dashboard-nav-button.logout-button:focus-visible .svg-inline--fa {
+    color: var(--danger-color); /* Rotes Icon */
+}
+
+
+/* Dashboard Content Area */
+.dashboard-content {
+    flex: 1;
+    background-color: var(--light-bg);
+    border-radius: 8px;
+    padding: 2rem; /* Mehr Padding */
+    border: 1px solid var(--border-color);
+    min-height: 400px; /* Mindesthöhe für den Content-Bereich */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.dashboard-section-heading {
+    font-family: var(--font-serif), serif;
+    font-size: 1.6rem; /* Etwas größer */
+    color: var(--dark-text);
+    margin-bottom: 1.5rem; /* Mehr Abstand */
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.75rem;
+}
+
+.dashboard-profile-info {
+    text-align: left;
+    font-size: 0.95rem; /* Etwas größer */
+    line-height: 1.7;
+    color: var(--dark-text);
+    padding: 1.5rem; /* Mehr Padding */
+    border-radius: 6px;
+    background-color: var(--light-grey-bg);
+    border: 1px solid var(--border-color);
+}
+.dashboard-profile-info p {
+    margin-bottom: 0.5rem; /* Mehr Abstand zwischen Zeilen */
+}
+.dashboard-profile-info strong {
+    font-weight: 600;
+    min-width: 100px; /* Für bessere Ausrichtung der Werte */
+    display: inline-block;
+}
+
+.dashboard-section-hr {
+    margin: 2rem 0; /* Größerer Abstand für die Trennlinie */
+    border: 0;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Admin-spezifische Header-Kontrollen (z.B. für "Neuen Service hinzufügen") */
+.dashboard-section-header-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem; /* Konsistenter Abstand */
+}
+.dashboard-section-header-controls .dashboard-section-heading {
+    margin-bottom: 0; /* Überschrift in Kontrollen hat keinen eigenen unteren Rand */
+    border-bottom: none;
+    padding-bottom: 0;
+}
+.toggle-service-form-button { /* Oder generischer: .toggle-form-button */
+    /* Stile werden von .button-link-outline geerbt, ggf. Anpassungen */
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+}
+.toggle-service-form-button .svg-inline--fa {
+    margin-right: 0.5rem;
+}
+
+.service-form-wrapper {
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+    background-color: var(--light-grey-bg);
+    animation: fadeInForm 0.3s ease-out;
+}
+@keyframes fadeInForm {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* Mobile Navigation */
+@media (max-width: 992px) {
+    .dashboard-header {
+        padding: 0 1rem; /* Padding für den Header auf Mobile */
+    }
+    .mobile-nav-toggle-button {
+        display: inline-flex; /* Sichtbar auf Mobile */
+        /* Stile für .button-link-outline .small-button werden angewendet */
+    }
+    .dashboard-layout {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.5rem;
+    }
+    .dashboard-sidebar { /* Wird zur mobilen Nav */
+        display: none; /* Standardmäßig versteckt, durch JS gesteuert */
+    }
+    .mobile-dashboard-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        max-width: 300px; /* Breite des Slide-Out-Menüs */
+        height: 100vh;
+        background-color: var(--light-bg);
+        z-index: 1003; /* Über dem Header, aber unter Modals */
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+        overflow-y: auto;
+        padding: 1.5rem;
+        padding-top: calc(var(--header-height-mobile, 4.5rem) + 1rem); /* Platz für den Header */
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    }
+    .mobile-dashboard-nav.open {
+        transform: translateX(0);
+    }
+    .mobile-nav-close-button {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: none;
+        border: none;
+        font-size: 1rem;
+        color: var(--dark-text);
+        padding: 0.5rem;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        position: absolute;
+        top: calc(var(--header-height-mobile, 4.5rem) / 2);
+        right: 1rem;
+        transform: translateY(-50%);
+        z-index: 1004; /* Über dem Menü-Inhalt */
+    }
+
+    .mobile-dashboard-nav ul { list-style: none; padding: 0; margin: 0; }
+    .mobile-dashboard-nav .dashboard-nav-item { margin-bottom: 0; }
+    .mobile-dashboard-nav .dashboard-nav-button {
+        padding: 1rem 1.25rem; /* Größere Touch-Ziele */
+        font-size: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        border-radius: 0;
+    }
+    .mobile-dashboard-nav .dashboard-nav-item:last-child .dashboard-nav-button {
+        border-bottom: none;
+    }
+    .mobile-dashboard-nav .nav-category-title {
+        padding: 1rem 1.25rem 0.5rem;
+        margin-top: 0.5rem;
+    }
+    .mobile-dashboard-nav .logout-button-container {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .dashboard-content {
+        width: 100%;
+        min-width: auto;
+        padding: 1.5rem; /* Konsistentes Padding */
+    }
+    .dashboard-main-heading {
+        font-size: 1.6rem; /* Angepasste Überschriftengröße */
+    }
+    .dashboard-welcome-message {
+        text-align: center; /* Zentriert auf Mobile */
+        margin-bottom: 1.5rem;
+    }
+}
+
+
+/* Stile für die Terminliste (von AppointmentList.css übernommen/integriert) */
 .admin-appointment-controls {
     margin-bottom: 1.5rem;
     padding: 1rem;
@@ -10,17 +330,17 @@
 }
 
 .filter-toggle-button {
-    margin-bottom: 1rem; /* Space before filter section if open */
+    margin-bottom: 1rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
-.admin-filters.card-style { /* Re-use card style if defined, or define here */
+.admin-filters.card-style {
     padding: 1rem;
     border: 1px solid var(--border-color);
     border-radius: 4px;
-    background-color: var(--light-bg); /* Slightly different from parent for visual separation */
+    background-color: var(--light-bg);
 }
 
 .admin-filters .form-grid-halved {
@@ -58,14 +378,13 @@
     padding-top: 0.75rem;
     border-top: 1px solid var(--border-color);
 }
-.filter-actions .small-button { /* Global small-button class assumed or define here */
+.filter-actions .small-button {
     padding: 0.5rem 1rem;
     font-size: 0.85rem;
 }
 .filter-actions .small-button .svg-inline--fa {
     margin-right: 0.4rem;
 }
-
 
 /* Appointment Status Styling */
 .status-badge {
@@ -90,7 +409,6 @@
 
 .status-past, .appointments-table tr.status-past td {
     color: var(--light-grey-text); /* Heller Text für vergangene Termine */
-    /* background-color: #f8f9fa; /* Optional: Heller Hintergrund für vergangene Termine */
 }
 .status-past .status-badge, .status-badge.status-past {
     background-color: #f1f3f5; /* Light grey */
@@ -188,4 +506,55 @@
 .appointments-table .action-buttons button.delete-button:disabled .svg-inline--fa,
 .mobile-card-actions button.delete-button:disabled .svg-inline--fa {
     color: var(--disabled-text) !important;
+}
+
+/* Stile für Tabellen-Aktionsbuttons (aus ServiceList.css übernommen und angepasst) */
+.action-buttons-table {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+    flex-wrap: nowrap; /* Verhindert Umbruch in der Zelle */
+}
+
+.action-buttons-table .button-link-outline.small-button.icon-button {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    white-space: nowrap; /* Verhindert Umbruch des Button-Textes */
+}
+
+.action-buttons-table .button-link-outline.small-button.icon-button .svg-inline--fa {
+    margin-right: 0.3rem;
+}
+.action-buttons-table .button-link-outline.small-button.icon-button.danger:hover,
+.action-buttons-table .button-link-outline.small-button.icon-button.danger:focus-visible {
+    background-color: var(--danger-bg-light);
+    color: var(--danger-color);
+    border-color: var(--danger-bg-light);
+}
+
+
+/* Text in Buttons auf Desktop ausblenden, nur Icons sichtbar machen */
+@media (min-width: 1025px) { /* Oder ein anderer Breakpoint, wo genug Platz ist */
+    .action-buttons-table .button-link-outline.small-button.icon-button .button-text-desktop {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
+    }
+    .action-buttons-table .button-link-outline.small-button.icon-button .svg-inline--fa {
+        margin-right: 0; /* Kein Rand, wenn Text versteckt ist */
+    }
+}
+/* Auf kleineren Bildschirmen (Tablet und darunter) wird der Text angezeigt */
+@media (max-width: 1024px) {
+    .action-buttons-table .button-link-outline.small-button.icon-button .svg-inline--fa {
+        margin-right: 0.4rem; /* Wieder etwas Rand für den Text */
+    }
 }
