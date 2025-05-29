@@ -2,63 +2,101 @@
 
 /* Basis-Container für das gesamte Statistik-Dashboard */
 .admin-dashboard-stats {
-    padding: 1rem 0;
+    padding: 1rem 0; /* Vertikales Padding, horizontales Padding wird vom Parent-Container erwartet */
     font-family: var(--font-sans);
-    background-color: var(--light-bg);
-    max-width: 1400px;
+    background-color: var(--light-bg); /* Hintergrund für den gesamten Bereich */
+    max-width: 1400px; /* Maximale Breite, falls das Dashboard sehr breit wird */
     margin-left: auto;
     margin-right: auto;
     box-sizing: border-box;
 }
 
-/* Allgemeine Styling-Box für Sektionen */
+/* Allgemeine Styling-Box für Sektionen (KPIs, Charts etc.) */
 .stats-section-box {
     background-color: var(--light-bg, #ffffff);
     border: 1px solid var(--border-color, #e7e7e7);
-    border-radius: 12px;
+    border-radius: 12px; /* Weichere Kanten */
     padding: 1.5rem;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.06);
-    margin-bottom: 2rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.06); /* Dezenter Schatten */
+    margin-bottom: 2rem; /* Abstand zwischen den Boxen */
 }
 
-/* Filterleiste */
+/* Filterleiste für Zeitraumauswahl */
 .stats-period-filter-bar {
-    display: flex; flex-wrap: wrap; align-items: center;
-    gap: 1rem; margin-bottom: 2.5rem; padding: 0.85rem 1rem;
+    display: flex;
+    flex-wrap: wrap; /* Buttons und Datepicker umbrechen auf kleineren Schirmen */
+    align-items: center;
+    gap: 1rem; /* Abstand zwischen Button-Gruppe und Datepickern */
+    margin-bottom: 2.5rem; /* Mehr Abstand nach unten */
+    padding: 0.85rem 1rem; /* Innenabstand */
     background-color: var(--light-grey-bg, #f8f8f8);
-    border-radius: 10px; border: 1px solid var(--border-color-light, #eeeeee);
+    border-radius: 10px;
+    border: 1px solid var(--border-color-light, #eeeeee);
 }
-.period-buttons { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.period-buttons {
+    display: flex;
+    flex-wrap: wrap; /* Buttons umbrechen, falls nicht genug Platz */
+    gap: 0.6rem;
+}
 .period-buttons button {
-    padding: 0.55rem 1.1rem; font-size: 0.82rem; font-weight: 500;
-    border: 1px solid var(--border-color, #e0e0e0); background-color: var(--light-bg);
-    color: var(--medium-grey-text); border-radius: 6px; cursor: pointer;
+    padding: 0.55rem 1.1rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    border: 1px solid var(--border-color, #e0e0e0);
+    background-color: var(--light-bg);
+    color: var(--medium-grey-text);
+    border-radius: 6px;
+    cursor: pointer;
     transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
-    display: inline-flex; align-items: center; gap: 0.35rem;
+    display: inline-flex; /* Für Icon-Ausrichtung */
+    align-items: center;
+    gap: 0.35rem;
 }
-.period-buttons button:hover { background-color: #f0f0f0; border-color: #cccccc; color: var(--dark-text); }
+.period-buttons button:hover {
+    background-color: #f0f0f0;
+    border-color: #cccccc;
+    color: var(--dark-text);
+}
 .period-buttons button.active {
-    background-color: var(--dark-text); color: var(--light-bg);
-    border-color: var(--dark-text); box-shadow: 0 2px 5px rgba(0,0,0,0.12);
+    background-color: var(--dark-text);
+    color: var(--light-bg);
+    border-color: var(--dark-text);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.12);
 }
-.period-buttons button .svg-inline--fa { font-size: 0.9em; }
-.period-buttons button.custom-period-btn .svg-inline--fa { margin-right: 0.3rem;}
+.period-buttons button .svg-inline--fa { /* Icon-Größe in Buttons */
+    font-size: 0.9em;
+}
+.period-buttons button.custom-period-btn .svg-inline--fa {
+    margin-right: 0.3rem;
+}
 
-.custom-date-pickers { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-left: auto; }
+.custom-date-pickers {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: auto; /* Schiebt die Datepicker nach rechts, wenn Platz ist */
+}
 .custom-date-pickers .date-picker-input {
-    padding: 0.55rem 0.8rem; font-size: 0.85rem; border: 1px solid var(--border-color, #e0e0e0);
-    border-radius: 6px; max-width: 120px; background-color: var(--light-bg);
+    padding: 0.55rem 0.8rem;
+    font-size: 0.85rem;
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 6px;
+    max-width: 120px; /* Breite der Datepicker-Inputs */
+    background-color: var(--light-bg);
 }
-.custom-date-pickers .date-picker-input:focus-visible {
-    border-color: var(--focus-ring-color); box-shadow: 0 0 0 2px var(--focus-ring-subtle-color); outline: none;
+/* Fokus-Stil für Datepicker wird von globaler .react-datepicker-wrapper input:focus-visible behandelt */
+.custom-date-pickers .apply-custom-date {
+    padding: 0.55rem 1.1rem; /* Nutzt globale .button-link Stile */
 }
-.custom-date-pickers .apply-custom-date { padding: 0.55rem 1.1rem; /* Nutzt globale .button-link Stile */ }
 
 
 /* Schnellzugriff & Aktivität Sektion */
-.quick-access-section .stats-section-title.small-title {
-    font-size: 1.15rem; margin-bottom: 1.1rem; padding-bottom: 0.4rem;
-    border-bottom: 1px solid var(--border-color-extralight, #f1f1f1);
+.quick-access-section .stats-section-title.small-title { /* Kleinere Überschrift für diese Sektion */
+    font-size: 1.15rem;
+    margin-bottom: 1.1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border-color-extralight, #f1f1f1); /* Sehr helle Linie */
 }
 .quick-access-content {
     display: flex; /* Standardmäßig nebeneinander, wenn Platz ist */
@@ -67,7 +105,8 @@
     align-items: flex-start;
 }
 .quick-create-button {
-    padding: 0.7rem 1.2rem !important;
+    /* Nutzt globale .button-link Stile */
+    padding: 0.7rem 1.2rem !important; /* Wichtig für Override, falls global kleiner */
     font-size: 0.85rem !important;
     font-weight: 500 !important;
     flex-shrink: 0; /* Verhindert Schrumpfen des Buttons */
@@ -75,14 +114,17 @@
 .booking-activity-widget {
     flex-grow: 1; /* Nimmt restlichen Platz ein */
     min-width: 200px; /* Mindestbreite */
-    background-color: #fafafa;
+    background-color: #fafafa; /* Sehr heller Hintergrund für Kontrast */
     padding: 0.75rem 1rem;
     border-radius: 6px;
     border: 1px solid var(--border-color-extralight, #f1f1f1);
 }
 .booking-activity-widget h4 {
-    font-size: 0.9rem; font-weight: 600; color: var(--dark-text);
-    margin: 0 0 0.6rem 0; padding-bottom: 0.3rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--dark-text);
+    margin: 0 0 0.6rem 0;
+    padding-bottom: 0.3rem;
     border-bottom: 1px solid var(--border-color-light, #eeeeee);
 }
 .booking-activity-widget p {
@@ -95,82 +137,221 @@
     color: var(--dark-text);
 }
 
-/* Sektionsüberschriften */
+/* Sektionsüberschriften (z.B. für KPIs, Charts) */
 .stats-section-title {
-    font-family: var(--font-serif); font-size: 1.4rem; color: var(--dark-text);
-    margin: 0 0 1.5rem 0; padding-bottom: 0.75rem;
+    font-family: var(--font-serif);
+    font-size: 1.4rem;
+    color: var(--dark-text);
+    margin: 0 0 1.5rem 0; /* Wichtig für korrekten Abstand */
+    padding-bottom: 0.75rem;
     border-bottom: 1px solid var(--border-color, #e0e0e0);
-    display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap; /* Für kleine Bildschirme */
+    gap: 0.6rem;
 }
-.stats-section-title > span:first-child { display: flex; align-items: center; gap: 0.6rem; }
-.stats-section-title .svg-inline--fa { color: var(--medium-grey-text); font-size: 1.1rem; }
-.stats-period-display { font-size: 0.8rem; font-weight: 400; color: var(--medium-grey-text); margin-left: 0.5rem; }
+.stats-section-title > span:first-child { /* Der Haupttitel-Teil */
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+.stats-section-title .svg-inline--fa { /* Icon in der Überschrift */
+    color: var(--medium-grey-text);
+    font-size: 1.1rem; /* Passende Größe zum Text */
+}
+.stats-period-display { /* Text für den aktiven Zeitraum */
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--medium-grey-text);
+    margin-left: 0.5rem;
+}
+
 
 /* Lade- und Fehlermeldungen */
-.loading-indicator-top { /* ... bleibt gleich ... */ }
-.loading-message-stats { /* ... bleibt gleich ... */ }
-.stats-error-message { /* ... bleibt gleich ... */ }
+.loading-indicator-top {
+    text-align: center;
+    padding: 0.5rem;
+    background-color: var(--info-bg-light);
+    color: var(--info-color);
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+.loading-message-stats, .stats-error-message, .stat-card-no-data, .chart-no-data-message {
+    text-align: center;
+    color: var(--medium-grey-text);
+    padding: 1.5rem;
+    font-size: 0.95rem;
+    border: 1px dashed var(--border-color);
+    border-radius: 6px;
+    background-color: var(--light-grey-bg);
+}
+.stats-error-message {
+    color: var(--danger-color);
+    background-color: var(--danger-bg-light);
+    border-color: var(--danger-color);
+}
+.stat-card-no-data, .chart-no-data-message {
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+.no-data-small { /* Für kleinere "Keine Daten"-Meldungen */
+    font-size: 0.85rem;
+    color: var(--light-grey-text);
+    padding: 0.5rem;
+    text-align: center;
+}
 
 
 /* Haupt-Layout (KPIs links, Charts rechts) */
-.stats-main-layout { display: grid; grid-template-columns: 1fr; gap: 2rem; margin-bottom: 2.5rem; }
-@media (min-width: 1024px) {
+.stats-main-layout {
+    display: grid;
+    grid-template-columns: 1fr; /* Standard für Mobile: untereinander */
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+}
+@media (min-width: 1024px) { /* Ab Desktop-Größe */
     .stats-main-layout {
         grid-template-columns: minmax(320px, 0.7fr) 1fr; /* KPIs etwas schmaler, Charts mehr Platz */
-        align-items: flex-start;
+        align-items: flex-start; /* Wichtig, damit Boxen oben beginnen */
     }
 }
 
-/* KPI-Karten */
-.stats-overview-cards-wrapper { display: flex; flex-direction: column; gap: 1.5rem; }
-.stats-overview-cards { display: grid; gap: 1rem; }
-.stats-overview-cards.primary-kpis { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
-.stats-overview-cards.secondary-kpis { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
-.kpi-divider {
-    border: none; height: 1px; background-color: var(--border-color-light, #eeeeee);
+/* KPI-Karten Wrapper und Grid */
+.stats-overview-cards-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem; /* Abstand zwischen primären und sekundären KPI-Gruppen */
+}
+.stats-overview-cards {
+    display: grid;
+    gap: 1rem;
+}
+.stats-overview-cards.primary-kpis { /* 2 oder 3 Spalten je nach Platz */
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+.stats-overview-cards.secondary-kpis { /* 3 oder 4 Spalten je nach Platz */
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+.kpi-divider { /* Trennlinie zwischen KPI-Gruppen */
+    border: none;
+    height: 1px;
+    background-color: var(--border-color-light, #eeeeee);
     margin: 0.25rem 0; /* Weniger Abstand */
 }
 
+/* Einzelne KPI-Karte */
 .stat-card {
-    background-color: var(--light-bg, #ffffff); border: 1px solid var(--border-color, #e0e0e0);
-    border-radius: 8px; padding: 1rem; display: flex; flex-direction: column;
-    justify-content: space-between; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-    transition: box-shadow 0.2s ease, transform 0.2s ease; overflow: hidden;
+    background-color: var(--light-bg, #ffffff);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Wichtig für Vergleichstext am Boden */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03); /* Sehr dezenter Schatten */
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    overflow: hidden; /* Für abgerundete Ecken bei Icons */
 }
-.stat-card:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); transform: translateY(-2px); }
-
-.stat-card.main-kpi { padding: 1.15rem; min-height: 125px; }
-.stat-card.main-kpi .stat-value { font-size: 1.9rem; font-weight: 600; }
-.stat-card.main-kpi .stat-label { font-size: 0.78rem; }
-.stat-card.main-kpi .stat-icon { font-size: 1.1rem; width: 26px; height: 26px; }
-
-.stat-card.small-kpi { min-height: 95px; padding: 0.75rem; }
-.stat-card.small-kpi .stat-value { font-size: 1.35rem; font-weight: 600;}
-.stat-card.small-kpi .stat-label { font-size: 0.65rem; }
-.stat-card.small-kpi .stat-icon { font-size: 0.9rem; width: 20px; height: 20px; }
-.stat-card.small-kpi .stat-comparison { display: none; }
-
-.stat-card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem; }
-.stat-icon {
-    display: inline-flex; align-items: center; justify-content: center;
-    border-radius: 50%; padding: 0.35em; line-height: 1;
-    color: var(--dark-text); background-color: var(--light-grey-bg);
+.stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
 }
-.stat-label { font-weight: 500; color: var(--medium-grey-text, #5f5f5f); line-height: 1.2; }
-.stat-value { color: var(--dark-text, #1f1f1f); line-height: 1.1; display: block; margin-top: 0.15rem; }
-.stat-comparison { font-size: 0.72rem; font-weight: 500; display: flex; align-items: center; gap: 0.25rem; margin-top: auto; padding-top: 0.2rem; }
+
+/* Haupt-KPIs (größer) */
+.stat-card.main-kpi {
+    padding: 1.15rem; /* Mehr Padding */
+    min-height: 125px; /* Mindesthöhe */
+}
+.stat-card.main-kpi .stat-value {
+    font-size: 1.9rem; /* Größere Zahl */
+    font-weight: 600;
+}
+.stat-card.main-kpi .stat-label {
+    font-size: 0.78rem;
+}
+.stat-card.main-kpi .stat-icon {
+    font-size: 1.1rem;
+    width: 26px; height: 26px;
+}
+
+/* Sekundäre KPIs (kleiner) */
+.stat-card.small-kpi {
+    min-height: 95px;
+    padding: 0.75rem;
+}
+.stat-card.small-kpi .stat-value {
+    font-size: 1.35rem;
+    font-weight: 600;
+}
+.stat-card.small-kpi .stat-label {
+    font-size: 0.65rem; /* Sehr kleiner Text */
+}
+.stat-card.small-kpi .stat-icon {
+    font-size: 0.9rem;
+    width: 20px; height: 20px;
+}
+.stat-card.small-kpi .stat-comparison {
+    display: none; /* Kein Vergleichstext für kleine KPIs */
+}
+
+.stat-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.3rem;
+}
+.stat-icon { /* Container für das Icon */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    padding: 0.35em; /* Relatives Padding basierend auf Icon-Größe */
+    line-height: 1; /* Verhindert zusätzliche Höhe */
+    /* Standardfarben, werden durch spezifische Klassen überschrieben */
+    color: var(--dark-text);
+    background-color: var(--light-grey-bg);
+}
+.stat-label {
+    font-weight: 500;
+    color: var(--medium-grey-text, #5f5f5f);
+    line-height: 1.2;
+}
+.stat-value {
+    color: var(--dark-text, #1f1f1f);
+    line-height: 1.1;
+    display: block;
+    margin-top: 0.15rem;
+}
+.stat-comparison {
+    font-size: 0.72rem; /* Sehr kleiner Vergleichstext */
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: auto; /* Schiebt den Text nach unten */
+    padding-top: 0.2rem; /* Kleiner Abstand zum Wert */
+}
 .stat-comparison .comparison-data.positive { color: var(--success-color, #28a745); }
 .stat-comparison .comparison-data.negative { color: var(--danger-color, #c82333); }
 .stat-comparison .comparison-data.neutral { color: var(--medium-grey-text, #5f5f5f); }
-.stat-comparison .comparison-data .svg-inline--fa { margin-right: 0.1rem; font-size: 0.8em; }
+.stat-comparison .comparison-data .svg-inline--fa {
+    margin-right: 0.1rem;
+    font-size: 0.8em;
+}
 
-.stat-icon.today { color: #28a745; background-color: rgba(40, 167, 69, 0.08); }
-.stat-icon.revenue, .stat-icon.fa-receipt { color: #fd7e14; background-color: rgba(253, 126, 20, 0.08); }
-.stat-icon.upcoming, .stat-icon.fa-calendar-alt { color: #6f42c1; background-color: rgba(111, 66, 193, 0.08); }
-.stat-icon.fa-calendar-check { color: #007bff; background-color: rgba(0, 123, 255, 0.08); }
-.stat-icon.fa-coins { color: #ffc107; background-color: rgba(255, 193, 7, 0.08); }
-.stat-icon.capacity, .stat-icon.fa-hourglass-half { color: #17a2b8; background-color: rgba(23, 162, 184, 0.08); }
+/* Spezifische Icon-Farben (Beispiele) */
+.stat-icon.today       { color: #28a745; background-color: rgba(40, 167, 69, 0.08); } /* Grün */
+.stat-icon.revenue,
+.stat-icon.fa-receipt  { color: #fd7e14; background-color: rgba(253, 126, 20, 0.08); } /* Orange */
+.stat-icon.upcoming,
+.stat-icon.fa-calendar-alt { color: #6f42c1; background-color: rgba(111, 66, 193, 0.08); } /* Lila */
+.stat-icon.fa-calendar-check { color: #007bff; background-color: rgba(0, 123, 255, 0.08); } /* Blau */
+.stat-icon.fa-coins    { color: #ffc107; background-color: rgba(255, 193, 7, 0.08); } /* Gelb */
+.stat-icon.capacity,
+.stat-icon.fa-hourglass-half { color: #17a2b8; background-color: rgba(23, 162, 184, 0.08); } /* Türkis */
+
 
 /* Chart-Bereich */
 .charts-section-wrapper { /* Nutzt .stats-section-box */ }
@@ -197,84 +378,180 @@
     }
 }
 .chart-card {
-    background-color: var(--light-bg, #ffffff); border: 1px solid var(--border-color);
-    border-radius: 8px; padding: 1.25rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-    min-height: 320px; display: flex; flex-direction: column; overflow: hidden;
+    background-color: var(--light-bg, #ffffff);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    min-height: 320px; /* Stellt sicher, dass Charts Platz haben */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Verhindert, dass Recharts überläuft */
 }
-.chart-title { /* ... bleibt gleich ... */ }
-.chart-title .chart-period-label { font-size: 0.7rem; font-weight: 400; color: var(--light-grey-text); margin-left: 0.5rem; }
+.chart-title {
+    font-family: var(--font-sans, sans-serif);
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: var(--dark-text);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.chart-title .svg-inline--fa {
+    color: var(--medium-grey-text);
+    font-size: 0.95em;
+}
+.chart-title .chart-period-label {
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: var(--light-grey-text);
+    margin-left: 0.5rem;
+}
 .chart-card .recharts-responsive-container { /* Stellt sicher, dass der Container flexibel ist */
     min-height: 250px; /* Mindesthöhe für das Diagramm selbst */
 }
-.chart-no-data-message { /* ... bleibt gleich ... */ }
-
 
 /* Tägliche Terminliste (Quick View) */
-.daily-appointments-section { /* ... bleibt gleich ... */ }
-.daily-appointments-heading { /* ... bleibt gleich ... */ }
-.loading-message-stats.small-list-loader { /* ... bleibt gleich ... */ }
-.daily-appointments-list { /* ... bleibt gleich ... */ }
-.daily-appointment-item { /* ... bleibt gleich ... */ }
-.daily-appointment-item:last-child { /* ... bleibt gleich ... */ }
-.daily-appointment-item:hover, .daily-appointment-item:focus-visible { /* ... bleibt gleich ... */ }
-.daily-appointment-item:focus-visible { /* ... bleibt gleich ... */ }
-.item-loader-icon { /* ... bleibt gleich ... */ }
-.daily-appointment-item .appointment-time { /* ... bleibt gleich ... */ }
-.daily-appointment-item .appointment-info-group { /* ... bleibt gleich ... */ }
-.daily-appointment-item .appointment-service { /* ... bleibt gleich ... */ }
-.daily-appointment-item .appointment-customer { /* ... bleibt gleich ... */ }
-.appointment-status-tag { /* ... bleibt gleich ... */ }
-.appointment-status-tag.status-heute { /* ... bleibt gleich ... */ }
-.appointment-status-tag.status-morgen { /* ... bleibt gleich ... */ }
-.appointment-status-tag.status-datum { /* ... bleibt gleich ... */ }
-.no-upcoming-appointments { /* ... bleibt gleich ... */ }
+.daily-appointments-section { /* Nutzt .stats-section-box */ }
+.daily-appointments-heading {
+    font-family: var(--font-sans, sans-serif); /* Konsistente Schriftart */
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--dark-text);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--border-color-light, #eeeeee);
+}
+.daily-appointments-heading .svg-inline--fa {
+    color: var(--medium-grey-text);
+    font-size: 1em;
+}
+.loading-message-stats.small-list-loader {
+    padding: 1rem;
+    font-size: 0.9rem;
+    border: none;
+    background-color: transparent;
+}
 
+.daily-appointments-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 350px; /* Begrenzte Höhe, damit es scrollbar wird */
+    overflow-y: auto;
+}
+.daily-appointment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0.25rem; /* Weniger horizontales Padding, da bereits in Box */
+    border-bottom: 1px solid var(--border-color-extralight, #f1f1f1);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    border-radius: 4px; /* Leichte Rundung für Hover-Effekt */
+}
+.daily-appointment-item:last-child {
+    border-bottom: none;
+}
+.daily-appointment-item:hover, .daily-appointment-item:focus-visible {
+    background-color: var(--light-grey-bg);
+}
+.daily-appointment-item:focus-visible { /* Fokus-Stil von globalen Regeln */
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 1px;
+}
+.item-loader-icon { /* Für Spinner direkt im Item, falls Details geladen werden */
+    margin-left: auto;
+    padding-left: 0.5rem;
+    color: var(--medium-grey-text);
+}
+.daily-appointment-item .appointment-time {
+    font-weight: 600;
+    color: var(--dark-text);
+    min-width: 50px; /* Feste Breite für Zeit */
+    flex-shrink: 0;
+}
+.daily-appointment-item .appointment-info-group {
+    flex-grow: 1;
+    margin: 0 0.75rem;
+    line-height: 1.3;
+}
+.daily-appointment-item .appointment-service {
+    display: block;
+    color: var(--dark-text);
+    font-weight: 500;
+}
+.daily-appointment-item .appointment-customer {
+    display: block;
+    color: var(--medium-grey-text);
+    font-size: 0.9em;
+}
+.appointment-status-tag {
+    padding: 0.2em 0.6em;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border: 1px solid transparent;
+    min-width: 60px; /* Mindestbreite für den Tag */
+    text-align: center;
+    flex-shrink: 0;
+}
+.appointment-status-tag.status-heute {
+    background-color: var(--info-bg-light); color: var(--info-color); border-color: var(--info-color);
+}
+.appointment-status-tag.status-morgen {
+    background-color: #e9ecef; color: #495057; border-color: #ced4da;
+}
+.appointment-status-tag.status-datum { /* Für andere zukünftige Daten */
+    background-color: #f8f9fa; color: #6c757d; border-color: #dee2e6;
+}
+.no-upcoming-appointments {
+    text-align: center;
+    color: var(--medium-grey-text);
+    padding: 1rem;
+    font-size: 0.9rem;
+    font-style: italic;
+}
 
-/* Skeleton Loader Stile, falls noch nicht global vorhanden */
+/* Skeleton Loader Stile */
 .stat-card.is-loading-skeleton .stat-card-header-skeleton,
 .stat-card.is-loading-skeleton .stat-value-skeleton,
 .stat-card.is-loading-skeleton .stat-comparison-skeleton {
-    background-color: #e0e0e0; /* Etwas dunkleres Grau für den Skeleton */
+    background-color: var(--border-color-light, #eeeeee); /* Helleres Grau für Skeleton */
+    color: transparent; /* Text unsichtbar machen */
     animation: pulseBG 1.5s infinite ease-in-out;
     border-radius: 4px;
+    user-select: none;
 }
-@keyframes pulseBG {
-    0%, 100% { opacity: 0.7; }
-    50% { opacity: 1; }
-}
+.stat-card.is-loading-skeleton .stat-card-header-skeleton { height: 1.2em; width: 70%; margin-bottom: 0.4em; }
+.stat-card.is-loading-skeleton .stat-value-skeleton { height: 1.5em; width: 50%; }
+.stat-card.is-loading-skeleton .stat-value-skeleton.large { height: 2em; width: 60%; margin-top: 0.2em; }
+.stat-card.is-loading-skeleton .stat-comparison-skeleton { height: 0.9em; width: 80%; margin-top: 0.5em;}
 
 /* Responsive Anpassungen für kleinere Bildschirme */
 @media (max-width: 767px) {
     .stats-main-layout { grid-template-columns: 1fr; } /* Alles untereinander */
     .charts-grid { grid-template-columns: 1fr; } /* Charts immer untereinander */
-    .quick-access-content { grid-template-columns: 1fr; } /* Schnellzugriff auch untereinander */
-    .quick-create-button, .quick-link-button { width: 100%; margin-bottom: 0.75rem; }
-    .booking-activity-widget { width: 100%; }
-    /* Weitere Anpassungen wie zuvor */
-}
-
-/* Custom Recharts Tooltip (globaler, da in App.css referenziert) */
-.custom-recharts-tooltip {
-    background-color: rgba(31, 31, 31, 0.92); /* var(--dark-text) mit Transparenz */
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 6px;
-    padding: 10px 14px;
-    color: var(--light-text-on-dark, #f5f5f5);
-    font-size: 0.88rem;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.25);
-    line-height: 1.5;
-}
-.custom-recharts-tooltip .label {
-    font-weight: 600;
-    margin-bottom: 5px;
-    color: #fff;
-    font-size: 0.9rem;
-}
-.custom-recharts-tooltip .intro, .custom-recharts-tooltip .desc {
-    margin: 0;
-    color: #f0f0f0;
-    font-size: 0.85rem;
-}
-.custom-recharts-tooltip .desc {
-    opacity: 0.8;
+    .quick-access-content {
+        flex-direction: column; /* Untereinander auf Mobile */
+        align-items: stretch; /* Buttons nehmen volle Breite ein */
+    }
+    .quick-create-button, .quick-link-button {
+        width: 100%;
+        margin-bottom: 0.75rem;
+    }
+    .booking-activity-widget {
+        width: 100%;
+    }
+    .stats-period-filter-bar { flex-direction: column; align-items: stretch; }
+    .custom-date-pickers { margin-left: 0; width: 100%; }
+    .custom-date-pickers .date-picker-input, .custom-date-pickers .apply-custom-date { width: 100%; max-width: none; }
+    .apply-custom-date { margin-top: 0.5rem; }
 }
