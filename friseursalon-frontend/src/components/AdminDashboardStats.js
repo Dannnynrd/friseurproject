@@ -9,7 +9,8 @@ import {
     faChartPie, faChartBar, faListAlt, faCalendarAlt,
     faFilter, faArrowUp, faArrowDown, faEquals, faCoins,
     faPlusCircle, faBolt, faUserFriends, faClock, faCut,
-    faUserPlus, faFileExport, faCog, faArrowTrendUp // Neue Icons
+    faUserPlus, faFileExport, faCog, faArrowTrendUp, faUsersCog,
+    faUserSlash, faPercentage, faCalendarDay // Neue Icons
 } from '@fortawesome/free-solid-svg-icons';
 import AppointmentEditModal from './AppointmentEditModal';
 import AppointmentCreateModal from './AppointmentCreateModal';
@@ -72,29 +73,28 @@ const getDatesForPeriod = (period) => {
 };
 
 function AdminDashboardStats({ currentUser, onAppointmentAction }) {
-    // State für die detaillierten Statistiken vom Backend
     const [detailedStats, setDetailedStats] = useState(null);
     const [dailyAppointments, setDailyAppointments] = useState([]);
 
-    // Erweiterte States für neue KPIs (simuliert, bis Backend angepasst ist)
     const [uniqueCustomers, setUniqueCustomers] = useState(null);
     const [averageAppointmentDuration, setAverageAppointmentDuration] = useState(null);
     const [totalActiveServices, setTotalActiveServices] = useState(null);
     const [newBookingsToday, setNewBookingsToday] = useState(null);
     const [newBookingsYesterday, setNewBookingsYesterday] = useState(null);
-    // NEUE simulierte KPIs
-    const [customerGrowthPercentage, setCustomerGrowthPercentage] = useState(null); // Placeholder
-    const [avgBookingsPerCustomer, setAvgBookingsPerCustomer] = useState(null); // Placeholder
-    const [projectedRevenueNext30Days, setProjectedRevenueNext30Days] = useState(null); // Placeholder
+    const [customerGrowthPercentage, setCustomerGrowthPercentage] = useState(null);
+    const [avgBookingsPerCustomer, setAvgBookingsPerCustomer] = useState(null);
+    const [projectedRevenueNext30Days, setProjectedRevenueNext30Days] = useState(null);
+    // NEUE simulierte KPIs V4
+    const [cancellationRate, setCancellationRate] = useState(null); // Stornierungsquote
+    const [newCustomerShare, setNewCustomerShare] = useState(null); // Neukundenanteil
+    const [avgBookingLeadTime, setAvgBookingLeadTime] = useState(null); // Durchschnittliche Vorlaufzeit
 
 
-    // States für die Diagrammdaten
     const [appointmentsByDayData, setAppointmentsByDayData] = useState({ labels: [], data: [] });
     const [appointmentsByServiceData, setAppointmentsByServiceData] = useState({ labels: [], data: [] });
     const [revenueOverTimeData, setRevenueOverTimeData] = useState([]);
     const [capacityUtilizationData, setCapacityUtilizationData] = useState(null);
 
-    // Lade- und Fehlerzustände
     const [isLoadingStats, setIsLoadingStats] = useState(true);
     const [isLoadingDaily, setIsLoadingDaily] = useState(true);
     const [isLoadingActivity, setIsLoadingActivity] = useState(true);
@@ -114,7 +114,6 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
     const [showCustomDatePickers, setShowCustomDatePickers] = useState(false);
     const [activeDateRangeLabel, setActiveDateRangeLabel] = useState(PERIOD_LABELS[PERIOD_OPTIONS.THIS_MONTH]);
 
-    // Funktion zum Abrufen der Hauptstatistiken und Diagrammdaten
     const fetchMainStatsAndCharts = useCallback(async (startDate, endDate) => {
         setIsLoadingStats(true);
         setError(prev => prev.replace(/Hauptstatistiken;|Diagrammdaten;|Zusatz-KPIs;/g, '').trim());
@@ -142,8 +141,12 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             // Simulierte Daten für neue KPIs, bis Backend bereit ist
             setUniqueCustomers(statsRes.data.uniqueCustomersInPeriod || Math.floor(Math.random() * 50) + 10);
             setAverageAppointmentDuration(statsRes.data.averageAppointmentDurationInPeriod || Math.floor(Math.random() * 30) + 45);
-            setCustomerGrowthPercentage(statsRes.data.customerGrowthPercentage || (Math.random() * 10 - 2).toFixed(1)); // z.B. -2% bis +8%
-            setAvgBookingsPerCustomer(statsRes.data.avgBookingsPerCustomer || (Math.random() * 1 + 1.1).toFixed(1)); // z.B. 1.1 bis 2.1
+            setCustomerGrowthPercentage(statsRes.data.customerGrowthPercentage || (Math.random() * 10 - 2).toFixed(1));
+            setAvgBookingsPerCustomer(statsRes.data.avgBookingsPerCustomer || (Math.random() * 1 + 1.1).toFixed(1));
+            setCancellationRate(statsRes.data.cancellationRate || (Math.random() * 5 + 1).toFixed(1)); // z.B. 1-6%
+            setNewCustomerShare(statsRes.data.newCustomerShare || (Math.random() * 20 + 5).toFixed(1)); // z.B. 5-25%
+            setAvgBookingLeadTime(statsRes.data.avgBookingLeadTime || Math.floor(Math.random() * 10 + 3)); // z.B. 3-13 Tage
+
 
             if (statsRes.data.totalRevenueInPeriod && differenceInDays(parseISO(endDate), parseISO(startDate)) +1 > 0) {
                 const dailyAvgRevenue = parseFloat(statsRes.data.totalRevenueInPeriod) / (differenceInDays(parseISO(endDate), parseISO(startDate)) +1);
@@ -151,7 +154,6 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             } else {
                 setProjectedRevenueNext30Days(null);
             }
-
 
             if (statsRes.data.totalActiveServices === undefined) {
                 try {
@@ -178,7 +180,8 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             setDetailedStats(null); setAppointmentsByDayData({ labels: [], data: [] });
             setAppointmentsByServiceData({ labels: [], data: [] }); setRevenueOverTimeData([]);
             setCapacityUtilizationData(null); setUniqueCustomers(null); setAverageAppointmentDuration(null);
-            setTotalActiveServices(null); setCustomerGrowthPercentage(null); setAvgBookingsPerCustomer(null); setProjectedRevenueNext30Days(null);
+            setTotalActiveServices(null); setCustomerGrowthPercentage(null); setAvgBookingsPerCustomer(null);
+            setProjectedRevenueNext30Days(null); setCancellationRate(null); setNewCustomerShare(null); setAvgBookingLeadTime(null);
         } finally {
             setIsLoadingStats(false);
         }
@@ -189,7 +192,6 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         setIsLoadingDaily(true);
         setError(prev => prev.replace(/Aktivität;|Terminliste;|Buchungszahlen;/g, '').trim());
         try {
-            // TODO: Echte Backend-Daten für newBookingsToday/Yesterday
             setNewBookingsToday(detailedStats?.newBookingsToday || Math.floor(Math.random() * 3));
             setNewBookingsYesterday(detailedStats?.newBookingsYesterday || Math.floor(Math.random() * 4));
 
@@ -294,7 +296,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                     (detailedStats.totalRevenueInPeriod !== undefined && parseFloat(detailedStats.totalRevenueInPeriod) > 0 && changePercentage === detailedStats.revenueChangePercentage)
                 ) ) {
                     changeText = 'vs. 0';
-                    icon = faArrowUp; // Generell positiv, wenn von 0 gestiegen
+                    icon = faArrowUp;
                     colorClass = 'positive';
                 }
             } else {
@@ -321,17 +323,17 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         );
     };
 
-
     const renderStatCards = () => {
         if (isLoadingStats && !detailedStats) {
             return (
                 <>
-                    <div className="stats-overview-cards primary-kpis">
+                    <div className="stats-overview-cards kpi-group">
                         {[...Array(5)].map((_, i) => ( <div key={`skeleton-main-${i}`} className="stat-card main-kpi is-loading-skeleton"><div className="stat-card-header-skeleton"></div><div className="stat-value-skeleton large"></div><div className="stat-comparison-skeleton"></div></div> ))}
                     </div>
                     <hr className="kpi-divider" />
-                    <div className="stats-overview-cards secondary-kpis">
-                        {[...Array(5)].map((_, i) => ( <div key={`skeleton-sec-${i}`} className="stat-card small-kpi is-loading-skeleton"><div className="stat-card-header-skeleton"></div><div className="stat-value-skeleton"></div></div> ))}
+                    <h4 className="stats-section-subtitle">Weitere Kennzahlen</h4>
+                    <div className="stats-overview-cards kpi-group">
+                        {[...Array(7)].map((_, i) => ( <div key={`skeleton-sec-${i}`} className="stat-card small-kpi is-loading-skeleton"><div className="stat-card-header-skeleton"></div><div className="stat-value-skeleton"></div></div> ))}
                     </div>
                 </>
             );
@@ -341,30 +343,37 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         const avgRevenue = (detailedStats.totalAppointmentsInPeriod > 0 && detailedStats.totalRevenueInPeriod && parseFloat(detailedStats.totalRevenueInPeriod) > 0)
             ? (parseFloat(detailedStats.totalRevenueInPeriod) / detailedStats.totalAppointmentsInPeriod) : 0;
 
-        const mainKpisData = [
+        const mainKpis = [
             { label: "Termine", value: detailedStats.totalAppointmentsInPeriod ?? '0', icon: faCalendarCheck, comparison: renderComparison(detailedStats.appointmentCountChangePercentage, detailedStats.previousPeriodTotalAppointments) },
             { label: "Umsatz", value: formatCurrency(detailedStats.totalRevenueInPeriod), icon: faReceipt, comparison: renderComparison(detailedStats.revenueChangePercentage, detailedStats.previousPeriodTotalRevenue) },
             { label: "Ø-Umsatz/Termin", value: formatCurrency(avgRevenue), icon: faCoins },
-            { label: "Einzigartige Kunden", value: uniqueCustomers ?? (isLoadingActivity ? <FontAwesomeIcon icon={faSpinner} spin/> : 'N/A'), icon: faUserFriends,
-                comparison: renderComparison(customerGrowthPercentage, detailedStats.previousPeriodUniqueCustomers) // Simuliert
-            },
             { label: "Auslastung", value: capacityUtilizationData ? `${capacityUtilizationData.utilizationPercentage.toFixed(1)}%` : (isLoadingStats ? <FontAwesomeIcon icon={faSpinner} spin/> : 'N/A'), icon: faHourglassHalf },
         ];
 
-        const secondaryKpisData = [
-            { label: "Termine Heute", value: detailedStats.todayCount ?? '0', icon: faCalendarCheck, iconClass: 'today' },
-            { label: "Umsatz Heute", value: formatCurrency(detailedStats.revenueToday ?? 0), icon: faReceipt, iconClass: 'revenue' },
+        const customerKpis = [
+            { label: "Einzigartige Kunden", value: uniqueCustomers ?? (isLoadingActivity ? <FontAwesomeIcon icon={faSpinner} spin/> : 'N/A'), icon: faUserFriends,
+                comparison: renderComparison(customerGrowthPercentage, detailedStats.previousPeriodUniqueCustomers)
+            },
+            { label: "Kundenwachstum", value: customerGrowthPercentage ? `${customerGrowthPercentage}%` : (isLoadingActivity ? <FontAwesomeIcon icon={faSpinner} spin/> : 'N/A'), icon: faArrowTrendUp, iconClass: 'growth', comparison: null /* oder spezifischer Vergleich */ },
+            { label: "Ø Buchungen/Kunde", value: avgBookingsPerCustomer ?? (isLoadingActivity ? <FontAwesomeIcon icon={faSpinner} spin/> : 'N/A'), icon: faUsersCog, iconClass: 'avg-bookings' },
+            { label: "Neukundenanteil", value: newCustomerShare ? `${newCustomerShare}%` : (isLoadingActivity ? <FontAwesomeIcon icon={faSpinner} spin/> : 'N/A'), icon: faUserPlus, iconClass: 'new-customer' },
+        ];
+
+        const operationalKpis = [
+            { label: "Termine Heute", value: detailedStats.todayCount ?? '0', icon: faCalendarDay, iconClass: 'today' },
+            { label: "Umsatz Heute", value: formatCurrency(detailedStats.revenueToday ?? 0), icon: faEuroSign, iconClass: 'revenue' },
             { label: "Ges. Bevorstehend", value: detailedStats.totalUpcomingCount ?? '0', icon: faCalendarAlt, iconClass: 'upcoming' },
             { label: "Ø Termindauer", value: averageAppointmentDuration ? `${averageAppointmentDuration.toFixed(0)} Min.` : (isLoadingActivity ? <FontAwesomeIcon icon={faSpinner} spin/> : 'N/A'), icon: faClock, iconClass: 'duration' },
             { label: "Services Angeboten", value: totalActiveServices ?? (isLoadingActivity ? <FontAwesomeIcon icon={faSpinner} spin/> : 'N/A'), icon: faCut, iconClass: 'services' },
-            { label: "Ø Buchungen/Kunde", value: avgBookingsPerCustomer ?? (isLoadingActivity ? <FontAwesomeIcon icon={faSpinner} spin/> : 'N/A'), icon: faUserPlus, iconClass: 'avg-bookings' },
+            { label: "Stornoquote", value: cancellationRate ? `${cancellationRate}%` : (isLoadingActivity ? <FontAwesomeIcon icon={faSpinner} spin/> : 'N/A'), icon: faUserSlash, iconClass: 'cancellation', isGrowthGood: false /* Höher ist schlechter */ },
+            { label: "Ø Vorlaufzeit Buchung", value: avgBookingLeadTime ? `${avgBookingLeadTime} Tage` : (isLoadingActivity ? <FontAwesomeIcon icon={faSpinner} spin/> : 'N/A'), icon: faCalendarCheck, iconClass: 'leadtime' },
             { label: "Progn. Umsatz (30T)", value: projectedRevenueNext30Days ? formatCurrency(projectedRevenueNext30Days) : (isLoadingActivity ? <FontAwesomeIcon icon={faSpinner} spin/> : 'N/A'), icon: faArrowTrendUp, iconClass: 'projection' },
         ];
 
         return (
             <>
-                <div className="stats-overview-cards primary-kpis">
-                    {mainKpisData.map(kpi => (
+                <div className="stats-overview-cards kpi-group">
+                    {mainKpis.map(kpi => (
                         <div key={kpi.label} className="stat-card main-kpi">
                             <div className="stat-card-header"><FontAwesomeIcon icon={kpi.icon} className={`stat-icon ${kpi.iconClass || ''}`} /><span className="stat-label">{kpi.label}</span></div>
                             <div className="stat-value large">{kpi.value}</div>
@@ -373,12 +382,36 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                     ))}
                 </div>
                 <hr className="kpi-divider" />
-                <h4 className="stats-section-subtitle">Momentaufnahme & Weitere Einblicke</h4>
-                <div className="stats-overview-cards secondary-kpis">
-                    {secondaryKpisData.map(kpi => (
+                <h4 className="stats-section-subtitle">Kunden- & Service-Metriken</h4>
+                <div className="stats-overview-cards kpi-group">
+                    {customerKpis.map(kpi => (
                         <div key={kpi.label} className="stat-card small-kpi">
                             <div className="stat-card-header"><FontAwesomeIcon icon={kpi.icon} className={`stat-icon ${kpi.iconClass || ''}`} /><span className="stat-label">{kpi.label}</span></div>
                             <div className="stat-value">{kpi.value}</div>
+                            {kpi.comparison && <div className="stat-comparison">{kpi.comparison}</div>}
+                        </div>
+                    ))}
+                    {operationalKpis.slice(3, 5).map(kpi => ( // Services Angeboten & Ø Termindauer
+                        <div key={kpi.label} className="stat-card small-kpi">
+                            <div className="stat-card-header"><FontAwesomeIcon icon={kpi.icon} className={`stat-icon ${kpi.iconClass || ''}`} /><span className="stat-label">{kpi.label}</span></div>
+                            <div className="stat-value">{kpi.value}</div>
+                        </div>
+                    ))}
+                </div>
+                <hr className="kpi-divider" />
+                <h4 className="stats-section-subtitle">Operative & Tagesaktuelle Zahlen</h4>
+                <div className="stats-overview-cards kpi-group">
+                    {operationalKpis.slice(0, 3).map(kpi => ( // Termine Heute, Umsatz Heute, Ges. Bevorstehend
+                        <div key={kpi.label} className="stat-card small-kpi">
+                            <div className="stat-card-header"><FontAwesomeIcon icon={kpi.icon} className={`stat-icon ${kpi.iconClass || ''}`} /><span className="stat-label">{kpi.label}</span></div>
+                            <div className="stat-value">{kpi.value}</div>
+                        </div>
+                    ))}
+                    {operationalKpis.slice(5).map(kpi => ( // Stornoquote, Ø Vorlaufzeit, Progn. Umsatz
+                        <div key={kpi.label} className="stat-card small-kpi">
+                            <div className="stat-card-header"><FontAwesomeIcon icon={kpi.icon} className={`stat-icon ${kpi.iconClass || ''}`} /><span className="stat-label">{kpi.label}</span></div>
+                            <div className="stat-value">{kpi.value}</div>
+                            {kpi.label === "Stornoquote" && kpi.comparison && <div className="stat-comparison">{kpi.comparison}</div>}
                         </div>
                     ))}
                 </div>
@@ -388,6 +421,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
 
     return (
         <div className="admin-dashboard-stats">
+            {/* Filterleiste */}
             <div className="stats-period-filter-bar">
                 <div className="period-buttons">
                     {Object.entries(PERIOD_LABELS).map(([key, label]) => (
@@ -407,6 +441,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                 )}
             </div>
 
+            {/* Lade- & Fehlermeldungen */}
             {(isLoadingStats || isLoadingDaily || isLoadingActivity) && (
                 <div className="loading-indicator-top"><FontAwesomeIcon icon={faSpinner} spin /> Daten werden aktualisiert...</div>
             )}
@@ -414,11 +449,13 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                 <p className="form-message error mb-4"><FontAwesomeIcon icon={faExclamationCircle} /> Fehler: {error.replace(/;/g, '; ')}</p>
             )}
 
+            {/* Haupt-Grid-Layout für Dashboard-Inhalte */}
             <div className="dashboard-grid-layout">
+                {/* Hauptspalte für KPIs und Diagramme */}
                 <div className="main-stats-column">
                     <div className="stats-overview-cards-wrapper stats-section-box">
                         <h3 className="stats-section-title">
-                            <span><FontAwesomeIcon icon={faChartLine} /> Hauptkennzahlen</span>
+                            <span><FontAwesomeIcon icon={faChartLine} /> Kennzahlen</span>
                             <span className="stats-period-display">({activeDateRangeLabel})</span>
                         </h3>
                         {renderStatCards()}
@@ -430,7 +467,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                             <span className="stats-period-display">({activeDateRangeLabel})</span>
                         </h3>
                         <div className="charts-grid">
-                            <div className="chart-card revenue-chart-card"> {/* Spezifische Klasse für das Umsatzdiagramm */}
+                            <div className="chart-card revenue-chart-card">
                                 <RevenueOverTimeRechart chartData={revenueOverTimeData} title="Umsatzentwicklung" periodLabel={activeDateRangeLabel} />
                             </div>
                             <div className="chart-card">
@@ -443,6 +480,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                     </div>
                 </div>
 
+                {/* Seitenleiste für Schnellzugriffe und Listen */}
                 <div className="sidebar-stats-column">
                     <div className="quick-access-section stats-section-box">
                         <h3 className="stats-section-title small-title"><span><FontAwesomeIcon icon={faBolt} /> Schnellzugriff & Aktivität</span></h3>
@@ -486,18 +524,21 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                     </div>
 
                     <div className="report-options-section stats-section-box">
-                        <h3 className="stats-section-title small-title"><span><FontAwesomeIcon icon={faCog} /> Berichtsoptionen</span></h3>
+                        <h3 className="stats-section-title small-title"><span><FontAwesomeIcon icon={faCog} /> Dashboard Anpassen</span></h3>
                         <div className="report-options-content">
-                            <p className="no-data-small">Weitere Berichts- und Anpassungsoptionen werden hier in Kürze verfügbar sein (z.B. Datenexport, KPI-Auswahl).</p>
+                            <p className="no-data-small">Zukünftig können Sie hier auswählen, welche Kennzahlen und Diagramme angezeigt werden und Berichte exportieren.</p>
                             <button className="button-link-outline small-button" disabled>
                                 <FontAwesomeIcon icon={faFileExport} /> Daten exportieren (bald)
+                            </button>
+                            <button className="button-link-outline small-button" disabled>
+                                <FontAwesomeIcon icon={faCog} /> KPIs anpassen (bald)
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-
+            {/* Modals */}
             {selectedAppointmentForEdit && currentUser?.roles?.includes("ROLE_ADMIN") && (
                 <AppointmentEditModal appointment={selectedAppointmentForEdit} onClose={handleCloseEditModal} onAppointmentUpdated={handleAppointmentUpdatedFromModal} />
             )}
@@ -508,4 +549,3 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
     );
 }
 export default AdminDashboardStats;
-

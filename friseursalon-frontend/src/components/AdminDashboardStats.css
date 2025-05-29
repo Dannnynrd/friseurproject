@@ -4,7 +4,7 @@
     padding: 1rem 0;
     font-family: var(--font-sans);
     background-color: var(--light-bg);
-    max-width: 1600px; /* Etwas breiter für das neue Layout */
+    max-width: 1600px; /* Maximale Breite für das Dashboard */
     margin-left: auto;
     margin-right: auto;
     box-sizing: border-box;
@@ -12,278 +12,265 @@
 
 .stats-section-box {
     background-color: var(--light-bg, #ffffff);
-    border: 1px solid var(--border-color, #e7e7e7);
+    border: 1px solid var(--border-color-light, #eeeeee); /* Hellere Border für Boxen */
     border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.06);
-    margin-bottom: 2rem;
+    padding: 1.25rem; /* Etwas weniger Padding für kompaktere Boxen */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Subtilerer Schatten */
+    margin-bottom: 1.75rem; /* Einheitlicher Abstand */
+}
+
+.main-stats-column > .stats-section-box:last-child,
+.sidebar-stats-column > .stats-section-box:last-child {
+    margin-bottom: 0;
 }
 
 /* Filterleiste */
 .stats-period-filter-bar {
     display: flex; flex-wrap: wrap; align-items: center;
-    gap: 1rem; margin-bottom: 2.5rem; padding: 0.85rem 1rem;
+    gap: 0.8rem; margin-bottom: 2rem; padding: 0.75rem 1rem; /* Kompakter */
     background-color: var(--light-grey-bg, #f8f8f8);
-    border-radius: 10px; border: 1px solid var(--border-color-light, #eeeeee);
+    border-radius: 8px; /* Etwas weniger Rundung */
+    border: 1px solid var(--border-color-light, #eeeeee);
 }
-.period-buttons { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.period-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .period-buttons button {
-    padding: 0.55rem 1.1rem; font-size: 0.82rem; font-weight: 500;
+    padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 500; /* Kompakter */
     border: 1px solid var(--border-color, #e0e0e0); background-color: var(--light-bg);
-    color: var(--medium-grey-text); border-radius: 6px; cursor: pointer;
+    color: var(--medium-grey-text); border-radius: 5px; cursor: pointer;
     transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
-    display: inline-flex; align-items: center; gap: 0.35rem;
+    display: inline-flex; align-items: center; gap: 0.3rem;
 }
 .period-buttons button:hover { background-color: #f0f0f0; border-color: #cccccc; color: var(--dark-text); }
 .period-buttons button.active {
     background-color: var(--dark-text); color: var(--light-bg);
-    border-color: var(--dark-text); box-shadow: 0 2px 5px rgba(0,0,0,0.12);
+    border-color: var(--dark-text); box-shadow: 0 1px 4px rgba(0,0,0,0.1);
 }
-.period-buttons button .svg-inline--fa { font-size: 0.9em; }
-.period-buttons button.custom-period-btn .svg-inline--fa { margin-right: 0.3rem;}
+.period-buttons button .svg-inline--fa { font-size: 0.85em; }
+.period-buttons button.custom-period-btn .svg-inline--fa { margin-right: 0.25rem;}
 
-.custom-date-pickers { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-left: auto; }
+.custom-date-pickers { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-left: auto; }
 .custom-date-pickers .date-picker-input {
-    padding: 0.55rem 0.8rem; font-size: 0.85rem; border: 1px solid var(--border-color, #e0e0e0);
-    border-radius: 6px; max-width: 120px; background-color: var(--light-bg);
+    padding: 0.5rem 0.7rem; font-size: 0.8rem; border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 5px; max-width: 110px; background-color: var(--light-bg);
 }
-.custom-date-pickers .apply-custom-date { padding: 0.55rem 1.1rem; }
+.custom-date-pickers .apply-custom-date { padding: 0.5rem 1rem; font-size: 0.8rem; }
 
 /* Lade- und Fehlermeldungen */
 .loading-indicator-top {
     text-align: center; padding: 0.5rem; background-color: var(--info-bg-light);
-    color: var(--info-color); border-radius: 4px; margin-bottom: 1rem; font-size: 0.9rem;
+    color: var(--info-color); border-radius: 4px; margin-bottom: 1rem; font-size: 0.85rem;
 }
-.loading-message-stats, .stats-error-message, .stat-card-no-data, .chart-no-data-message, .no-upcoming-appointments, .report-options-content p {
-    text-align: center; color: var(--medium-grey-text); padding: 1.5rem; font-size: 0.95rem;
-    border: 1px dashed var(--border-color); border-radius: 6px; background-color: var(--light-grey-bg);
+.loading-message-stats, .stats-error-message, .stat-card-no-data, .chart-no-data-message, .no-upcoming-appointments, .report-options-content > p {
+    text-align: center; color: var(--medium-grey-text); padding: 1.25rem; font-size: 0.9rem; /* Kompakter */
+    border: 1px dashed var(--border-color-light, #eeeeee); border-radius: 8px; background-color: #fcfcfc; /* Sehr heller Hintergrund */
+    margin-top: 0.5rem;
 }
 .stats-error-message {
     color: var(--danger-color); background-color: var(--danger-bg-light); border-color: var(--danger-color);
 }
-.stat-card-no-data, .chart-no-data-message, .no-upcoming-appointments, .report-options-content p { margin-top: 0.5rem; font-style: italic; }
-.no-data-small { font-size: 0.85rem; color: var(--light-grey-text); padding: 0.5rem; text-align: center; }
+.stat-card-no-data, .chart-no-data-message, .no-upcoming-appointments, .report-options-content > p { font-style: italic; }
+.no-data-small { font-size: 0.8rem; color: var(--light-grey-text); padding: 0.4rem; text-align: center; }
 
 /* Neues Dashboard Grid Layout */
 .dashboard-grid-layout {
     display: grid;
-    grid-template-columns: 1fr; /* Mobile: alles untereinander */
-    gap: 2rem;
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
 }
 
-@media (min-width: 1200px) { /* Breitere Bildschirme: 2 Spalten */
+@media (min-width: 1024px) {
     .dashboard-grid-layout {
-        grid-template-columns: 2fr 1fr; /* Hauptspalte breiter, Seitenleiste schmaler */
+        grid-template-columns: minmax(0, 2.8fr) minmax(0, 1fr); /* Hauptspalte etwas mehr Dominanz */
     }
 }
 
-.main-stats-column {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem; /* Abstand zwischen KPI-Box und Chart-Box */
+.main-stats-column, .sidebar-stats-column {
+    display: flex; flex-direction: column; gap: 1.75rem;
 }
-
-.sidebar-stats-column {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem; /* Abstand zwischen den Boxen in der Sidebar */
-}
-
 
 /* Sektionsüberschriften */
 .stats-section-title {
-    font-family: var(--font-serif); font-size: 1.4rem; color: var(--dark-text);
-    margin: 0 0 1.5rem 0; padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    font-family: var(--font-serif); font-size: 1.2rem;
+    color: var(--dark-text);
+    margin: 0 0 1rem 0; padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color-light, #eeeeee); /* Hellere Linie */
     display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: 0.6rem;
+    flex-wrap: wrap; gap: 0.5rem;
 }
-.stats-section-title.small-title { /* Für kleinere Sektionen wie Schnellzugriff */
-    font-size: 1.15rem; margin-bottom: 1.1rem; padding-bottom: 0.4rem;
-    border-bottom: 1px solid var(--border-color-extralight, #f1f1f1);
+.stats-section-title.small-title {
+    font-size: 1rem; margin-bottom: 0.8rem; padding-bottom: 0.3rem;
 }
-.stats-section-title > span:first-child { display: flex; align-items: center; gap: 0.6rem; }
-.stats-section-title .svg-inline--fa { color: var(--medium-grey-text); font-size: 1.1rem; }
-.stats-period-display { font-size: 0.8rem; font-weight: 400; color: var(--medium-grey-text); margin-left: 0.5rem; }
+.stats-section-title > span:first-child { display: flex; align-items: center; gap: 0.4rem; }
+.stats-section-title .svg-inline--fa { color: var(--medium-grey-text); font-size: 0.95rem; }
+.stats-period-display { font-size: 0.7rem; font-weight: 400; color: var(--medium-grey-text); margin-left: 0.35rem; }
 
 
 /* Schnellzugriff & Aktivität Sektion */
 .quick-access-section .quick-access-content {
-    display: flex;
-    flex-direction: column; /* Untereinander für bessere Struktur in der Sidebar */
-    gap: 1rem;
+    display: flex; flex-direction: column; gap: 0.8rem;
 }
 .quick-create-button {
-    padding: 0.7rem 1.2rem !important;
-    font-size: 0.9rem !important; /* Etwas größer für Hauptaktion */
-    font-weight: 500 !important;
+    padding: 0.65rem 1.1rem !important; font-size: 0.85rem !important;
+    font-weight: 500 !important; width: 100%;
 }
 .booking-activity-widget {
-    width: 100%; /* Volle Breite in der Sidebar-Spalte */
-    background-color: #fafafa;
-    padding: 0.75rem 1rem;
-    border-radius: 6px;
-    border: 1px solid var(--border-color-extralight, #f1f1f1);
+    width: 100%; background-color: #fdfdfd; padding: 0.75rem 0.9rem;
+    border-radius: 6px; border: 1px solid var(--border-color-extralight, #f1f1f1);
 }
 .booking-activity-widget h4 {
-    font-size: 0.9rem; font-weight: 600; color: var(--dark-text);
-    margin: 0 0 0.6rem 0; padding-bottom: 0.3rem;
+    font-size: 0.8rem; font-weight: 600; color: var(--dark-text);
+    margin: 0 0 0.4rem 0; padding-bottom: 0.2rem;
     border-bottom: 1px solid var(--border-color-light, #eeeeee);
 }
 .booking-activity-widget p {
-    font-size: 0.85rem; color: var(--medium-grey-text); margin-bottom: 0.25rem;
+    font-size: 0.78rem; color: var(--medium-grey-text); margin-bottom: 0.15rem;
 }
 .booking-activity-widget p span { font-weight: 500; color: var(--dark-text); }
 
 
 /* KPI-Karten */
-.stats-overview-cards-wrapper { display: flex; flex-direction: column; gap: 1rem; } /* Reduzierter Gap */
-.stats-section-subtitle { /* Für "Momentaufnahme & Weitere Einblicke" */
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--medium-grey-text);
-    margin-top: 0.5rem; /* Kleinerer Abstand nach Divider */
-    margin-bottom: 0.8rem;
+.stats-overview-cards-wrapper { display: flex; flex-direction: column; gap: 0.8rem; }
+.stats-section-subtitle {
+    font-size: 0.8rem; font-weight: 600; color: var(--medium-grey-text);
+    margin-top: 0.2rem; margin-bottom: 0.6rem; padding-left: 0.1rem;
 }
-.stats-overview-cards { display: grid; gap: 1rem; }
-/* Layout für KPI-Karten: Dynamisch anpassbar an Bildschirmbreite */
-.stats-overview-cards.primary-kpis { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
-.stats-overview-cards.secondary-kpis { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.stats-overview-cards { display: grid; gap: 0.75rem; }
+.stats-overview-cards.kpi-group {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Kleinere Min-Breite für mehr Karten pro Zeile */
+}
+
 .kpi-divider {
-    border: none; height: 1px; background-color: var(--border-color-light, #eeeeee);
-    margin: 0.5rem 0; /* Angepasster Abstand */
+    border: none; height: 1px; background-color: var(--border-color-extralight, #f3f3f3); /* Sehr hell */
+    margin: 0.6rem 0;
 }
 
 .stat-card {
-    background-color: var(--light-bg, #ffffff); border: 1px solid var(--border-color, #e0e0e0);
-    border-radius: 8px; padding: 1rem; display: flex; flex-direction: column;
-    justify-content: space-between; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    background-color: var(--light-bg, #ffffff); border: 1px solid var(--border-color-light, #f0f0f0); /* Hellere Border */
+    border-radius: 8px; padding: 0.8rem;
+    display: flex; flex-direction: column;
+    justify-content: space-between; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03); /* Noch subtiler */
     transition: box-shadow 0.2s ease, transform 0.2s ease; overflow: hidden;
 }
-.stat-card:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); transform: translateY(-2px); }
+.stat-card:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); transform: translateY(-1px); }
 
-.stat-card.main-kpi { padding: 1.1rem; min-height: 120px; }
-.stat-card.main-kpi .stat-value { font-size: 1.7rem; font-weight: 600; }
-.stat-card.main-kpi .stat-label { font-size: 0.72rem; }
-.stat-card.main-kpi .stat-icon { font-size: 1rem; width: 22px; height: 22px; }
+.stat-card.main-kpi { padding: 0.9rem; min-height: 110px; }
+.stat-card.main-kpi .stat-value { font-size: 1.5rem; font-weight: 600; }
+.stat-card.main-kpi .stat-label { font-size: 0.68rem; }
+.stat-card.main-kpi .stat-icon { font-size: 0.9rem; width: 18px; height: 18px; }
 
-.stat-card.small-kpi { min-height: 90px; padding: 0.8rem; }
-.stat-card.small-kpi .stat-value { font-size: 1.2rem; font-weight: 600;}
-.stat-card.small-kpi .stat-label { font-size: 0.65rem; }
-.stat-card.small-kpi .stat-icon { font-size: 0.8rem; width: 16px; height: 16px; }
+.stat-card.small-kpi { min-height: 80px; padding: 0.7rem; }
+.stat-card.small-kpi .stat-value { font-size: 1.1rem; font-weight: 600;}
+.stat-card.small-kpi .stat-label { font-size: 0.6rem; }
+.stat-card.small-kpi .stat-icon { font-size: 0.7rem; width: 14px; height: 14px; }
 .stat-card.small-kpi .stat-comparison { display: none; }
 
-.stat-card-header { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem; }
+.stat-card-header { display: flex; align-items: center; gap: 0.3rem; margin-bottom: 0.15rem; }
 .stat-icon {
     display: inline-flex; align-items: center; justify-content: center;
-    border-radius: 50%; padding: 0.3em; line-height: 1;
+    border-radius: 50%; padding: 0.25em; line-height: 1;
     color: var(--dark-text); background-color: var(--light-grey-bg);
 }
 .stat-label { font-weight: 500; color: var(--medium-grey-text, #5f5f5f); line-height: 1.2; }
-.stat-value { color: var(--dark-text, #1f1f1f); line-height: 1.1; display: block; margin-top: 0.1rem; }
-.stat-comparison { font-size: 0.7rem; font-weight: 500; display: flex; align-items: center; gap: 0.2rem; margin-top: auto; padding-top: 0.15rem; }
+.stat-value { color: var(--dark-text, #1f1f1f); line-height: 1.1; display: block; margin-top: 0.05rem; }
+.stat-comparison { font-size: 0.65rem; font-weight: 500; display: flex; align-items: center; gap: 0.1rem; margin-top: auto; padding-top: 0.05rem; }
 .stat-comparison .comparison-data.positive { color: var(--success-color, #28a745); }
 .stat-comparison .comparison-data.negative { color: var(--danger-color, #c82333); }
 .stat-comparison .comparison-data.neutral { color: var(--medium-grey-text, #5f5f5f); }
-.stat-comparison .comparison-data .svg-inline--fa { margin-right: 0.1rem; font-size: 0.8em; }
+.stat-comparison .comparison-data .svg-inline--fa { margin-right: 0.05rem; font-size: 0.8em; }
 
 /* Spezifische Icon-Farben */
-.stat-icon.today, .stat-icon.fa-calendar-check { color: #28a745; background-color: rgba(40, 167, 69, 0.08); }
-.stat-icon.revenue, .stat-icon.fa-receipt  { color: #fd7e14; background-color: rgba(253, 126, 20, 0.08); }
-.stat-icon.upcoming, .stat-icon.fa-calendar-alt { color: #6f42c1; background-color: rgba(111, 66, 193, 0.08); }
+.stat-icon.today, .stat-icon.fa-calendar-day { color: #28a745; background-color: rgba(40, 167, 69, 0.08); }
+.stat-icon.revenue, .stat-icon.fa-euro-sign  { color: #fd7e14; background-color: rgba(253, 126, 20, 0.08); }
+.stat-icon.fa-calendar-check { color: #007bff; background-color: rgba(0, 123, 255, 0.08); }
+.stat-icon.fa-receipt { color: #6f42c1; background-color: rgba(111, 66, 193, 0.08); }
 .stat-icon.fa-coins    { color: #ffc107; background-color: rgba(255, 193, 7, 0.08); }
 .stat-icon.capacity, .stat-icon.fa-hourglass-half { color: #17a2b8; background-color: rgba(23, 162, 184, 0.08); }
 .stat-icon.fa-user-friends { color: #007bff; background-color: rgba(0, 123, 255, 0.08); }
 .stat-icon.duration, .stat-icon.fa-clock { color: #6610f2; background-color: rgba(102, 16, 242, 0.08); }
 .stat-icon.services, .stat-icon.fa-cut { color: #20c997; background-color: rgba(32, 201, 151, 0.08); }
-.stat-icon.avg-bookings, .stat-icon.fa-user-plus { color: #e83e8c; background-color: rgba(232, 62, 140, 0.08); } /* Pink */
-.stat-icon.projection, .stat-icon.fa-arrow-trend-up { color: #198754; background-color: rgba(25, 135, 84, 0.08); } /* Dunkleres Grün */
+.stat-icon.avg-bookings, .stat-icon.fa-users-cog { color: #e83e8c; background-color: rgba(232, 62, 140, 0.08); }
+.stat-icon.projection, .stat-icon.fa-arrow-trend-up { color: #198754; background-color: rgba(25, 135, 84, 0.08); }
+.stat-icon.growth, .stat-icon.fa-arrow-trend-up { color: #198754; background-color: rgba(25, 135, 84, 0.08); } /* Wiederverwendung für Wachstum */
+.stat-icon.new-customer, .stat-icon.fa-user-plus { color: #0dcaf0; background-color: rgba(13, 202, 240, 0.08); } /* Hellblau für Neukunden */
+.stat-icon.cancellation, .stat-icon.fa-user-slash { color: #dc3545; background-color: rgba(220, 53, 69, 0.08); } /* Rot für Stornos */
+.stat-icon.leadtime, .stat-icon.fa-calendar-alt { color: #6f42c1; background-color: rgba(111, 66, 193, 0.08); } /* Wiederverwendung für Vorlaufzeit */
 
 
 /* Chart-Bereich */
 .charts-section-wrapper { }
-.charts-grid { display: grid; gap: 1.5rem; grid-template-columns: 1fr; }
+.charts-grid { display: grid; gap: 1.25rem; grid-template-columns: 1fr; }
 @media (min-width: 768px) {
-    .charts-grid { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
-    .charts-grid .chart-card.revenue-chart-card { /* Umsatzdiagramm kann mehr Platz einnehmen */
-        /* grid-column: span 2; /* Nimmt 2 Spalten ein, wenn möglich */
-        /* min-height: 350px; /* Etwas höher für das Hauptdiagramm */
-    }
-}
-/* Auf sehr großen Bildschirmen (innerhalb der .main-stats-column) */
-@media (min-width: 1024px) {
     .main-stats-column .charts-grid {
-        /* Hier könnte man spezifische Layouts für die Charts in der Hauptspalte definieren,
-           z.B. das Umsatzdiagramm immer oben und die anderen beiden nebeneinander darunter,
-           wenn die Hauptspalte breit genug ist. */
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Kleinere Min-Breite für Charts */
     }
     .main-stats-column .charts-grid .chart-card.revenue-chart-card {
-        grid-column: 1 / -1; /* Umsatzdiagramm nimmt volle Breite der Chart-Grid ein */
+        grid-column: 1 / -1;
+        min-height: 300px;
     }
 }
 
-
 .chart-card {
-    background-color: var(--light-bg, #ffffff); border: 1px solid var(--border-color);
-    border-radius: 8px; padding: 1.25rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-    min-height: 300px; display: flex; flex-direction: column; overflow: hidden;
+    background-color: var(--light-bg, #ffffff); border: 1px solid var(--border-color-light, #f0f0f0);
+    border-radius: 8px; padding: 1rem; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    min-height: 260px; display: flex; flex-direction: column; overflow: hidden;
 }
 .chart-title {
-    font-family: var(--font-sans, sans-serif); font-weight: 600; font-size: 1.05rem;
-    color: var(--dark-text); margin-bottom: 1.25rem; display: flex;
-    align-items: center; gap: 0.5rem;
+    font-family: var(--font-sans, sans-serif); font-weight: 600; font-size: 0.95rem;
+    color: var(--dark-text); margin-bottom: 0.8rem; display: flex;
+    align-items: center; gap: 0.35rem;
 }
-.chart-title .svg-inline--fa { color: var(--medium-grey-text); font-size: 0.95em; }
-.chart-title .chart-period-label { font-size: 0.7rem; font-weight: 400; color: var(--light-grey-text); margin-left: 0.5rem; }
-.chart-card .recharts-responsive-container { min-height: 240px; }
+.chart-title .svg-inline--fa { color: var(--medium-grey-text); font-size: 0.85em; }
+.chart-title .chart-period-label { font-size: 0.6rem; font-weight: 400; color: var(--light-grey-text); margin-left: 0.35rem; }
+.chart-card .recharts-responsive-container { min-height: 200px; }
 
 /* Tägliche Terminliste (Quick View) */
 .daily-appointments-section { }
 .daily-appointments-heading {
-    font-family: var(--font-sans, sans-serif); font-weight: 600; font-size: 1.1rem;
-    color: var(--dark-text); margin-bottom: 1.25rem; display: flex;
-    align-items: center; gap: 0.5rem; padding-bottom: 0.6rem;
+    font-family: var(--font-sans, sans-serif); font-weight: 600; font-size: 1rem;
+    color: var(--dark-text); margin-bottom: 0.8rem; display: flex;
+    align-items: center; gap: 0.35rem; padding-bottom: 0.4rem;
     border-bottom: 1px solid var(--border-color-light, #eeeeee);
 }
-.daily-appointments-heading .svg-inline--fa { color: var(--medium-grey-text); font-size: 1em; }
-.loading-message-stats.small-list-loader { padding: 1rem; font-size: 0.9rem; border: none; background-color: transparent; }
+.daily-appointments-heading .svg-inline--fa { color: var(--medium-grey-text); font-size: 0.9em; }
+.loading-message-stats.small-list-loader { padding: 0.8rem; font-size: 0.8rem; border: none; background-color: transparent; }
 
-.daily-appointments-list { list-style: none; padding: 0; margin: 0; max-height: 350px; overflow-y: auto; }
+.daily-appointments-list { list-style: none; padding: 0; margin: 0; max-height: 300px; overflow-y: auto; }
 .daily-appointment-item {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 0.75rem 0.25rem; border-bottom: 1px solid var(--border-color-extralight, #f1f1f1);
-    font-size: 0.85rem; cursor: pointer; transition: background-color 0.15s ease;
-    border-radius: 4px;
+    padding: 0.6rem 0.15rem; border-bottom: 1px solid var(--border-color-extralight, #f1f1f1);
+    font-size: 0.8rem; cursor: pointer; transition: background-color 0.15s ease;
+    border-radius: 3px;
 }
 .daily-appointment-item:last-child { border-bottom: none; }
-.daily-appointment-item:hover, .daily-appointment-item:focus-visible { background-color: var(--light-grey-bg); }
+.daily-appointment-item:hover, .daily-appointment-item:focus-visible { background-color: #f9f9f9; } /* Hellerer Hover */
 .daily-appointment-item:focus-visible { outline: 2px solid var(--focus-ring-color); outline-offset: 1px; }
-.item-loader-icon { margin-left: auto; padding-left: 0.5rem; color: var(--medium-grey-text); }
-.daily-appointment-item .appointment-time { font-weight: 600; color: var(--dark-text); min-width: 50px; flex-shrink: 0; }
-.daily-appointment-item .appointment-info-group { flex-grow: 1; margin: 0 0.75rem; line-height: 1.3; }
+.item-loader-icon { margin-left: auto; padding-left: 0.35rem; color: var(--medium-grey-text); }
+.daily-appointment-item .appointment-time { font-weight: 600; color: var(--dark-text); min-width: 40px; flex-shrink: 0; }
+.daily-appointment-item .appointment-info-group { flex-grow: 1; margin: 0 0.5rem; line-height: 1.25; }
 .daily-appointment-item .appointment-service { display: block; color: var(--dark-text); font-weight: 500; }
 .daily-appointment-item .appointment-customer { display: block; color: var(--medium-grey-text); font-size: 0.9em; }
 .appointment-status-tag {
-    padding: 0.2em 0.6em; border-radius: 12px; font-size: 0.7rem; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.3px; border: 1px solid transparent;
-    min-width: 60px; text-align: center; flex-shrink: 0;
+    padding: 0.12em 0.45em; border-radius: 8px; font-size: 0.6rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.25px; border: 1px solid transparent;
+    min-width: 50px; text-align: center; flex-shrink: 0;
 }
 .appointment-status-tag.status-heute { background-color: var(--info-bg-light); color: var(--info-color); border-color: var(--info-color); }
 .appointment-status-tag.status-morgen { background-color: #e9ecef; color: #495057; border-color: #ced4da; }
 .appointment-status-tag.status-datum { background-color: #f8f9fa; color: #6c757d; border-color: #dee2e6; }
 
-/* Berichtsoptionen */
-.report-options-section .report-options-content {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    align-items: flex-start;
+/* Berichtsoptionen & Dashboard Anpassen */
+.report-options-section .report-options-content,
+.dashboard-customize-section .dashboard-customize-content { /* Gemeinsame Stile */
+    display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start;
 }
-.report-options-section .report-options-content p {
-    border: none; /* Keine gestrichelte Linie für diesen Text */
-    background-color: transparent;
-    padding: 0;
-    text-align: left;
+.report-options-section .report-options-content p,
+.dashboard-customize-section .dashboard-customize-content p {
+    border: none; background-color: transparent; padding: 0; text-align: left; margin-top:0;
+    font-size: 0.8rem; /* Etwas kleiner für Infotexte */
+}
+.report-options-section .report-options-content .button-link-outline.small-button,
+.dashboard-customize-section .dashboard-customize-content .button-link-outline.small-button {
+    font-size: 0.78rem; padding: 0.35rem 0.7rem;
 }
 
 
@@ -297,10 +284,10 @@
     border-radius: 4px;
     user-select: none;
 }
-.stat-card.is-loading-skeleton .stat-card-header-skeleton { height: 1.2em; width: 70%; margin-bottom: 0.4em; }
-.stat-card.is-loading-skeleton .stat-value-skeleton { height: 1.5em; width: 50%; }
-.stat-card.is-loading-skeleton .stat-value-skeleton.large { height: 2em; width: 60%; margin-top: 0.2em; }
-.stat-card.is-loading-skeleton .stat-comparison-skeleton { height: 0.9em; width: 80%; margin-top: 0.5em;}
+.stat-card.is-loading-skeleton .stat-card-header-skeleton { height: 1em; width: 60%; margin-bottom: 0.3em; }
+.stat-card.is-loading-skeleton .stat-value-skeleton { height: 1.3em; width: 40%; }
+.stat-card.is-loading-skeleton .stat-value-skeleton.large { height: 1.6em; width: 50%; margin-top: 0.1em; }
+.stat-card.is-loading-skeleton .stat-comparison-skeleton { height: 0.7em; width: 70%; margin-top: 0.35em;}
 
 @keyframes pulseBG {
     0%, 100% { opacity: 0.7; }
@@ -308,14 +295,9 @@
 }
 
 /* Responsive Anpassungen für kleinere Bildschirme */
-@media (max-width: 1199px) { /* Bis das 2-Spalten-Layout greift */
-    .stats-main-layout { grid-template-columns: 1fr; }
-    .charts-grid .chart-card.revenue-chart-card {
-        grid-column: auto;
-    }
-}
 @media (max-width: 767px) {
-    .charts-grid { grid-template-columns: 1fr; }
+    .dashboard-grid-layout { grid-template-columns: 1fr; }
+    .charts-grid .chart-card.revenue-chart-card { grid-column: auto; }
     .quick-access-content { flex-direction: column; align-items: stretch; }
     .quick-create-button, .quick-link-button { width: 100%; margin-bottom: 0.75rem; }
     .booking-activity-widget { width: 100%; }
@@ -323,4 +305,10 @@
     .custom-date-pickers { margin-left: 0; width: 100%; }
     .custom-date-pickers .date-picker-input, .custom-date-pickers .apply-custom-date { width: 100%; max-width: none; }
     .apply-custom-date { margin-top: 0.5rem; }
+    .stats-overview-cards.kpi-group {
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); /* Noch kleinere Min-Breite für Karten auf Mobile */
+    }
+    .stat-card.main-kpi .stat-value { font-size: 1.4rem; }
+    .stat-card.small-kpi .stat-value { font-size: 1.05rem; }
 }
+
