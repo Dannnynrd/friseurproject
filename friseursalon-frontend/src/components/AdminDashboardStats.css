@@ -24,6 +24,7 @@
     margin-bottom: 0;
 }
 
+
 /* Filterleiste */
 .stats-period-filter-bar {
     display: flex; flex-wrap: wrap; align-items: center;
@@ -80,7 +81,7 @@
 
 @media (min-width: 1024px) {
     .dashboard-grid-layout {
-        grid-template-columns: minmax(0, 2.8fr) minmax(0, 1fr); /* Hauptspalte etwas mehr Dominanz */
+        grid-template-columns: minmax(0, 2.8fr) minmax(0, 1fr);
     }
 }
 
@@ -93,7 +94,7 @@
     font-family: var(--font-serif); font-size: 1.2rem;
     color: var(--dark-text);
     margin: 0 0 1rem 0; padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border-color-light, #eeeeee); /* Hellere Linie */
+    border-bottom: 1px solid var(--border-color-light, #eeeeee);
     display: flex; align-items: center; justify-content: space-between;
     flex-wrap: wrap; gap: 0.5rem;
 }
@@ -134,35 +135,34 @@
     font-size: 0.8rem; font-weight: 600; color: var(--medium-grey-text);
     margin-top: 0.2rem; margin-bottom: 0.6rem; padding-left: 0.1rem;
 }
-.stats-overview-cards { display: grid; gap: 0.75rem; }
+.stats-overview-cards {
+    display: grid;
+    gap: 0.75rem;
+}
 .stats-overview-cards.kpi-group {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Kleinere Min-Breite für mehr Karten pro Zeile */
+    grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
 }
 
 .kpi-divider {
-    border: none; height: 1px; background-color: var(--border-color-extralight, #f3f3f3); /* Sehr hell */
+    border: none; height: 1px; background-color: var(--border-color-extralight, #f3f3f3);
     margin: 0.6rem 0;
 }
 
 .stat-card {
-    background-color: var(--light-bg, #ffffff); border: 1px solid var(--border-color-light, #f0f0f0); /* Hellere Border */
+    background-color: var(--light-bg, #ffffff); border: 1px solid var(--border-color-light, #f0f0f0);
     border-radius: 8px; padding: 0.8rem;
     display: flex; flex-direction: column;
-    justify-content: space-between; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03); /* Noch subtiler */
+    justify-content: space-between; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
     transition: box-shadow 0.2s ease, transform 0.2s ease; overflow: hidden;
+    min-height: 90px;
 }
 .stat-card:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); transform: translateY(-1px); }
 
-.stat-card.main-kpi { padding: 0.9rem; min-height: 110px; }
-.stat-card.main-kpi .stat-value { font-size: 1.5rem; font-weight: 600; }
-.stat-card.main-kpi .stat-label { font-size: 0.68rem; }
-.stat-card.main-kpi .stat-icon { font-size: 0.9rem; width: 18px; height: 18px; }
+.stat-card .stat-value.large { font-size: 1.5rem; }
+.stat-card .stat-value { font-size: 1.2rem; font-weight: 600; }
+.stat-card .stat-label { font-size: 0.65rem; }
+.stat-card .stat-icon { font-size: 0.85rem; width: 18px; height: 18px; }
 
-.stat-card.small-kpi { min-height: 80px; padding: 0.7rem; }
-.stat-card.small-kpi .stat-value { font-size: 1.1rem; font-weight: 600;}
-.stat-card.small-kpi .stat-label { font-size: 0.6rem; }
-.stat-card.small-kpi .stat-icon { font-size: 0.7rem; width: 14px; height: 14px; }
-.stat-card.small-kpi .stat-comparison { display: none; }
 
 .stat-card-header { display: flex; align-items: center; gap: 0.3rem; margin-bottom: 0.15rem; }
 .stat-icon {
@@ -171,7 +171,6 @@
     color: var(--dark-text); background-color: var(--light-grey-bg);
 }
 .stat-label { font-weight: 500; color: var(--medium-grey-text, #5f5f5f); line-height: 1.2; }
-.stat-value { color: var(--dark-text, #1f1f1f); line-height: 1.1; display: block; margin-top: 0.05rem; }
 .stat-comparison { font-size: 0.65rem; font-weight: 500; display: flex; align-items: center; gap: 0.1rem; margin-top: auto; padding-top: 0.05rem; }
 .stat-comparison .comparison-data.positive { color: var(--success-color, #28a745); }
 .stat-comparison .comparison-data.negative { color: var(--danger-color, #c82333); }
@@ -189,11 +188,10 @@
 .stat-icon.duration, .stat-icon.fa-clock { color: #6610f2; background-color: rgba(102, 16, 242, 0.08); }
 .stat-icon.services, .stat-icon.fa-cut { color: #20c997; background-color: rgba(32, 201, 151, 0.08); }
 .stat-icon.avg-bookings, .stat-icon.fa-users-cog { color: #e83e8c; background-color: rgba(232, 62, 140, 0.08); }
-.stat-icon.projection, .stat-icon.fa-arrow-trend-up { color: #198754; background-color: rgba(25, 135, 84, 0.08); }
-.stat-icon.growth, .stat-icon.fa-arrow-trend-up { color: #198754; background-color: rgba(25, 135, 84, 0.08); } /* Wiederverwendung für Wachstum */
-.stat-icon.new-customer, .stat-icon.fa-user-plus { color: #0dcaf0; background-color: rgba(13, 202, 240, 0.08); } /* Hellblau für Neukunden */
-.stat-icon.cancellation, .stat-icon.fa-user-slash { color: #dc3545; background-color: rgba(220, 53, 69, 0.08); } /* Rot für Stornos */
-.stat-icon.leadtime, .stat-icon.fa-calendar-alt { color: #6f42c1; background-color: rgba(111, 66, 193, 0.08); } /* Wiederverwendung für Vorlaufzeit */
+.stat-icon.projection, .stat-icon.growth, .stat-icon.fa-arrow-trend-up { color: #198754; background-color: rgba(25, 135, 84, 0.08); }
+.stat-icon.new-customer, .stat-icon.fa-user-plus { color: #0dcaf0; background-color: rgba(13, 202, 240, 0.08); }
+.stat-icon.cancellation, .stat-icon.fa-user-slash { color: #dc3545; background-color: rgba(220, 53, 69, 0.08); }
+.stat-icon.leadtime, .stat-icon.fa-calendar-alt { color: #6f42c1; background-color: rgba(111, 66, 193, 0.08); }
 
 
 /* Chart-Bereich */
@@ -201,7 +199,7 @@
 .charts-grid { display: grid; gap: 1.25rem; grid-template-columns: 1fr; }
 @media (min-width: 768px) {
     .main-stats-column .charts-grid {
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Kleinere Min-Breite für Charts */
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     }
     .main-stats-column .charts-grid .chart-card.revenue-chart-card {
         grid-column: 1 / -1;
@@ -242,7 +240,7 @@
     border-radius: 3px;
 }
 .daily-appointment-item:last-child { border-bottom: none; }
-.daily-appointment-item:hover, .daily-appointment-item:focus-visible { background-color: #f9f9f9; } /* Hellerer Hover */
+.daily-appointment-item:hover, .daily-appointment-item:focus-visible { background-color: #f9f9f9; }
 .daily-appointment-item:focus-visible { outline: 2px solid var(--focus-ring-color); outline-offset: 1px; }
 .item-loader-icon { margin-left: auto; padding-left: 0.35rem; color: var(--medium-grey-text); }
 .daily-appointment-item .appointment-time { font-weight: 600; color: var(--dark-text); min-width: 40px; flex-shrink: 0; }
@@ -259,17 +257,14 @@
 .appointment-status-tag.status-datum { background-color: #f8f9fa; color: #6c757d; border-color: #dee2e6; }
 
 /* Berichtsoptionen & Dashboard Anpassen */
-.report-options-section .report-options-content,
-.dashboard-customize-section .dashboard-customize-content { /* Gemeinsame Stile */
+.report-options-section .report-options-content {
     display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start;
 }
-.report-options-section .report-options-content p,
-.dashboard-customize-section .dashboard-customize-content p {
+.report-options-section .report-options-content p {
     border: none; background-color: transparent; padding: 0; text-align: left; margin-top:0;
-    font-size: 0.8rem; /* Etwas kleiner für Infotexte */
+    font-size: 0.8rem;
 }
-.report-options-section .report-options-content .button-link-outline.small-button,
-.dashboard-customize-section .dashboard-customize-content .button-link-outline.small-button {
+.report-options-section .report-options-content .button-link-outline.small-button {
     font-size: 0.78rem; padding: 0.35rem 0.7rem;
 }
 
@@ -306,9 +301,8 @@
     .custom-date-pickers .date-picker-input, .custom-date-pickers .apply-custom-date { width: 100%; max-width: none; }
     .apply-custom-date { margin-top: 0.5rem; }
     .stats-overview-cards.kpi-group {
-        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); /* Noch kleinere Min-Breite für Karten auf Mobile */
+        grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
     }
-    .stat-card.main-kpi .stat-value { font-size: 1.4rem; }
-    .stat-card.small-kpi .stat-value { font-size: 1.05rem; }
+    .stat-card .stat-value.large { font-size: 1.3rem; }
+    .stat-card .stat-value { font-size: 1.0rem; }
 }
-

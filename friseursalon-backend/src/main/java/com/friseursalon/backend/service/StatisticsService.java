@@ -5,7 +5,10 @@ import com.friseursalon.backend.dto.*;
 import com.friseursalon.backend.model.Appointment;
 import com.friseursalon.backend.model.BlockedTimeSlot;
 import com.friseursalon.backend.model.WorkingHours;
+// import com.friseursalon.backend.model.AppointmentStatus; // Importieren, wenn Enum existiert
 import com.friseursalon.backend.repository.AppointmentRepository;
+import com.friseursalon.backend.repository.CustomerRepository;
+import com.friseursalon.backend.repository.ServiceRepository;
 import com.friseursalon.backend.repository.WorkingHoursRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional; // KORREKTUR: Import hinzugefügt
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,6 +42,8 @@ public class StatisticsService {
     private final AppointmentRepository appointmentRepository;
     private final WorkingHoursRepository workingHoursRepository;
     private final BlockedTimeSlotService blockedTimeSlotService;
+    private final CustomerRepository customerRepository;
+    private final ServiceRepository serviceRepository;
 
     private final DateTimeFormatter GERMAN_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.GERMAN);
 
@@ -46,10 +51,14 @@ public class StatisticsService {
     @Autowired
     public StatisticsService(AppointmentRepository appointmentRepository,
                              WorkingHoursRepository workingHoursRepository,
-                             BlockedTimeSlotService blockedTimeSlotService) {
+                             BlockedTimeSlotService blockedTimeSlotService,
+                             CustomerRepository customerRepository,
+                             ServiceRepository serviceRepository) {
         this.appointmentRepository = appointmentRepository;
         this.workingHoursRepository = workingHoursRepository;
         this.blockedTimeSlotService = blockedTimeSlotService;
+        this.customerRepository = customerRepository;
+        this.serviceRepository = serviceRepository;
     }
 
     public DetailedAppointmentStatsDTO getDetailedAppointmentStats() {
@@ -70,24 +79,26 @@ public class StatisticsService {
         BigDecimal totalRevenueInPeriod = calculateRevenueForPeriod(periodStartDateTime, periodEndDateTime);
 
         long daysInPeriod = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        if (daysInPeriod <= 0) daysInPeriod = 1;
+
         LocalDate previousPeriodStartDate = startDate.minusDays(daysInPeriod);
         LocalDate previousPeriodEndDate = startDate.minusDays(1);
 
         LocalDateTime previousPeriodStartDateTime = previousPeriodStartDate.atStartOfDay();
         LocalDateTime previousPeriodEndDateTime = previousPeriodEndDate.atTime(LocalTime.MAX);
 
-        logger.info("Vorperiode für Vergleich: {} bis {}", previousPeriodStartDate, previousPeriodEndDate);
-
         Long previousPeriodTotalAppointments = appointmentRepository.countByStartTimeBetween(previousPeriodStartDateTime, previousPeriodEndDateTime);
         BigDecimal previousPeriodTotalRevenue = calculateRevenueForPeriod(previousPeriodStartDateTime, previousPeriodEndDateTime);
+        Long previousPeriodUniqueCustomers = appointmentRepository.countDistinctCustomersByStartTimeBetween(previousPeriodStartDateTime, previousPeriodEndDateTime);
+
 
         Double appointmentCountChangePercentage = calculatePercentageChange(
                 BigDecimal.valueOf(totalAppointmentsInPeriod),
-                BigDecimal.valueOf(previousPeriodTotalAppointments)
+                BigDecimal.valueOf(previousPeriodTotalAppointments != null ? previousPeriodTotalAppointments : 0)
         );
         Double revenueChangePercentage = calculatePercentageChange(
                 totalRevenueInPeriod,
-                previousPeriodTotalRevenue
+                previousPeriodTotalRevenue != null ? previousPeriodTotalRevenue : BigDecimal.ZERO
         );
 
         LocalDateTime now = LocalDateTime.now();
@@ -110,35 +121,102 @@ public class StatisticsService {
         BigDecimal revenueThisWeek = calculateRevenueForPeriod(startOfWeek, endOfWeek);
         BigDecimal revenueThisMonth = calculateRevenueForPeriod(startOfMonthLDT, endOfMonthLDT);
 
-        return new DetailedAppointmentStatsDTO(
-                totalAppointmentsInPeriod,
-                totalRevenueInPeriod,
-                startDate.format(GERMAN_DATE_FORMATTER),
-                endDate.format(GERMAN_DATE_FORMATTER),
-                previousPeriodTotalAppointments,
-                previousPeriodTotalRevenue,
-                appointmentCountChangePercentage,
-                revenueChangePercentage,
-                todayCount,
-                thisWeekCount,
-                thisMonthCount,
-                totalUpcomingCount,
-                revenueToday,
-                revenueThisWeek,
-                revenueThisMonth
+        // --- Berechnung der neuen KPIs ---
+        Long uniqueCustomersInPeriod = appointmentRepository.countDistinctCustomersByStartTimeBetween(periodStartDateTime, periodEndDateTime);
+
+        Double customerGrowthPercentage = calculatePercentageChange(
+                uniqueCustomersInPeriod != null ? BigDecimal.valueOf(uniqueCustomersInPeriod) : BigDecimal.ZERO,
+                previousPeriodUniqueCustomers != null ? BigDecimal.valueOf(previousPeriodUniqueCustomers) : BigDecimal.ZERO
         );
+
+        Long totalDurationMinutes = appointmentRepository.sumDurationMinutesByStartTimeBetween(periodStartDateTime, periodEndDateTime);
+        Double averageAppointmentDurationInPeriod = (totalAppointmentsInPeriod > 0 && totalDurationMinutes != null && totalDurationMinutes > 0)
+                ? (double) totalDurationMinutes / totalAppointmentsInPeriod
+                : null;
+
+        Double avgBookingsPerCustomer = (uniqueCustomersInPeriod != null && uniqueCustomersInPeriod > 0 && totalAppointmentsInPeriod > 0)
+                ? (double) totalAppointmentsInPeriod / uniqueCustomersInPeriod
+                : null;
+
+        long totalActiveServices = serviceRepository.count();
+
+        // --- Platzhalter/Simulationen für KPIs, die Modelländerungen erfordern ---
+        // TODO: Diese Logik durch echte Berechnungen ersetzen, sobald Datenmodell erweitert ist.
+
+        // newBookingsToday & newBookingsYesterday
+        // Benötigt ein `createdAt` Feld in der Appointment Entität.
+        // Beispiel: Long newBookingsTodayCount = appointmentRepository.countNewAppointmentsCreatedBetween(startOfToday, endOfToday.plusDays(1).minusNanos(1));
+        Long newBookingsTodayCount = 0L; // Platzhalter
+        Long newBookingsYesterdayCount = 0L; // Platzhalter
+
+        // cancellationRate
+        // Benötigt ein `status` Feld in der Appointment Entität (z.B. AppointmentStatus.CANCELLED).
+        // Beispiel: Long cancelledInPeriod = appointmentRepository.countCancelledAppointmentsBetween(periodStartDateTime, periodEndDateTime);
+        // Double cancellationRateValue = (totalAppointmentsInPeriod > 0 && cancelledInPeriod != null) ? ((double) cancelledInPeriod / (totalAppointmentsInPeriod + cancelledInPeriod)) * 100 : null;
+        // (Annahme: totalAppointmentsInPeriod zählt nur nicht-stornierte Termine, oder Formel anpassen)
+        Double cancellationRateValue = null; // Platzhalter
+
+        // newCustomerShare
+        // Benötigt ein `registrationDate` Feld in der Customer Entität und eine Methode, um Neukunden im Zeitraum zu identifizieren.
+        // List<Long> customerIdsInPeriod = appointmentRepository.findDistinctCustomerIdsWithAppointmentsBetween(periodStartDateTime, periodEndDateTime);
+        // Long newCustomersAmongAttendees = 0L;
+        // if (customerIdsInPeriod != null && !customerIdsInPeriod.isEmpty()) {
+        //    newCustomersAmongAttendees = customerRepository.countNewCustomersRegisteredBetweenAndInIdList(periodStartDateTime, periodEndDateTime, customerIdsInPeriod); // Hypothetische Methode
+        // }
+        // Double newCustomerShareValue = (uniqueCustomersInPeriod != null && uniqueCustomersInPeriod > 0 && newCustomersAmongAttendees != null)
+        //    ? ((double) newCustomersAmongAttendees / uniqueCustomersInPeriod) * 100
+        //    : null;
+        Double newCustomerShareValue = null; // Platzhalter
+
+        // avgBookingLeadTime
+        // Benötigt ein `createdAt` Feld in der Appointment Entität.
+        // Beispiel: Double avgLeadTime = appointmentRepository.getAverageBookingLeadTimeInDays(periodStartDateTime, periodEndDateTime);
+        // Integer avgBookingLeadTimeValue = (avgLeadTime != null) ? (int) Math.round(avgLeadTime) : null;
+        Integer avgBookingLeadTimeValue = null; // Platzhalter
+
+        BigDecimal projectedRevenueNext30DaysValue = null;
+        if (totalRevenueInPeriod != null && daysInPeriod > 0) {
+            BigDecimal dailyAvgRevenue = totalRevenueInPeriod.divide(BigDecimal.valueOf(daysInPeriod), 2, RoundingMode.HALF_UP);
+            projectedRevenueNext30DaysValue = dailyAvgRevenue.multiply(BigDecimal.valueOf(30));
+        }
+
+        // Erstellen des DTO-Objekts
+        DetailedAppointmentStatsDTO dto = new DetailedAppointmentStatsDTO(
+                totalAppointmentsInPeriod, totalRevenueInPeriod,
+                startDate.format(GERMAN_DATE_FORMATTER), endDate.format(GERMAN_DATE_FORMATTER),
+                todayCount, thisWeekCount, thisMonthCount, totalUpcomingCount,
+                revenueToday, revenueThisWeek, revenueThisMonth
+        );
+
+        // Setzen der Vergleichswerte und Prozentänderungen
+        dto.setPreviousPeriodTotalAppointments(previousPeriodTotalAppointments);
+        dto.setPreviousPeriodTotalRevenue(previousPeriodTotalRevenue);
+        dto.setAppointmentCountChangePercentage(appointmentCountChangePercentage);
+        dto.setRevenueChangePercentage(revenueChangePercentage);
+
+        // Setzen der neuen KPIs
+        dto.setUniqueCustomersInPeriod(uniqueCustomersInPeriod);
+        dto.setPreviousPeriodUniqueCustomers(previousPeriodUniqueCustomers);
+        dto.setCustomerGrowthPercentage(customerGrowthPercentage);
+        dto.setAverageAppointmentDurationInPeriod(averageAppointmentDurationInPeriod);
+        dto.setAvgBookingsPerCustomer(avgBookingsPerCustomer);
+        dto.setNewBookingsToday(newBookingsTodayCount);
+        dto.setNewBookingsYesterday(newBookingsYesterdayCount);
+        dto.setTotalActiveServices(totalActiveServices);
+        dto.setCancellationRate(cancellationRateValue);
+        dto.setNewCustomerShare(newCustomerShareValue);
+        dto.setAvgBookingLeadTime(avgBookingLeadTimeValue);
+        dto.setProjectedRevenueNext30Days(projectedRevenueNext30DaysValue);
+
+        return dto;
     }
 
     private Double calculatePercentageChange(BigDecimal currentValue, BigDecimal previousValue) {
-        if (previousValue == null) {
-            if (currentValue == null || currentValue.compareTo(BigDecimal.ZERO) == 0) return 0.0;
-            return null;
-        }
-        if (currentValue == null) {
-            currentValue = BigDecimal.ZERO;
-        }
+        if (currentValue == null) currentValue = BigDecimal.ZERO;
+        if (previousValue == null) previousValue = BigDecimal.ZERO; // Behandle null als 0 für den Vergleich
+
         if (previousValue.compareTo(BigDecimal.ZERO) == 0) {
-            return (currentValue.compareTo(BigDecimal.ZERO) > 0) ? null : 0.0;
+            return (currentValue.compareTo(BigDecimal.ZERO) > 0) ? null : 0.0; // Unendlicher Anstieg -> null, oder 0% wenn beide 0
         }
         BigDecimal difference = currentValue.subtract(previousValue);
         return difference.divide(previousValue, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue();
@@ -157,6 +235,7 @@ public class StatisticsService {
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = now.toLocalDate();
         LocalDateTime todayStart = today.atStartOfDay();
+        // Zeige Termine für heute und die nächsten 6 Tage an (insgesamt 7 Tage)
         LocalDateTime upcomingEndRange = today.plusDays(6).atTime(LocalTime.MAX);
 
         logger.info("Suche tägliche Termine von {} bis {}", todayStart, upcomingEndRange);
@@ -191,7 +270,6 @@ public class StatisticsService {
 
         logger.info("Suche Termine pro Wochentag von {} bis {}", periodStartDateTime, periodEndDateTime);
         List<Map<String, Object>> results = appointmentRepository.countAppointmentsPerDayOfWeekBetweenNative(periodStartDateTime, periodEndDateTime);
-        logger.info("Ergebnis für Termine pro Wochentag (roh aus DB): {}", results);
 
         List<AppointmentsPerDayOfWeekDTO> dailyStats = new ArrayList<>();
         DayOfWeek[] daysInGermanOrder = {
@@ -217,18 +295,25 @@ public class StatisticsService {
             }
 
             int dayOfWeekFromDb;
-            if (dayOfWeekFromDbObj instanceof Number) {
+            try {
                 dayOfWeekFromDb = ((Number) dayOfWeekFromDbObj).intValue();
-            } else {
-                logger.warn("Unerwarteter Typ für DAYOFWEEK aus DB: {} Wert: {}. Vorhandene Schlüssel: {}", dayOfWeekFromDbObj.getClass().getName(), dayOfWeekFromDbObj, result.keySet());
+            } catch (ClassCastException e) {
+                logger.error("Fehler beim Casten von DAYOFWEEK: {} mit Wert: {}", dayOfWeekFromDbObj.getClass(), dayOfWeekFromDbObj, e);
                 return;
             }
 
             DayOfWeek actualDayOfWeek;
-            if (dayOfWeekFromDb == 1) {
-                actualDayOfWeek = DayOfWeek.SUNDAY;
-            } else {
-                actualDayOfWeek = DayOfWeek.of(dayOfWeekFromDb - 1);
+            switch (dayOfWeekFromDb) {
+                case 1: actualDayOfWeek = DayOfWeek.SUNDAY; break;
+                case 2: actualDayOfWeek = DayOfWeek.MONDAY; break;
+                case 3: actualDayOfWeek = DayOfWeek.TUESDAY; break;
+                case 4: actualDayOfWeek = DayOfWeek.WEDNESDAY; break;
+                case 5: actualDayOfWeek = DayOfWeek.THURSDAY; break;
+                case 6: actualDayOfWeek = DayOfWeek.FRIDAY; break;
+                case 7: actualDayOfWeek = DayOfWeek.SATURDAY; break;
+                default:
+                    logger.warn("Ungültiger Wochentagswert aus DB: {}", dayOfWeekFromDb);
+                    return;
             }
 
             long count = ((Number) countFromDbObj).longValue();
@@ -250,7 +335,6 @@ public class StatisticsService {
 
         logger.info("Suche Termine pro Service von {} bis {}", periodStartDateTime, periodEndDateTime);
         List<Map<String, Object>> results = appointmentRepository.countAppointmentsPerServiceBetween(periodStartDateTime, periodEndDateTime);
-        logger.info("Ergebnis für Termine pro Service (roh aus DB): {}", results);
 
         if (results == null || results.isEmpty()) {
             logger.info("Keine Termine für Service-Statistik im Zeitraum gefunden.");
@@ -263,7 +347,6 @@ public class StatisticsService {
             if (countObj instanceof Number) return ((Number) countObj).longValue();
             return 0L;
         }).sum();
-        logger.info("Gesamtzahl Termine im Zeitraum für Service-Statistik: {}", totalAppointmentsInPeriod);
 
         return results.stream()
                 .sorted((r1, r2) -> {
@@ -275,7 +358,7 @@ public class StatisticsService {
                 .map(result -> {
                     Object serviceNameObj = result.get("SERVICENAME");
                     if (serviceNameObj == null) serviceNameObj = result.get("serviceName");
-                    if (serviceNameObj == null) serviceNameObj = result.get("NAME");
+                    if (serviceNameObj == null) serviceNameObj = result.get("name");
 
                     Object countObj = result.get("COUNT");
                     if (countObj == null) countObj = result.get("count");
@@ -300,7 +383,7 @@ public class StatisticsService {
         LocalDate currentDate = startDate;
         while (!currentDate.isAfter(endDate)) {
             final LocalDate finalCurrentDate = currentDate;
-            Optional<Map<String, Object>> dayData = results.stream() // Hier war der Fehler (Zeile 299)
+            Optional<Map<String, Object>> dayData = results.stream()
                     .filter(r -> {
                         Object dateObj = r.get("APPOINTMENT_DATE");
                         if (dateObj == null) dateObj = r.get("appointment_date");

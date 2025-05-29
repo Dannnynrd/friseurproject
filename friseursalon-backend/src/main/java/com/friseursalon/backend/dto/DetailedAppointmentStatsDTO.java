@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-// import java.util.List; // Nicht mehr direkt hier benötigt
 
 @Data
 @NoArgsConstructor
@@ -16,36 +15,49 @@ public class DetailedAppointmentStatsDTO {
     private long totalAppointmentsInPeriod;
     private BigDecimal totalRevenueInPeriod;
 
-    // Formattierte Daten für die Anzeige des aktuellen Zeitraums
+    // Formatierte Daten für die Anzeige des aktuellen Zeitraums
     private String periodStartDateFormatted;
     private String periodEndDateFormatted;
 
     // Vergleichsdaten für die Vorperiode
-    private Long previousPeriodTotalAppointments; // Long, um null zu erlauben, falls keine Vorperiode vorhanden/berechnet
-    private BigDecimal previousPeriodTotalRevenue; // BigDecimal, um null zu erlauben
+    private Long previousPeriodTotalAppointments;
+    private BigDecimal previousPeriodTotalRevenue;
+    private Long previousPeriodUniqueCustomers; // Für Kundenwachstum Vergleich
 
     // Prozentuale Änderungen
-    private Double appointmentCountChangePercentage; // Double für Prozentwerte
+    private Double appointmentCountChangePercentage;
     private Double revenueChangePercentage;
+    private Double customerGrowthPercentage;    // z.B. +5.0 (%)
 
-    // Bestehende Zählungen für nicht-filterbare Bereiche (z.B. "Alle Bevorstehenden")
-    // Diese könnten auch in ein separates DTO ausgelagert werden, wenn die Übersicht zu komplex wird.
-    // Fürs Erste behalten wir sie hier, falls sie noch global auf dem Dashboard angezeigt werden sollen.
-    private long todayCount; // Könnte auch aus totalAppointmentsInPeriod abgeleitet werden, wenn Periode "heute" ist
+    // Bestehende Zählungen für nicht-filterbare Bereiche
+    private long todayCount;
     private long thisWeekCount;
     private long thisMonthCount;
-    private long totalUpcomingCount; // Bleibt relevant und unabhängig vom Filter
+    private long totalUpcomingCount;
 
-    private BigDecimal revenueToday; // Könnte auch aus totalRevenueInPeriod abgeleitet werden
+    private BigDecimal revenueToday;
     private BigDecimal revenueThisWeek;
     private BigDecimal revenueThisMonth;
 
-    // Konstruktor für den Fall, dass keine Vergleichsdaten vorhanden sind
-    public DetailedAppointmentStatsDTO(long totalAppointmentsInPeriod, BigDecimal totalRevenueInPeriod,
-                                       String periodStartDateFormatted, String periodEndDateFormatted,
-                                       long todayCount, long thisWeekCount, long thisMonthCount,
-                                       long totalUpcomingCount, BigDecimal revenueToday,
-                                       BigDecimal revenueThisWeek, BigDecimal revenueThisMonth) {
+    // Erweiterte KPIs
+    private Long uniqueCustomersInPeriod;
+    private Double averageAppointmentDurationInPeriod; // in Minuten
+    private Double avgBookingsPerCustomer;      // z.B. 1.5
+    private Long newBookingsToday;              // Anzahl heute erstellter Termine (benötigt createdAt in Appointment)
+    private Long newBookingsYesterday;          // Anzahl gestern erstellter Termine (benötigt createdAt in Appointment)
+    private Long totalActiveServices;
+    private Double cancellationRate;            // z.B. 5.0 (%) - Benötigt Status im Appointment-Modell
+    private Double newCustomerShare;            // z.B. 10.0 (%) - Benötigt Erstellungsdatum für Kunden
+    private Integer avgBookingLeadTime;         // in Tagen - Benötigt Erstellungsdatum für Termine vs. Terminstart
+    private BigDecimal projectedRevenueNext30Days; // Umsatzprognose
+
+    // Basiskonstruktor, der im Service verwendet wird, um das Objekt zu initialisieren
+    public DetailedAppointmentStatsDTO(
+            long totalAppointmentsInPeriod, BigDecimal totalRevenueInPeriod,
+            String periodStartDateFormatted, String periodEndDateFormatted,
+            long todayCount, long thisWeekCount, long thisMonthCount,
+            long totalUpcomingCount, BigDecimal revenueToday,
+            BigDecimal revenueThisWeek, BigDecimal revenueThisMonth) {
         this.totalAppointmentsInPeriod = totalAppointmentsInPeriod;
         this.totalRevenueInPeriod = totalRevenueInPeriod;
         this.periodStartDateFormatted = periodStartDateFormatted;
@@ -57,6 +69,6 @@ public class DetailedAppointmentStatsDTO {
         this.revenueToday = revenueToday;
         this.revenueThisWeek = revenueThisWeek;
         this.revenueThisMonth = revenueThisMonth;
-        // Vergleichswerte und Prozentzahlen bleiben null/Standard
+        // Die anderen Felder werden im Service separat gesetzt.
     }
 }
