@@ -7,10 +7,12 @@ import {
     faChartLine, faCalendarCheck, faCalendarWeek, faSpinner,
     faExclamationCircle, faClockFour, faEuroSign,
     faChartPie, faChartBar, faListAlt, faCalendarAlt,
-    faFilter, faArrowUp, faArrowDown, faEquals, faCoins // faCoins für Ø-Umsatz
+    faFilter, faArrowUp, faArrowDown, faEquals, faCoins, faUsers,
+    faPlusCircle, faBolt // faBolt für Schnellzugriff, faPlusCircle für neuen Termin
 } from '@fortawesome/free-solid-svg-icons';
 import AppointmentEditModal from './AppointmentEditModal';
-import { format as formatDateFns, parseISO, isValid as isValidDate, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, addMonths, formatISO } from 'date-fns';
+import AppointmentCreateModal from './AppointmentCreateModal'; // Import für Erstellungsmodal
+import { format as formatDateFns, parseISO, isValid as isValidDate, subDays, startOfMonth, endOfMonth, subMonths, addMonths, formatISO } from 'date-fns';
 import { de as deLocale } from 'date-fns/locale';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
@@ -25,7 +27,7 @@ const PERIOD_OPTIONS = {
     LAST_7_DAYS: 'last7days',
     LAST_30_DAYS: 'last30days',
     THIS_MONTH: 'thisMonth',
-    NEXT_MONTH: 'nextMonth', // NEU
+    NEXT_MONTH: 'nextMonth',
     LAST_MONTH: 'lastMonth',
     CUSTOM: 'custom',
 };
@@ -61,7 +63,7 @@ const getDatesForPeriod = (period) => {
             startDate = startOfMonth(today);
             endDate = endOfMonth(today);
             break;
-        case PERIOD_OPTIONS.NEXT_MONTH: // NEU
+        case PERIOD_OPTIONS.NEXT_MONTH:
             const firstDayNextMonth = startOfMonth(addMonths(today, 1));
             startDate = firstDayNextMonth;
             endDate = endOfMonth(firstDayNextMonth);
@@ -85,13 +87,16 @@ const getDatesForPeriod = (period) => {
 function AdminDashboardStats({ currentUser, onAppointmentAction }) {
     const [detailedStats, setDetailedStats] = useState(null);
     const [dailyAppointments, setDailyAppointments] = useState([]);
+    const [recentAppointments, setRecentAppointments] = useState([]);
     const [appointmentsByDayData, setAppointmentsByDayData] = useState({ labels: [], data: [] });
     const [appointmentsByServiceData, setAppointmentsByServiceData] = useState({ labels: [], data: [] });
 
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingModalAppointment, setIsLoadingModalAppointment] = useState(false);
+    const [isLoadingRecent, setIsLoadingRecent] = useState(false);
     const [error, setError] = useState('');
     const [selectedAppointmentForEdit, setSelectedAppointmentForEdit] = useState(null);
+    const [showCreateModal, setShowCreateModal] = useState(false);
 
     const [selectedPeriod, setSelectedPeriod] = useState(PERIOD_OPTIONS.THIS_MONTH);
     const [customStartDate, setCustomStartDate] = useState(null);
@@ -118,13 +123,21 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             queryEndDate = dates.endDate;
         }
 
-        console.log(`[AdminDashboardStats] Abfrage für Zeitraum: ${queryStartDate} bis ${queryEndDate}`);
+        // Für "Letzte neue Termine" separat laden, da es nicht vom Zeitraumfilter abhängt
+        setIsLoadingRecent(true);
+        const recentAppointmentsPromise = api.get('/appointments/recent', { params: { count: 3 } })
+            .then(response => response.data)
+            .catch(err => {
+                console.error("Fehler bei recent appointments:", err.response?.data?.message || err.message);
+                return []; // Leeres Array im Fehlerfall
+            });
+
 
         const promises = [
             api.get('/statistics/detailed-counts', { params: { startDate: queryStartDate, endDate: queryEndDate } }),
             api.get('/statistics/today-upcoming-appointments'),
-            api.get(`/statistics/by-day-of-week`, { params: { startDate: queryStartDate, endDate: queryEndDate } }), // Backend muss das unterstützen
-            api.get(`/statistics/by-service`, { params: { startDate: queryStartDate, endDate: queryEndDate, topN: 5 } }) // Backend muss das unterstützen
+            api.get(`/statistics/by-day-of-week`, { params: { startDate: queryStartDate, endDate: queryEndDate } }),
+            api.get(`/statistics/by-service`, { params: { startDate: queryStartDate, endDate: queryEndDate, topN: 5 } }),
         ];
 
         try {
@@ -141,22 +154,18 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             } else {
                 setDetailedStats(null);
                 setError(prev => prev ? `${prev}, Kennzahlen` : 'Fehler beim Laden: Kennzahlen');
+                console.error("Fehler bei detailed-counts:", detailedStatsRes.reason || "Unbekannter Fehler");
             }
 
             if (dailyAppointmentsRes.status === 'fulfilled' && dailyAppointmentsRes.value.data) {
-                setDailyAppointments(dailyAppointmentsRes.value.data.map(dto => {
-                    let reconstructedStartTime;
-                    if (dto.appointmentDate && dto.startTime) {
-                        const datePart = String(dto.appointmentDate);
-                        const timePart = typeof dto.startTime === 'object'
-                            ? `${String(dto.startTime.hour).padStart(2, '0')}:${String(dto.startTime.minute).padStart(2, '0')}`
-                            : String(dto.startTime).substring(0,5);
-                        reconstructedStartTime = `${datePart}T${timePart}:00`;
-                    } else {
-                        reconstructedStartTime = new Date().toISOString();
-                    }
-                    return { ...dto, reconstructedStartTime };
-                }));
+                setDailyAppointments(dailyAppointmentsRes.value.data.map(dto => ({
+                    ...dto,
+                    reconstructedStartTime: (dto.appointmentDate && dto.startTime) ?
+                        `${String(dto.appointmentDate)}T${typeof dto.startTime === 'object' ? `${String(dto.startTime.hour).padStart(2, '0')}:${String(dto.startTime.minute).padStart(2, '0')}` : String(dto.startTime).substring(0,5)}:00`
+                        : new Date().toISOString()
+                })));
+            } else {
+                console.error("Fehler bei today-upcoming-appointments:", dailyAppointmentsRes.reason || "Unbekannter Fehler");
             }
 
             if (appByDayRes.status === 'fulfilled' && appByDayRes.value.data) {
@@ -166,6 +175,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                 });
             } else {
                 setAppointmentsByDayData({ labels: [], data: [] });
+                console.error("Fehler bei by-day-of-week:", appByDayRes.reason || "Unbekannter Fehler");
             }
 
             if (appByServiceRes.status === 'fulfilled' && appByServiceRes.value.data) {
@@ -175,14 +185,27 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                 });
             } else {
                 setAppointmentsByServiceData({ labels: [], data: [] });
+                console.error("Fehler bei by-service:", appByServiceRes.reason || "Unbekannter Fehler");
             }
+
+            // Verarbeite das Ergebnis von recentAppointmentsPromise
+            const recentData = await recentAppointmentsPromise;
+            setRecentAppointments(recentData.map(dto => ({
+                ...dto,
+                reconstructedStartTime: (dto.appointmentDate && dto.startTime) ?
+                    `${String(dto.appointmentDate)}T${typeof dto.startTime === 'object' ? `${String(dto.startTime.hour).padStart(2, '0')}:${String(dto.startTime.minute).padStart(2, '0')}` : String(dto.startTime).substring(0,5)}:00`
+                    : new Date().toISOString()
+            })));
+
 
         } catch (generalError) {
             setError('Ein allgemeiner Fehler ist aufgetreten.');
+            console.error("Allgemeiner Fehler in fetchData:", generalError);
         } finally {
             setIsLoading(false);
+            setIsLoadingRecent(false);
         }
-    }, []); // Leeres Array, da Abhängigkeiten in handlePeriodChange etc. verwaltet werden
+    }, []);
 
     useEffect(() => {
         if (selectedPeriod === PERIOD_OPTIONS.CUSTOM) {
@@ -201,8 +224,6 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             setShowCustomDatePickers(true);
         } else {
             setShowCustomDatePickers(false);
-            setCustomStartDate(null);
-            setCustomEndDate(null);
         }
     };
 
@@ -226,7 +247,17 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
     const handleAppointmentUpdatedFromModal = () => {
         handleCloseEditModal();
         if (onAppointmentAction) onAppointmentAction();
+        fetchData(selectedPeriod, customStartDate, customEndDate);
     };
+
+    const handleOpenCreateModal = () => setShowCreateModal(true);
+    const handleCloseCreateModal = () => setShowCreateModal(false);
+    const handleAppointmentCreated = () => {
+        handleCloseCreateModal();
+        if (onAppointmentAction) onAppointmentAction();
+        fetchData(selectedPeriod, customStartDate, customEndDate);
+    };
+
 
     const formatCurrency = (value) => {
         if (value == null || isNaN(parseFloat(value))) return '0,00 €';
@@ -241,9 +272,11 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
 
         if(hasPreviousData){
             if (changePercentage === null || changePercentage === undefined) {
-                changeText = 'vs. 0';
-                icon = faArrowUp;
-                colorClass = 'positive';
+                if (parseFloat(previousValue) === 0 && detailedStats && ( (detailedStats.totalAppointmentsInPeriod !== undefined && detailedStats.totalAppointmentsInPeriod > 0) || (detailedStats.totalRevenueInPeriod !== undefined && detailedStats.totalRevenueInPeriod > 0) ) ) {
+                    changeText = 'vs. 0';
+                    icon = faArrowUp;
+                    colorClass = 'positive';
+                }
             } else {
                 const isPositive = changePercentage > 0;
                 const isNegative = changePercentage < 0;
@@ -262,29 +295,43 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
 
     const renderStatCards = () => {
         if (!detailedStats && isLoading && selectedPeriod !== PERIOD_OPTIONS.CUSTOM) {
-            return Array(6).fill(null).map((_, i) => (
-                <div key={`skeleton-stat-${i}`} className="stat-card is-loading-skeleton">
-                    <div className="stat-card-header-skeleton"></div>
-                    <div className="stat-value-skeleton"></div>
-                    <div className="stat-comparison-skeleton"></div>
-                </div>
-            ));
+            return (
+                <>
+                    <div className="stats-overview-cards primary-kpis">
+                        {Array(3).fill(null).map((_, i) => (
+                            <div key={`skeleton-main-${i}`} className="stat-card main-kpi is-loading-skeleton">
+                                <div className="stat-card-header-skeleton"></div>
+                                <div className="stat-value-skeleton large"></div>
+                                <div className="stat-comparison-skeleton"></div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="stats-overview-cards secondary-kpis">
+                        {Array(3).fill(null).map((_, i) => (
+                            <div key={`skeleton-sec-${i}`} className="stat-card small-kpi is-loading-skeleton">
+                                <div className="stat-card-header-skeleton"></div>
+                                <div className="stat-value-skeleton"></div>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            );
         }
         if (!detailedStats) return <p className="stat-card-no-data">Keine Kennzahlen verfügbar für den gewählten Zeitraum.</p>;
 
-        const avgRevenue = (detailedStats.totalAppointmentsInPeriod > 0)
+        const avgRevenue = (detailedStats.totalAppointmentsInPeriod > 0 && detailedStats.totalRevenueInPeriod && parseFloat(detailedStats.totalRevenueInPeriod) > 0)
             ? (parseFloat(detailedStats.totalRevenueInPeriod) / detailedStats.totalAppointmentsInPeriod)
             : 0;
 
-        const mainKpis = [
+        const mainKpisData = [
             {
-                label: "Termine",
-                value: detailedStats.totalAppointmentsInPeriod ?? 'N/A',
+                label: "Termine im Zeitraum",
+                value: detailedStats.totalAppointmentsInPeriod ?? '0',
                 icon: faCalendarCheck,
                 comparison: renderComparison(detailedStats.appointmentCountChangePercentage, detailedStats.previousPeriodTotalAppointments),
             },
             {
-                label: "Umsatz",
+                label: "Umsatz im Zeitraum",
                 value: formatCurrency(detailedStats.totalRevenueInPeriod),
                 icon: faEuroSign,
                 comparison: renderComparison(detailedStats.revenueChangePercentage, detailedStats.previousPeriodTotalRevenue),
@@ -296,34 +343,38 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             }
         ];
 
-        const additionalKpis = [
-            { label: "Termine Heute", value: detailedStats.todayCount ?? 'N/A', icon: faCalendarCheck },
+        const secondaryKpisData = [
+            { label: "Termine Heute", value: detailedStats.todayCount ?? '0', icon: faCalendarCheck },
             { label: "Umsatz Heute", value: formatCurrency(detailedStats.revenueToday ?? 0), icon: faEuroSign },
-            { label: "Bevorstehend", value: detailedStats.totalUpcomingCount ?? 'N/A', icon: faClockFour },
+            { label: "Bevorstehend Gesamt", value: detailedStats.totalUpcomingCount ?? '0', icon: faClockFour },
         ];
 
 
         return (
             <>
-                {mainKpis.map(kpi => (
-                    <div key={kpi.label} className="stat-card">
-                        <div className="stat-card-header">
-                            <FontAwesomeIcon icon={kpi.icon} className="stat-icon" />
-                            <span className="stat-label">{kpi.label}</span>
+                <div className="stats-overview-cards primary-kpis">
+                    {mainKpisData.map(kpi => (
+                        <div key={kpi.label} className="stat-card main-kpi">
+                            <div className="stat-card-header">
+                                <FontAwesomeIcon icon={kpi.icon} className="stat-icon" />
+                                <span className="stat-label">{kpi.label}</span>
+                            </div>
+                            <div className="stat-value large">{kpi.value}</div>
+                            {kpi.comparison && <div className="stat-comparison">{kpi.comparison}</div>}
                         </div>
-                        <div className="stat-value">{kpi.value}</div>
-                        {kpi.comparison && <div className="stat-comparison">{kpi.comparison}</div>}
-                    </div>
-                ))}
-                {additionalKpis.map(kpi => (
-                    <div key={kpi.label} className="stat-card small-kpi">
-                        <div className="stat-card-header">
-                            <FontAwesomeIcon icon={kpi.icon} className="stat-icon" />
-                            <span className="stat-label">{kpi.label}</span>
+                    ))}
+                </div>
+                <div className="stats-overview-cards secondary-kpis">
+                    {secondaryKpisData.map(kpi => (
+                        <div key={kpi.label} className="stat-card small-kpi">
+                            <div className="stat-card-header">
+                                <FontAwesomeIcon icon={kpi.icon} className="stat-icon" />
+                                <span className="stat-label">{kpi.label}</span>
+                            </div>
+                            <div className="stat-value">{kpi.value}</div>
                         </div>
-                        <div className="stat-value">{kpi.value}</div>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </>
         );
     };
@@ -385,18 +436,43 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             </div>
 
             {(isLoading && !showInitialLoader) && (
-                <div className="loading-indicator-top">
-                    <FontAwesomeIcon icon={faSpinner} spin /> Daten werden aktualisiert...
-                </div>
+                <div className="loading-indicator-top"><FontAwesomeIcon icon={faSpinner} spin /> Daten werden aktualisiert...</div>
             )}
             {error && (
-                <p className="form-message error mb-4" style={{ marginBottom: '1rem' }}>
-                    <FontAwesomeIcon icon={faExclamationCircle} style={{ marginRight: '0.5rem' }} /> {error}
-                </p>
+                <p className="form-message error mb-4" style={{ marginBottom: '1rem' }}><FontAwesomeIcon icon={faExclamationCircle} style={{ marginRight: '0.5rem' }} /> {error}</p>
             )}
 
+            {/* Schnellzugriff-Sektion */}
+            <div className="quick-access-section stats-section-box">
+                <h3 className="stats-section-title small-title">
+                    <span><FontAwesomeIcon icon={faBolt} /> Schnellzugriff</span>
+                </h3>
+                <div className="quick-access-content">
+                    <button onClick={handleOpenCreateModal} className="button-primary quick-create-button">
+                        <FontAwesomeIcon icon={faPlusCircle} /> Neuen Termin anlegen
+                    </button>
+                    <div className="recent-appointments-widget">
+                        <h4>Letzte neue Termine:</h4>
+                        {isLoadingRecent && <p><FontAwesomeIcon icon={faSpinner} spin /> Lade...</p>}
+                        {!isLoadingRecent && recentAppointments.length === 0 && <p className="no-data-small">Keine kürzlichen Buchungen.</p>}
+                        {!isLoadingRecent && recentAppointments.length > 0 && (
+                            <ul className="compact-appointment-list">
+                                {recentAppointments.map(apt => (
+                                    <li key={`recent-${apt.appointmentId}`} onClick={() => handleViewDetails(apt)}>
+                                        <span className="compact-apt-time">{apt.reconstructedStartTime ? formatDateFns(parseISO(apt.reconstructedStartTime), 'dd.MM HH:mm') : 'N/A'}</span>
+                                        <span className="compact-apt-service">{apt.serviceName}</span>
+                                        <span className="compact-apt-customer">{apt.customerFirstName} {apt.customerLastName?.charAt(0)}.</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Hauptlayout für KPIs und Charts */}
             <div className="stats-main-layout">
-                <div className="stats-overview-cards-wrapper">
+                <div className="stats-overview-cards-wrapper stats-section-box"> {/* stats-section-box für einheitliches Aussehen */}
                     <h3 className="stats-section-title">
                         <span><FontAwesomeIcon icon={faChartLine} /> Kennzahlen</span>
                         {detailedStats && detailedStats.periodStartDateFormatted && (
@@ -405,10 +481,10 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                              </span>
                         )}
                     </h3>
-                    <div className="stats-overview-cards">{renderStatCards()}</div>
+                    {renderStatCards()}
                 </div>
 
-                <div className="charts-section-wrapper">
+                <div className="charts-section-wrapper stats-section-box"> {/* stats-section-box für einheitliches Aussehen */}
                     <h3 className="stats-section-title">
                         <span><FontAwesomeIcon icon={faChartPie} /> Visuelle Analysen</span>
                         {detailedStats && (
@@ -418,7 +494,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                         )}
                     </h3>
                     <div className="charts-grid">
-                        <div className="chart-card">
+                        <div className="chart-card"> {/* Chart-Karten behalten ihr eigenes Styling für inneren Aufbau */}
                             <AppointmentsByDayRechart
                                 chartData={appointmentsByDayData}
                                 title={`Terminverteilung`}
@@ -434,7 +510,8 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                 </div>
             </div>
 
-            <div className="daily-appointments-section">
+            {/* Tägliche Terminliste */}
+            <div className="daily-appointments-section stats-section-box">
                 <h3 className="daily-appointments-heading">
                     <FontAwesomeIcon icon={faListAlt} /> Heutige & Nächste Termine
                 </h3>
@@ -489,6 +566,14 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                     appointment={selectedAppointmentForEdit}
                     onClose={handleCloseEditModal}
                     onAppointmentUpdated={handleAppointmentUpdatedFromModal}
+                />
+            )}
+            {showCreateModal && (
+                <AppointmentCreateModal
+                    isOpen={showCreateModal}
+                    onClose={handleCloseCreateModal}
+                    onAppointmentCreated={handleAppointmentCreated}
+                    currentUser={currentUser}
                 />
             )}
         </div>
