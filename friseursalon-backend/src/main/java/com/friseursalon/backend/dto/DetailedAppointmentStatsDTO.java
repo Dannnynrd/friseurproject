@@ -22,12 +22,17 @@ public class DetailedAppointmentStatsDTO {
     // Vergleichsdaten für die Vorperiode
     private Long previousPeriodTotalAppointments;
     private BigDecimal previousPeriodTotalRevenue;
-    private Long previousPeriodUniqueCustomers; // Für Kundenwachstum Vergleich
+    private Long previousPeriodUniqueCustomers;
+    private Double previousPeriodCancellationRate; // Für Vergleich der Stornoquote
+    private Double previousPeriodNewCustomerShare; // Für Vergleich des Neukundenanteils
 
     // Prozentuale Änderungen
     private Double appointmentCountChangePercentage;
     private Double revenueChangePercentage;
-    private Double customerGrowthPercentage;    // z.B. +5.0 (%)
+    private Double customerGrowthPercentage;
+    private Double cancellationRateChangePercentage; // Änderung der Stornoquote
+    private Double newCustomerShareChangePercentage; // Änderung des Neukundenanteils
+
 
     // Bestehende Zählungen für nicht-filterbare Bereiche
     private long todayCount;
@@ -43,15 +48,14 @@ public class DetailedAppointmentStatsDTO {
     private Long uniqueCustomersInPeriod;
     private Double averageAppointmentDurationInPeriod; // in Minuten
     private Double avgBookingsPerCustomer;      // z.B. 1.5
-    private Long newBookingsToday;              // Anzahl heute erstellter Termine (benötigt createdAt in Appointment)
-    private Long newBookingsYesterday;          // Anzahl gestern erstellter Termine (benötigt createdAt in Appointment)
+    private Long newBookingsToday;
+    private Long newBookingsYesterday;
     private Long totalActiveServices;
-    private Double cancellationRate;            // z.B. 5.0 (%) - Benötigt Status im Appointment-Modell
-    private Double newCustomerShare;            // z.B. 10.0 (%) - Benötigt Erstellungsdatum für Kunden
-    private Integer avgBookingLeadTime;         // in Tagen - Benötigt Erstellungsdatum für Termine vs. Terminstart
-    private BigDecimal projectedRevenueNext30Days; // Umsatzprognose
+    private Double cancellationRate;            // z.B. 5.0 (%)
+    private Double newCustomerShare;            // z.B. 10.0 (%)
+    private Integer avgBookingLeadTime;         // in Tagen
+    private BigDecimal projectedRevenueNext30Days;
 
-    // Basiskonstruktor, der im Service verwendet wird, um das Objekt zu initialisieren
     public DetailedAppointmentStatsDTO(
             long totalAppointmentsInPeriod, BigDecimal totalRevenueInPeriod,
             String periodStartDateFormatted, String periodEndDateFormatted,
@@ -69,6 +73,5 @@ public class DetailedAppointmentStatsDTO {
         this.revenueToday = revenueToday;
         this.revenueThisWeek = revenueThisWeek;
         this.revenueThisMonth = revenueThisMonth;
-        // Die anderen Felder werden im Service separat gesetzt.
     }
 }

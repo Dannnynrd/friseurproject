@@ -155,6 +155,13 @@ public class StatisticsService {
         // Double cancellationRateValue = (totalAppointmentsInPeriod > 0 && cancelledInPeriod != null) ? ((double) cancelledInPeriod / (totalAppointmentsInPeriod + cancelledInPeriod)) * 100 : null;
         // (Annahme: totalAppointmentsInPeriod zählt nur nicht-stornierte Termine, oder Formel anpassen)
         Double cancellationRateValue = null; // Platzhalter
+        Double previousPeriodCancellationRate = null; // Platzhalter für Vergleich
+        Double cancellationRateChangePercentage = calculatePercentageChange(
+                cancellationRateValue != null ? BigDecimal.valueOf(cancellationRateValue) : null, // Aktueller Wert
+                previousPeriodCancellationRate != null ? BigDecimal.valueOf(previousPeriodCancellationRate) : null, // Vorperiodenwert
+                false // Höher ist schlechter für Stornoquote
+        );
+
 
         // newCustomerShare
         // Benötigt ein `registrationDate` Feld in der Customer Entität und eine Methode, um Neukunden im Zeitraum zu identifizieren.
@@ -167,6 +174,12 @@ public class StatisticsService {
         //    ? ((double) newCustomersAmongAttendees / uniqueCustomersInPeriod) * 100
         //    : null;
         Double newCustomerShareValue = null; // Platzhalter
+        Double previousPeriodNewCustomerShare = null; // Platzhalter für Vergleich
+        Double newCustomerShareChangePercentage = calculatePercentageChange(
+                newCustomerShareValue != null ? BigDecimal.valueOf(newCustomerShareValue) : null,
+                previousPeriodNewCustomerShare != null ? BigDecimal.valueOf(previousPeriodNewCustomerShare) : null
+        );
+
 
         // avgBookingLeadTime
         // Benötigt ein `createdAt` Feld in der Appointment Entität.
@@ -204,19 +217,28 @@ public class StatisticsService {
         dto.setNewBookingsYesterday(newBookingsYesterdayCount);
         dto.setTotalActiveServices(totalActiveServices);
         dto.setCancellationRate(cancellationRateValue);
+        dto.setPreviousPeriodCancellationRate(previousPeriodCancellationRate); // Für Frontend-Vergleich
+        dto.setCancellationRateChangePercentage(cancellationRateChangePercentage);
         dto.setNewCustomerShare(newCustomerShareValue);
+        dto.setPreviousPeriodNewCustomerShare(previousPeriodNewCustomerShare); // Für Frontend-Vergleich
+        dto.setNewCustomerShareChangePercentage(newCustomerShareChangePercentage);
         dto.setAvgBookingLeadTime(avgBookingLeadTimeValue);
         dto.setProjectedRevenueNext30Days(projectedRevenueNext30DaysValue);
 
         return dto;
     }
 
+    // Überladene Methode für calculatePercentageChange, um die "isGrowthGood" Logik zu handhaben
     private Double calculatePercentageChange(BigDecimal currentValue, BigDecimal previousValue) {
+        return calculatePercentageChange(currentValue, previousValue, true); // Standard: Wachstum ist gut
+    }
+    private Double calculatePercentageChange(BigDecimal currentValue, BigDecimal previousValue, boolean isGrowthGood) {
         if (currentValue == null) currentValue = BigDecimal.ZERO;
-        if (previousValue == null) previousValue = BigDecimal.ZERO; // Behandle null als 0 für den Vergleich
+        if (previousValue == null) previousValue = BigDecimal.ZERO;
 
         if (previousValue.compareTo(BigDecimal.ZERO) == 0) {
-            return (currentValue.compareTo(BigDecimal.ZERO) > 0) ? null : 0.0; // Unendlicher Anstieg -> null, oder 0% wenn beide 0
+            if (currentValue.compareTo(BigDecimal.ZERO) == 0) return 0.0; // Beide 0 -> 0% Änderung
+            return null; // Unendlicher Anstieg/Abfall, wenn Vorperiode 0 war und aktuelle Periode nicht
         }
         BigDecimal difference = currentValue.subtract(previousValue);
         return difference.divide(previousValue, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue();
@@ -235,7 +257,6 @@ public class StatisticsService {
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = now.toLocalDate();
         LocalDateTime todayStart = today.atStartOfDay();
-        // Zeige Termine für heute und die nächsten 6 Tage an (insgesamt 7 Tage)
         LocalDateTime upcomingEndRange = today.plusDays(6).atTime(LocalTime.MAX);
 
         logger.info("Suche tägliche Termine von {} bis {}", todayStart, upcomingEndRange);
