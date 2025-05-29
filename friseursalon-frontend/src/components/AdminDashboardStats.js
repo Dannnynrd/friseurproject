@@ -1,14 +1,14 @@
 // Datei: friseursalon-frontend/src/components/AdminDashboardStats.js
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api.service';
-import './AdminDashboardStats.css';
+import './AdminDashboardStats.css'; // CSS-Datei importieren
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faChartLine, faCalendarCheck, faSpinner, faUsers,
     faExclamationCircle, faEuroSign, faReceipt, faHourglassHalf,
     faChartPie, faChartBar, faListAlt, faCalendarAlt,
     faFilter, faArrowUp, faArrowDown, faEquals, faCoins,
-    faPlusCircle, faBolt
+    faPlusCircle, faBolt, faUserFriends, faClock, faCut // Neue Icons
 } from '@fortawesome/free-solid-svg-icons';
 import AppointmentEditModal from './AppointmentEditModal';
 import AppointmentCreateModal from './AppointmentCreateModal';
@@ -52,7 +52,7 @@ const getDatesForPeriod = (period) => {
     switch (period) {
         case PERIOD_OPTIONS.TODAY: startDate = today; endDate = today; break;
         case PERIOD_OPTIONS.THIS_WEEK:
-            startDate = startOfWeek(today, { locale: deLocale, weekStartsOn: 1 }); // Woche beginnt am Montag
+            startDate = startOfWeek(today, { locale: deLocale, weekStartsOn: 1 });
             endDate = endOfWeek(today, { locale: deLocale, weekStartsOn: 1 });
             break;
         case PERIOD_OPTIONS.LAST_7_DAYS: startDate = subDays(today, 6); endDate = today; break;
@@ -61,11 +61,10 @@ const getDatesForPeriod = (period) => {
             const firstDayLastMonth = startOfMonth(subMonths(today, 1));
             startDate = firstDayLastMonth; endDate = endOfMonth(firstDayLastMonth); break;
         case PERIOD_OPTIONS.LAST_30_DAYS: startDate = subDays(today, 29); endDate = today; break;
-        default: // Standard ist "Dieser Monat"
+        default:
             startDate = startOfMonth(today); endDate = endOfMonth(today);
     }
     return {
-        // Formatierung der Daten als YYYY-MM-DD Strings für API-Requests
         startDate: formatISO(startDate, { representation: 'date' }),
         endDate: formatISO(endDate, { representation: 'date' })
     };
@@ -76,8 +75,14 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
     const [detailedStats, setDetailedStats] = useState(null);
     // State für die Liste der heutigen und kommenden Termine
     const [dailyAppointments, setDailyAppointments] = useState([]);
-    // State für die Aktivität der Terminbuchungen (z.B. heute/gestern)
-    const [bookingActivity, setBookingActivity] = useState({ today: 0, yesterday: 0 });
+
+    // Erweiterte States für neue KPIs (simuliert, bis Backend angepasst ist)
+    const [uniqueCustomers, setUniqueCustomers] = useState(null);
+    const [averageAppointmentDuration, setAverageAppointmentDuration] = useState(null);
+    const [totalActiveServices, setTotalActiveServices] = useState(null);
+    const [newBookingsToday, setNewBookingsToday] = useState(null);
+    const [newBookingsYesterday, setNewBookingsYesterday] = useState(null);
+
 
     // States für die Diagrammdaten
     const [appointmentsByDayData, setAppointmentsByDayData] = useState({ labels: [], data: [] });
@@ -88,7 +93,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
     // Lade- und Fehlerzustände
     const [isLoadingStats, setIsLoadingStats] = useState(true);
     const [isLoadingDaily, setIsLoadingDaily] = useState(true);
-    const [isLoadingBookingActivity, setIsLoadingBookingActivity] = useState(true);
+    const [isLoadingActivity, setIsLoadingActivity] = useState(true); // Für Buchungsaktivität & neue KPIs
     const [isLoadingModalAppointment, setIsLoadingModalAppointment] = useState(false);
     const [error, setError] = useState('');
 
@@ -110,20 +115,23 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
     // Funktion zum Abrufen der Hauptstatistiken und Diagrammdaten
     const fetchMainStatsAndCharts = useCallback(async (startDate, endDate) => {
         setIsLoadingStats(true);
-        setError(prev => prev.replace(/Hauptstatistiken;|Diagrammdaten;/g, '').trim());
+        setError(prev => prev.replace(/Hauptstatistiken;|Diagrammdaten;|Zusatz-KPIs;/g, '').trim());
         try {
-            // Parallele API-Aufrufe für bessere Performance
-            const [statsRes, dayRes, serviceRes, revenueTimeRes, capacityRes] = await Promise.all([
+            const [statsRes, dayRes, serviceRes, revenueTimeRes, capacityRes /*, uniqueCustomersRes, avgDurationRes, totalServicesRes */] = await Promise.all([
                 api.get('/statistics/detailed-counts', { params: { startDate, endDate } }),
                 api.get('/statistics/by-day-of-week', { params: { startDate, endDate } }),
                 api.get('/statistics/by-service', { params: { startDate, endDate, topN: 5 } }),
                 api.get('/statistics/revenue-over-time', { params: { startDate, endDate } }),
-                api.get('/statistics/capacity-utilization', { params: { startDate, endDate } })
+                api.get('/statistics/capacity-utilization', { params: { startDate, endDate } }),
+                // TODO: Backend Endpunkte für neue KPIs erstellen und hier aufrufen
+                // api.get('/statistics/unique-customers', { params: { startDate, endDate } }),
+                // api.get('/statistics/average-duration', { params: { startDate, endDate } }),
+                // api.get('/services/count') // oder aus /services und .length nehmen
             ]);
 
             setDetailedStats(statsRes.data);
             setAppointmentsByDayData({
-                labels: dayRes.data.map(d => d.dayName ? d.dayName.substring(0, 2) : "Unb."), // Kürzel für Wochentage
+                labels: dayRes.data.map(d => d.dayName ? d.dayName.substring(0, 2) : "Unb."),
                 data: dayRes.data.map(d => d.appointmentCount || 0),
             });
             setAppointmentsByServiceData({
@@ -133,23 +141,44 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             setRevenueOverTimeData(revenueTimeRes.data);
             setCapacityUtilizationData(capacityRes.data);
 
-            // Label für den angezeigten Zeitraum aktualisieren
+            // Simulierte Daten für neue KPIs, bis Backend bereit ist
+            // Diese Werte sollten idealerweise Teil von statsRes.data sein oder von eigenen Endpunkten kommen
+            setUniqueCustomers(statsRes.data.uniqueCustomersInPeriod || Math.floor(Math.random() * 50) + 10); // Placeholder
+            setAverageAppointmentDuration(statsRes.data.averageAppointmentDurationInPeriod || Math.floor(Math.random() * 30) + 45); // Placeholder
+
+            // Anzahl Services: Könnte auch über einen separaten Call zu /api/services und dann response.data.length ermittelt werden
+            // Für Demo hier als Teil der simulierten Daten:
+            if (statsRes.data.totalActiveServices === undefined) {
+                try {
+                    const servicesResponse = await api.get('/services');
+                    setTotalActiveServices(servicesResponse.data.length);
+                } catch (serviceErr) {
+                    console.error("Fehler beim Laden der Serviceanzahl:", serviceErr);
+                    setTotalActiveServices('N/A');
+                }
+            } else {
+                setTotalActiveServices(statsRes.data.totalActiveServices);
+            }
+
+
             const currentSDate = parseISO(startDate + 'T00:00:00Z');
             const currentEDate = parseISO(endDate + 'T00:00:00Z');
-            if (startDate === endDate) { // Für einzelne Tage
+            if (startDate === endDate) {
                 setActiveDateRangeLabel(formatDateFns(currentSDate, 'dd.MM.yyyy', { locale: deLocale }));
-            } else { // Für Zeiträume
+            } else {
                 setActiveDateRangeLabel(`${formatDateFns(currentSDate, 'dd.MM.yy', { locale: deLocale })} - ${formatDateFns(currentEDate, 'dd.MM.yy', { locale: deLocale })}`);
             }
         } catch (err) {
             console.error("Fehler beim Laden der Hauptstatistiken/Charts:", err.response?.data || err.message);
-            setError(prev => `${prev} Hauptstatistiken & Diagrammdaten;`.trim());
-            // Im Fehlerfall Daten zurücksetzen, um inkonsistente Zustände zu vermeiden
+            setError(prev => `${prev} Hauptstatistiken, Diagrammdaten & Zusatz-KPIs;`.trim());
             setDetailedStats(null);
             setAppointmentsByDayData({ labels: [], data: [] });
             setAppointmentsByServiceData({ labels: [], data: [] });
             setRevenueOverTimeData([]);
             setCapacityUtilizationData(null);
+            setUniqueCustomers(null);
+            setAverageAppointmentDuration(null);
+            setTotalActiveServices(null);
         } finally {
             setIsLoadingStats(false);
         }
@@ -157,36 +186,40 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
 
     // Funktion zum Abrufen der Buchungsaktivität und der anstehenden Termine
     const fetchActivityAndUpcoming = useCallback(async () => {
-        setIsLoadingBookingActivity(true);
+        setIsLoadingActivity(true); // Für neue KPIs und Buchungsaktivität
         setIsLoadingDaily(true);
-        setError(prev => prev.replace(/Aktivität;|Terminliste;/g, '').trim());
+        setError(prev => prev.replace(/Aktivität;|Terminliste;|Buchungszahlen;/g, '').trim());
         try {
-            // TODO: Backend-Endpunkt für "Buchungsaktivität (heute/gestern)" erstellen/nutzen.
-            // Aktuell wird ein Platzhalter verwendet.
-            setBookingActivity({ today: 'N/A', yesterday: 'N/A'});
+            // TODO: Backend Endpunkt für "Buchungsaktivität (heute/gestern)" und neue KPIs erstellen/nutzen.
+            // Simulierte Daten, bis Backend bereit ist
+            setNewBookingsToday(detailedStats?.newBookingsToday || Math.floor(Math.random() * 5)); // Placeholder
+            setNewBookingsYesterday(detailedStats?.newBookingsYesterday || Math.floor(Math.random() * 8)); // Placeholder
 
             const dailyRes = await api.get('/statistics/today-upcoming-appointments');
             setDailyAppointments(dailyRes.data);
         } catch (err) {
             console.error("Fehler beim Laden von Aktivität/Terminliste:", err.response?.data || err.message);
-            setError(prev => `${prev} Aktivität & Terminliste;`.trim());
+            setError(prev => `${prev} Aktivität, Terminliste & Buchungszahlen;`.trim());
             setDailyAppointments([]);
-            setBookingActivity({ today: 0, yesterday: 0 }); // Fallback im Fehlerfall
+            setNewBookingsToday(0); setNewBookingsYesterday(0);
         } finally {
-            setIsLoadingBookingActivity(false);
+            setIsLoadingActivity(false);
             setIsLoadingDaily(false);
         }
-    }, []);
+    }, [detailedStats]); // detailedStats als Abhängigkeit, um simulierte Werte zu aktualisieren
 
     // Effekt zum Laden der Hauptstatistiken bei Änderung des Zeitraums
     useEffect(() => {
         fetchMainStatsAndCharts(currentFilterStartDate, currentFilterEndDate);
     }, [currentFilterStartDate, currentFilterEndDate, fetchMainStatsAndCharts]);
 
-    // Effekt zum Laden der Aktivitätsdaten (wird durch onAppointmentAction getriggert)
+    // Effekt zum Laden der Aktivitätsdaten (wird durch onAppointmentAction und detailedStats getriggert)
     useEffect(() => {
-        fetchActivityAndUpcoming();
-    }, [fetchActivityAndUpcoming, onAppointmentAction]);
+        // Nur ausführen, wenn detailedStats bereits geladen wurde, um die simulierten Werte zu nutzen
+        if(detailedStats || !isLoadingStats) {
+            fetchActivityAndUpcoming();
+        }
+    }, [fetchActivityAndUpcoming, onAppointmentAction, detailedStats, isLoadingStats]);
 
     // Handler für Periodenwechsel durch Buttons
     const handlePeriodChange = (period) => {
@@ -197,7 +230,6 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             setCurrentFilterStartDate(startDate);
             setCurrentFilterEndDate(endDate);
         } else {
-            // Bei "Custom" die aktuellen Picker-Werte beibehalten oder ggf. zurücksetzen
             setCustomPickerStartDate(new Date(currentFilterStartDate + 'T00:00:00'));
             setCustomPickerEndDate(new Date(currentFilterEndDate + 'T00:00:00'));
         }
@@ -212,13 +244,13 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             }
             setCurrentFilterStartDate(formatISO(customPickerStartDate, { representation: 'date' }));
             setCurrentFilterEndDate(formatISO(customPickerEndDate, { representation: 'date' }));
-            setShowCustomDatePickers(false); // Schließt die Picker nach Auswahl
+            setShowCustomDatePickers(false);
         } else {
             setError("Bitte wählen Sie ein gültiges Start- und Enddatum.");
         }
     };
 
-    // Handler für das Anzeigen von Termindetails (z.B. aus der Liste "Heutige & Nächste Termine")
+    // Handler für das Anzeigen von Termindetails
     const handleViewDetails = async (appointmentDTO) => {
         if (!appointmentDTO || !appointmentDTO.appointmentId) {
             setError("Details für diesen Termin konnten nicht geladen werden (fehlende ID).");
@@ -236,34 +268,23 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         }
     };
 
-    // Schließen des Bearbeitungsmodals
     const handleCloseEditModal = () => setSelectedAppointmentForEdit(null);
-
-    // Callback, wenn ein Termin im Modal aktualisiert wurde
     const handleAppointmentUpdatedFromModal = () => {
         handleCloseEditModal();
-        if (onAppointmentAction) onAppointmentAction(); // Trigger für Neuladen der Daten
+        if (onAppointmentAction) onAppointmentAction();
     };
-
-    // Öffnen des Modals zum Erstellen eines neuen Termins
     const handleOpenCreateModal = () => {
-        setSelectedSlotForCreate({ start: new Date(), allDay: false }); // Standard-Slot-Info
+        setSelectedSlotForCreate({ start: new Date(), allDay: false });
         setShowCreateModal(true);
     };
-
-    // Schließen des Erstellungsmodals
     const handleCloseCreateModal = () => {
         setShowCreateModal(false);
         setSelectedSlotForCreate(null);
     };
-
-    // Callback, wenn ein Termin im Modal erstellt wurde
     const handleAppointmentCreated = () => {
         handleCloseCreateModal();
-        if (onAppointmentAction) onAppointmentAction(); // Trigger für Neuladen der Daten
+        if (onAppointmentAction) onAppointmentAction();
     };
-
-    // Hilfsfunktion zur Währungsformatierung
     const formatCurrency = (value) => {
         if (value == null || isNaN(parseFloat(value))) return '0,00 €';
         return `${parseFloat(value).toFixed(2).replace('.', ',')} €`;
@@ -278,12 +299,11 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
 
         if (hasPreviousData) {
             if (changePercentage === null || changePercentage === undefined || isNaN(changePercentage)) {
-                // Spezifischer Fall: Wenn Vorperiode 0 war und aktuelle Periode > 0 ist
                 if (parseFloat(previousValue) === 0 && detailedStats && (
                     (detailedStats.totalAppointmentsInPeriod !== undefined && detailedStats.totalAppointmentsInPeriod > 0 && changePercentage === detailedStats.appointmentCountChangePercentage) ||
                     (detailedStats.totalRevenueInPeriod !== undefined && parseFloat(detailedStats.totalRevenueInPeriod) > 0 && changePercentage === detailedStats.revenueChangePercentage)
                 ) ) {
-                    changeText = 'vs. 0'; // Deutlich machen, dass es von 0 gestiegen ist
+                    changeText = 'vs. 0';
                     icon = faArrowUp;
                     colorClass = 'positive';
                 }
@@ -304,47 +324,42 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
 
     // Rendert die KPI-Karten
     const renderStatCards = () => {
-        // Skeleton-Loader, während die Statistiken geladen werden
-        if (isLoadingStats && !detailedStats) {
+        if (isLoadingStats && !detailedStats) { // Skeleton nur wenn noch gar keine Stats da sind
             return (
                 <>
                     <div className="stats-overview-cards primary-kpis">
-                        {[...Array(3)].map((_, i) => ( <div key={`skeleton-main-${i}`} className="stat-card main-kpi is-loading-skeleton"><div className="stat-card-header-skeleton"></div><div className="stat-value-skeleton large"></div><div className="stat-comparison-skeleton"></div></div> ))}
+                        {[...Array(5)].map((_, i) => ( <div key={`skeleton-main-${i}`} className="stat-card main-kpi is-loading-skeleton"><div className="stat-card-header-skeleton"></div><div className="stat-value-skeleton large"></div><div className="stat-comparison-skeleton"></div></div> ))}
                     </div>
                     <hr className="kpi-divider" />
                     <div className="stats-overview-cards secondary-kpis">
                         {[...Array(3)].map((_, i) => ( <div key={`skeleton-sec-${i}`} className="stat-card small-kpi is-loading-skeleton"><div className="stat-card-header-skeleton"></div><div className="stat-value-skeleton"></div></div> ))}
                     </div>
-                    <div className="stat-card small-kpi is-loading-skeleton"><div className="stat-card-header-skeleton"></div><div className="stat-value-skeleton"></div></div>
                 </>
             );
         }
-        if (!detailedStats) return <p className="stat-card-no-data">Keine Kennzahlen verfügbar.</p>;
+        if (!detailedStats) return <p className="stat-card-no-data">Keine Kennzahlen für den gewählten Zeitraum verfügbar.</p>;
 
-        // Berechnung des Durchschnittsumsatzes pro Termin
         const avgRevenue = (detailedStats.totalAppointmentsInPeriod > 0 && detailedStats.totalRevenueInPeriod && parseFloat(detailedStats.totalRevenueInPeriod) > 0)
             ? (parseFloat(detailedStats.totalRevenueInPeriod) / detailedStats.totalAppointmentsInPeriod) : 0;
 
-        // Daten für Haupt-KPIs
         const mainKpisData = [
             { label: "Termine", value: detailedStats.totalAppointmentsInPeriod ?? '0', icon: faCalendarCheck, comparison: renderComparison(detailedStats.appointmentCountChangePercentage, detailedStats.previousPeriodTotalAppointments) },
             { label: "Umsatz", value: formatCurrency(detailedStats.totalRevenueInPeriod), icon: faReceipt, comparison: renderComparison(detailedStats.revenueChangePercentage, detailedStats.previousPeriodTotalRevenue) },
             { label: "Ø-Umsatz/Termin", value: formatCurrency(avgRevenue), icon: faCoins },
+            { label: "Einzigartige Kunden", value: uniqueCustomers ?? (isLoadingActivity ? <FontAwesomeIcon icon={faSpinner} spin/> : 'N/A'), icon: faUserFriends,
+                // Vergleich für uniqueCustomers (benötigt Backend-Daten für Vorperiode)
+                // comparison: renderComparison(detailedStats.uniqueCustomersChangePercentage, detailedStats.previousPeriodUniqueCustomers)
+            },
+            { label: "Auslastung", value: capacityUtilizationData ? `${capacityUtilizationData.utilizationPercentage.toFixed(1)}%` : (isLoadingStats ? <FontAwesomeIcon icon={faSpinner} spin/> : 'N/A'), icon: faHourglassHalf },
         ];
-        // Daten für sekundäre KPIs inkl. Kapazitätsauslastung
+
         const secondaryKpisData = [
             { label: "Termine Heute", value: detailedStats.todayCount ?? '0', icon: faCalendarCheck, iconClass: 'today' },
             { label: "Umsatz Heute", value: formatCurrency(detailedStats.revenueToday ?? 0), icon: faReceipt, iconClass: 'revenue' },
             { label: "Ges. Bevorstehend", value: detailedStats.totalUpcomingCount ?? '0', icon: faCalendarAlt, iconClass: 'upcoming' },
+            { label: "Ø Termindauer", value: averageAppointmentDuration ? `${averageAppointmentDuration.toFixed(0)} Min.` : (isLoadingActivity ? <FontAwesomeIcon icon={faSpinner} spin/> : 'N/A'), icon: faClock, iconClass: 'duration' },
+            { label: "Services Angeboten", value: totalActiveServices ?? (isLoadingActivity ? <FontAwesomeIcon icon={faSpinner} spin/> : 'N/A'), icon: faCut, iconClass: 'services' },
         ];
-        if (capacityUtilizationData) {
-            secondaryKpisData.push({
-                label: `Auslastung (${capacityUtilizationData.periodStartDate} - ${capacityUtilizationData.periodEndDate})`,
-                value: `${capacityUtilizationData.utilizationPercentage.toFixed(1)}%`,
-                icon: faHourglassHalf,
-                iconClass: 'capacity'
-            });
-        }
 
         return (
             <>
@@ -372,7 +387,6 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
 
     return (
         <div className="admin-dashboard-stats">
-            {/* Filterleiste für den Zeitraum */}
             <div className="stats-period-filter-bar">
                 <div className="period-buttons">
                     {Object.entries(PERIOD_LABELS).map(([key, label]) => (
@@ -381,7 +395,6 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                         </button>
                     ))}
                 </div>
-                {/* DatePicker für benutzerdefinierten Zeitraum */}
                 {showCustomDatePickers && (
                     <div className="custom-date-pickers">
                         <DatePicker selected={customPickerStartDate} onChange={date => setCustomPickerStartDate(date)} selectsStart startDate={customPickerStartDate} endDate={customPickerEndDate} dateFormat="dd.MM.yyyy" locale="de" placeholderText="Start" className="date-picker-input" maxDate={addMonths(new Date(), 12)} />
@@ -393,15 +406,13 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                 )}
             </div>
 
-            {/* Lade- und Fehlermeldungen */}
-            {(isLoadingStats || isLoadingDaily || isLoadingBookingActivity) && (
+            {(isLoadingStats || isLoadingDaily || isLoadingActivity) && (
                 <div className="loading-indicator-top"><FontAwesomeIcon icon={faSpinner} spin /> Daten werden aktualisiert...</div>
             )}
             {error && (
                 <p className="form-message error mb-4"><FontAwesomeIcon icon={faExclamationCircle} /> Fehler: {error.replace(/;/g, '; ')}</p>
             )}
 
-            {/* Schnellzugriffssektion */}
             <div className="quick-access-section stats-section-box">
                 <h3 className="stats-section-title small-title"><span><FontAwesomeIcon icon={faBolt} /> Schnellzugriff & Aktivität</span></h3>
                 <div className="quick-access-content">
@@ -409,22 +420,21 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                         <FontAwesomeIcon icon={faPlusCircle} /> Termin anlegen
                     </button>
                     <div className="booking-activity-widget">
-                        <h4>Buchungsaktivität</h4>
-                        {isLoadingBookingActivity ? <p className="no-data-small"><FontAwesomeIcon icon={faSpinner} spin /> Lade...</p> : (
+                        <h4>Neue Buchungen</h4>
+                        {isLoadingActivity ? <p className="no-data-small"><FontAwesomeIcon icon={faSpinner} spin /> Lade...</p> : (
                             <>
-                                <p>Heute: <span>{bookingActivity.today} Buchung(en)</span></p>
-                                <p>Gestern: <span>{bookingActivity.yesterday} Buchung(en)</span></p>
+                                <p>Heute: <span>{newBookingsToday ?? 'N/A'}</span></p>
+                                <p>Gestern: <span>{newBookingsYesterday ?? 'N/A'}</span></p>
                             </>
                         )}
                     </div>
                 </div>
             </div>
 
-            {/* Hauptlayout: KPIs und Diagramme */}
             <div className="stats-main-layout">
                 <div className="stats-overview-cards-wrapper stats-section-box">
                     <h3 className="stats-section-title">
-                        <span><FontAwesomeIcon icon={faChartLine} /> Kennzahlen</span>
+                        <span><FontAwesomeIcon icon={faChartLine} /> Hauptkennzahlen</span>
                         <span className="stats-period-display">({activeDateRangeLabel})</span>
                     </h3>
                     {renderStatCards()}
@@ -449,21 +459,18 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                 </div>
             </div>
 
-            {/* Liste der täglichen/kommenden Termine */}
             <div className="daily-appointments-section stats-section-box">
                 <h3 className="daily-appointments-heading"><FontAwesomeIcon icon={faListAlt} /> Heutige & Nächste Termine</h3>
                 {isLoadingDaily ? <div className="loading-message-stats small-list-loader"><FontAwesomeIcon icon={faSpinner} spin /> Lade Termine...</div> : dailyAppointments.length > 0 ? (
                     <ul className="daily-appointments-list">
                         {dailyAppointments.map(apt => {
-                            // Stellt sicher, dass startTime korrekt geparst wird, egal ob String oder Objekt
                             const appointmentDateTime = apt.appointmentDate && apt.startTime
                                 ? parseISO(`${apt.appointmentDate}T${typeof apt.startTime === 'string' ? apt.startTime.substring(0,5) : `${String(apt.startTime.hour).padStart(2,'0')}:${String(apt.startTime.minute).padStart(2,'0')}`}:00`)
                                 : null;
                             let statusClass = `status-${apt.status?.toLowerCase().replace(/\./g, '') || 'unbekannt'}`;
-                            if (apt.status && apt.status !== "Heute" && apt.status !== "Morgen") { statusClass = "status-datum"; } // Für spezifische Datumsanzeige
+                            if (apt.status && apt.status !== "Heute" && apt.status !== "Morgen") { statusClass = "status-datum"; }
                             return (
                                 <li key={apt.appointmentId} className={`daily-appointment-item`} onClick={() => handleViewDetails(apt)} role="button" tabIndex={0} onKeyPress={(e) => e.key === 'Enter' && handleViewDetails(apt)} aria-label={`Termin ansehen`}>
-                                    {/* Ladeindikator direkt im Listenelement, wenn dieses spezifische Element geladen wird */}
                                     {isLoadingModalAppointment && selectedAppointmentForEdit?.id === apt.appointmentId && <FontAwesomeIcon icon={faSpinner} spin className="item-loader-icon" />}
                                     <span className="appointment-time">{appointmentDateTime ? formatDateFns(appointmentDateTime, 'HH:mm') : 'N/A'} Uhr</span>
                                     <div className="appointment-info-group"><span className="appointment-service">{apt.serviceName}</span><span className="appointment-customer">{apt.customerFirstName} {apt.customerLastName}</span></div>
@@ -475,7 +482,6 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                 ) : (!isLoadingDaily && !error && <p className="no-upcoming-appointments">Keine anstehenden Termine für heute oder die nächsten Tage.</p>)}
             </div>
 
-            {/* Modals für Terminbearbeitung und -erstellung */}
             {selectedAppointmentForEdit && currentUser?.roles?.includes("ROLE_ADMIN") && (
                 <AppointmentEditModal appointment={selectedAppointmentForEdit} onClose={handleCloseEditModal} onAppointmentUpdated={handleAppointmentUpdatedFromModal} />
             )}
@@ -486,3 +492,4 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
     );
 }
 export default AdminDashboardStats;
+
