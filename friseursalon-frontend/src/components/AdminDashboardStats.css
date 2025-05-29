@@ -1,17 +1,15 @@
 /* Datei: friseursalon-frontend/src/components/AdminDashboardStats.css */
 
-/* Basis-Container für das gesamte Statistik-Dashboard */
 .admin-dashboard-stats {
     padding: 1rem 0;
     font-family: var(--font-sans);
     background-color: var(--light-bg);
-    max-width: 1400px;
+    max-width: 1600px; /* Etwas breiter für das neue Layout */
     margin-left: auto;
     margin-right: auto;
     box-sizing: border-box;
 }
 
-/* Allgemeine Styling-Box für Sektionen */
 .stats-section-box {
     background-color: var(--light-bg, #ffffff);
     border: 1px solid var(--border-color, #e7e7e7);
@@ -51,27 +49,77 @@
 }
 .custom-date-pickers .apply-custom-date { padding: 0.55rem 1.1rem; }
 
+/* Lade- und Fehlermeldungen */
+.loading-indicator-top {
+    text-align: center; padding: 0.5rem; background-color: var(--info-bg-light);
+    color: var(--info-color); border-radius: 4px; margin-bottom: 1rem; font-size: 0.9rem;
+}
+.loading-message-stats, .stats-error-message, .stat-card-no-data, .chart-no-data-message, .no-upcoming-appointments, .report-options-content p {
+    text-align: center; color: var(--medium-grey-text); padding: 1.5rem; font-size: 0.95rem;
+    border: 1px dashed var(--border-color); border-radius: 6px; background-color: var(--light-grey-bg);
+}
+.stats-error-message {
+    color: var(--danger-color); background-color: var(--danger-bg-light); border-color: var(--danger-color);
+}
+.stat-card-no-data, .chart-no-data-message, .no-upcoming-appointments, .report-options-content p { margin-top: 0.5rem; font-style: italic; }
+.no-data-small { font-size: 0.85rem; color: var(--light-grey-text); padding: 0.5rem; text-align: center; }
 
-/* Schnellzugriff & Aktivität Sektion */
-.quick-access-section .stats-section-title.small-title {
+/* Neues Dashboard Grid Layout */
+.dashboard-grid-layout {
+    display: grid;
+    grid-template-columns: 1fr; /* Mobile: alles untereinander */
+    gap: 2rem;
+}
+
+@media (min-width: 1200px) { /* Breitere Bildschirme: 2 Spalten */
+    .dashboard-grid-layout {
+        grid-template-columns: 2fr 1fr; /* Hauptspalte breiter, Seitenleiste schmaler */
+    }
+}
+
+.main-stats-column {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem; /* Abstand zwischen KPI-Box und Chart-Box */
+}
+
+.sidebar-stats-column {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem; /* Abstand zwischen den Boxen in der Sidebar */
+}
+
+
+/* Sektionsüberschriften */
+.stats-section-title {
+    font-family: var(--font-serif); font-size: 1.4rem; color: var(--dark-text);
+    margin: 0 0 1.5rem 0; padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 0.6rem;
+}
+.stats-section-title.small-title { /* Für kleinere Sektionen wie Schnellzugriff */
     font-size: 1.15rem; margin-bottom: 1.1rem; padding-bottom: 0.4rem;
     border-bottom: 1px solid var(--border-color-extralight, #f1f1f1);
 }
-.quick-access-content {
+.stats-section-title > span:first-child { display: flex; align-items: center; gap: 0.6rem; }
+.stats-section-title .svg-inline--fa { color: var(--medium-grey-text); font-size: 1.1rem; }
+.stats-period-display { font-size: 0.8rem; font-weight: 400; color: var(--medium-grey-text); margin-left: 0.5rem; }
+
+
+/* Schnellzugriff & Aktivität Sektion */
+.quick-access-section .quick-access-content {
     display: flex;
-    flex-wrap: wrap;
-    gap: 1.25rem;
-    align-items: flex-start;
+    flex-direction: column; /* Untereinander für bessere Struktur in der Sidebar */
+    gap: 1rem;
 }
 .quick-create-button {
     padding: 0.7rem 1.2rem !important;
-    font-size: 0.85rem !important;
+    font-size: 0.9rem !important; /* Etwas größer für Hauptaktion */
     font-weight: 500 !important;
-    flex-shrink: 0;
 }
 .booking-activity-widget {
-    flex-grow: 1;
-    min-width: 200px;
+    width: 100%; /* Volle Breite in der Sidebar-Spalte */
     background-color: #fafafa;
     padding: 0.75rem 1rem;
     border-radius: 6px;
@@ -83,60 +131,27 @@
     border-bottom: 1px solid var(--border-color-light, #eeeeee);
 }
 .booking-activity-widget p {
-    font-size: 0.85rem;
-    color: var(--medium-grey-text);
-    margin-bottom: 0.25rem;
+    font-size: 0.85rem; color: var(--medium-grey-text); margin-bottom: 0.25rem;
 }
-.booking-activity-widget p span {
-    font-weight: 500;
-    color: var(--dark-text);
-}
+.booking-activity-widget p span { font-weight: 500; color: var(--dark-text); }
 
-/* Sektionsüberschriften */
-.stats-section-title {
-    font-family: var(--font-serif); font-size: 1.4rem; color: var(--dark-text);
-    margin: 0 0 1.5rem 0; padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--border-color, #e0e0e0);
-    display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: 0.6rem;
-}
-.stats-section-title > span:first-child { display: flex; align-items: center; gap: 0.6rem; }
-.stats-section-title .svg-inline--fa { color: var(--medium-grey-text); font-size: 1.1rem; }
-.stats-period-display { font-size: 0.8rem; font-weight: 400; color: var(--medium-grey-text); margin-left: 0.5rem; }
-
-/* Lade- und Fehlermeldungen */
-.loading-indicator-top {
-    text-align: center; padding: 0.5rem; background-color: var(--info-bg-light);
-    color: var(--info-color); border-radius: 4px; margin-bottom: 1rem; font-size: 0.9rem;
-}
-.loading-message-stats, .stats-error-message, .stat-card-no-data, .chart-no-data-message {
-    text-align: center; color: var(--medium-grey-text); padding: 1.5rem; font-size: 0.95rem;
-    border: 1px dashed var(--border-color); border-radius: 6px; background-color: var(--light-grey-bg);
-}
-.stats-error-message {
-    color: var(--danger-color); background-color: var(--danger-bg-light); border-color: var(--danger-color);
-}
-.stat-card-no-data, .chart-no-data-message { margin-top: 0.5rem; font-style: italic; }
-.no-data-small { font-size: 0.85rem; color: var(--light-grey-text); padding: 0.5rem; text-align: center; }
-
-
-/* Haupt-Layout (KPIs links, Charts rechts) */
-.stats-main-layout { display: grid; grid-template-columns: 1fr; gap: 2rem; margin-bottom: 2.5rem; }
-@media (min-width: 1024px) {
-    .stats-main-layout {
-        grid-template-columns: minmax(320px, 0.7fr) 1fr;
-        align-items: flex-start;
-    }
-}
 
 /* KPI-Karten */
-.stats-overview-cards-wrapper { display: flex; flex-direction: column; gap: 1.5rem; }
+.stats-overview-cards-wrapper { display: flex; flex-direction: column; gap: 1rem; } /* Reduzierter Gap */
+.stats-section-subtitle { /* Für "Momentaufnahme & Weitere Einblicke" */
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--medium-grey-text);
+    margin-top: 0.5rem; /* Kleinerer Abstand nach Divider */
+    margin-bottom: 0.8rem;
+}
 .stats-overview-cards { display: grid; gap: 1rem; }
-.stats-overview-cards.primary-kpis { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); } /* Angepasst für mehr Karten */
-.stats-overview-cards.secondary-kpis { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); } /* Angepasst */
+/* Layout für KPI-Karten: Dynamisch anpassbar an Bildschirmbreite */
+.stats-overview-cards.primary-kpis { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.stats-overview-cards.secondary-kpis { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
 .kpi-divider {
     border: none; height: 1px; background-color: var(--border-color-light, #eeeeee);
-    margin: 0.25rem 0;
+    margin: 0.5rem 0; /* Angepasster Abstand */
 }
 
 .stat-card {
@@ -147,68 +162,71 @@
 }
 .stat-card:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); transform: translateY(-2px); }
 
-.stat-card.main-kpi { padding: 1.15rem; min-height: 130px; } /* Etwas höher für mehr Inhalt */
-.stat-card.main-kpi .stat-value { font-size: 1.8rem; font-weight: 600; } /* Leicht kleiner für mehr Karten */
-.stat-card.main-kpi .stat-label { font-size: 0.75rem; } /* Leicht kleiner */
-.stat-card.main-kpi .stat-icon { font-size: 1rem; width: 24px; height: 24px; } /* Leicht kleiner */
+.stat-card.main-kpi { padding: 1.1rem; min-height: 120px; }
+.stat-card.main-kpi .stat-value { font-size: 1.7rem; font-weight: 600; }
+.stat-card.main-kpi .stat-label { font-size: 0.72rem; }
+.stat-card.main-kpi .stat-icon { font-size: 1rem; width: 22px; height: 22px; }
 
-.stat-card.small-kpi { min-height: 100px; padding: 0.85rem; } /* Leicht höher */
-.stat-card.small-kpi .stat-value { font-size: 1.25rem; font-weight: 600;}
-.stat-card.small-kpi .stat-label { font-size: 0.68rem; } /* Leicht angepasst */
-.stat-card.small-kpi .stat-icon { font-size: 0.85rem; width: 18px; height: 18px; } /* Leicht kleiner */
+.stat-card.small-kpi { min-height: 90px; padding: 0.8rem; }
+.stat-card.small-kpi .stat-value { font-size: 1.2rem; font-weight: 600;}
+.stat-card.small-kpi .stat-label { font-size: 0.65rem; }
+.stat-card.small-kpi .stat-icon { font-size: 0.8rem; width: 16px; height: 16px; }
 .stat-card.small-kpi .stat-comparison { display: none; }
 
-.stat-card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem; }
+.stat-card-header { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem; }
 .stat-icon {
     display: inline-flex; align-items: center; justify-content: center;
-    border-radius: 50%; padding: 0.35em; line-height: 1;
+    border-radius: 50%; padding: 0.3em; line-height: 1;
     color: var(--dark-text); background-color: var(--light-grey-bg);
 }
 .stat-label { font-weight: 500; color: var(--medium-grey-text, #5f5f5f); line-height: 1.2; }
-.stat-value { color: var(--dark-text, #1f1f1f); line-height: 1.1; display: block; margin-top: 0.15rem; }
-.stat-comparison { font-size: 0.72rem; font-weight: 500; display: flex; align-items: center; gap: 0.25rem; margin-top: auto; padding-top: 0.2rem; }
+.stat-value { color: var(--dark-text, #1f1f1f); line-height: 1.1; display: block; margin-top: 0.1rem; }
+.stat-comparison { font-size: 0.7rem; font-weight: 500; display: flex; align-items: center; gap: 0.2rem; margin-top: auto; padding-top: 0.15rem; }
 .stat-comparison .comparison-data.positive { color: var(--success-color, #28a745); }
 .stat-comparison .comparison-data.negative { color: var(--danger-color, #c82333); }
 .stat-comparison .comparison-data.neutral { color: var(--medium-grey-text, #5f5f5f); }
 .stat-comparison .comparison-data .svg-inline--fa { margin-right: 0.1rem; font-size: 0.8em; }
 
-/* Spezifische Icon-Farben (Beispiele) */
+/* Spezifische Icon-Farben */
 .stat-icon.today, .stat-icon.fa-calendar-check { color: #28a745; background-color: rgba(40, 167, 69, 0.08); }
 .stat-icon.revenue, .stat-icon.fa-receipt  { color: #fd7e14; background-color: rgba(253, 126, 20, 0.08); }
 .stat-icon.upcoming, .stat-icon.fa-calendar-alt { color: #6f42c1; background-color: rgba(111, 66, 193, 0.08); }
 .stat-icon.fa-coins    { color: #ffc107; background-color: rgba(255, 193, 7, 0.08); }
 .stat-icon.capacity, .stat-icon.fa-hourglass-half { color: #17a2b8; background-color: rgba(23, 162, 184, 0.08); }
-.stat-icon.fa-user-friends { color: #007bff; background-color: rgba(0, 123, 255, 0.08); } /* Unique Customers */
-.stat-icon.duration, .stat-icon.fa-clock { color: #6610f2; background-color: rgba(102, 16, 242, 0.08); } /* Avg Duration */
-.stat-icon.services, .stat-icon.fa-cut { color: #20c997; background-color: rgba(32, 201, 151, 0.08); } /* Total Services */
+.stat-icon.fa-user-friends { color: #007bff; background-color: rgba(0, 123, 255, 0.08); }
+.stat-icon.duration, .stat-icon.fa-clock { color: #6610f2; background-color: rgba(102, 16, 242, 0.08); }
+.stat-icon.services, .stat-icon.fa-cut { color: #20c997; background-color: rgba(32, 201, 151, 0.08); }
+.stat-icon.avg-bookings, .stat-icon.fa-user-plus { color: #e83e8c; background-color: rgba(232, 62, 140, 0.08); } /* Pink */
+.stat-icon.projection, .stat-icon.fa-arrow-trend-up { color: #198754; background-color: rgba(25, 135, 84, 0.08); } /* Dunkleres Grün */
 
 
 /* Chart-Bereich */
 .charts-section-wrapper { }
-.charts-grid {
-    display: grid;
-    gap: 1.5rem;
-    grid-template-columns: 1fr;
-}
-@media (min-width: 768px) { /* Ab Tablet 2 Spalten für Charts */
-    .charts-grid {
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    }
-    /* Umsatzdiagramm kann volle Breite einnehmen, wenn es das erste ist und es mehr als ein Chart gibt */
-    .charts-grid .chart-card:first-child:has(> div > h4 > svg[data-icon="chart-line"]) {
-        grid-column: 1 / -1;
+.charts-grid { display: grid; gap: 1.5rem; grid-template-columns: 1fr; }
+@media (min-width: 768px) {
+    .charts-grid { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+    .charts-grid .chart-card.revenue-chart-card { /* Umsatzdiagramm kann mehr Platz einnehmen */
+        /* grid-column: span 2; /* Nimmt 2 Spalten ein, wenn möglich */
+        /* min-height: 350px; /* Etwas höher für das Hauptdiagramm */
     }
 }
-@media (min-width: 1200px) { /* Größere Desktops, 3 Spalten möglich, wenn Umsatz nicht volle Breite */
-    .charts-grid .chart-card:first-child:has(> div > h4 > svg[data-icon="chart-line"]) {
-        /* Bleibt volle Breite oder spezifische Anpassung */
+/* Auf sehr großen Bildschirmen (innerhalb der .main-stats-column) */
+@media (min-width: 1024px) {
+    .main-stats-column .charts-grid {
+        /* Hier könnte man spezifische Layouts für die Charts in der Hauptspalte definieren,
+           z.B. das Umsatzdiagramm immer oben und die anderen beiden nebeneinander darunter,
+           wenn die Hauptspalte breit genug ist. */
+    }
+    .main-stats-column .charts-grid .chart-card.revenue-chart-card {
+        grid-column: 1 / -1; /* Umsatzdiagramm nimmt volle Breite der Chart-Grid ein */
     }
 }
+
 
 .chart-card {
     background-color: var(--light-bg, #ffffff); border: 1px solid var(--border-color);
     border-radius: 8px; padding: 1.25rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-    min-height: 320px; display: flex; flex-direction: column; overflow: hidden;
+    min-height: 300px; display: flex; flex-direction: column; overflow: hidden;
 }
 .chart-title {
     font-family: var(--font-sans, sans-serif); font-weight: 600; font-size: 1.05rem;
@@ -217,9 +235,7 @@
 }
 .chart-title .svg-inline--fa { color: var(--medium-grey-text); font-size: 0.95em; }
 .chart-title .chart-period-label { font-size: 0.7rem; font-weight: 400; color: var(--light-grey-text); margin-left: 0.5rem; }
-.chart-card .recharts-responsive-container {
-    min-height: 250px;
-}
+.chart-card .recharts-responsive-container { min-height: 240px; }
 
 /* Tägliche Terminliste (Quick View) */
 .daily-appointments-section { }
@@ -255,7 +271,20 @@
 .appointment-status-tag.status-heute { background-color: var(--info-bg-light); color: var(--info-color); border-color: var(--info-color); }
 .appointment-status-tag.status-morgen { background-color: #e9ecef; color: #495057; border-color: #ced4da; }
 .appointment-status-tag.status-datum { background-color: #f8f9fa; color: #6c757d; border-color: #dee2e6; }
-.no-upcoming-appointments { text-align: center; color: var(--medium-grey-text); padding: 1rem; font-size: 0.9rem; font-style: italic; }
+
+/* Berichtsoptionen */
+.report-options-section .report-options-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+.report-options-section .report-options-content p {
+    border: none; /* Keine gestrichelte Linie für diesen Text */
+    background-color: transparent;
+    padding: 0;
+    text-align: left;
+}
 
 
 /* Skeleton Loader Stile */
@@ -279,12 +308,14 @@
 }
 
 /* Responsive Anpassungen für kleinere Bildschirme */
-@media (max-width: 767px) {
+@media (max-width: 1199px) { /* Bis das 2-Spalten-Layout greift */
     .stats-main-layout { grid-template-columns: 1fr; }
-    .charts-grid { grid-template-columns: 1fr; }
-    .charts-grid .chart-card:first-child:has(> div > h4 > svg[data-icon="chart-line"]) {
-        grid-column: auto; /* Auf Mobile keine volle Breite erzwingen */
+    .charts-grid .chart-card.revenue-chart-card {
+        grid-column: auto;
     }
+}
+@media (max-width: 767px) {
+    .charts-grid { grid-template-columns: 1fr; }
     .quick-access-content { flex-direction: column; align-items: stretch; }
     .quick-create-button, .quick-link-button { width: 100%; margin-bottom: 0.75rem; }
     .booking-activity-widget { width: 100%; }
