@@ -23,15 +23,15 @@ public class DetailedAppointmentStatsDTO {
     private Long previousPeriodTotalAppointments;
     private BigDecimal previousPeriodTotalRevenue;
     private Long previousPeriodUniqueCustomers;
-    private Double previousPeriodCancellationRate; // Für Vergleich der Stornoquote
-    private Double previousPeriodNewCustomerShare; // Für Vergleich des Neukundenanteils
+    private Double previousPeriodCancellationRate;
+    private Double previousPeriodNewCustomerShare;
 
     // Prozentuale Änderungen
     private Double appointmentCountChangePercentage;
     private Double revenueChangePercentage;
     private Double customerGrowthPercentage;
-    private Double cancellationRateChangePercentage; // Änderung der Stornoquote
-    private Double newCustomerShareChangePercentage; // Änderung des Neukundenanteils
+    private Double cancellationRateChangePercentage;
+    private Double newCustomerShareChangePercentage;
 
 
     // Bestehende Zählungen für nicht-filterbare Bereiche
@@ -46,14 +46,14 @@ public class DetailedAppointmentStatsDTO {
 
     // Erweiterte KPIs
     private Long uniqueCustomersInPeriod;
-    private Double averageAppointmentDurationInPeriod; // in Minuten
-    private Double avgBookingsPerCustomer;      // z.B. 1.5
+    private Double averageAppointmentDurationInPeriod;
+    private Double avgBookingsPerCustomer;
     private Long newBookingsToday;
     private Long newBookingsYesterday;
     private Long totalActiveServices;
-    private Double cancellationRate;            // z.B. 5.0 (%)
-    private Double newCustomerShare;            // z.B. 10.0 (%)
-    private Integer avgBookingLeadTime;         // in Tagen
+    private Double cancellationRate;
+    private Double newCustomerShare;
+    private Integer avgBookingLeadTime;
     private BigDecimal projectedRevenueNext30Days;
 
     public DetailedAppointmentStatsDTO(

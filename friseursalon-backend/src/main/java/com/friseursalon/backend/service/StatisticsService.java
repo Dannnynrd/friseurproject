@@ -5,7 +5,8 @@ import com.friseursalon.backend.dto.*;
 import com.friseursalon.backend.model.Appointment;
 import com.friseursalon.backend.model.BlockedTimeSlot;
 import com.friseursalon.backend.model.WorkingHours;
-// import com.friseursalon.backend.model.AppointmentStatus; // Importieren, wenn Enum existiert
+// Annahme: Es gibt ein Enum für den Termin-Status, z.B.
+// import com.friseursalon.backend.model.AppointmentStatus;
 import com.friseursalon.backend.repository.AppointmentRepository;
 import com.friseursalon.backend.repository.CustomerRepository;
 import com.friseursalon.backend.repository.ServiceRepository;
@@ -104,7 +105,10 @@ public class StatisticsService {
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = LocalDate.now();
         LocalDateTime startOfToday = today.atStartOfDay();
-        LocalDateTime endOfToday = today.atTime(LocalTime.MAX);
+        LocalDateTime endOfToday = today.atTime(LocalTime.MAX); // Ganzer heutiger Tag
+        LocalDateTime startOfYesterday = startOfToday.minusDays(1);
+        LocalDateTime endOfYesterday = endOfToday.minusDays(1);
+
         WeekFields weekFields = WeekFields.of(Locale.GERMANY);
         LocalDateTime startOfWeek = today.with(weekFields.dayOfWeek(), 1).atStartOfDay();
         LocalDateTime endOfWeek = today.with(weekFields.dayOfWeek(), 7).atTime(LocalTime.MAX);
@@ -140,35 +144,39 @@ public class StatisticsService {
 
         long totalActiveServices = serviceRepository.count();
 
-        // --- Platzhalter/Simulationen für KPIs, die Modelländerungen erfordern ---
-        // TODO: Diese Logik durch echte Berechnungen ersetzen, sobald Datenmodell erweitert ist.
+        // --- Platzhalter/Berechnungen für KPIs, die Modelländerungen erfordern ---
 
         // newBookingsToday & newBookingsYesterday
-        // Benötigt ein `createdAt` Feld in der Appointment Entität.
-        // Beispiel: Long newBookingsTodayCount = appointmentRepository.countNewAppointmentsCreatedBetween(startOfToday, endOfToday.plusDays(1).minusNanos(1));
+        // TODO: Implementieren, sobald `Appointment.createdAt` existiert.
+        // Long newBookingsTodayCount = appointmentRepository.countNewAppointmentsCreatedBetween(startOfToday, endOfToday.plusDays(1).minusNanos(1));
+        // Long newBookingsYesterdayCount = appointmentRepository.countNewAppointmentsCreatedBetween(startOfYesterday, startOfToday.minusNanos(1));
         Long newBookingsTodayCount = 0L; // Platzhalter
         Long newBookingsYesterdayCount = 0L; // Platzhalter
 
         // cancellationRate
-        // Benötigt ein `status` Feld in der Appointment Entität (z.B. AppointmentStatus.CANCELLED).
-        // Beispiel: Long cancelledInPeriod = appointmentRepository.countCancelledAppointmentsBetween(periodStartDateTime, periodEndDateTime);
-        // Double cancellationRateValue = (totalAppointmentsInPeriod > 0 && cancelledInPeriod != null) ? ((double) cancelledInPeriod / (totalAppointmentsInPeriod + cancelledInPeriod)) * 100 : null;
-        // (Annahme: totalAppointmentsInPeriod zählt nur nicht-stornierte Termine, oder Formel anpassen)
+        // TODO: Implementieren, sobald `Appointment.status` existiert.
+        // Long cancelledInPeriod = appointmentRepository.countCancelledAppointmentsBetween(periodStartDateTime, periodEndDateTime);
+        // Long totalRelevantAppointmentsForCancellation = totalAppointmentsInPeriod + (cancelledInPeriod != null ? cancelledInPeriod : 0L); // Annahme: totalAppointmentsInPeriod zählt nur nicht-stornierte
+        // Double cancellationRateValue = (totalRelevantAppointmentsForCancellation > 0 && cancelledInPeriod != null) ? ((double) cancelledInPeriod / totalRelevantAppointmentsForCancellation) * 100 : null;
         Double cancellationRateValue = null; // Platzhalter
-        Double previousPeriodCancellationRate = null; // Platzhalter für Vergleich
+        // Long cancelledInPreviousPeriod = appointmentRepository.countCancelledAppointmentsBetween(previousPeriodStartDateTime, previousPeriodEndDateTime);
+        // Long totalRelevantPrevAppointments = (previousPeriodTotalAppointments != null ? previousPeriodTotalAppointments : 0L) + (cancelledInPreviousPeriod != null ? cancelledInPreviousPeriod : 0L);
+        // Double previousPeriodCancellationRate = (totalRelevantPrevAppointments > 0 && cancelledInPreviousPeriod != null) ? ((double) cancelledInPreviousPeriod / totalRelevantPrevAppointments) * 100 : null; // Platzhalter für Vergleich
+        Double previousPeriodCancellationRate = null; // Platzhalter, da die Basis fehlt
         Double cancellationRateChangePercentage = calculatePercentageChange(
-                cancellationRateValue != null ? BigDecimal.valueOf(cancellationRateValue) : null, // Aktueller Wert
-                previousPeriodCancellationRate != null ? BigDecimal.valueOf(previousPeriodCancellationRate) : null, // Vorperiodenwert
+                cancellationRateValue != null ? BigDecimal.valueOf(cancellationRateValue) : null,
+                previousPeriodCancellationRate != null ? BigDecimal.valueOf(previousPeriodCancellationRate) : null,
                 false // Höher ist schlechter für Stornoquote
         );
 
 
         // newCustomerShare
-        // Benötigt ein `registrationDate` Feld in der Customer Entität und eine Methode, um Neukunden im Zeitraum zu identifizieren.
+        // TODO: Implementieren, sobald `Customer.registrationDate` existiert.
         // List<Long> customerIdsInPeriod = appointmentRepository.findDistinctCustomerIdsWithAppointmentsBetween(periodStartDateTime, periodEndDateTime);
         // Long newCustomersAmongAttendees = 0L;
         // if (customerIdsInPeriod != null && !customerIdsInPeriod.isEmpty()) {
-        //    newCustomersAmongAttendees = customerRepository.countNewCustomersRegisteredBetweenAndInIdList(periodStartDateTime, periodEndDateTime, customerIdsInPeriod); // Hypothetische Methode
+        //    // Erfordert eine Methode, die prüft, ob ein Kunde im Zeitraum registriert wurde.
+        //    // newCustomersAmongAttendees = customerRepository.countNewCustomersRegisteredBetweenAndInIdList(periodStartDateTime, periodEndDateTime, customerIdsInPeriod);
         // }
         // Double newCustomerShareValue = (uniqueCustomersInPeriod != null && uniqueCustomersInPeriod > 0 && newCustomersAmongAttendees != null)
         //    ? ((double) newCustomersAmongAttendees / uniqueCustomersInPeriod) * 100
@@ -180,10 +188,9 @@ public class StatisticsService {
                 previousPeriodNewCustomerShare != null ? BigDecimal.valueOf(previousPeriodNewCustomerShare) : null
         );
 
-
         // avgBookingLeadTime
-        // Benötigt ein `createdAt` Feld in der Appointment Entität.
-        // Beispiel: Double avgLeadTime = appointmentRepository.getAverageBookingLeadTimeInDays(periodStartDateTime, periodEndDateTime);
+        // TODO: Implementieren, sobald `Appointment.createdAt` existiert.
+        // Double avgLeadTime = appointmentRepository.getAverageBookingLeadTimeInDays(periodStartDateTime, periodEndDateTime);
         // Integer avgBookingLeadTimeValue = (avgLeadTime != null) ? (int) Math.round(avgLeadTime) : null;
         Integer avgBookingLeadTimeValue = null; // Platzhalter
 
@@ -217,10 +224,10 @@ public class StatisticsService {
         dto.setNewBookingsYesterday(newBookingsYesterdayCount);
         dto.setTotalActiveServices(totalActiveServices);
         dto.setCancellationRate(cancellationRateValue);
-        dto.setPreviousPeriodCancellationRate(previousPeriodCancellationRate); // Für Frontend-Vergleich
+        dto.setPreviousPeriodCancellationRate(previousPeriodCancellationRate);
         dto.setCancellationRateChangePercentage(cancellationRateChangePercentage);
         dto.setNewCustomerShare(newCustomerShareValue);
-        dto.setPreviousPeriodNewCustomerShare(previousPeriodNewCustomerShare); // Für Frontend-Vergleich
+        dto.setPreviousPeriodNewCustomerShare(previousPeriodNewCustomerShare);
         dto.setNewCustomerShareChangePercentage(newCustomerShareChangePercentage);
         dto.setAvgBookingLeadTime(avgBookingLeadTimeValue);
         dto.setProjectedRevenueNext30Days(projectedRevenueNext30DaysValue);
@@ -228,17 +235,19 @@ public class StatisticsService {
         return dto;
     }
 
-    // Überladene Methode für calculatePercentageChange, um die "isGrowthGood" Logik zu handhaben
     private Double calculatePercentageChange(BigDecimal currentValue, BigDecimal previousValue) {
-        return calculatePercentageChange(currentValue, previousValue, true); // Standard: Wachstum ist gut
+        return calculatePercentageChange(currentValue, previousValue, true);
     }
     private Double calculatePercentageChange(BigDecimal currentValue, BigDecimal previousValue, boolean isGrowthGood) {
-        if (currentValue == null) currentValue = BigDecimal.ZERO;
-        if (previousValue == null) previousValue = BigDecimal.ZERO;
+        // Wenn kein aktueller Wert vorhanden ist (z.B. für Platzhalter-KPIs), keine Änderung berechnen.
+        if (currentValue == null) return null;
+        // Wenn kein Vorperiodenwert vorhanden ist (z.B. für Platzhalter-KPIs), keine Änderung berechnen.
+        if (previousValue == null) return null;
 
+        // Behandlung von Nullen, um DivisionByZero und unlogische Prozentwerte zu vermeiden
         if (previousValue.compareTo(BigDecimal.ZERO) == 0) {
             if (currentValue.compareTo(BigDecimal.ZERO) == 0) return 0.0; // Beide 0 -> 0% Änderung
-            return null; // Unendlicher Anstieg/Abfall, wenn Vorperiode 0 war und aktuelle Periode nicht
+            return null; // Vorperiode war 0, aktuelle Periode nicht -> "unendlicher" Anstieg, als null darstellen
         }
         BigDecimal difference = currentValue.subtract(previousValue);
         return difference.divide(previousValue, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue();

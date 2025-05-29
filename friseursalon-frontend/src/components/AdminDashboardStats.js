@@ -11,11 +11,16 @@ import {
     faPlusCircle, faBolt, faUserFriends, faClock, faCut,
     faUserPlus, faFileExport, faCog, faArrowTrendUp, faUsersCog,
     faUserSlash, faPercentage, faCalendarDay, faEye, faEyeSlash,
-    faInfoCircle, faHistory
+    faInfoCircle, faHistory, faCalendarWeek, faGlobe // Neue Icons
 } from '@fortawesome/free-solid-svg-icons';
 import AppointmentEditModal from './AppointmentEditModal';
 import AppointmentCreateModal from './AppointmentCreateModal';
-import { format as formatDateFns, parseISO, isValid as isValidDate, subDays, startOfMonth, endOfMonth, subMonths, addMonths, formatISO, startOfWeek, endOfWeek, differenceInDays, startOfYear as dateFnsStartOfYear } from 'date-fns'; // startOfYear importiert
+import {
+    format as formatDateFns, parseISO, isValid as isValidDate,
+    subDays, startOfMonth, endOfMonth, subMonths, addMonths,
+    formatISO, startOfWeek, endOfWeek, differenceInDays,
+    startOfYear as dateFnsStartOfYear
+} from 'date-fns';
 import { de as deLocale } from 'date-fns/locale';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
@@ -50,7 +55,7 @@ const PERIOD_LABELS = {
     [PERIOD_OPTIONS.CUSTOM]: 'Zeitraum wählen',
 };
 
-const KPI_GROUP_VISIBILITY_STORAGE_KEY = 'friseurDashboardKpiVisibility';
+const KPI_GROUP_VISIBILITY_STORAGE_KEY = 'friseurDashboardKpiVisibility_v1';
 
 const getDatesForPeriod = (period) => {
     const today = new Date();
@@ -68,7 +73,7 @@ const getDatesForPeriod = (period) => {
             startDate = firstDayLastMonth; endDate = endOfMonth(firstDayLastMonth); break;
         case PERIOD_OPTIONS.LAST_30_DAYS: startDate = subDays(today, 29); endDate = today; break;
         case PERIOD_OPTIONS.YEAR_TO_DATE:
-            startDate = dateFnsStartOfYear(today); // Korrekter Importname
+            startDate = dateFnsStartOfYear(today);
             endDate = today;
             break;
         case PERIOD_OPTIONS.LAST_365_DAYS:
@@ -129,16 +134,25 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
     const [customDateRangeApplied, setCustomDateRangeApplied] = useState(false);
 
     const [kpiGroupVisibility, setKpiGroupVisibility] = useState(() => {
-        const savedVisibility = localStorage.getItem(KPI_GROUP_VISIBILITY_STORAGE_KEY);
-        return savedVisibility ? JSON.parse(savedVisibility) : {
-            main: true,
-            customerService: true,
-            operationalDaily: true,
-        };
+        try {
+            const savedVisibility = localStorage.getItem(KPI_GROUP_VISIBILITY_STORAGE_KEY);
+            return savedVisibility ? JSON.parse(savedVisibility) : {
+                main: true,
+                customerService: true,
+                operationalDaily: true,
+            };
+        } catch (e) {
+            console.error("Fehler beim Lesen der KPI Sichtbarkeit aus localStorage:", e);
+            return { main: true, customerService: true, operationalDaily: true, };
+        }
     });
 
     useEffect(() => {
-        localStorage.setItem(KPI_GROUP_VISIBILITY_STORAGE_KEY, JSON.stringify(kpiGroupVisibility));
+        try {
+            localStorage.setItem(KPI_GROUP_VISIBILITY_STORAGE_KEY, JSON.stringify(kpiGroupVisibility));
+        } catch (e) {
+            console.error("Fehler beim Speichern der KPI Sichtbarkeit im localStorage:", e);
+        }
     }, [kpiGroupVisibility]);
 
     const toggleKpiGroupVisibility = (groupKey) => {
@@ -172,7 +186,6 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             setRevenueOverTimeData(revenueTimeRes.data);
             setCapacityUtilizationData(capacityRes.data);
 
-            // KPIs aus dem Backend-DTO extrahieren oder stabile Fallbacks verwenden
             setUniqueCustomers(backendStats.uniqueCustomersInPeriod != null ? Number(backendStats.uniqueCustomersInPeriod) : null);
             setAverageAppointmentDuration(backendStats.averageAppointmentDurationInPeriod != null ? Number(backendStats.averageAppointmentDurationInPeriod) : null);
 
@@ -186,18 +199,24 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             setProjectedRevenueNext30Days(backendStats.projectedRevenueNext30Days != null ? Number(backendStats.projectedRevenueNext30Days) : null);
             setTotalActiveServices(backendStats.totalActiveServices != null ? Number(backendStats.totalActiveServices) : null);
 
-            // "Wichtigste Veränderungen" basierend auf den *aktuell abgerufenen* backendStats
             const changes = [];
             if (backendStats.revenueChangePercentage != null) changes.push({ label: "Umsatz", value: backendStats.revenueChangePercentage, isGood: backendStats.revenueChangePercentage >= 0 });
             if (backendStats.appointmentCountChangePercentage != null) changes.push({ label: "Terminanzahl", value: backendStats.appointmentCountChangePercentage, isGood: backendStats.appointmentCountChangePercentage >= 0 });
             if (growthFromBackend != null) changes.push({ label: "Kundenwachstum", value: growthFromBackend, isGood: growthFromBackend >= 0 });
-            // TODO: Weitere "Key Changes" hinzufügen, wenn das Backend entsprechende Vergleichswerte liefert (z.B. für Stornoquote)
+            if (backendStats.cancellationRateChangePercentage != null) {
+                changes.push({ label: "Stornoquote", value: backendStats.cancellationRateChangePercentage, isGood: backendStats.cancellationRateChangePercentage <= 0 });
+            }
+            if (backendStats.newCustomerShareChangePercentage != null) {
+                changes.push({ label: "Neukundenanteil", value: backendStats.newCustomerShareChangePercentage, isGood: backendStats.newCustomerShareChangePercentage >= 0 });
+            }
+
 
             changes.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
             setKeyChanges({
                 positive: changes.filter(c => c.isGood && c.value > 0).slice(0, 2),
-                negative: changes.filter(c => !c.isGood && c.value < 0).slice(0, 2)
+                negative: changes.filter(c => !c.isGood && c.value !== 0).slice(0, 2)
             });
+
 
             if (selectedPeriod === PERIOD_OPTIONS.CUSTOM && customDateRangeApplied) {
                 setActiveDateRangeLabel(`Zeitraum: ${formatDateFns(parseISO(startDate), 'dd.MM.yy')} - ${formatDateFns(parseISO(endDate), 'dd.MM.yy')}`);
@@ -217,14 +236,13 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         } finally {
             setIsLoadingStats(false);
         }
-    }, [selectedPeriod, customDateRangeApplied]); // Entferne customerGrowthPercentage aus den Dependencies
+    }, [selectedPeriod, customDateRangeApplied]);
 
     const fetchActivityAndUpcoming = useCallback(async () => {
         setIsLoadingActivity(true);
         setIsLoadingDaily(true);
         setError(prev => prev.replace(/Aktivität;|Terminliste;|Buchungszahlen;/g, '').trim());
         try {
-            // Werte direkt aus detailedStats nehmen, wenn vorhanden, sonst Fallback
             setNewBookingsToday(detailedStats?.newBookingsToday != null ? Number(detailedStats.newBookingsToday) : 0);
             setNewBookingsYesterday(detailedStats?.newBookingsYesterday != null ? Number(detailedStats.newBookingsYesterday) : 0);
 
@@ -245,9 +263,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
     }, [currentFilterStartDate, currentFilterEndDate, fetchMainStatsAndCharts]);
 
     useEffect(() => {
-        // Dieser Effekt soll laufen, wenn detailedStats sich ändert (nach fetchMainStatsAndCharts)
-        // oder wenn eine externe Aktion (onAppointmentAction) ein Neuladen erfordert.
-        if (detailedStats || !isLoadingStats) { // Nur ausführen, wenn Hauptdaten geladen sind oder Ladevorgang beendet
+        if (detailedStats || !isLoadingStats) {
             fetchActivityAndUpcoming();
         }
     }, [detailedStats, isLoadingStats, onAppointmentAction, fetchActivityAndUpcoming]);
@@ -264,6 +280,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             setShowCustomDatePickers(false);
         } else {
             setShowCustomDatePickers(true);
+            setActiveDateRangeLabel(PERIOD_LABELS[PERIOD_OPTIONS.CUSTOM]);
         }
     };
 
@@ -333,7 +350,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         const changePercentage = Number(changePercentageInput);
 
         if (hasPreviousData && parseFloat(previousValue) !== 0) {
-            if (isNaN(changePercentage)) {
+            if (isNaN(changePercentage) || changePercentageInput === null) {
                 // Bleibt N/A wenn keine Prozentänderung vorhanden ist
             } else {
                 const isPositiveChange = changePercentage > 0;
@@ -356,7 +373,6 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             icon = faArrowUp;
             colorClass = 'positive';
         } else if (hasPreviousData && parseFloat(previousValue) === 0 && (isNaN(changePercentage) || changePercentage === 0)) {
-            // Wenn Vorperiode 0 war und aktuelle Periode auch (oder keine Änderung), bleibt es neutral
             changeText = 'vs. 0';
         }
         return (
@@ -439,7 +455,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             { id: 'gesBevorstehend', label: "Ges. Bevorstehend", value: detailedStats.totalUpcomingCount ?? '0', icon: faCalendarAlt, iconClass: 'upcoming', tooltipText: "Gesamtzahl aller zukünftigen Termine." },
             { id: 'avgTermindauer', label: "Ø Termindauer", value: averageAppointmentDuration != null ? `${Number(averageAppointmentDuration).toFixed(0)} Min.` : 'N/A', icon: faClock, iconClass: 'duration', tooltipText: "Durchschnittliche Dauer eines Termins." },
             { id: 'servicesAngeboten', label: "Services Angeboten", value: totalActiveServices ?? 'N/A', icon: faCut, iconClass: 'services', tooltipText: "Anzahl der aktuell angebotenen Dienstleistungen." },
-            { id: 'stornoquote', label: "Stornoquote", value: cancellationRate != null ? `${Number(cancellationRate).toFixed(1)}%` : 'N/A', icon: faUserSlash, iconClass: 'cancellation', comparison: renderComparison(null, detailedStats.previousPeriodCancellationRate, false), tooltipText: "Prozentsatz stornierter Termine (benötigt Backend-Logik)." }, // Annahme: Backend liefert previousPeriodCancellationRate
+            { id: 'stornoquote', label: "Stornoquote", value: cancellationRate != null ? `${Number(cancellationRate).toFixed(1)}%` : 'N/A', icon: faUserSlash, iconClass: 'cancellation', comparison: renderComparison(detailedStats.cancellationRateChangePercentage, detailedStats.previousPeriodCancellationRate, false), tooltipText: "Prozentsatz stornierter Termine (benötigt Backend-Logik)." },
             { id: 'avgVorlaufzeit', label: "Ø Vorlaufzeit Buch.", value: avgBookingLeadTime != null ? `${avgBookingLeadTime} Tage` : 'N/A', icon: faCalendarCheck, iconClass: 'leadtime', tooltipText: "Durchschnittliche Zeit zwischen Buchung und Termin (benötigt Backend-Logik)." },
             { id: 'prognUmsatz', label: "Progn. Umsatz (30T)", value: projectedRevenueNext30Days != null ? formatCurrency(projectedRevenueNext30Days) : 'N/A', icon: faArrowTrendUp, iconClass: 'projection', tooltipText: "Geschätzter Umsatz für die nächsten 30 Tage basierend auf aktuellen Daten." },
         ];
@@ -478,17 +494,20 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         if (isLoadingStats || isLoadingActivity) {
             return <p className="no-data-small"><FontAwesomeIcon icon={faSpinner} spin /> Lade Veränderungen...</p>;
         }
-        if (keyChanges.positive.length === 0 && keyChanges.negative.length === 0) {
+        const positiveChanges = keyChanges.positive || [];
+        const negativeChanges = keyChanges.negative || [];
+
+        if (positiveChanges.length === 0 && negativeChanges.length === 0) {
             return <p className="no-data-small">Keine signifikanten Veränderungen im Vergleich zur Vorperiode.</p>;
         }
         return (
             <ul className="key-changes-list">
-                {keyChanges.positive.map(change => (
+                {positiveChanges.map(change => (
                     <li key={`pos-${change.label}`} className="key-change-item positive">
                         <FontAwesomeIcon icon={faArrowUp} /> <span>{change.label}: +{Number(change.value).toFixed(1)}%</span>
                     </li>
                 ))}
-                {keyChanges.negative.map(change => (
+                {negativeChanges.map(change => (
                     <li key={`neg-${change.label}`} className="key-change-item negative">
                         <FontAwesomeIcon icon={faArrowDown} /> <span>{change.label}: {Number(change.value).toFixed(1)}%</span>
                     </li>

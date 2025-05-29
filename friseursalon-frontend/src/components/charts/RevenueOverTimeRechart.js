@@ -1,14 +1,13 @@
 // Datei: friseursalon-frontend/src/components/charts/RevenueOverTimeRechart.js
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { format as formatDateFns, parseISO } from 'date-fns';
+import { format as formatDateFns, parseISO, differenceInCalendarDays } from 'date-fns';
 import { de as deLocale } from 'date-fns/locale';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChartLine } from '@fortawesome/free-solid-svg-icons';
 
 const RevenueOverTimeRechart = ({ chartData, title, periodLabel }) => {
-    // Prüfen, ob Daten vorhanden sind und ob es Umsatzdaten gibt
-    const hasData = chartData && chartData.length > 0 && chartData.some(d => d.revenue > 0);
+    const hasData = chartData && chartData.length > 0 && chartData.some(d => d.revenue != null && parseFloat(d.revenue) !== 0);
 
     if (!hasData) {
         return (
@@ -19,23 +18,21 @@ const RevenueOverTimeRechart = ({ chartData, title, periodLabel }) => {
         );
     }
 
-    // Daten für Recharts formatieren: Datum für X-Achse und Umsatz als Zahl
     const formattedData = chartData.map(item => ({
         ...item,
-        // Datum für X-Achse formatieren, abhängig von der Länge des Zeitraums
-        dateFormatted: chartData.length <= 31 // Bei bis zu einem Monat
-            ? formatDateFns(parseISO(item.date), 'dd.MM', { locale: deLocale }) // Tag.Monat
-            : formatDateFns(parseISO(item.date), 'MMM yy', { locale: deLocale }), // Sonst Monat Jahr
-        revenue: parseFloat(item.revenue) // Sicherstellen, dass Umsatz eine Zahl ist
+        dateISO: item.date, // Behalte das ISO-Datum für Tooltips
+        dateFormatted: formatDateFns(parseISO(item.date), 'dd.MM', { locale: deLocale }),
+        revenue: parseFloat(item.revenue)
     }));
 
-    // Benutzerdefiniertes Tooltip
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
-            const dataPoint = payload[0].payload; // Der ursprüngliche Datenpunkt aus `formattedData`
+            // Finde den originalen Datenpunkt, um das volle Datum zu bekommen
+            const originalDataPoint = formattedData.find(d => d.dateFormatted === label);
+            const displayDate = originalDataPoint ? formatDateFns(parseISO(originalDataPoint.dateISO), 'PPP', { locale: deLocale }) : label;
             return (
-                <div className="custom-recharts-tooltip"> {/* Klasse aus App.css */}
-                    <p className="label">{`${formatDateFns(parseISO(dataPoint.date), 'PPP', { locale: deLocale })}`}</p> {/* Vollständiges Datum im Tooltip */}
+                <div className="custom-recharts-tooltip">
+                    <p className="label">{`${displayDate}`}</p>
                     <p className="intro">{`Umsatz: ${payload[0].value.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}`}</p>
                 </div>
             );
@@ -43,15 +40,21 @@ const RevenueOverTimeRechart = ({ chartData, title, periodLabel }) => {
         return null;
     };
 
-    // Dynamische Anpassung der X-Achsen-Ticks zur Vermeidung von Überlappung
-    const getXTickCount = (dataLength) => {
-        if (dataLength <= 7) return dataLength; // Jeden Tag anzeigen bei <= 1 Woche
-        if (dataLength <= 31) return Math.ceil(dataLength / 2); // Jeden zweiten Tag bei ~1 Monat
-        if (dataLength <= 90) return Math.ceil(dataLength / 7); // Wöchentlich bei ~3 Monaten
-        return 12; // Monatlich bei längeren Zeiträumen (max 12 Ticks für Lesbarkeit)
+    // Dynamische Anpassung der X-Achsen-Ticks
+    const getXTickInterval = (dataLength) => {
+        if (dataLength <= 7) return 0; // Jeden Tag anzeigen
+        if (dataLength <= 15) return 1; // Jeden zweiten Tag
+        if (dataLength <= 31) return Math.max(0, Math.floor(dataLength / 7) -1); // Ca. wöchentlich, aber mind. 0
+        if (dataLength <= 90) return Math.max(0, Math.floor(dataLength / 12) -1); // Ca. alle 7-8 Tage
+        if (dataLength <= 180) return Math.max(0, Math.floor(dataLength / 15) -1); // Ca. alle 10-12 Tage
+        return Math.max(0, Math.floor(dataLength / 20) -1); // Für längere Zeiträume, um Ticks zu reduzieren
     };
-    const interval = Math.max(0, Math.floor(formattedData.length / getXTickCount(formattedData.length)) -1);
 
+    const xTickInterval = getXTickInterval(formattedData.length);
+    // Dynamische Rotation basierend auf der Anzahl der Ticks, die tatsächlich angezeigt werden würden
+    const approxVisibleTicks = xTickInterval > 0 ? Math.ceil(formattedData.length / (xTickInterval +1)) : formattedData.length;
+    const angle = approxVisibleTicks > 10 ? -35 : 0; // Drehen, wenn mehr als ~10 Ticks sichtbar wären
+    const dy = angle < 0 ? 10 : 5;
 
     return (
         <>
@@ -59,33 +62,33 @@ const RevenueOverTimeRechart = ({ chartData, title, periodLabel }) => {
                 <FontAwesomeIcon icon={faChartLine} /> {title || 'Umsatzentwicklung'}
                 {periodLabel && <span className="chart-period-label">({periodLabel})</span>}
             </h4>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height="100%"> {/* Höhe wird vom Parent .chart-card gesteuert */}
                 <LineChart
                     data={formattedData}
-                    margin={{ top: 5, right: 20, left: -5, bottom: 20 }} // Mehr Platz unten für gedrehte Labels
+                    margin={{ top: 5, right: 25, left: 0, bottom: angle < 0 ? 25 : 15 }}
                 >
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color-light, #e9e9e9)" vertical={false} />
                     <XAxis
                         dataKey="dateFormatted"
-                        tick={{ fontSize: 10, fill: 'var(--medium-grey-text, #5f5f5f)' }}
+                        tick={{ fontSize: 9, fill: 'var(--medium-grey-text, #5f5f5f)' }}
                         axisLine={{ stroke: 'var(--border-color, #ccc)' }}
                         tickLine={{ stroke: 'var(--border-color, #ccc)' }}
-                        interval={interval} // Dynamisches Intervall für Ticks
-                        angle={formattedData.length > 15 ? -30 : 0} // Labels drehen, wenn viele Datenpunkte
-                        dy={formattedData.length > 15 ? 10 : 5}     // Vertikaler Versatz für gedrehte Labels
+                        interval={xTickInterval}
+                        angle={angle}
+                        dy={dy}
+                        textAnchor={angle < 0 ? "end" : "middle"} // Textanker für gedrehte Labels
                     />
                     <YAxis
-                        tickFormatter={(value) => `${value.toLocaleString('de-DE')} €`} // Währung formatieren
-                        tick={{ fontSize: 10, fill: 'var(--medium-grey-text, #5f5f5f)' }}
+                        tickFormatter={(value) => `${value.toLocaleString('de-DE')} €`}
+                        tick={{ fontSize: 9, fill: 'var(--medium-grey-text, #5f5f5f)' }}
                         axisLine={false}
                         tickLine={false}
-                        width={55} // Genug Platz für €-Beträge
+                        width={55}
                     />
                     <Tooltip content={<CustomTooltip />} wrapperStyle={{ zIndex: 1000 }}/>
-                    <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }} verticalAlign="top" height={30}/>
-                    {/* Referenzlinie bei Null, falls Umsätze negativ sein könnten (unwahrscheinlich hier) */}
+                    <Legend wrapperStyle={{ fontSize: "10px", paddingTop: "5px" }} verticalAlign="top" height={25}/>
                     <ReferenceLine y={0} stroke="var(--border-color-strong, #bbb)" strokeDasharray="3 3" />
-                    <Line type="monotone" dataKey="revenue" name="Umsatz" stroke="var(--dark-text, #1f1f1f)" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                    <Line type="monotone" dataKey="revenue" name="Umsatz" stroke="var(--dark-text, #1f1f1f)" strokeWidth={1.5} dot={{ r: 2.5 }} activeDot={{ r: 4 }} />
                 </LineChart>
             </ResponsiveContainer>
         </>

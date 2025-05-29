@@ -12,7 +12,7 @@
 
 .stats-section-box {
     background-color: var(--light-bg, #ffffff);
-    border: 1px solid var(--border-color-light, #eeeeee);
+    border: 1px solid var(--border-color-light, #eeeeee); /* Hellere Border für Boxen */
     border-radius: 10px; /* Etwas weichere Kanten */
     padding: 1rem 1.25rem; /* Angepasstes Padding */
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04); /* Leichter Schatten */
@@ -72,7 +72,7 @@
     text-align: center; padding: 0.4rem; background-color: var(--info-bg-light);
     color: var(--info-color); border-radius: 4px; margin-bottom: 1rem; font-size: 0.8rem;
 }
-.loading-message-stats, .stats-error-message, .stat-card-no-data, .chart-no-data-message, .no-upcoming-appointments, .report-options-content > p, .dashboard-customize-content > p {
+.loading-message-stats, .stats-error-message, .stat-card-no-data, .chart-no-data-message, .no-upcoming-appointments, .report-options-content > p, .dashboard-customize-content > p, .key-changes-list + .no-data-small  {
     text-align: center; color: var(--medium-grey-text); padding: 1rem; font-size: 0.85rem;
     border: 1px dashed var(--border-color-light, #eeeeee); border-radius: 6px; background-color: #fdfdff;
     margin-top: 0.5rem;
@@ -80,8 +80,8 @@
 .stats-error-message {
     color: var(--danger-color); background-color: var(--danger-bg-light); border-color: var(--danger-color);
 }
-.stat-card-no-data, .chart-no-data-message, .no-upcoming-appointments, .report-options-content > p, .dashboard-customize-content > p { font-style: italic; }
-.no-data-small { font-size: 0.75rem; color: var(--light-grey-text); padding: 0.3rem; text-align: center; }
+.stat-card-no-data, .chart-no-data-message, .no-upcoming-appointments, .report-options-content > p, .dashboard-customize-content > p, .key-changes-list + .no-data-small { font-style: italic; }
+.no-data-small { font-size: 0.75rem; color: var(--light-grey-text); padding: 0.3rem; text-align: center; border:none; background:none; margin-top:0;}
 
 /* Neues Dashboard Grid Layout */
 .dashboard-grid-layout {
@@ -90,12 +90,12 @@
     gap: 1.5rem;
 }
 
-@media (min-width: 1200px) { /* Breitere Bildschirme: 2 Spalten, Hauptspalte dominanter */
+@media (min-width: 1200px) {
     .dashboard-grid-layout {
         grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
     }
 }
-@media (min-width: 1500px) { /* Sehr breite Bildschirme */
+@media (min-width: 1500px) {
     .dashboard-grid-layout {
         grid-template-columns: minmax(0, 3.2fr) minmax(0, 1fr);
     }
@@ -183,7 +183,7 @@
     gap: 0.65rem;
 }
 .stats-overview-cards.kpi-group {
-    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); /* Angepasste Min-Breite */
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
 }
 
 .kpi-divider {
@@ -193,7 +193,7 @@
 
 .stat-card {
     background-color: var(--light-bg, #ffffff); border: 1px solid var(--border-color-light, #f0f0f0);
-    border-radius: 6px; /* Etwas weniger Rundung */
+    border-radius: 6px;
     padding: 0.7rem;
     display: flex; flex-direction: column;
     justify-content: space-between; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
@@ -242,16 +242,19 @@
 .charts-section-wrapper { }
 .charts-grid {
     display: grid;
-    gap: 1rem; /* Etwas weniger Gap */
+    gap: 1rem;
     grid-template-columns: 1fr;
 }
-@media (min-width: 992px) { /* Ab wann die kleineren Charts nebeneinander passen könnten */
+@media (min-width: 992px) {
     .main-stats-column .charts-grid {
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        grid-template-columns: repeat(2, 1fr);
     }
     .main-stats-column .charts-grid .chart-card.revenue-chart-card {
         grid-column: 1 / -1;
         min-height: 280px;
+    }
+    .main-stats-column .charts-grid > .chart-card:not(.revenue-chart-card) {
+        min-height: 240px;
     }
 }
 
@@ -296,7 +299,7 @@
 .daily-appointment-item .appointment-service { display: block; color: var(--dark-text); font-weight: 500; }
 .daily-appointment-item .appointment-customer { display: block; color: var(--medium-grey-text); font-size: 0.85em; }
 .appointment-status-tag {
-    padding: 0.1em 0.4em; border-radius: 6px; font-size: 0.58rem; font-weight: 600;
+    padding: 0.1em 0.35em; border-radius: 6px; font-size: 0.55rem; font-weight: 600;
     text-transform: uppercase; letter-spacing: 0.2px; border: 1px solid transparent;
     min-width: 45px; text-align: center; flex-shrink: 0;
 }
@@ -334,7 +337,7 @@
 }
 .kpi-visibility-toggle input[type="checkbox"] {
     margin-right: 0.5rem;
-    width: 14px; /* Kleinere Checkbox */
+    width: 14px;
     height: 14px;
     accent-color: var(--dark-text);
 }
@@ -382,8 +385,8 @@
     .stats-overview-cards.kpi-group {
         grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
     }
-    .stat-card .stat-value.large { font-size: 1.2rem; }
-    .stat-card .stat-value { font-size: 0.95rem; }
+    .stat-card .stat-value.large { font-size: 1.3rem; }
+    .stat-card .stat-value { font-size: 1.0rem; }
     .stat-card .stat-label { font-size: 0.6rem; }
     .stat-card .stat-icon { font-size: 0.75rem; width: 15px; height: 15px; }
     .chart-card { padding: 0.75rem; min-height: 220px; }

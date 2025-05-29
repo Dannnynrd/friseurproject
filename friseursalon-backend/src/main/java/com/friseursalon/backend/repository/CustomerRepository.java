@@ -19,8 +19,8 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
      * Zählt die Anzahl der Kunden, die innerhalb eines bestimmten Zeitraums registriert wurden
      * UND in der übergebenen Liste von Kunden-IDs enthalten sind.
      * Benötigt ein Feld `registrationDate` (oder `createdAt` mit @CreationTimestamp) in der `Customer`-Entität.
-     * @param start Beginn des Registrierungszeitraums.
-     * @param end Ende des Registrierungszeitraums.
+     * @param start Registrierungsdatum nicht früher als dieser Zeitpunkt.
+     * @param end Registrierungsdatum nicht später als dieser Zeitpunkt.
      * @param customerIds Liste der Kunden-IDs, auf die die Zählung beschränkt werden soll.
      * @return Anzahl der Neukunden, die auch in der customerIds Liste sind.
      */
