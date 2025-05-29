@@ -1,341 +1,637 @@
-// Datei: friseursalon-frontend/src/pages/AccountDashboard.js
-import React, { useState, useEffect, useCallback } from 'react';
-import "./AccountDashboard.css"; // CSS für das Dashboard-Layout
-// Importiere die Statistik-Komponente
-import AdminDashboardStats from '../components/AdminDashboardStats'; // NEU
-import AdminCalendarView from '../components/AdminCalendarView';
-import AppointmentList from '../components/AppointmentList';
-import ServiceForm from '../components/ServiceForm';
-import ServiceList from '../components/ServiceList';
-import WorkingHoursManager from '../components/WorkingHoursManager';
-import BlockedTimeSlotManager from '../components/BlockedTimeSlotManager';
-import CustomerManagement from '../components/CustomerManagement';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css'; // Stile für den DatePicker
+import './BookingPage.css'; // NEUER IMPORT für BookingPage spezifische Stile
+import { de } from 'date-fns/locale/de';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faClipboardList, faUserCog, faTools, faSignOutAlt,
-    faPlusCircle, faMinusCircle,
-    faChartBar, faUser, faTimesCircle, faClock, faCalendarTimes,
-    faCalendarAlt, faListAlt, faTachometerAlt, faUsers, faBars // faBars für Mobile-Menü-Toggle
+    faSpinner, faExclamationCircle, faCheckCircle,
+    faArrowLeft, faArrowRight, faCalendarAlt,
+    faClock, faInfoCircle, faEdit,
+    faCheck, faUser, faEnvelope, faPhone, faStickyNote, faCalendarPlus
 } from '@fortawesome/free-solid-svg-icons';
 
-function AccountDashboard({
-                              currentUser,
-                              logOut,
-                              onAppointmentAdded, // Wird für Stats und Kalender benötigt
-                              refreshAppointmentsList, // Wird für Stats und Kalender benötigt
-                              onServiceAdded,
-                              refreshServicesList
-                          }) {
-    const initialAdminTab = 'adminDashboardStats'; // Statistik-Dashboard als Standard für Admins
-    const initialUserTab = 'bookings';
+import api from '../services/api.service';
+import AuthService from '../services/auth.service';
+import AppointmentForm from '../components/AppointmentForm'; // Stellt sicher, dass AppointmentForm generische Formularstile verwendet oder eigene hat
 
-    const [activeTab, setActiveTab] = useState(
-        currentUser?.roles?.includes("ROLE_ADMIN") ? initialAdminTab : initialUserTab
-    );
+registerLocale('de', de);
+setDefaultLocale('de');
 
-    const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 992);
-    const [mobileNavOpen, setMobileNavOpen] = useState(false);
+function BookingPage({ onAppointmentAdded, currentUser, onLoginSuccess }) {
+    const { serviceName: initialServiceNameParam } = useParams();
+    const [initialServiceParam, setInitialServiceParam] = useState(initialServiceNameParam ? decodeURIComponent(initialServiceNameParam) : null);
 
-    const [showServiceForm, setShowServiceForm] = useState(false);
-    const [isSubmittingService, setIsSubmittingService] = useState(false);
+    const determineInitialStep = useCallback(() => {
+        if (initialServiceParam && currentUser) return 2;
+        if (initialServiceParam && !currentUser) return 2;
+        if (currentUser && !initialServiceParam) return 1;
+        return 1;
+    }, [currentUser, initialServiceParam]);
 
-    const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes("ROLE_ADMIN");
+    const [step, setStep] = useState(determineInitialStep());
 
-    // Callback, der von AdminDashboardStats aufgerufen werden kann, wenn eine Aktion (z.B. Termin erstellen)
-    // eine Aktualisierung der Daten (z.B. in AppointmentList oder AdminCalendarView) erfordert.
-    const handleAppointmentAction = useCallback(() => {
-        if (onAppointmentAdded) {
-            onAppointmentAdded(); // Dies löst den refreshAppointmentsList Trigger in App.js aus
-        }
-    }, [onAppointmentAdded]);
+    const [selectedService, setSelectedService] = useState(null);
+    const [selectedDate, setSelectedDate] = useState(null);
+    const [selectedTime, setSelectedTime] = useState('');
+    const [availableTimes, setAvailableTimes] = useState([]);
+    const [services, setServices] = useState([]);
+    const [loadingServices, setLoadingServices] = useState(true);
+    const [loadingAvailableTimes, setLoadingAvailableTimes] = useState(false); // Neuer Ladezustand für Zeiten
+    const [serviceError, setServiceError] = useState(null);
+    const [timeError, setTimeError] = useState(null); // Neuer Fehlerzustand für Zeiten
+    const [registerMessage, setRegisterMessage] = useState({ type: '', text: '' });
 
+    const [customerDetails, setCustomerDetails] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phoneNumber: '',
+        notes: '',
+        password: ''
+    });
+    const [isSubmittingForm, setIsSubmittingForm] = useState(false);
+    const [isSubmittingFinal, setIsSubmittingFinal] = useState(false);
+    const [finalBookingMessage, setFinalBookingMessage] = useState({type: '', text: ''});
+    const appointmentFormRef = useRef(null);
 
-    useEffect(() => {
-        const handleResize = () => {
-            const mobile = window.innerWidth <= 992;
-            setIsMobileView(mobile);
-            if (!mobile && mobileNavOpen) { // Schließe Mobile-Nav, wenn auf Desktop-Größe gewechselt wird
-                setMobileNavOpen(false);
-            }
-        };
-        window.addEventListener('resize', handleResize);
-        handleResize(); // Initialer Check
-        return () => window.removeEventListener('resize', handleResize);
-    }, [mobileNavOpen]);
-
-    // Setzt den aktiven Tab basierend auf der Rolle und stellt sicher, dass keine ungültigen Tabs ausgewählt sind
     useEffect(() => {
         if (currentUser) {
-            const adminTabs = ['adminDashboardStats', 'adminCalendar', 'adminAppointmentList', 'adminServices', 'adminCustomerManagement', 'adminWorkingHours', 'adminBlockedSlots', 'profile'];
-            const userTabs = ['bookings', 'profile'];
+            setCustomerDetails(prevDetails => ({
+                ...prevDetails,
+                firstName: currentUser.firstName || '',
+                lastName: currentUser.lastName || '',
+                email: currentUser.email || '',
+                phoneNumber: currentUser.phoneNumber || '',
+                password: '' // Passwort nicht vorausfüllen
+            }));
+        } else {
+            // Für nicht eingeloggte User, Kundendetails zurücksetzen, falls sie von einem vorherigen Versuch stammen
+            setCustomerDetails({ firstName: '', lastName: '', email: '', phoneNumber: '', notes: '', password: '' });
+        }
+    }, [currentUser]);
 
-            if (isAdmin) {
-                if (!adminTabs.includes(activeTab)) {
-                    setActiveTab(initialAdminTab);
+
+    useEffect(() => {
+        const fetchServices = async () => {
+            setLoadingServices(true);
+            setServiceError(null);
+            try {
+                const response = await api.get('/services');
+                const fetchedServices = response.data || [];
+                setServices(fetchedServices);
+
+                if (initialServiceParam && fetchedServices.length > 0) {
+                    const service = fetchedServices.find(s => s.name.toLowerCase() === initialServiceParam.toLowerCase());
+                    if (service) {
+                        setSelectedService(service);
+                    } else {
+                        console.warn(`Vorausgewählter Service "${initialServiceParam}" nicht in der geladenen Liste gefunden.`);
+                        setServiceError(`Der ausgewählte Service "${initialServiceParam}" ist nicht verfügbar. Bitte wählen Sie einen anderen.`);
+                        setInitialServiceParam(null);
+                    }
+                } else if (initialServiceParam && fetchedServices.length === 0) {
+                    console.warn(`Vorausgewählter Service "${initialServiceParam}" kann nicht gefunden werden, da keine Services geladen wurden.`);
+                    setServiceError('Keine Dienstleistungen verfügbar.');
+                    setInitialServiceParam(null);
+                }
+            } catch (error) {
+                console.error("Fehler beim Laden der Dienstleistungen:", error);
+                setServiceError('Dienstleistungen konnten nicht geladen werden. Bitte versuchen Sie es später erneut.');
+            } finally {
+                setLoadingServices(false);
+            }
+        };
+        fetchServices();
+    }, [initialServiceParam]);
+
+
+    // Abrufen verfügbarer Zeiten vom Backend
+    useEffect(() => {
+        if (selectedDate && selectedService && selectedService.id) {
+            const fetchAvailableTimes = async () => {
+                setLoadingAvailableTimes(true);
+                setTimeError(null);
+                setAvailableTimes([]); // Alte Zeiten löschen
+                try {
+                    const dateString = selectedDate.toISOString().split('T')[0]; // Format YYYY-MM-DD
+                    const response = await api.get(`/appointments/available-slots?serviceId=${selectedService.id}&date=${dateString}`);
+                    setAvailableTimes(response.data || []);
+                    if (response.data.length === 0) {
+                        setTimeError('Für diesen Tag sind online keine Termine für den gewählten Service verfügbar.');
+                    }
+                } catch (error) {
+                    console.error("Fehler beim Laden der verfügbaren Zeiten:", error);
+                    setTimeError('Verfügbare Zeiten konnten nicht geladen werden.');
+                } finally {
+                    setLoadingAvailableTimes(false);
+                }
+            };
+            fetchAvailableTimes();
+        } else {
+            setAvailableTimes([]);
+            setTimeError(null);
+        }
+    }, [selectedDate, selectedService]);
+
+
+    const handleRegisterDuringBooking = async (email, firstName, lastName, phoneNumber, password) => {
+        setRegisterMessage({ type: '', text: '' });
+        setIsSubmittingFinal(true); // Zeige Ladezustand auch hier
+        try {
+            await AuthService.register(firstName, lastName, email, password, phoneNumber, ["user"]);
+            return true;
+        } catch (error) {
+            const errMsg = error.response?.data?.message || error.message || "Unbekannter Fehler bei der Registrierung.";
+            console.error("Fehler bei der Registrierung während der Buchung:", error);
+            setRegisterMessage({ type: 'error', text: `Registrierung fehlgeschlagen: ${errMsg}`});
+            return false;
+        } finally {
+            setIsSubmittingFinal(false); // Ladezustand zurücksetzen
+        }
+    };
+
+    const handleDataFromAppointmentForm = (dataFromForm) => {
+        setCustomerDetails(dataFromForm);
+        setRegisterMessage({ type: '', text: '' });
+        setFinalBookingMessage({ type: '', text: '' });
+        setStep(4);
+        setIsSubmittingForm(false);
+    };
+
+
+    const isPastDate = (date) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return date < today;
+    };
+
+    const handleNextStep = () => {
+        setFinalBookingMessage({ type: '', text: '' }); // Nachrichten zurücksetzen
+        setRegisterMessage({ type: '', text: '' });
+
+        if (step === 2 && currentUser && selectedService && selectedDate && selectedTime) {
+            setStep(4);
+        } else if (step === 3) {
+            setIsSubmittingForm(true);
+            if (appointmentFormRef.current) {
+                const formData = appointmentFormRef.current.triggerSubmitAndGetData();
+                if (formData) {
+                    handleDataFromAppointmentForm(formData);
+                } else {
+                    setIsSubmittingForm(false);
                 }
             } else {
-                if (!userTabs.includes(activeTab)) {
-                    setActiveTab(initialUserTab);
+                setIsSubmittingForm(false);
+            }
+        } else if (step < 4) {
+            setStep(prev => prev + 1);
+        }
+    };
+    const handlePrevStep = () => {
+        setFinalBookingMessage({ type: '', text: '' });
+        setRegisterMessage({ type: '', text: '' });
+        if (step === 4 && currentUser) {
+            setStep(2);
+        } else if (step > 1) {
+            setStep(prev => prev - 1);
+        }
+    };
+
+    const handleFinalBooking = async () => {
+        setIsSubmittingFinal(true);
+        setFinalBookingMessage({ type: '', text: '' });
+        setRegisterMessage({ type: '', text: '' });
+
+        const year = selectedDate.getFullYear();
+        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(selectedDate.getDate()).padStart(2, '0');
+        const dateTimeString = `${year}-${month}-${day}T${selectedTime}:00`;
+
+        const appointmentData = {
+            startTime: dateTimeString,
+            service: { id: parseInt(selectedService.id) },
+            customer: {
+                firstName: customerDetails.firstName.trim(),
+                lastName: customerDetails.lastName.trim(),
+                email: customerDetails.email.trim(),
+                phoneNumber: customerDetails.phoneNumber.trim() || null,
+            },
+            notes: customerDetails.notes.trim(),
+        };
+
+        let userJustRegisteredAndLoggedIn = false;
+        if (!currentUser && customerDetails.password) {
+            const registrationSuccessful = await handleRegisterDuringBooking(
+                customerDetails.email,
+                customerDetails.firstName,
+                customerDetails.lastName,
+                customerDetails.phoneNumber,
+                customerDetails.password
+            );
+            if (!registrationSuccessful) {
+                setIsSubmittingFinal(false);
+                setFinalBookingMessage({type: 'error', text: registerMessage.text || 'Registrierung fehlgeschlagen. Bitte überprüfen Sie Ihre Daten.'})
+                setStep(3);
+                return;
+            }
+            try {
+                const loginData = await AuthService.login(customerDetails.email, customerDetails.password);
+                if (loginData.token && onLoginSuccess) {
+                    onLoginSuccess();
+                    userJustRegisteredAndLoggedIn = true;
+                    setRegisterMessage({ type: 'success', text: `Konto für ${customerDetails.email} erfolgreich erstellt und Sie wurden angemeldet!`});
+                }
+            } catch (loginError) {
+                console.warn("Automatischer Login nach Registrierung fehlgeschlagen:", loginError);
+                setRegisterMessage({type: 'info', text: 'Konto erstellt, aber automatischer Login fehlgeschlagen. Ihre Buchung wird dennoch versucht.'});
+            }
+        }
+
+        try {
+            await api.post('/appointments', appointmentData);
+            if (onAppointmentAdded) {
+                onAppointmentAdded();
+            }
+            let successMsg = 'Termin erfolgreich gebucht!';
+            if(userJustRegisteredAndLoggedIn && registerMessage.type === 'success') {
+                successMsg = registerMessage.text + " " + successMsg;
+            } else if (userJustRegisteredAndLoggedIn && registerMessage.type === 'info') {
+                successMsg = registerMessage.text + " " + successMsg;
+            }
+            setFinalBookingMessage({type: 'success', text: successMsg});
+        } catch (error) {
+            console.error("Fehler beim Buchen des Termins:", error);
+            let errorMsg = "Ein Fehler ist beim Buchen des Termins aufgetreten. Bitte versuchen Sie es erneut.";
+            if (error.response) {
+                errorMsg = error.response.data?.message || errorMsg;
+                if (error.response.status === 409 && !userJustRegisteredAndLoggedIn) {
+                    errorMsg = `${errorMsg} Diese E-Mail ist bereits registriert. Bitte melden Sie sich an oder gehen Sie zurück, um Ihre Daten zu ändern.`;
+                } else if (userJustRegisteredAndLoggedIn && error.response.status !== 409) {
+                    errorMsg = `Ihr Konto wurde erstellt und Sie sind angemeldet, aber die Terminbuchung schlug fehl: ${errorMsg}`;
                 }
             }
-        } else {
-            // Fallback, sollte nicht passieren, da ProtectedRoute dies abfängt
-            setActiveTab(initialUserTab);
-        }
-
-        // Service-Formular ausblenden, wenn der Tab gewechselt wird
-        if (activeTab !== 'adminServices') {
-            setShowServiceForm(false);
-        }
-    }, [currentUser, isAdmin, activeTab, initialAdminTab, initialUserTab]);
-
-
-    const handleServiceAddedCallback = () => {
-        if (onServiceAdded) {
-            onServiceAdded(); // Trigger refresh in App.js
-        }
-        setShowServiceForm(false);
-        setIsSubmittingService(false);
-    };
-
-    const handleTabClick = (tabName) => {
-        setActiveTab(tabName);
-        if (isMobileView) {
-            setMobileNavOpen(false); // Schließe Mobile-Nav bei Tab-Klick
+            setFinalBookingMessage({ type: 'error', text: errorMsg });
+        } finally {
+            setIsSubmittingFinal(false);
         }
     };
 
-    const renderTabContent = (tabName) => {
-        switch (tabName) {
-            case 'adminDashboardStats': // NEUER CASE für die Statistik-Übersicht
-                return isAdmin && (
-                    <div className="dashboard-section-content admin-stats-tab-content">
-                        {/* Kein separater H2 hier, da AdminDashboardStats einen eigenen Titel hat */}
-                        <AdminDashboardStats
-                            currentUser={currentUser}
-                            onAppointmentAction={handleAppointmentAction} // Weitergabe des Callbacks
-                        />
-                    </div>
-                );
-            case 'bookings':
-                return (
-                    <div className="dashboard-section-content">
-                        <h2 className="dashboard-section-heading"><FontAwesomeIcon icon={faClipboardList} /> Meine Termine</h2>
-                        <AppointmentList
-                            refreshTrigger={refreshAppointmentsList}
-                            currentUser={currentUser}
-                        />
-                    </div>
-                );
-            case 'adminCalendar':
-                return isAdmin && (
-                    <div className="dashboard-section-content admin-calendar-tab-content">
-                        <h2 className="dashboard-section-heading"><FontAwesomeIcon icon={faCalendarAlt} /> Terminkalender</h2>
-                        <AdminCalendarView
-                            currentUser={currentUser}
-                            refreshTrigger={refreshAppointmentsList}
-                            onAppointmentUpdated={handleAppointmentAction} // Callback für Aktualisierungen aus dem Kalender
-                        />
-                    </div>
-                );
-            case 'adminAppointmentList':
-                return isAdmin && (
-                    <div className="dashboard-section-content">
-                        <h2 className="dashboard-section-heading"><FontAwesomeIcon icon={faListAlt} /> Terminübersicht (Liste)</h2>
-                        <AppointmentList
-                            refreshTrigger={refreshAppointmentsList}
-                            currentUser={currentUser}
-                        />
-                    </div>
-                );
-            case 'profile':
-                return (
-                    <div className="dashboard-section-content">
-                        <h2 className="dashboard-section-heading"><FontAwesomeIcon icon={faUser} /> Meine Daten</h2>
-                        <div className="dashboard-profile-info">
-                            <p><strong>Vorname:</strong> {currentUser?.firstName || '-'}</p>
-                            <p><strong>Nachname:</strong> {currentUser?.lastName || '-'}</p>
-                            <p><strong>E-Mail:</strong> {currentUser?.email || '-'}</p>
-                            <p><strong>Telefon:</strong> {currentUser?.phoneNumber || 'Nicht angegeben'}</p>
-                            <p><strong>Rollen:</strong> {currentUser?.roles?.join(', ') || '-'}</p>
-                        </div>
-                    </div>
-                );
-            case 'adminServices':
-                return isAdmin && (
-                    <div className="dashboard-section-content">
-                        <div className="dashboard-section-header-controls">
-                            <h2 className="dashboard-section-heading" style={{marginBottom: 0, borderBottom: 'none'}}><FontAwesomeIcon icon={faTools} /> Dienstleistungen</h2>
-                            <button
-                                onClick={() => setShowServiceForm(!showServiceForm)}
-                                className="button-link-outline toggle-service-form-button"
-                                aria-expanded={showServiceForm}
-                            >
-                                <FontAwesomeIcon icon={showServiceForm ? faMinusCircle : faPlusCircle} />
-                                {showServiceForm ? ' Formular schließen' : ' Neuer Service'}
-                            </button>
-                        </div>
-                        {showServiceForm && (
-                            <div className="service-form-wrapper">
-                                <ServiceForm
-                                    onServiceAdded={handleServiceAddedCallback}
-                                    setIsSubmitting={setIsSubmittingService}
-                                    isSubmitting={isSubmittingService}
-                                />
-                            </div>
-                        )}
-                        <hr className="dashboard-section-hr" />
-                        <ServiceList refreshTrigger={refreshServicesList} currentUser={currentUser} />
-                    </div>
-                );
-            case 'adminCustomerManagement': // Neuer Case für Kundenverwaltung
-                return isAdmin && (
-                    <div className="dashboard-section-content">
-                        <CustomerManagement currentUser={currentUser} refreshTrigger={refreshAppointmentsList} />
-                    </div>
-                );
-            case 'adminWorkingHours':
-                return isAdmin && (
-                    <div className="dashboard-section-content">
-                        <h2 className="dashboard-section-heading"><FontAwesomeIcon icon={faClock} /> Arbeitszeiten</h2>
-                        <WorkingHoursManager />
-                    </div>
-                );
-            case 'adminBlockedSlots':
-                return isAdmin && (
-                    <div className="dashboard-section-content">
-                        <h2 className="dashboard-section-heading"><FontAwesomeIcon icon={faCalendarTimes} /> Abwesenheiten & Pausen</h2>
-                        <BlockedTimeSlotManager />
-                    </div>
-                );
-            default:
-                if (isAdmin) return renderTabContent(initialAdminTab);
-                return renderTabContent(initialUserTab);
-        }
+    const generateICal = () => {
+        const formatDateForICal = (date, time) => {
+            const [hours, minutes] = time.split(':');
+            const d = new Date(date);
+            d.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+            return d.toISOString().replace(/-|:|\.\d{3}/g, "");
+        };
+
+        const calculateEndTime = (startDate, startTime, durationMinutes) => {
+            const [hours, minutes] = startTime.split(':');
+            const d = new Date(startDate);
+            d.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+            if (durationMinutes && !isNaN(parseInt(durationMinutes))) {
+                d.setMinutes(d.getMinutes() + parseInt(durationMinutes));
+            } else {
+                d.setHours(d.getHours() + 1);
+            }
+            return d.toISOString().replace(/-|:|\.\d{3}/g, "");
+        };
+
+        const startDateStr = formatDateForICal(selectedDate, selectedTime);
+        const endDateStr = calculateEndTime(selectedDate, selectedTime, selectedService.durationMinutes);
+
+        const icsContent = [
+            "BEGIN:VCALENDAR",
+            "VERSION:2.0",
+            "PRODID:-//Friseursalon IMW//Terminbuchung v1.0//DE",
+            "BEGIN:VEVENT",
+            `UID:${Date.now()}-${selectedService.id}@friseursalon-imw.de`,
+            `DTSTAMP:${new Date().toISOString().replace(/-|:|\.\d{3}/g, "")}`,
+            `DTSTART:${startDateStr}`,
+            `DTEND:${endDateStr}`,
+            `SUMMARY:Friseurtermin: ${selectedService.name}`,
+            `DESCRIPTION:Ihr Termin für ${selectedService.name}.${customerDetails.notes ? ' Ihre Anmerkungen: ' + customerDetails.notes : ''}`,
+            "LOCATION:Friseursalon IMW, Musterstraße 1, 12345 Musterstadt",
+            "END:VEVENT",
+            "END:VCALENDAR"
+        ].join("\r\n");
+
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Friseurtermin_${selectedService.name.replace(/\s+/g, '_')}.ics`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
     };
 
-    const renderNavItem = (tabName, icon, label) => (
-        <li key={tabName} className="dashboard-nav-item">
-            <button
-                onClick={() => handleTabClick(tabName)}
-                className={`dashboard-nav-button ${activeTab === tabName ? 'active' : ''}`}
-                aria-current={activeTab === tabName ? 'page' : undefined}
-            >
-                <FontAwesomeIcon icon={icon} fixedWidth /> <span>{label}</span>
-            </button>
-        </li>
-    );
+
+    const resetBookingProcess = () => {
+        setInitialServiceParam(null);
+        setSelectedService(null);
+        setSelectedDate(null);
+        setSelectedTime('');
+        setCustomerDetails({ firstName: '', lastName: '', email: '', phoneNumber: '', notes: '', password: '' });
+        setRegisterMessage({ type: '', text: '' });
+        setFinalBookingMessage({ type: '', text: '' });
+        setServiceError(null);
+        setTimeError(null);
+        setStep(determineInitialStep());
+    };
 
 
-    if (!currentUser) {
-        return <div className="page-center-content"><p>Laden...</p></div>; // Sollte durch ProtectedRoute abgefangen werden
+    if (loadingServices && !initialServiceParam && step === 1) {
+        return <div className="page-center-content"><p className="loading-message"><FontAwesomeIcon icon={faSpinner} spin /> Dienstleistungen werden geladen...</p></div>;
+    }
+    if (serviceError && services.length === 0 && !loadingServices && step === 1) {
+        return <div className="page-center-content"><p className="form-message error"><FontAwesomeIcon icon={faExclamationCircle} /> {serviceError}</p></div>;
     }
 
-    // Struktur für Desktop-Navigation
-    const DesktopNav = () => (
-        <aside className="dashboard-sidebar">
-            <nav aria-label="Dashboard Navigation">
-                <ul>
-                    {isAdmin && (
-                        <>
-                            {renderNavItem('adminDashboardStats', faTachometerAlt, 'Übersicht')}
-                            <li className="nav-category-title">Terminplanung</li>
-                            {renderNavItem('adminCalendar', faCalendarAlt, 'Kalender')}
-                            {renderNavItem('adminAppointmentList', faListAlt, 'Terminliste')}
-                            <li className="nav-category-title">Verwaltung</li>
-                            {renderNavItem('adminServices', faTools, 'Services')}
-                            {renderNavItem('adminCustomerManagement', faUsers, 'Kunden')}
-                            {renderNavItem('adminWorkingHours', faClock, 'Arbeitszeiten')}
-                            {renderNavItem('adminBlockedSlots', faCalendarTimes, 'Sperrzeiten')}
-                        </>
-                    )}
-                    {!isAdmin && (
-                        <>
-                            <li className="nav-category-title">Mein Bereich</li>
-                            {renderNavItem('bookings', faClipboardList, 'Meine Termine')}
-                        </>
-                    )}
-                    <li className="nav-category-title">{isAdmin ? 'Mein Account (Admin)' : 'Mein Account'}</li>
-                    {renderNavItem('profile', faUser, 'Meine Daten')}
-                    <li className="dashboard-nav-item logout-button-container">
-                        <button onClick={logOut} className="dashboard-nav-button logout-button">
-                            <FontAwesomeIcon icon={faSignOutAlt} fixedWidth /> <span>Abmelden</span>
-                        </button>
-                    </li>
-                </ul>
-            </nav>
-        </aside>
-    );
+    const visibleStepLabels = currentUser
+        ? ["Dienstleistung", "Datum und Zeit", "Bestätigung"]
+        : ["Dienstleistung", "Datum und Zeit", "Ihre Daten", "Bestätigung"];
 
-    // Struktur für Mobile-Navigation (Off-Canvas)
-    const MobileNav = () => (
-        <div className={`mobile-dashboard-nav ${mobileNavOpen ? 'open' : ''}`} id="mobile-dashboard-navigation" aria-hidden={!mobileNavOpen}>
-            <button className="mobile-nav-close-button" onClick={() => setMobileNavOpen(false)} aria-label="Menü schließen">
-                <FontAwesomeIcon icon={faTimesCircle} /> Menü schließen
-            </button>
-            <nav aria-label="Mobile Dashboard Navigation">
-                {/* Inhalt identisch zu DesktopNav, wird aber anders dargestellt/gesteuert */}
-                <ul>
-                    {isAdmin && (
-                        <>
-                            {renderNavItem('adminDashboardStats', faTachometerAlt, 'Übersicht')}
-                            <li className="nav-category-title">Terminplanung</li>
-                            {renderNavItem('adminCalendar', faCalendarAlt, 'Kalender')}
-                            {renderNavItem('adminAppointmentList', faListAlt, 'Terminliste')}
-                            <li className="nav-category-title">Verwaltung</li>
-                            {renderNavItem('adminServices', faTools, 'Services')}
-                            {renderNavItem('adminCustomerManagement', faUsers, 'Kunden')}
-                            {renderNavItem('adminWorkingHours', faClock, 'Arbeitszeiten')}
-                            {renderNavItem('adminBlockedSlots', faCalendarTimes, 'Sperrzeiten')}
-                        </>
-                    )}
-                    {!isAdmin && (
-                        <>
-                            <li className="nav-category-title">Mein Bereich</li>
-                            {renderNavItem('bookings', faClipboardList, 'Meine Termine')}
-                        </>
-                    )}
-                    <li className="nav-category-title">{isAdmin ? 'Mein Account (Admin)' : 'Mein Account'}</li>
-                    {renderNavItem('profile', faUser, 'Meine Daten')}
-                    <li className="dashboard-nav-item logout-button-container">
-                        <button onClick={() => { logOut(); setMobileNavOpen(false); }} className="dashboard-nav-button logout-button">
-                            <FontAwesomeIcon icon={faSignOutAlt} fixedWidth /> <span>Abmelden</span>
-                        </button>
-                    </li>
-                </ul>
-            </nav>
-        </div>
-    );
+    const getInternalStepForVisibleStep = (visibleStep) => {
+        if (currentUser && visibleStep >= 3) return visibleStep + 1;
+        return visibleStep;
+    };
+
 
     return (
-        <div className="account-dashboard-container">
-            <div className="container">
-                <div className="dashboard-header">
-                    <h1 className="dashboard-main-heading">Mein Account</h1>
-                    {isMobileView && (
-                        <button
-                            className="mobile-nav-toggle-button button-link-outline small-button"
-                            onClick={() => setMobileNavOpen(true)}
-                            aria-expanded={mobileNavOpen}
-                            aria-controls="mobile-dashboard-navigation" // Verweist auf die ID des Nav-Elements
-                        >
-                            <FontAwesomeIcon icon={faBars} /> Menü
-                        </button>
-                    )}
-                </div>
-                <p className="dashboard-welcome-message">
-                    Willkommen zurück, {currentUser.firstName || currentUser.email}! Hier verwalten Sie Ihre Daten und Termine.
-                </p>
+        <div className="booking-page-container container">
+            <div className="booking-form-container">
+                <h1 className="booking-page-main-heading">Termin buchen</h1>
 
-                <div className="dashboard-layout">
-                    {isMobileView ? <MobileNav /> : <DesktopNav />}
-                    <main className="dashboard-content" id="dashboard-main-content" role="main" aria-live="polite">
-                        {renderTabContent(activeTab)}
-                    </main>
+                <div className={`booking-step-indicators ${currentUser ? 'three-steps' : ''}`}>
+                    {visibleStepLabels.map((label, index) => {
+                        const visibleStepNumber = index + 1;
+                        const internalStepForIndicator = getInternalStepForVisibleStep(visibleStepNumber);
+
+                        const isCurrentStepActive = step === internalStepForIndicator;
+                        let isStepCompleted = step > internalStepForIndicator;
+
+                        if (internalStepForIndicator === 4 && finalBookingMessage.type === 'success') {
+                            isStepCompleted = true;
+                        } else if (internalStepForIndicator === 4 && finalBookingMessage.type !== 'success') {
+                            isStepCompleted = false;
+                        }
+                        if (internalStepForIndicator < 4 && step === 4 && finalBookingMessage.type === 'success') {
+                            isStepCompleted = true;
+                        }
+
+                        return (
+                            <div key={visibleStepNumber} className={`booking-step-indicator ${isCurrentStepActive ? 'active' : ''} ${isStepCompleted ? 'completed' : ''}`}>
+                                <div className="step-number-wrapper">
+                                    <span className="step-number">
+                                        {isStepCompleted ? <FontAwesomeIcon icon={faCheck} /> : visibleStepNumber}
+                                    </span>
+                                </div>
+                                <span className="step-label">{label}</span>
+                            </div>
+                        );
+                    })}
                 </div>
+
+                {serviceError && services.length > 0 && step < (currentUser ? 4 : 3) && (
+                    <p className="form-message error mb-4"><FontAwesomeIcon icon={faExclamationCircle} /> {serviceError}</p>
+                )}
+
+
+                {step === 1 && (
+                    <div className="booking-step-content animate-step">
+                        <h2 className="booking-step-heading">1. Dienstleistung auswählen</h2>
+                        {loadingServices && <p className="loading-message small"><FontAwesomeIcon icon={faSpinner} spin /> Lade Dienste...</p>}
+                        {!loadingServices && !serviceError && services.length === 0 && (
+                            <p className="form-message info"><FontAwesomeIcon icon={faInfoCircle} /> Aktuell sind keine Dienstleistungen online buchbar.</p>
+                        )}
+                        <div className="services-grid">
+                            {services.map(service => (
+                                <div
+                                    key={service.id}
+                                    onClick={() => { setSelectedService(service); setSelectedDate(null); setSelectedTime(''); setStep(2); }}
+                                    className={`service-card ${selectedService?.id === service.id ? 'selected' : ''}`}
+                                    role="button" tabIndex={0}
+                                    onKeyPress={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedService(service); setSelectedDate(null); setSelectedTime(''); setStep(2); }}}
+                                >
+                                    <h3 className="service-name">{service.name}</h3>
+                                    {service.description && <p className="service-description">{service.description}</p>}
+                                    <p className="service-details">
+                                        {typeof service.price === 'number' ? service.price.toFixed(2) : 'N/A'} €
+                                        <span className="service-duration">/ {service.durationMinutes || '-'} Min</span>
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {step === 2 && selectedService && (
+                    <div className="booking-step-content animate-step">
+                        <h2 className="booking-step-heading">2. Datum und Uhrzeit wählen</h2>
+                        <div className="booking-step-subheading">
+                            <div className="service-info-text">
+                                <strong>{selectedService.name}</strong>
+                                <span className="service-price-duration">
+                                    ({typeof selectedService.price === 'number' ? selectedService.price.toFixed(2) : 'N/A'} € / {selectedService.durationMinutes || '-'} Min)
+                                </span>
+                            </div>
+                            <button type="button" onClick={resetBookingProcess} className="edit-selection-button small-edit">
+                                <FontAwesomeIcon icon={faEdit} /> Ändern
+                            </button>
+                        </div>
+
+                        <div className={`selected-datetime-info summary-above-datepicker ${!(selectedDate && selectedTime) ? 'placeholder' : ''}`}>
+                            {selectedDate && selectedTime ? (
+                                <>
+                                    Ihr Termin: <strong>{selectedDate.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })}</strong> um <strong>{selectedTime} Uhr</strong>
+                                </>
+                            ) : (
+                                <>
+                                    Bitte Datum und Uhrzeit auswählen.
+                                </>
+                            )}
+                        </div>
+
+
+                        <div className="datepicker-time-container">
+                            <div className="datepicker-wrapper-outer">
+                                <h3 className="sub-heading"><FontAwesomeIcon icon={faCalendarAlt} /> Datum wählen:</h3>
+                                <div className="datepicker-wrapper">
+                                    <DatePicker
+                                        selected={selectedDate}
+                                        onChange={(date) => { setSelectedDate(date); setSelectedTime(''); }}
+                                        locale="de"
+                                        dateFormat="dd.MM.yyyy"
+                                        minDate={new Date()}
+                                        filterDate={date => !isPastDate(date)}
+                                        inline
+                                        calendarClassName="booking-datepicker"
+                                    />
+                                </div>
+                            </div>
+                            <div className="time-slots-wrapper-outer">
+                                <h3 className="sub-heading">
+                                    <FontAwesomeIcon icon={faClock} /> Verfügbare Zeiten
+                                    {selectedDate ? ` für den ${selectedDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}` : ''}:
+                                </h3>
+                                <div className="time-slots-wrapper">
+                                    {loadingAvailableTimes && <p className="loading-message small"><FontAwesomeIcon icon={faSpinner} spin /> Lade Zeiten...</p>}
+                                    {!loadingAvailableTimes && timeError && <p className="form-message error small">{timeError}</p>}
+                                    {!loadingAvailableTimes && !timeError && selectedDate && availableTimes.length === 0 && (
+                                        <p className="no-times-message">Keine Online-Zeiten für diesen Tag verfügbar.</p>
+                                    )}
+                                    {!loadingAvailableTimes && !timeError && selectedDate && availableTimes.length > 0 && (
+                                        <div className="time-slots-grid">
+                                            {availableTimes.map(time => (
+                                                <button
+                                                    key={time} type="button"
+                                                    onClick={() => setSelectedTime(time)}
+                                                    className={`time-slot-button ${selectedTime === time ? 'selected' : ''}`}
+                                                >
+                                                    {time}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {!selectedDate && !loadingAvailableTimes && <p className="select-date-message">Bitte wählen Sie zuerst ein Datum.</p>}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="booking-navigation-buttons">
+                            <button type="button" onClick={resetBookingProcess} className="button-link-outline">
+                                <FontAwesomeIcon icon={faArrowLeft} /> Dienstleistung ändern
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleNextStep}
+                                disabled={!selectedDate || !selectedTime || loadingAvailableTimes}
+                                className="button-link"
+                            >
+                                {currentUser ? "Weiter zur Bestätigung" : "Weiter zu Ihren Daten"} <FontAwesomeIcon icon={faArrowRight} />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {step === 3 && !currentUser && selectedService && selectedDate && selectedTime && (
+                    <div className="booking-step-content animate-step">
+                        <h2 className="booking-step-heading">3. Ihre persönlichen Daten</h2>
+                        <div className="appointment-summary-inline">
+                            <p>
+                                <FontAwesomeIcon icon={faCheckCircle} className="summary-icon" />
+                                Termin für: <strong>{selectedService.name}</strong>
+                                am {selectedDate.toLocaleDateString('de-DE')} um {selectedTime} Uhr.
+                                <button type="button" onClick={() => setStep(2)} className="edit-selection-button subtle-edit">
+                                    <FontAwesomeIcon icon={faEdit} /> Ändern
+                                </button>
+                            </p>
+                        </div>
+                        {registerMessage.text && registerMessage.type === 'error' && (
+                            <p className={`form-message ${registerMessage.type} mb-4`}>
+                                <FontAwesomeIcon icon={faExclamationCircle} /> {registerMessage.text}
+                            </p>
+                        )}
+                        <AppointmentForm
+                            ref={appointmentFormRef}
+                            currentUser={currentUser}
+                            initialData={customerDetails}
+                            onFormSubmit={handleDataFromAppointmentForm}
+                        />
+                        <div className="booking-navigation-buttons">
+                            <button type="button" onClick={handlePrevStep} className="button-link-outline" disabled={isSubmittingForm}>
+                                <FontAwesomeIcon icon={faArrowLeft} /> Zurück zu Datum und Zeit
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleNextStep}
+                                className="button-link"
+                                disabled={isSubmittingForm}
+                            >
+                                {isSubmittingForm ? <><FontAwesomeIcon icon={faSpinner} spin /> Verarbeite...</> : <>Weiter zur Zusammenfassung <FontAwesomeIcon icon={faArrowRight} /></> }
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {step === 4 && selectedService && selectedDate && selectedTime && (
+                    <div className="booking-step-content animate-step">
+                        {finalBookingMessage.type === 'success' ? (
+                            <div className="booking-confirmation">
+                                <FontAwesomeIcon icon={faCheckCircle} className="confirmation-icon" />
+                                <h2 className="booking-step-heading">Termin erfolgreich gebucht!</h2>
+                                <p>Vielen Dank für Ihre Buchung. {AuthService.getCurrentUser() || customerDetails.email ? 'Eine Bestätigung wurde an Ihre E-Mail-Adresse gesendet und Sie finden den Termin ggf. unter "Meine Termine".' : ''}</p>
+                                <div className="appointment-summary light">
+                                    <h4>Ihre Buchungsdetails:</h4>
+                                    <p><strong>Dienstleistung:</strong> {selectedService.name}</p>
+                                    <p><strong>Datum:</strong> {selectedDate.toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                    <p><strong>Uhrzeit:</strong> {selectedTime} Uhr</p>
+                                    {customerDetails.notes && <p><strong>Anmerkungen:</strong> {customerDetails.notes}</p>}
+                                </div>
+                                <div className="calendar-actions">
+                                    <button type="button" onClick={generateICal} className="button-link-outline small-button">
+                                        <FontAwesomeIcon icon={faCalendarPlus} /> Zum Kalender hinzufügen (.ics)
+                                    </button>
+                                </div>
+                                <div className="booking-navigation-buttons confirmation-buttons">
+                                    {AuthService.getCurrentUser() && <Link to="/my-account" className="button-link">Meine Termine</Link>}
+                                    <button type="button" onClick={resetBookingProcess} className="button-link-outline">Neuen Termin buchen</button>
+                                    {!AuthService.getCurrentUser() && <Link to="/" className="button-link-outline">Zur Startseite</Link>}
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <h2 className="booking-step-heading">4. Buchung überprüfen und bestätigen</h2>
+                                <div className="appointment-summary-final">
+                                    <h3>Ihre Auswahl:</h3>
+                                    <p><FontAwesomeIcon icon={faCheckCircle} /> <strong>Dienstleistung:</strong> {selectedService.name} ({typeof selectedService.price === 'number' ? selectedService.price.toFixed(2) : 'N/A'} € / {selectedService.durationMinutes || '-'} Min)</p>
+                                    <p><FontAwesomeIcon icon={faCalendarAlt} /> <strong>Datum:</strong> {selectedDate.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                    <p><FontAwesomeIcon icon={faClock} /> <strong>Uhrzeit:</strong> {selectedTime} Uhr</p>
+
+                                    <h3 className="mt-4">Ihre Daten:</h3>
+                                    <p><FontAwesomeIcon icon={faUser} /> <strong>Name:</strong> {customerDetails.firstName} {customerDetails.lastName}</p>
+                                    <p><FontAwesomeIcon icon={faEnvelope} /> <strong>E-Mail:</strong> {customerDetails.email}</p>
+                                    {customerDetails.phoneNumber && <p><FontAwesomeIcon icon={faPhone} /> <strong>Telefon:</strong> {customerDetails.phoneNumber}</p>}
+                                    {customerDetails.notes && <p><FontAwesomeIcon icon={faStickyNote} /> <strong>Anmerkungen:</strong> {customerDetails.notes}</p>}
+                                </div>
+
+                                {registerMessage.text && registerMessage.type !== 'error' && (
+                                    <p className={`form-message ${registerMessage.type} mt-4`}>
+                                        <FontAwesomeIcon icon={registerMessage.type === 'success' ? faCheckCircle : faInfoCircle} /> {registerMessage.text}
+                                    </p>
+                                )}
+                                {finalBookingMessage.text && finalBookingMessage.type !== 'success' && (
+                                    <p className={`form-message ${finalBookingMessage.type} mt-4`}>
+                                        <FontAwesomeIcon icon={finalBookingMessage.type === 'info' ? faInfoCircle : faExclamationCircle} />
+                                        {finalBookingMessage.text}
+                                    </p>
+                                )}
+
+                                <div className="booking-navigation-buttons">
+                                    <button type="button" onClick={handlePrevStep} className="button-link-outline" disabled={isSubmittingFinal}>
+                                        <FontAwesomeIcon icon={faArrowLeft} /> Zurück {currentUser ? "zu Datum und Zeit" : "zu Ihren Daten"}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleFinalBooking}
+                                        disabled={isSubmittingFinal}
+                                        className="button-link"
+                                    >
+                                        {isSubmittingFinal ? (
+                                            <><FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> Wird gebucht...</>
+                                        ) : (
+                                            "Termin verbindlich buchen"
+                                        )}
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );
 }
 
-export default AccountDashboard;
+export default BookingPage;
