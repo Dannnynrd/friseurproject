@@ -1,5 +1,7 @@
+// Datei: friseursalon-backend/src/main/java/com/friseursalon/backend/controller/AppointmentController.java
 package com.friseursalon.backend.controller;
 
+import com.friseursalon.backend.dto.DailyAppointmentsDTO; // NEU: Importieren
 import com.friseursalon.backend.model.Appointment;
 import com.friseursalon.backend.model.Customer;
 import com.friseursalon.backend.model.Service;
@@ -45,6 +47,8 @@ public class AppointmentController {
         this.customerService = customerService;
         this.serviceService = serviceService;
     }
+
+    // ... (bestehende Endpunkte bleiben unverändert) ...
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -196,5 +200,18 @@ public class AppointmentController {
         } else {
             return new ResponseEntity<>(new MessageResponse("Termin konnte nicht storniert werden. Entweder nicht gefunden oder keine Berechtigung."), HttpStatus.FORBIDDEN);
         }
+    }
+
+    // NEUER ENDPUNKT
+    @GetMapping("/recent")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<DailyAppointmentsDTO>> getRecentAppointments(
+            @RequestParam(name = "count", defaultValue = "5") int count) {
+        logger.info("GET /api/appointments/recent called with count: {}", count);
+        if (count <= 0 || count > 20) { // Begrenzung der Anzahl, um Performance zu gewährleisten
+            return ResponseEntity.badRequest().body(null); // Oder eine MessageResponse
+        }
+        List<DailyAppointmentsDTO> recentAppointments = appointmentService.getRecentAppointments(count);
+        return ResponseEntity.ok(recentAppointments);
     }
 }

@@ -1,7 +1,9 @@
+// Datei: friseursalon-backend/src/main/java/com/friseursalon/backend/service/AppointmentService.java
 package com.friseursalon.backend.service;
 
+import com.friseursalon.backend.dto.DailyAppointmentsDTO; // NEU: DTO importieren
 import com.friseursalon.backend.model.Appointment;
-import com.friseursalon.backend.model.BlockedTimeSlot; // NEU
+import com.friseursalon.backend.model.BlockedTimeSlot;
 import com.friseursalon.backend.model.Service;
 import com.friseursalon.backend.model.WorkingHours;
 import com.friseursalon.backend.repository.AppointmentRepository;
@@ -10,12 +12,15 @@ import com.friseursalon.backend.exception.AppointmentConflictException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest; // NEU
+import org.springframework.data.domain.Pageable;    // NEU
 import org.springframework.stereotype.Component;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter; // NEU
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -30,20 +35,20 @@ public class AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final ServiceRepository serviceRepository;
     private final WorkingHoursService workingHoursService;
-    private final BlockedTimeSlotService blockedTimeSlotService; // NEU
+    private final BlockedTimeSlotService blockedTimeSlotService;
 
     @Autowired
     public AppointmentService(AppointmentRepository appointmentRepository,
                               ServiceRepository serviceRepository,
                               WorkingHoursService workingHoursService,
-                              BlockedTimeSlotService blockedTimeSlotService) { // NEU
+                              BlockedTimeSlotService blockedTimeSlotService) {
         this.appointmentRepository = appointmentRepository;
         this.serviceRepository = serviceRepository;
         this.workingHoursService = workingHoursService;
-        this.blockedTimeSlotService = blockedTimeSlotService; // NEU
+        this.blockedTimeSlotService = blockedTimeSlotService;
     }
 
-    // ... (getAllAppointments, getAllAppointmentsSorted, getAppointmentsForDateRange, getAppointmentById, getAppointmentsByCustomerEmail, calculateEndTime, hasConflict bleiben gleich)
+    // ... (bestehende Methoden bleiben unverändert) ...
     public List<Appointment> getAllAppointments() {
         return appointmentRepository.findAll();
     }
@@ -85,8 +90,6 @@ public class AppointmentService {
             LocalDateTime blockStart = proposedStartTime.toLocalDate().atTime(block.getStartTime());
             LocalDateTime blockEnd = proposedStartTime.toLocalDate().atTime(block.getEndTime());
 
-            // Prüft auf Überlappung:
-            // (StartA < EndB) and (EndA > StartB)
             if (proposedStartTime.isBefore(blockEnd) && proposedEndTime.isAfter(blockStart)) {
                 logger.debug("Slot von {} bis {} kollidiert mit Blockade: {} ({} - {})", proposedStartTime, proposedEndTime, block.getDescription(), blockStart, blockEnd);
                 return true;
@@ -109,7 +112,6 @@ public class AppointmentService {
 
         logger.debug("Konfliktprüfung für: Start={}, Ende={}, ExcludeId={}", proposedStartTime, proposedEndTime, excludeId);
 
-        // Prüfung auf Terminkonflikte
         List<Appointment> conflictingAppointments = appointmentRepository.findConflictingAppointments(
                 proposedStartTime, proposedEndTime, excludeId
         );
@@ -118,7 +120,6 @@ public class AppointmentService {
             return true;
         }
 
-        // NEU: Prüfung auf Blockaden
         List<BlockedTimeSlot> blocksOnDate = blockedTimeSlotService.getBlocksForDate(proposedStartTime.toLocalDate());
         if (isSlotBlocked(proposedStartTime, proposedEndTime, blocksOnDate)) {
             throw new AppointmentConflictException("Der gewählte Zeitpunkt ist durch eine Pause oder Abwesenheit blockiert.");
@@ -142,10 +143,8 @@ public class AppointmentService {
             throw new AppointmentConflictException("Der gewählte Zeitpunkt liegt außerhalb der Öffnungszeiten.");
         }
 
-        if (hasConflict(appointment, serviceDetails)) { // hasConflict prüft jetzt auch Blockaden
-            // Die Exception wird bereits in hasConflict geworfen, falls spezifisch für Blockade oder Termin.
-            // Hier könnte man eine generischere Nachricht werfen oder die von hasConflict durchlassen.
-            // Da hasConflict bereits eine AppointmentConflictException wirft, ist hier keine weitere nötig.
+        if (hasConflict(appointment, serviceDetails)) {
+            // Exception wird bereits in hasConflict geworfen
         }
         return appointmentRepository.save(appointment);
     }
@@ -182,7 +181,6 @@ public class AppointmentService {
 
         return appointmentRepository.save(appointmentToUpdate);
     }
-    // ... deleteUserAppointment bleibt gleich ...
     public boolean deleteUserAppointment(Long appointmentId, String userEmail, boolean isAdmin) {
         logger.info("Versuch, Termin {} durch User {} (isAdmin: {}) zu löschen.", appointmentId, userEmail, isAdmin);
         Optional<Appointment> appointmentOpt = appointmentRepository.findById(appointmentId);
@@ -242,7 +240,7 @@ public class AppointmentService {
         List<Appointment> appointmentsOnDate = appointmentRepository.findByStartTimeBetween(dayStart, dayEnd);
         logger.debug("Anzahl gebuchter Termine an {}: {}", date, appointmentsOnDate.size());
 
-        List<BlockedTimeSlot> blocksOnDate = blockedTimeSlotService.getBlocksForDate(date); // NEU: Blockaden abrufen
+        List<BlockedTimeSlot> blocksOnDate = blockedTimeSlotService.getBlocksForDate(date);
         logger.debug("Anzahl Blockaden an {}: {}", date, blocksOnDate.size());
 
 
@@ -272,7 +270,6 @@ public class AppointmentService {
                 }
             }
 
-            // NEU: Prüfung auf Blockaden
             boolean conflictWithBlock = isSlotBlocked(proposedStartTime, proposedEndTime, blocksOnDate);
 
             if (!conflictWithAppointment && !conflictWithBlock) {
@@ -282,5 +279,35 @@ public class AppointmentService {
         }
         logger.info("Verfügbare Slots für Service {} an {} (Öffnungszeit {} - {}), unter Berücksichtigung von Blockaden: {}", serviceId, date, openingTime, closingTime, availableSlots);
         return availableSlots;
+    }
+
+    // NEUE METHODE
+    public List<DailyAppointmentsDTO> getRecentAppointments(int count) {
+        Pageable limit = PageRequest.of(0, count);
+        List<Appointment> appointments = appointmentRepository.findByOrderByIdDesc(limit);
+        return appointments.stream()
+                .map(apt -> {
+                    LocalDate appointmentDate = apt.getStartTime().toLocalDate();
+                    // Für 'status' könnten wir hier 'Neu erstellt' oder das Datum nehmen
+                    String status = "Neu";
+                    if (appointmentDate.isEqual(LocalDate.now())) {
+                        status = "Heute erstellt";
+                    } else if (appointmentDate.isBefore(LocalDate.now())) {
+                        status = "Vergangen (neu)"; // Sollte nicht oft vorkommen für neue
+                    } else {
+                        status = "Zukünftig (neu)";
+                    }
+
+                    return new DailyAppointmentsDTO(
+                            apt.getId(),
+                            appointmentDate,
+                            apt.getStartTime().toLocalTime(),
+                            apt.getService() != null ? apt.getService().getName() : "N/A",
+                            apt.getCustomer() != null ? apt.getCustomer().getFirstName() : "N/A",
+                            apt.getCustomer() != null ? apt.getCustomer().getLastName() : "",
+                            status
+                    );
+                })
+                .collect(Collectors.toList());
     }
 }

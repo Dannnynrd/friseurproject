@@ -1,9 +1,12 @@
-// src/main/java/com/friseursalon/backend/service/StatisticsService.java
+// Datei: friseursalon-backend/src/main/java/com/friseursalon/backend/service/StatisticsService.java
 package com.friseursalon.backend.service;
 
 import com.friseursalon.backend.dto.*;
 import com.friseursalon.backend.model.Appointment;
+import com.friseursalon.backend.model.BlockedTimeSlot;
+import com.friseursalon.backend.model.WorkingHours;
 import com.friseursalon.backend.repository.AppointmentRepository;
+import com.friseursalon.backend.repository.WorkingHoursRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -25,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional; // KORREKTUR: Import hinzugefügt
 import java.util.stream.Collectors;
 
 @Service
@@ -32,12 +37,19 @@ public class StatisticsService {
 
     private static final Logger logger = LoggerFactory.getLogger(StatisticsService.class);
     private final AppointmentRepository appointmentRepository;
+    private final WorkingHoursRepository workingHoursRepository;
+    private final BlockedTimeSlotService blockedTimeSlotService;
+
     private final DateTimeFormatter GERMAN_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.GERMAN);
 
 
     @Autowired
-    public StatisticsService(AppointmentRepository appointmentRepository) {
+    public StatisticsService(AppointmentRepository appointmentRepository,
+                             WorkingHoursRepository workingHoursRepository,
+                             BlockedTimeSlotService blockedTimeSlotService) {
         this.appointmentRepository = appointmentRepository;
+        this.workingHoursRepository = workingHoursRepository;
+        this.blockedTimeSlotService = blockedTimeSlotService;
     }
 
     public DetailedAppointmentStatsDTO getDetailedAppointmentStats() {
@@ -82,9 +94,9 @@ public class StatisticsService {
         LocalDate today = LocalDate.now();
         LocalDateTime startOfToday = today.atStartOfDay();
         LocalDateTime endOfToday = today.atTime(LocalTime.MAX);
-        WeekFields weekFields = WeekFields.of(Locale.GERMANY); // Montag als erster Tag der Woche
-        LocalDateTime startOfWeek = today.with(weekFields.dayOfWeek(), 1).atStartOfDay(); // Erster Tag der aktuellen Woche (Montag)
-        LocalDateTime endOfWeek = today.with(weekFields.dayOfWeek(), 7).atTime(LocalTime.MAX); // Letzter Tag der aktuellen Woche (Sonntag)
+        WeekFields weekFields = WeekFields.of(Locale.GERMANY);
+        LocalDateTime startOfWeek = today.with(weekFields.dayOfWeek(), 1).atStartOfDay();
+        LocalDateTime endOfWeek = today.with(weekFields.dayOfWeek(), 7).atTime(LocalTime.MAX);
 
         LocalDateTime startOfMonthLDT = today.withDayOfMonth(1).atStartOfDay();
         LocalDateTime endOfMonthLDT = today.with(TemporalAdjusters.lastDayOfMonth()).atTime(LocalTime.MAX);
@@ -118,20 +130,15 @@ public class StatisticsService {
     }
 
     private Double calculatePercentageChange(BigDecimal currentValue, BigDecimal previousValue) {
-        if (previousValue == null) { // Wenn es keine Vorperiode gab (z.B. allererste Daten)
-            if (currentValue == null || currentValue.compareTo(BigDecimal.ZERO) == 0) return 0.0; // Keine Änderung
-            return null; // Kann nicht sinnvoll berechnet werden (oder als "Neu" interpretieren)
-        }
-        if (previousValue.compareTo(BigDecimal.ZERO) == 0) {
-            if (currentValue == null || currentValue.compareTo(BigDecimal.ZERO) == 0) {
-                return 0.0;
-            }
-            // Wachstum von 0 auf X ist im Grunde "unendlich", aber wir geben einen hohen Wert oder null zurück
-            // Für eine Anzeige wie "+X (von 0)" wäre eine andere Logik im Frontend nötig
+        if (previousValue == null) {
+            if (currentValue == null || currentValue.compareTo(BigDecimal.ZERO) == 0) return 0.0;
             return null;
         }
         if (currentValue == null) {
             currentValue = BigDecimal.ZERO;
+        }
+        if (previousValue.compareTo(BigDecimal.ZERO) == 0) {
+            return (currentValue.compareTo(BigDecimal.ZERO) > 0) ? null : 0.0;
         }
         BigDecimal difference = currentValue.subtract(previousValue);
         return difference.divide(previousValue, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue();
@@ -150,7 +157,7 @@ public class StatisticsService {
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = now.toLocalDate();
         LocalDateTime todayStart = today.atStartOfDay();
-        LocalDateTime upcomingEndRange = today.plusDays(2).atTime(LocalTime.MAX); // Heute, Morgen, Übermorgen
+        LocalDateTime upcomingEndRange = today.plusDays(6).atTime(LocalTime.MAX);
 
         logger.info("Suche tägliche Termine von {} bis {}", todayStart, upcomingEndRange);
         List<Appointment> appointments = appointmentRepository.findUpcomingAppointmentsForNextDays(todayStart, upcomingEndRange);
@@ -164,7 +171,7 @@ public class StatisticsService {
                     } else if (appointmentDate.isEqual(today.plusDays(1))) {
                         status = "Morgen";
                     } else {
-                        status = appointmentDate.format(DateTimeFormatter.ofPattern("dd.MM."));
+                        status = appointmentDate.format(DateTimeFormatter.ofPattern("EE dd.MM.", Locale.GERMAN));
                     }
                     return new DailyAppointmentsDTO(
                             apt.getId(),
@@ -178,8 +185,6 @@ public class StatisticsService {
                 })
                 .collect(Collectors.toList());
     }
-
-    // ANGEPASST: Akzeptiert startDate und endDate
     public List<AppointmentsPerDayOfWeekDTO> getAppointmentsPerDayOfWeek(LocalDate startDate, LocalDate endDate) {
         LocalDateTime periodStartDateTime = startDate.atStartOfDay();
         LocalDateTime periodEndDateTime = endDate.atTime(LocalTime.MAX);
@@ -199,7 +204,7 @@ public class StatisticsService {
         }
 
         results.forEach(result -> {
-            Object dayOfWeekFromDbObj = result.get("DAYOFWEEK"); // H2 gibt Integer zurück
+            Object dayOfWeekFromDbObj = result.get("DAYOFWEEK");
             if (dayOfWeekFromDbObj == null) dayOfWeekFromDbObj = result.get("dayofweek");
 
             Object countFromDbObj = result.get("COUNT");
@@ -219,11 +224,10 @@ public class StatisticsService {
                 return;
             }
 
-            // Konvertierung von H2 DAY_OF_WEEK (Sunday=1, ..., Saturday=7) zu Java DayOfWeek (MONDAY=1, ..., SUNDAY=7)
             DayOfWeek actualDayOfWeek;
-            if (dayOfWeekFromDb == 1) { // H2 Sonntag
+            if (dayOfWeekFromDb == 1) {
                 actualDayOfWeek = DayOfWeek.SUNDAY;
-            } else { // H2 Montag (2) bis Samstag (7) -> Java Montag (1) bis Samstag (6)
+            } else {
                 actualDayOfWeek = DayOfWeek.of(dayOfWeekFromDb - 1);
             }
 
@@ -240,7 +244,6 @@ public class StatisticsService {
     }
 
 
-    // ANGEPASST: Akzeptiert startDate und endDate
     public List<AppointmentsPerServiceDTO> getAppointmentsPerService(LocalDate startDate, LocalDate endDate, int topN) {
         LocalDateTime periodStartDateTime = startDate.atStartOfDay();
         LocalDateTime periodEndDateTime = endDate.atTime(LocalTime.MAX);
@@ -284,5 +287,96 @@ public class StatisticsService {
                     return new AppointmentsPerServiceDTO(serviceName, count, Math.round(percentage * 100.0) / 100.0);
                 })
                 .collect(Collectors.toList());
+    }
+
+    public List<RevenueDataPointDTO> getRevenueOverTime(LocalDate startDate, LocalDate endDate) {
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
+        logger.info("Berechne Umsatzentwicklung für Zeitraum: {} bis {}", startDate, endDate);
+
+        List<Map<String, Object>> results = appointmentRepository.findRevenuePerDayBetween(startDateTime, endDateTime);
+        List<RevenueDataPointDTO> revenueDataPoints = new ArrayList<>();
+
+        LocalDate currentDate = startDate;
+        while (!currentDate.isAfter(endDate)) {
+            final LocalDate finalCurrentDate = currentDate;
+            Optional<Map<String, Object>> dayData = results.stream() // Hier war der Fehler (Zeile 299)
+                    .filter(r -> {
+                        Object dateObj = r.get("APPOINTMENT_DATE");
+                        if (dateObj == null) dateObj = r.get("appointment_date");
+                        if (dateObj instanceof java.sql.Date) {
+                            return ((java.sql.Date) dateObj).toLocalDate().isEqual(finalCurrentDate);
+                        } else if (dateObj instanceof LocalDate) {
+                            return ((LocalDate)dateObj).isEqual(finalCurrentDate);
+                        }
+                        logger.warn("Unerwarteter Datumstyp in getRevenueOverTime: {}", dateObj != null ? dateObj.getClass().getName() : "null");
+                        return false;
+                    })
+                    .findFirst();
+
+            BigDecimal revenue = dayData.map(data -> {
+                Object revenueObj = data.get("DAILY_REVENUE");
+                if (revenueObj == null) revenueObj = data.get("daily_revenue");
+                return (revenueObj instanceof Number) ? new BigDecimal(((Number) revenueObj).toString()) : BigDecimal.ZERO;
+            }).orElse(BigDecimal.ZERO);
+
+            revenueDataPoints.add(new RevenueDataPointDTO(currentDate, revenue));
+            currentDate = currentDate.plusDays(1);
+        }
+        logger.info("Umsatzentwicklung berechnet: {} Datenpunkte", revenueDataPoints.size());
+        return revenueDataPoints;
+    }
+
+    public CapacityUtilizationDTO getCapacityUtilization(LocalDate startDate, LocalDate endDate) {
+        logger.info("Berechne Kapazitätsauslastung für Zeitraum: {} bis {}", startDate, endDate);
+        long totalAvailableMinutes = 0;
+        long totalBookedMinutes = 0;
+
+        List<WorkingHours> allWorkingHours = workingHoursRepository.findAll();
+        Map<DayOfWeek, WorkingHours> workingHoursMap = allWorkingHours.stream()
+                .collect(Collectors.toMap(WorkingHours::getDayOfWeek, wh -> wh));
+
+        LocalDate currentDate = startDate;
+        while (!currentDate.isAfter(endDate)) {
+            WorkingHours wh = workingHoursMap.get(currentDate.getDayOfWeek());
+            if (wh != null && !wh.isClosed() && wh.getStartTime() != null && wh.getEndTime() != null) {
+                long dailyAvailableMinutes = Duration.between(wh.getStartTime(), wh.getEndTime()).toMinutes();
+
+                List<BlockedTimeSlot> blocksOnThisDate = blockedTimeSlotService.getBlocksForDate(currentDate);
+                for (BlockedTimeSlot block : blocksOnThisDate) {
+                    LocalTime effectiveBlockStart = block.getStartTime().isBefore(wh.getStartTime()) ? wh.getStartTime() : block.getStartTime();
+                    LocalTime effectiveBlockEnd = block.getEndTime().isAfter(wh.getEndTime()) ? wh.getEndTime() : block.getEndTime();
+
+                    if (effectiveBlockEnd.isAfter(effectiveBlockStart)) {
+                        dailyAvailableMinutes -= Duration.between(effectiveBlockStart, effectiveBlockEnd).toMinutes();
+                    }
+                }
+                totalAvailableMinutes += Math.max(0, dailyAvailableMinutes);
+            }
+
+            List<Appointment> appointmentsOnDate = appointmentRepository.findByStartTimeBetween(currentDate.atStartOfDay(), currentDate.atTime(LocalTime.MAX));
+            for (Appointment app : appointmentsOnDate) {
+                if (app.getService() != null) {
+                    totalBookedMinutes += app.getService().getDurationMinutes();
+                }
+            }
+            currentDate = currentDate.plusDays(1);
+        }
+
+        double utilizationPercentage = 0;
+        if (totalAvailableMinutes > 0) {
+            utilizationPercentage = ((double) totalBookedMinutes / totalAvailableMinutes) * 100;
+        }
+
+        logger.info("Kapazitätsauslastung: {}% (Gebucht: {} Min, Verfügbar: {} Min)",
+                String.format("%.2f", utilizationPercentage), totalBookedMinutes, totalAvailableMinutes);
+
+        return new CapacityUtilizationDTO(
+                Math.round(utilizationPercentage * 100.0) / 100.0,
+                totalAvailableMinutes,
+                totalBookedMinutes,
+                startDate.format(GERMAN_DATE_FORMATTER),
+                endDate.format(GERMAN_DATE_FORMATTER)
+        );
     }
 }

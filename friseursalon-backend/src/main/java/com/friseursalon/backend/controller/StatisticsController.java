@@ -1,10 +1,7 @@
-// src/main/java/com/friseursalon/backend/controller/StatisticsController.java
+// Datei: friseursalon-backend/src/main/java/com/friseursalon/backend/controller/StatisticsController.java
 package com.friseursalon.backend.controller;
 
-import com.friseursalon.backend.dto.AppointmentsPerDayOfWeekDTO;
-import com.friseursalon.backend.dto.AppointmentsPerServiceDTO;
-import com.friseursalon.backend.dto.DailyAppointmentsDTO;
-import com.friseursalon.backend.dto.DetailedAppointmentStatsDTO;
+import com.friseursalon.backend.dto.*;
 import com.friseursalon.backend.service.StatisticsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -13,12 +10,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.time.temporal.TemporalAdjusters; // KORREKTUR: Fehlender Import hinzugefügt
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/statistics")
-@CrossOrigin(origins = "http://localhost:3000") // Für lokale Entwicklung
+@CrossOrigin(origins = "http://localhost:3000")
 @PreAuthorize("hasRole('ADMIN')")
 public class StatisticsController {
 
@@ -40,7 +37,6 @@ public class StatisticsController {
             }
             return ResponseEntity.ok(statisticsService.getDetailedAppointmentStats(startDate, endDate));
         } else {
-            // Ruft die überladene Methode im Service auf, die Standardwerte (z.B. aktueller Monat) verwendet
             return ResponseEntity.ok(statisticsService.getDetailedAppointmentStats());
         }
     }
@@ -50,7 +46,6 @@ public class StatisticsController {
         return ResponseEntity.ok(statisticsService.getTodayAndUpcomingAppointments());
     }
 
-    // ANGEPASST: Akzeptiert startDate und endDate
     @GetMapping("/by-day-of-week")
     public ResponseEntity<List<AppointmentsPerDayOfWeekDTO>> getAppointmentsPerDayOfWeek(
             @RequestParam(name = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -64,7 +59,6 @@ public class StatisticsController {
         return ResponseEntity.ok(statisticsService.getAppointmentsPerDayOfWeek(sDate, eDate));
     }
 
-    // ANGEPASST: Akzeptiert startDate und endDate
     @GetMapping("/by-service")
     public ResponseEntity<List<AppointmentsPerServiceDTO>> getAppointmentsPerService(
             @RequestParam(name = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -77,5 +71,29 @@ public class StatisticsController {
             return ResponseEntity.badRequest().build();
         }
         return ResponseEntity.ok(statisticsService.getAppointmentsPerService(sDate, eDate, topN));
+    }
+
+    // NEUER ENDPUNKT: Umsatzentwicklung
+    @GetMapping("/revenue-over-time")
+    public ResponseEntity<List<RevenueDataPointDTO>> getRevenueOverTime(
+            @RequestParam(name = "startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(name = "endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    ) {
+        if (startDate.isAfter(endDate)) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(statisticsService.getRevenueOverTime(startDate, endDate));
+    }
+
+    // NEUER ENDPUNKT: Kapazitätsauslastung
+    @GetMapping("/capacity-utilization")
+    public ResponseEntity<CapacityUtilizationDTO> getCapacityUtilization(
+            @RequestParam(name = "startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(name = "endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    ) {
+        if (startDate.isAfter(endDate)) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(statisticsService.getCapacityUtilization(startDate, endDate));
     }
 }
