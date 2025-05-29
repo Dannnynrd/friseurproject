@@ -1,10 +1,10 @@
 /* Datei: friseursalon-frontend/src/components/AdminDashboardStats.css */
 
 .admin-dashboard-stats {
-    padding: 1rem 0.5rem; /* Etwas Padding auch seitlich */
+    padding: 1rem 0.5rem;
     font-family: var(--font-sans);
     background-color: var(--light-bg);
-    max-width: 1800px; /* Noch etwas breiter für optimale Chart-Darstellung */
+    max-width: 1800px;
     margin-left: auto;
     margin-right: auto;
     box-sizing: border-box;
@@ -12,10 +12,10 @@
 
 .stats-section-box {
     background-color: var(--light-bg, #ffffff);
-    border: 1px solid var(--border-color-light, #eeeeee); /* Hellere Border für Boxen */
-    border-radius: 10px; /* Etwas weichere Kanten */
-    padding: 1rem 1.25rem; /* Angepasstes Padding */
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04); /* Leichter Schatten */
+    border: 1px solid var(--border-color-light, #eeeeee);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
     margin-bottom: 1.5rem;
 }
 
@@ -49,21 +49,20 @@
 .period-buttons button .svg-inline--fa { font-size: 0.8em; }
 .period-buttons button.custom-period-btn .svg-inline--fa { margin-right: 0.2rem;}
 
-.custom-date-pickers-container { /* Neuer Container für bessere Kontrolle */
+.custom-date-pickers-container {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-left: auto; /* Schiebt es nach rechts */
+    margin-left: auto;
 }
 .custom-date-pickers { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.5rem; }
 .custom-date-pickers .date-picker-input {
     padding: 0.45rem 0.6rem; font-size: 0.78rem; border: 1px solid var(--border-color, #e0e0e0);
-    border-radius: 4px; width: 100px; /* Feste Breite für bessere Vorhersagbarkeit */
+    border-radius: 4px; width: 100px;
     background-color: var(--light-bg);
 }
-.apply-custom-date-btn { /* Eigene Klasse für den Anwenden-Button */
+.apply-custom-date-btn {
     padding: 0.45rem 0.9rem; font-size: 0.78rem;
-    /* Nutzt button-link Stile, aber mit spezifischen Anpassungen falls nötig */
 }
 
 
@@ -72,7 +71,7 @@
     text-align: center; padding: 0.4rem; background-color: var(--info-bg-light);
     color: var(--info-color); border-radius: 4px; margin-bottom: 1rem; font-size: 0.8rem;
 }
-.loading-message-stats, .stats-error-message, .stat-card-no-data, .chart-no-data-message, .no-upcoming-appointments, .report-options-content > p, .dashboard-customize-content > p, .key-changes-list + .no-data-small  {
+.loading-message-stats, .stats-error-message, .stat-card-no-data, .chart-no-data-message, .no-upcoming-appointments, .report-options-content > p, .dashboard-customize-content > p, .key-changes-list + .no-data-small, .dashboard-alerts-list + .no-data-small  {
     text-align: center; color: var(--medium-grey-text); padding: 1rem; font-size: 0.85rem;
     border: 1px dashed var(--border-color-light, #eeeeee); border-radius: 6px; background-color: #fdfdff;
     margin-top: 0.5rem;
@@ -80,7 +79,7 @@
 .stats-error-message {
     color: var(--danger-color); background-color: var(--danger-bg-light); border-color: var(--danger-color);
 }
-.stat-card-no-data, .chart-no-data-message, .no-upcoming-appointments, .report-options-content > p, .dashboard-customize-content > p, .key-changes-list + .no-data-small { font-style: italic; }
+.stat-card-no-data, .chart-no-data-message, .no-upcoming-appointments, .report-options-content > p, .dashboard-customize-content > p, .key-changes-list + .no-data-small, .dashboard-alerts-list + .no-data-small { font-style: italic; }
 .no-data-small { font-size: 0.75rem; color: var(--light-grey-text); padding: 0.3rem; text-align: center; border:none; background:none; margin-top:0;}
 
 /* Neues Dashboard Grid Layout */
@@ -145,29 +144,36 @@
 }
 .booking-activity-widget p span { font-weight: 500; color: var(--dark-text); }
 
-/* Wichtigste Veränderungen Widget */
-.key-changes-section .key-changes-list {
+/* Wichtigste Veränderungen & Alerts Widget */
+.key-changes-section .key-changes-list,
+.dashboard-alerts-widget .dashboard-alerts-list {
     list-style: none;
     padding: 0;
     margin: 0;
 }
-.key-changes-section .key-change-item {
+.key-changes-section .key-change-item,
+.dashboard-alerts-widget .dashboard-alert-item {
     display: flex;
     align-items: center;
     font-size: 0.78rem;
     padding: 0.3rem 0;
     border-bottom: 1px dotted var(--border-color-extralight, #f5f5f5);
 }
-.key-changes-section .key-change-item:last-child {
+.key-changes-section .key-change-item:last-child,
+.dashboard-alerts-widget .dashboard-alert-item:last-child {
     border-bottom: none;
 }
-.key-changes-section .key-change-item .svg-inline--fa {
+.key-changes-section .key-change-item .svg-inline--fa,
+.dashboard-alerts-widget .dashboard-alert-item .svg-inline--fa {
     margin-right: 0.4rem;
     font-size: 0.85em;
 }
 .key-changes-section .key-change-item.positive .svg-inline--fa { color: var(--success-color); }
 .key-changes-section .key-change-item.negative .svg-inline--fa { color: var(--danger-color); }
-.key-changes-section .key-change-item span {
+.dashboard-alerts-widget .dashboard-alert-item.alert-warning .svg-inline--fa { color: var(--warning-color, #ffc107); }
+.dashboard-alerts-widget .dashboard-alert-item.alert-info .svg-inline--fa { color: var(--info-color, #0dcaf0); }
+.key-changes-section .key-change-item span,
+.dashboard-alerts-widget .dashboard-alert-item span {
     color: var(--dark-text);
 }
 
@@ -329,7 +335,26 @@
     font-weight: 600;
     margin-bottom: 0.4rem;
     color: var(--dark-text);
+    display: flex; /* Für Checkbox neben Legende */
+    align-items: center;
 }
+.kpi-visibility-controls legend input[type="checkbox"] {
+    margin-right: 0.5rem;
+    width: 14px;
+    height: 14px;
+    accent-color: var(--dark-text);
+}
+.kpi-visibility-controls legend label { /* Label für die Gruppen-Checkbox */
+    cursor: pointer;
+}
+
+.individual-kpi-toggles {
+    padding-left: 1.5rem; /* Einrücken der individuellen KPIs */
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem; /* Kleinerer Abstand zwischen einzelnen KPI-Toggles */
+}
+
 .kpi-visibility-toggle {
     display: flex;
     align-items: center;

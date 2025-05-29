@@ -1,34 +1,37 @@
-// src/components/charts/AppointmentsByDayRechart.js
-// Version für V5 - ohne onBarClick Prop und Handler
+// src/components/charts/AppointmentsByHourRechart.js
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChartBar } from '@fortawesome/free-solid-svg-icons';
+import { faBusinessTime } from '@fortawesome/free-solid-svg-icons'; // Passendes Icon
 
-const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F', '#FFBB28'];
-
-const AppointmentsByDayRechart = ({ chartData, title }) => {
-    const hasData = chartData && chartData.labels && chartData.labels.length > 0 && chartData.data && chartData.data.some(d => d > 0);
+const AppointmentsByHourRechart = ({ chartData, title }) => {
+    // chartData wird erwartet als Array von Objekten: [{ hour: 8, appointments: 5 }, ...]
+    const hasData = chartData && chartData.length > 0 && chartData.some(d => d.appointments > 0);
 
     if (!hasData) {
         return (
             <>
-                <h4 className="chart-title"><FontAwesomeIcon icon={faChartBar} /> {title || 'Terminverteilung'}</h4>
-                <p className="chart-no-data-message">Keine Termindaten für dieses Diagramm im gewählten Zeitraum.</p>
+                <h4 className="chart-title"><FontAwesomeIcon icon={faBusinessTime} /> {title || 'Terminauslastung / Stunde'}</h4>
+                <p className="chart-no-data-message">
+                    Daten für die Terminauslastung pro Stunde werden geladen oder sind für den gewählten Zeitraum nicht verfügbar.
+                    <br/>
+                    <small>(Hinweis: Dieses Diagramm benötigt noch eine entsprechende Backend-Anpassung, um echte Daten anzuzeigen.)</small>
+                </p>
             </>
         );
     }
 
-    const data = chartData.labels.map((label, index) => ({
-        name: label,
-        Termine: chartData.data[index] || 0,
+    // Daten für Recharts formatieren
+    const data = chartData.map(item => ({
+        name: `${String(item.hour).padStart(2, '0')}:00`, // z.B. "08:00"
+        Termine: item.appointments,
     }));
 
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
             return (
                 <div className="custom-recharts-tooltip">
-                    <p className="label">{`${label}`}</p>
+                    <p className="label">{`Uhrzeit: ${label}`}</p>
                     <p className="intro">{`Termine: ${payload[0].value}`}</p>
                 </div>
             );
@@ -49,7 +52,7 @@ const AppointmentsByDayRechart = ({ chartData, title }) => {
 
     return (
         <>
-            <h4 className="chart-title"><FontAwesomeIcon icon={faChartBar} /> {title || 'Terminverteilung'}</h4>
+            <h4 className="chart-title"><FontAwesomeIcon icon={faBusinessTime} /> {title || 'Terminauslastung / Stunde'}</h4>
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                     data={data}
@@ -59,15 +62,15 @@ const AppointmentsByDayRechart = ({ chartData, title }) => {
                         left: -15,
                         bottom: 5,
                     }}
-                    barCategoryGap="25%"
+                    barCategoryGap="20%"
                 >
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color-light, #e9e9e9)" vertical={false} />
                     <XAxis
                         dataKey="name"
-                        tick={{ fontSize: 11, fill: 'var(--dark-text, #333)' }}
+                        tick={{ fontSize: 10, fill: 'var(--dark-text, #333)' }}
                         axisLine={{ stroke: 'var(--border-color, #ccc)' }}
                         tickLine={{ stroke: 'var(--border-color, #ccc)' }}
-                        interval={0}
+                        interval={0} // Zeige alle Stunden-Labels an, wenn nicht zu viele
                     />
                     <YAxis
                         allowDecimals={false}
@@ -78,13 +81,11 @@ const AppointmentsByDayRechart = ({ chartData, title }) => {
                         width={40}
                     />
                     <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(206, 206, 206, 0.25)'}}/>
-                    <Bar dataKey="Termine" radius={[5, 5, 0, 0]} /* onClick Handler entfernt */ cursor="default">
+                    <Bar dataKey="Termine" radius={[4, 4, 0, 0]}>
                         <LabelList dataKey="Termine" content={renderCustomBarLabel} />
-                        {
-                            data.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} opacity={0.85} />
-                            ))
-                        }
+                        {data.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={'#82ca9d'} opacity={0.8} /> // Einheitliche Farbe für dieses Beispiel
+                        ))}
                     </Bar>
                 </BarChart>
             </ResponsiveContainer>
@@ -92,4 +93,4 @@ const AppointmentsByDayRechart = ({ chartData, title }) => {
     );
 };
 
-export default AppointmentsByDayRechart;
+export default AppointmentsByHourRechart;
