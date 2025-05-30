@@ -47,37 +47,159 @@
     border-radius: 6px;
     border: 1px solid var(--border-color-light, #eeeeee);
 }
-.period-buttons { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-.period-buttons button {
+.period-buttons-main { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.period-buttons-main button,
+.more-periods-dropdown button {
     padding: 0.45rem 0.9rem; font-size: 0.78rem; font-weight: 500;
     border: 1px solid var(--border-color, #e0e0e0); background-color: var(--light-bg);
     color: var(--medium-grey-text); border-radius: 4px; cursor: pointer;
     transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
     display: inline-flex; align-items: center; gap: 0.25rem;
 }
-.period-buttons button:hover { background-color: #f0f0f0; border-color: #cccccc; color: var(--dark-text); }
-.period-buttons button.active {
+.period-buttons-main button:hover,
+.more-periods-dropdown button:hover { background-color: #f0f0f0; border-color: #cccccc; color: var(--dark-text); }
+
+.period-buttons-main button.active,
+.more-periods-dropdown button.active {
     background-color: var(--dark-text); color: var(--light-bg);
     border-color: var(--dark-text); box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
-.period-buttons button .svg-inline--fa { font-size: 0.8em; }
-.period-buttons button.custom-period-btn .svg-inline--fa { margin-right: 0.2rem;}
 
-.custom-date-pickers-container {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-left: auto;
+.period-buttons-more { position: relative; }
+.more-periods-btn { /* Erbt Basisstile von .period-buttons-main button */
+    padding: 0.45rem 0.9rem; font-size: 0.78rem; font-weight: 500;
+    border: 1px solid var(--border-color, #e0e0e0); background-color: var(--light-bg);
+    color: var(--medium-grey-text); border-radius: 4px; cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+    display: inline-flex; align-items: center; gap: 0.25rem;
 }
-.custom-date-pickers { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.5rem; }
-.custom-date-pickers .date-picker-input {
-    padding: 0.45rem 0.6rem; font-size: 0.78rem; border: 1px solid var(--border-color, #e0e0e0);
-    border-radius: 4px; width: 100px;
+.more-periods-btn:hover {
+    background-color: #f0f0f0; border-color: #cccccc; color: var(--dark-text);
+}
+
+.more-periods-btn .svg-inline--fa { margin-left: 0.3rem; transition: transform 0.2s ease; }
+.more-periods-btn[aria-expanded="true"] .svg-inline--fa { transform: rotate(180deg); }
+
+
+.more-periods-dropdown {
+    position: absolute;
+    top: calc(100% + 4px); /* Kleiner Abstand zum Button */
+    left: 0;
     background-color: var(--light-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* Deutlicherer Schatten */
+    z-index: 50; /* Stellt sicher, dass es über anderen Elementen liegt */
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-width: 180px; /* Mindestbreite, um Inhalt gut darzustellen */
 }
-.apply-custom-date-btn {
-    padding: 0.45rem 0.9rem; font-size: 0.78rem;
+.more-periods-dropdown button {
+    width: 100%;
+    text-align: left;
+    justify-content: flex-start; /* Text und Icon linksbündig */
 }
+
+
+.custom-period-btn { /* Stile wie andere Periodenbuttons */
+    padding: 0.45rem 0.9rem; font-size: 0.78rem; font-weight: 500;
+    border: 1px solid var(--border-color, #e0e0e0); background-color: var(--light-bg);
+    color: var(--medium-grey-text); border-radius: 4px; cursor: pointer;
+    /* margin-left: auto; Schiebt den Button nach rechts, wenn er der letzte ist. Bei Bedarf anpassen. */
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+    display: inline-flex; align-items: center; gap: 0.25rem;
+}
+.custom-period-btn .svg-inline--fa { margin-right: 0.3rem;}
+
+.custom-period-btn:hover { background-color: #f0f0f0; border-color: #cccccc; color: var(--dark-text); }
+.custom-period-btn.active {
+    background-color: var(--dark-text); color: var(--light-bg);
+    border-color: var(--dark-text); box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* Custom Date Picker Modal */
+.custom-date-pickers-modal-overlay {
+    position: fixed; inset: 0; background-color: rgba(31, 31, 31, 0.7); /* Dunklerer Backdrop */
+    display: flex; align-items: center; justify-content: center; z-index: 1070; /* Hoher z-index */
+    padding: 1rem; animation: fadeInModalOverlay 0.2s ease-out forwards;
+}
+@keyframes fadeInModalOverlay { from { opacity: 0; } to { opacity: 1; } }
+
+.custom-date-pickers-modal-content {
+    background-color: var(--light-bg); padding: 1.5rem 2rem 2rem;
+    border-radius: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.25);
+    width: auto; min-width: 300px; max-width: 700px; /* Max-Breite für größere Kalender */
+    animation: slideInModalContent 0.25s ease-out forwards;
+    position: relative; /* Für den Schließen-Button */
+}
+@keyframes slideInModalContent {
+    from { opacity: 0; transform: translateY(-20px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.modal-close-button.top-right {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--medium-grey-text);
+    cursor: pointer;
+    padding: 0.25rem;
+    line-height: 1;
+}
+.modal-close-button.top-right:hover {
+    color: var(--dark-text);
+}
+
+
+.custom-date-pickers-modal-content h4 {
+    font-family: var(--font-serif); font-size: 1.3rem; margin-bottom: 1.5rem;
+    color: var(--dark-text); text-align: center;
+    padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-color-light);
+}
+.custom-date-pickers-inline {
+    display: flex;
+    gap: 1.5rem; /* Mehr Abstand zwischen den Kalendern */
+    justify-content: center;
+    flex-wrap: wrap; /* Erlaubt Umbruch auf kleineren Schirmen */
+}
+/* Stile für react-datepicker innerhalb des Modals */
+.custom-date-pickers-inline .react-datepicker {
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+    border-radius: 6px !important;
+}
+.custom-date-pickers-inline .react-datepicker__header {
+    background-color: var(--light-grey-bg) !important;
+    border-bottom-color: var(--border-color) !important;
+}
+.custom-date-pickers-inline .react-datepicker__current-month {
+    color: var(--dark-text) !important;
+}
+.custom-date-pickers-inline .react-datepicker__day-name,
+.custom-date-pickers-inline .react-datepicker__day {
+    color: var(--medium-grey-text) !important;
+}
+.custom-date-pickers-inline .react-datepicker__day--selected,
+.custom-date-pickers-inline .react-datepicker__day--keyboard-selected {
+    background-color: var(--dark-text) !important;
+    color: var(--light-bg) !important;
+}
+.custom-date-pickers-inline .react-datepicker__day--in-selecting-range,
+.custom-date-pickers-inline .react-datepicker__day--in-range {
+    background-color: var(--light-grey-bg) !important;
+    color: var(--dark-text) !important;
+}
+
+.custom-date-modal-actions {
+    display: flex; justify-content: flex-end; gap: 0.75rem;
+    margin-top: 1.5rem; padding-top: 1rem;
+    border-top: 1px solid var(--border-color-light);
+}
+.custom-date-modal-actions .small-button { font-size: 0.85rem; padding: 0.5rem 1rem; }
 
 
 /* Lade- und Fehlermeldungen */
@@ -165,36 +287,31 @@
 }
 .booking-activity-widget p span { font-weight: 500; color: var(--dark-text); }
 
-/* Wichtigste Veränderungen & Alerts Widget */
-.key-changes-section .key-changes-list,
-.dashboard-alerts-widget .dashboard-alerts-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+/* Salon Highlights: Wichtigste Veränderungen & Alerts Widget */
+.salon-highlights-section .key-changes-list,
+.salon-highlights-section .dashboard-alerts-list {
+    list-style: none; padding: 0; margin: 0;
 }
-.key-changes-section .key-change-item,
-.dashboard-alerts-widget .dashboard-alert-item {
-    display: flex;
-    align-items: center;
-    font-size: 0.78rem;
+.salon-highlights-section .key-change-item,
+.salon-highlights-section .dashboard-alert-item {
+    display: flex; align-items: center; font-size: 0.78rem;
     padding: 0.3rem 0;
     border-bottom: 1px dotted var(--border-color-extralight, #f5f5f5);
 }
-.key-changes-section .key-change-item:last-child,
-.dashboard-alerts-widget .dashboard-alert-item:last-child {
+.salon-highlights-section .key-change-item:last-child,
+.salon-highlights-section .dashboard-alert-item:last-child {
     border-bottom: none;
 }
-.key-changes-section .key-change-item .svg-inline--fa,
-.dashboard-alerts-widget .dashboard-alert-item .svg-inline--fa {
-    margin-right: 0.4rem;
-    font-size: 0.85em;
+.salon-highlights-section .key-change-item .svg-inline--fa,
+.salon-highlights-section .dashboard-alert-item .svg-inline--fa {
+    margin-right: 0.4rem; font-size: 0.85em;
 }
-.key-changes-section .key-change-item.positive .svg-inline--fa { color: var(--success-color); }
-.key-changes-section .key-change-item.negative .svg-inline--fa { color: var(--danger-color); }
-.dashboard-alerts-widget .dashboard-alert-item.alert-warning .svg-inline--fa { color: var(--warning-color, #ffc107); }
-.dashboard-alerts-widget .dashboard-alert-item.alert-info .svg-inline--fa { color: var(--info-color, #0dcaf0); }
-.key-changes-section .key-change-item span,
-.dashboard-alerts-widget .dashboard-alert-item span {
+.salon-highlights-section .key-change-item.positive .svg-inline--fa { color: var(--success-color); }
+.salon-highlights-section .key-change-item.negative .svg-inline--fa { color: var(--danger-color); }
+.salon-highlights-section .dashboard-alert-item.alert-warning .svg-inline--fa { color: var(--warning-color, #ffc107); }
+.salon-highlights-section .dashboard-alert-item.alert-info .svg-inline--fa { color: var(--info-color, #0dcaf0); }
+.salon-highlights-section .key-change-item span,
+.salon-highlights-section .dashboard-alert-item span {
     color: var(--dark-text);
 }
 
@@ -230,17 +347,23 @@
 .stat-card:hover { box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04); transform: translateY(-1px); }
 
 .stat-card .stat-value.large { font-size: 1.4rem; }
-.stat-card .stat-value { font-size: 1.1rem; font-weight: 600; }
+.stat-card .stat-value { font-size: 1.1rem; font-weight: 600; color: var(--dark-text); }
 .stat-card .stat-label { font-size: 0.62rem; }
-.stat-card .stat-icon { font-size: 0.8rem; width: 16px; height: 16px; }
-
-
 .stat-card-header { display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.1rem; }
 .stat-icon {
     display: inline-flex; align-items: center; justify-content: center;
     border-radius: 50%; padding: 0.2em; line-height: 1;
     color: var(--dark-text); background-color: var(--light-grey-bg);
+    font-size: 0.8rem; width: 18px; height: 18px;
 }
+.stat-tooltip-icon {
+    margin-left: 0.3rem;
+    color: var(--light-grey-text);
+    font-size: 0.7rem; /* Klein genug, um nicht aufdringlich zu sein */
+    cursor: help;
+}
+
+
 .stat-label { font-weight: 500; color: var(--medium-grey-text, #5f5f5f); line-height: 1.15; }
 .stat-comparison { font-size: 0.62rem; font-weight: 500; display: flex; align-items: center; gap: 0.05rem; margin-top: auto; padding-top: 0.05rem; }
 .stat-comparison .comparison-data.positive { color: var(--success-color, #28a745); }
@@ -276,19 +399,18 @@
 
 /* Spezifische Icon-Farben */
 .stat-icon.today, .stat-icon.fa-calendar-day { color: #28a745; background-color: rgba(40, 167, 69, 0.08); }
-.stat-icon.revenue, .stat-icon.fa-euro-sign  { color: #fd7e14; background-color: rgba(253, 126, 20, 0.08); }
+.stat-icon.revenue, .stat-icon.fa-euro-sign, .stat-icon.fa-receipt  { color: #fd7e14; background-color: rgba(253, 126, 20, 0.08); }
 .stat-icon.fa-calendar-check { color: #007bff; background-color: rgba(0, 123, 255, 0.08); }
-.stat-icon.fa-receipt { color: #6f42c1; background-color: rgba(111, 66, 193, 0.08); }
 .stat-icon.fa-coins    { color: #ffc107; background-color: rgba(255, 193, 7, 0.08); }
 .stat-icon.capacity, .stat-icon.fa-hourglass-half { color: #17a2b8; background-color: rgba(23, 162, 184, 0.08); }
 .stat-icon.fa-user-friends { color: #007bff; background-color: rgba(0, 123, 255, 0.08); }
-.stat-icon.duration, .stat-icon.fa-clock { color: #6610f2; background-color: rgba(102, 16, 242, 0.08); }
+.stat-icon.duration, .stat-icon.fa-clock { color: #6f42c1; background-color: rgba(111, 66, 193, 0.08); }
 .stat-icon.services, .stat-icon.fa-cut { color: #20c997; background-color: rgba(32, 201, 151, 0.08); }
 .stat-icon.avg-bookings, .stat-icon.fa-users-cog { color: #e83e8c; background-color: rgba(232, 62, 140, 0.08); }
 .stat-icon.projection, .stat-icon.growth, .stat-icon.fa-arrow-trend-up { color: #198754; background-color: rgba(25, 135, 84, 0.08); }
 .stat-icon.new-customer, .stat-icon.fa-user-plus { color: #0dcaf0; background-color: rgba(13, 202, 240, 0.08); }
-.stat-icon.cancellation, .stat-icon.fa-user-slash { color: #dc3545; background-color: rgba(220, 53, 69, 0.08); }
-.stat-icon.leadtime, .stat-icon.fa-calendar-alt { color: #6f42c1; background-color: rgba(111, 66, 193, 0.08); }
+.stat-icon.cancellation, .stat-icon.fa-user-slash { color: var(--danger-color); background-color: var(--danger-bg-light); }
+.stat-icon.leadtime, .stat-icon.fa-calendar-alt, .stat-icon.upcoming { color: #6f42c1; background-color: rgba(111, 66, 193, 0.08); }
 
 
 /* Chart-Bereich */
@@ -316,13 +438,16 @@
 }
 
 .chart-card {
-    position: relative;
+    position: relative; /* Für den Export-Button */
+    background-color: var(--light-bg, #ffffff); border: 1px solid var(--border-color-light, #f0f0f0);
+    border-radius: 8px; padding: 0.9rem; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    min-height: 240px; display: flex; flex-direction: column; overflow: hidden;
 }
 .chart-card .export-chart-btn {
     position: absolute;
     top: 0.45rem;
     right: 0.45rem;
-    z-index: 10;
+    z-index: 10; /* Stellt sicher, dass der Button über dem Chart liegt */
 }
 
 
@@ -344,11 +469,6 @@
     }
 }
 
-.chart-card {
-    background-color: var(--light-bg, #ffffff); border: 1px solid var(--border-color-light, #f0f0f0);
-    border-radius: 8px; padding: 0.9rem; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-    min-height: 240px; display: flex; flex-direction: column; overflow: hidden;
-}
 .chart-title {
     font-family: var(--font-sans, sans-serif); font-weight: 600; font-size: 0.9rem;
     color: var(--dark-text); margin-bottom: 0.7rem; display: flex;
@@ -398,7 +518,8 @@
 }
 .appointment-status-tag.status-heute { background-color: var(--info-bg-light); color: var(--info-color); border-color: var(--info-color); }
 .appointment-status-tag.status-morgen { background-color: #e9ecef; color: #495057; border-color: #ced4da; }
-.appointment-status-tag.status-datum { background-color: #f8f9fa; color: #6c757d; border-color: #dee2e6; }
+.appointment-status-tag.status-datum,
+.appointment-status-tag.status-unbekannt { background-color: #f8f9fa; color: #6c757d; border-color: #dee2e6; }
 
 /* Dashboard Anpassen Sektion */
 .dashboard-customize-section .dashboard-customize-content {
@@ -512,6 +633,22 @@
     width: 100px;
 }
 
+.chart-settings {
+    border:none; padding:0; margin-top:0.8rem; width:100%;
+}
+.chart-settings legend {
+    font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--dark-text);
+}
+.top-n-services-config {
+    display:flex; align-items:center; gap:0.5rem; margin-bottom:0.4rem;
+}
+.top-n-services-config label {
+    font-size:0.75rem; color: var(--medium-grey-text);
+}
+.top-n-services-config select {
+    padding:0.3rem 0.5rem; font-size:0.75rem; border:1px solid var(--border-color); border-radius:4px;
+}
+
 
 /* Skeleton Loader Stile */
 .stat-card.is-loading-skeleton .stat-card-header-skeleton,
@@ -540,13 +677,57 @@
     .dashboard-grid-layout { grid-template-columns: 1fr; gap: 1rem; }
     .charts-grid .chart-card.revenue-chart-card { grid-column: auto; }
     .quick-access-content { flex-direction: column; align-items: stretch; }
-    .quick-create-button, .quick-link-button { width: 100%; margin-bottom: 0.75rem; }
+    .quick-create-button { width: 100%; margin-bottom: 0.75rem; }
     .booking-activity-widget { width: 100%; }
-    .stats-period-filter-bar { flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 0.5rem; }
-    .custom-date-pickers-container { flex-direction: column; align-items: stretch; width: 100%;}
-    .custom-date-pickers { margin-left: 0; width: 100%; justify-content: space-between; }
-    .custom-date-pickers .date-picker-input { width: calc(50% - 0.25rem); max-width: none; }
-    .apply-custom-date-btn { margin-top: 0.5rem; width: 100%;}
+
+    .stats-period-filter-bar {
+        flex-direction: column;
+        align-items: stretch; /* Stellt sicher, dass Kindelemente volle Breite nehmen können */
+        gap: 0.5rem;
+        padding: 0.5rem;
+    }
+    .period-buttons-main {
+        flex-wrap: wrap; /* Erlaubt Umbruch der Hauptbuttons */
+        justify-content: space-around; /* Verteilt Buttons gleichmäßiger */
+    }
+    .period-buttons-main button {
+        flex-grow: 1; /* Buttons nehmen verfügbaren Platz ein */
+        min-width: 120px; /* Mindestbreite, um Textlesbarkeit zu gewährleisten */
+    }
+    .more-periods-btn {
+        width: 100%; /* Volle Breite für den "Mehr"-Button */
+        margin-top: 0.5rem;
+    }
+    .more-periods-dropdown {
+        position: static; /* Im normalen Fluss auf Mobile */
+        box-shadow: none;
+        border-top: 1px solid var(--border-color-light);
+        border-radius: 0 0 6px 6px;
+        margin-top: -1px; /* Überlappt leicht mit dem Button-Rand */
+    }
+    .custom-period-btn {
+        width: 100%; /* Volle Breite */
+        margin-left:0;
+        margin-top: 0.5rem;
+    }
+
+    .custom-date-pickers-modal-content {
+        max-width: 95%;
+        padding: 1rem;
+    }
+    .custom-date-pickers-inline {
+        flex-direction: column;
+    }
+    .custom-date-pickers-inline .react-datepicker { /* Stellt sicher, dass die Kalender im Modal die volle Breite nutzen */
+        width: 100%;
+        margin-bottom: 0.5rem; /* Abstand zwischen den Kalendern im Modal */
+    }
+    .custom-date-pickers-inline .react-datepicker-popper { /* Für den Fall, dass es als Popper gerendert wird */
+        width: 100% !important;
+        max-width: calc(100vw - 2rem) !important;
+    }
+
+
     .stats-overview-cards.kpi-group {
         grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
     }
@@ -554,6 +735,7 @@
     .stat-card .stat-value { font-size: 1.0rem; }
     .stat-card .stat-label { font-size: 0.6rem; }
     .stat-card .stat-icon { font-size: 0.75rem; width: 15px; height: 15px; }
+
     .chart-card { padding: 0.75rem; min-height: 220px; }
     .chart-card .recharts-responsive-container { min-height: 160px; }
     .daily-appointments-list { max-height: 250px; }
