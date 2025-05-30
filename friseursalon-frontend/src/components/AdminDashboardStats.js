@@ -1,7 +1,7 @@
 // Datei: friseursalon-frontend/src/components/AdminDashboardStats.js
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import api from '../services/api.service';
-import './AdminDashboardStats.css';
+import './AdminDashboardStats.css'; // CSS-Import
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faChartLine, faCalendarCheck, faSpinner, faUsers,
@@ -13,7 +13,7 @@ import {
     faUserSlash, faCalendarDay, faEye, faEyeSlash,
     faInfoCircle, faHistory, faCalendarWeek, faGlobe, faBell,
     faBullseye, faSyncAlt, faDownload, faBusinessTime, faUsersGear,
-    faAngleDown, faAngleUp, faQuestionCircle, faTimes
+    faAngleDown, faAngleUp, faQuestionCircle, faTimes, faCheckCircle
 } from '@fortawesome/free-solid-svg-icons';
 import AppointmentEditModal from './AppointmentEditModal';
 import AppointmentCreateModal from './AppointmentCreateModal';
@@ -62,39 +62,42 @@ const KPI_GOALS_STORAGE_KEY = 'friseurDashboardKpiGoals_v1';
 const KPI_GROUP_ORDER_STORAGE_KEY = 'friseurDashboardKpiGroupOrder_v1';
 const TOP_N_SERVICES_STORAGE_KEY = 'friseurDashboardTopNServices_v1';
 
+// Stellen Sie sicher, dass hier für jeden KPI ein 'tooltip'-Text definiert ist,
+// wenn ein Fragezeichen-Icon dafür angezeigt werden soll.
 const KPI_DEFINITIONS = {
     main: {
         label: "Hauptkennzahlen",
         kpis: [
-            { id: 'termine', label: "Termine", icon: faCalendarCheck, isMain: true, tooltip: "Gesamtzahl der Termine im ausgewählten Zeitraum.", goalKey: 'monthlyAppointmentsGoal', dtoKey: 'totalAppointmentsInPeriod', comparisonKey: 'appointmentCountChangePercentage', previousPeriodKey: 'previousPeriodTotalAppointments' },
-            { id: 'umsatz', label: "Umsatz", icon: faReceipt, isMain: true, tooltip: "Gesamtumsatz im ausgewählten Zeitraum.", goalKey: 'monthlyRevenueGoal', isCurrency: true, dtoKey: 'totalRevenueInPeriod', comparisonKey: 'revenueChangePercentage', previousPeriodKey: 'previousPeriodTotalRevenue'},
-            { id: 'avgUmsatz', label: "Ø-Umsatz/Termin", icon: faCoins, isMain: true, tooltip: "Durchschnittlicher Umsatz pro Termin.", isCurrency: true, dtoKey: 'avgRevenuePerAppointment' /* Berechnet im Frontend oder Backend hinzufügen */ },
-            { id: 'auslastung', label: "Auslastung", icon: faHourglassHalf, isMain: true, tooltip: "Prozentuale Auslastung der verfügbaren Arbeitszeit.", isPercentage: true, dtoKey: 'capacityUtilizationPercentage' /* Kommt von capacityUtilizationData */ },
+            { id: 'termine', label: "Termine", icon: faCalendarCheck, isMain: true, tooltip: "Gesamtzahl der (nicht stornierten) Termine im ausgewählten Zeitraum.", goalKey: 'monthlyAppointmentsGoal', dtoKey: 'totalAppointmentsInPeriod', comparisonKey: 'appointmentCountChangePercentage', previousPeriodKey: 'previousPeriodTotalAppointments' },
+            { id: 'umsatz', label: "Umsatz", icon: faReceipt, isMain: true, tooltip: "Gesamtumsatz (nicht stornierter Termine) im ausgewählten Zeitraum.", goalKey: 'monthlyRevenueGoal', isCurrency: true, dtoKey: 'totalRevenueInPeriod', comparisonKey: 'revenueChangePercentage', previousPeriodKey: 'previousPeriodTotalRevenue'},
+            { id: 'avgUmsatz', label: "Ø-Umsatz/Termin", icon: faCoins, isMain: true, tooltip: "Durchschnittlicher Umsatz pro (nicht storniertem) Termin.", isCurrency: true, dtoKey: 'avgRevenuePerAppointment' },
+            { id: 'auslastung', label: "Auslastung", icon: faHourglassHalf, isMain: true, tooltip: "Prozentuale Auslastung der verfügbaren Arbeitszeit durch (nicht stornierte) Termine.", isPercentage: true, dtoKey: 'capacityUtilizationPercentage' },
         ]
     },
     customerService: {
         label: "Kunden- & Service-Metriken",
         kpis: [
-            { id: 'einzigKunden', label: "Einzig. Kunden", icon: faUserFriends, tooltip: "Anzahl der unterschiedlichen Kunden mit Terminen.", dtoKey: 'uniqueCustomersInPeriod', comparisonKey: 'customerGrowthPercentage', previousPeriodKey: 'previousPeriodUniqueCustomers' },
-            { id: 'kundenWachstum', label: "Kundenwachstum", icon: faArrowTrendUp, iconClass: 'growth', tooltip: "Prozentuale Veränderung der einzigartigen Kunden zur Vorperiode.", isPercentage: true, dtoKey: 'customerGrowthPercentage' },
-            { id: 'avgBuchungKunde', label: "Ø Buchung/Kunde", icon: faUsersCog, iconClass: 'avg-bookings', tooltip: "Durchschnittliche Anzahl Buchungen pro Kunde.", dtoKey: 'avgBookingsPerCustomer' },
-            { id: 'neukundenAnteil', label: "Neukundenanteil", icon: faUserPlus, iconClass: 'new-customer', tooltip: "Anteil neuer Kunden an allen Kunden (benötigt Backend-Logik).", isPercentage: true, requiresBackendLogic: true, dtoKey: 'newCustomerShare', comparisonKey: 'newCustomerShareChangePercentage', previousPeriodKey: 'previousPeriodNewCustomerShare' },
-            { id: 'avgTermindauer', label: "Ø Termindauer", icon: faClock, iconClass: 'duration', tooltip: "Durchschnittliche Dauer eines Termins in Minuten.", dtoKey: 'averageAppointmentDurationInPeriod' },
+            { id: 'einzigKunden', label: "Einzig. Kunden", icon: faUserFriends, tooltip: "Anzahl der unterschiedlichen Kunden mit (nicht stornierten) Terminen.", dtoKey: 'uniqueCustomersInPeriod', comparisonKey: 'customerGrowthPercentage', previousPeriodKey: 'previousPeriodUniqueCustomers' },
+            { id: 'kundenWachstum', label: "Kundenwachstum", icon: faArrowTrendUp, iconClass: 'growth', tooltip: "Prozentuale Veränderung der einzigartigen Kunden (mit nicht stornierten Terminen) zur Vorperiode.", isPercentage: true, dtoKey: 'customerGrowthPercentage' },
+            { id: 'avgBuchungKunde', label: "Ø Buchung/Kunde", icon: faUsersCog, iconClass: 'avg-bookings', tooltip: "Durchschnittliche Anzahl (nicht stornierter) Buchungen pro Kunde.", dtoKey: 'avgBookingsPerCustomer' },
+            { id: 'neukundenAnteil', label: "Neukundenanteil", icon: faUserPlus, iconClass: 'new-customer', tooltip: "Anteil neuer Kunden (registriert im Zeitraum und mit Termin) an allen Kunden mit (nicht stornierten) Terminen.", isPercentage: true, dtoKey: 'newCustomerShare', comparisonKey: 'newCustomerShareChangePercentage', previousPeriodKey: 'previousPeriodNewCustomerShare' },
+            { id: 'avgTermindauer', label: "Ø Termindauer", icon: faClock, iconClass: 'duration', tooltip: "Durchschnittliche Dauer eines (nicht stornierten) Termins in Minuten.", dtoKey: 'averageAppointmentDurationInPeriod' },
             { id: 'servicesAngeboten', label: "Services Angeboten", icon: faCut, iconClass: 'services', tooltip: "Anzahl der aktuell angebotenen Dienstleistungen.", dtoKey: 'totalActiveServices' },
         ]
     },
     operationalDaily: {
         label: "Operative & Tagesaktuelle Zahlen",
         kpis: [
-            { id: 'termineHeute', label: "Termine Heute", icon: faCalendarDay, iconClass: 'today', tooltip: "Anzahl der Termine am heutigen Tag.", dtoKey: 'todayCount' },
-            { id: 'umsatzHeute', label: "Umsatz Heute", icon: faEuroSign, iconClass: 'revenue', tooltip: "Heutiger Umsatz.", isCurrency: true, dtoKey: 'revenueToday' },
-            { id: 'gesBevorstehend', label: "Ges. Bevorstehend", icon: faCalendarAlt, iconClass: 'upcoming', tooltip: "Gesamtzahl aller zukünftigen Termine.", dtoKey: 'totalUpcomingCount' },
-            { id: 'stornoquote', label: "Stornoquote", icon: faUserSlash, iconClass: 'cancellation', tooltip: "Prozentsatz stornierter Termine (benötigt Backend-Logik).", isPercentage: true, requiresBackendLogic: true, dtoKey: 'cancellationRate', comparisonKey: 'cancellationRateChangePercentage', previousPeriodKey: 'previousPeriodCancellationRate' },
-            { id: 'avgVorlaufzeit', label: "Ø Vorlaufzeit Buch.", icon: faCalendarCheck, iconClass: 'leadtime', tooltip: "Durchschnittliche Zeit zwischen Buchung und Termin in Tagen (benötigt Backend-Logik).", requiresBackendLogic: true, dtoKey: 'avgBookingLeadTime' },
-            { id: 'prognUmsatz', label: "Progn. Umsatz (30T)", icon: faArrowTrendUp, iconClass: 'projection', tooltip: "Geschätzter Umsatz für die nächsten 30 Tage basierend auf aktuellen Daten.", isCurrency: true, dtoKey: 'projectedRevenueNext30Days' },
+            { id: 'termineHeute', label: "Termine Heute", icon: faCalendarDay, iconClass: 'today', tooltip: "Anzahl der (nicht stornierten) Termine am heutigen Tag.", dtoKey: 'todayCount' },
+            { id: 'umsatzHeute', label: "Umsatz Heute", icon: faEuroSign, iconClass: 'revenue', tooltip: "Heutiger Umsatz (nicht stornierter Termine).", isCurrency: true, dtoKey: 'revenueToday' },
+            { id: 'gesBevorstehend', label: "Ges. Bevorstehend", icon: faCalendarAlt, iconClass: 'upcoming', tooltip: "Gesamtzahl aller zukünftigen (nicht stornierten) Termine.", dtoKey: 'totalUpcomingCount' },
+            { id: 'stornoquote', label: "Stornoquote", icon: faUserSlash, iconClass: 'cancellation', tooltip: "Prozentsatz stornierter Termine von allen für den Zeitraum erstellten Terminen.", isPercentage: true, dtoKey: 'cancellationRate', comparisonKey: 'cancellationRateChangePercentage', previousPeriodKey: 'previousPeriodCancellationRate' },
+            { id: 'avgVorlaufzeit', label: "Ø Vorlaufzeit Buch.", icon: faCalendarCheck, iconClass: 'leadtime', tooltip: "Durchschnittliche Zeit zwischen Buchung und (nicht storniertem) Termin in Tagen.", dtoKey: 'avgBookingLeadTime' },
+            { id: 'prognUmsatz', label: "Progn. Umsatz (30T)", icon: faArrowTrendUp, iconClass: 'projection', tooltip: "Geschätzter Umsatz für die nächsten 30 Tage, basierend auf dem Durchschnittsumsatz des aktuell gewählten Zeitraums.", isCurrency: true, dtoKey: 'projectedRevenueNext30Days' },
         ]
     }
 };
+
 const getDatesForPeriod = (period) => {
     const today = new Date(); let startDate, endDate;
     switch (period) {
@@ -118,13 +121,13 @@ const exportToCsv = (filename, rows, headers) => {
         ...rows.map(row => headers.map(header => {
             let cellValue = row[header];
             if (typeof cellValue === 'string' && cellValue.includes(',')) {
-                cellValue = `"${cellValue}"`; // In Anführungszeichen setzen, wenn Komma enthalten ist
+                cellValue = `"${cellValue}"`;
             }
             return cellValue;
         }).join(","))
     ].join("\n");
 
-    const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' }); // BOM für Excel
+    const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     if (link.download !== undefined) {
         const url = URL.createObjectURL(blob);
@@ -189,7 +192,7 @@ const CustomDateRangeModal = ({ isOpen, onClose, startDate, endDate, onStartDate
 function AdminDashboardStats({ currentUser, onAppointmentAction }) {
     const [detailedStats, setDetailedStats] = useState(null);
     const [dailyAppointments, setDailyAppointments] = useState([]);
-    const [keyChanges, setKeyChanges] = useState({ positive: [], negative: [], neutral: [] }); // Auch neutrale Änderungen
+    const [keyChanges, setKeyChanges] = useState({ positive: [], negative: [], neutral: [] });
     const [dashboardAlerts, setDashboardAlerts] = useState([]);
     const [lastUpdated, setLastUpdated] = useState(null);
 
@@ -221,6 +224,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
     const [activeDateRangeLabel, setActiveDateRangeLabel] = useState(PERIOD_LABELS[PERIOD_OPTIONS.THIS_MONTH]);
     const [showMorePeriodsDropdown, setShowMorePeriodsDropdown] = useState(false);
     const morePeriodsDropdownRef = useRef(null);
+    const [customizationMessage, setCustomizationMessage] = useState('');
 
     const [kpiVisibility, setKpiVisibility] = useState(() => {
         try {
@@ -277,26 +281,53 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         } catch (e) { return 5; }
     });
 
-    useEffect(() => { localStorage.setItem(KPI_VISIBILITY_STORAGE_KEY, JSON.stringify(kpiVisibility)); }, [kpiVisibility]);
-    useEffect(() => { localStorage.setItem(KPI_GOALS_STORAGE_KEY, JSON.stringify(kpiGoals)); }, [kpiGoals]);
-    useEffect(() => { localStorage.setItem(KPI_GROUP_ORDER_STORAGE_KEY, JSON.stringify(kpiGroupOrder)); }, [kpiGroupOrder]);
-    useEffect(() => { localStorage.setItem(TOP_N_SERVICES_STORAGE_KEY, topNServicesConfig.toString()); }, [topNServicesConfig]);
+    const showAndClearCustomizationMessage = (message) => {
+        setCustomizationMessage(message);
+        setTimeout(() => setCustomizationMessage(''), 3000);
+    };
+
+    useEffect(() => { localStorage.setItem(KPI_VISIBILITY_STORAGE_KEY, JSON.stringify(kpiVisibility)); /*showAndClearCustomizationMessage("KPI Sichtbarkeit aktualisiert.");*/ }, [kpiVisibility]);
+    useEffect(() => { localStorage.setItem(KPI_GOALS_STORAGE_KEY, JSON.stringify(kpiGoals)); /*showAndClearCustomizationMessage("KPI Ziele aktualisiert.");*/ }, [kpiGoals]);
+    useEffect(() => { localStorage.setItem(KPI_GROUP_ORDER_STORAGE_KEY, JSON.stringify(kpiGroupOrder)); /*showAndClearCustomizationMessage("KPI Reihenfolge aktualisiert.");*/ }, [kpiGroupOrder]);
+    // Die folgende Zeile wurde angepasst, um die Nachricht nur anzuzeigen, wenn sich der Wert tatsächlich ändert und nicht beim initialen Laden.
+    const firstUpdateTopNServices = useRef(true);
+    useEffect(() => {
+        if (firstUpdateTopNServices.current) {
+            firstUpdateTopNServices.current = false;
+            return;
+        }
+        localStorage.setItem(TOP_N_SERVICES_STORAGE_KEY, topNServicesConfig.toString());
+        showAndClearCustomizationMessage("Top N Services aktualisiert.");
+        fetchMainStatsAndCharts(currentFilterStartDate, currentFilterEndDate);
+    }, [topNServicesConfig, currentFilterStartDate, currentFilterEndDate]); // fetchMainStatsAndCharts als Abhängigkeit entfernt, um Endlosschleife zu vermeiden
 
     const handleGoalChange = (goalKey, value) => {
         const numericValue = value === '' ? null : Number(value);
         if (value === '' || (!isNaN(numericValue) && numericValue >= 0)) {
             setKpiGoals(prev => ({ ...prev, [goalKey]: numericValue }));
+            showAndClearCustomizationMessage("KPI Ziel angepasst.");
         }
     };
-    const toggleKpiGroupVisibility = (groupKey) => setKpiVisibility(prev => ({ ...prev, [groupKey]: { ...prev[groupKey], visible: !prev[groupKey].visible } }));
-    const toggleIndividualKpiVisibility = (groupKey, kpiId) => setKpiVisibility(prev => ({ ...prev, [groupKey]: { ...prev[groupKey], kpis: { ...prev[groupKey].kpis, [kpiId]: !prev[groupKey].kpis[kpiId] } } }));
-    const moveKpiGroup = (groupKey, direction) => setKpiGroupOrder(prevOrder => {
-        const currentIndex = prevOrder.indexOf(groupKey); if (currentIndex === -1) return prevOrder;
-        const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-        if (newIndex < 0 || newIndex >= prevOrder.length) return prevOrder;
-        const newOrder = [...prevOrder]; [newOrder[currentIndex], newOrder[newIndex]] = [newOrder[newIndex], newOrder[currentIndex]];
-        return newOrder;
-    });
+    const toggleKpiGroupVisibility = (groupKey) => {
+        setKpiVisibility(prev => ({ ...prev, [groupKey]: { ...prev[groupKey], visible: !prev[groupKey].visible } }));
+        showAndClearCustomizationMessage("KPI Gruppe Sichtbarkeit geändert.");
+    };
+    const toggleIndividualKpiVisibility = (groupKey, kpiId) => {
+        setKpiVisibility(prev => ({ ...prev, [groupKey]: { ...prev[groupKey], kpis: { ...prev[groupKey].kpis, [kpiId]: !prev[groupKey].kpis[kpiId] } } }));
+        showAndClearCustomizationMessage("KPI Sichtbarkeit geändert.");
+    };
+
+    const moveKpiGroup = (groupKey, direction) => {
+        setKpiGroupOrder(prevOrder => {
+            const currentIndex = prevOrder.indexOf(groupKey); if (currentIndex === -1) return prevOrder;
+            const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+            if (newIndex < 0 || newIndex >= prevOrder.length) return prevOrder;
+            const newOrder = [...prevOrder]; [newOrder[currentIndex], newOrder[newIndex]] = [newOrder[newIndex], newOrder[currentIndex]];
+            return newOrder;
+        });
+        showAndClearCustomizationMessage("KPI Gruppenreihenfolge geändert.");
+    };
+
 
     const fetchMainStatsAndCharts = useCallback(async (startDate, endDate) => {
         setIsLoadingStats(true);
@@ -308,14 +339,14 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                 api.get('/statistics/by-service', { params: { startDate, endDate, topN: topNServicesConfig } }),
                 api.get('/statistics/revenue-over-time', { params: { startDate, endDate } }),
                 api.get('/statistics/capacity-utilization', { params: { startDate, endDate } }),
+                api.get('/statistics/by-hour-of-day', { params: { startDate, endDate } })
             ];
-            const [statsRes, dayRes, serviceRes, revenueTimeRes, capacityRes] = await Promise.all(apiRequests.map(p => p.catch(e => e)));
+            const [statsRes, dayRes, serviceRes, revenueTimeRes, capacityRes, hourRes] = await Promise.all(apiRequests.map(p => p.catch(e => e)));
 
             if (statsRes instanceof Error) throw new Error(`Hauptstatistiken: ${statsRes.response?.data?.message || statsRes.message}`);
             const backendStats = statsRes.data;
             setDetailedStats(backendStats);
 
-            // Zusätzliche Frontend-Berechnungen für KPIs, die nicht direkt vom Backend kommen
             if (backendStats.totalAppointmentsInPeriod > 0 && backendStats.totalRevenueInPeriod != null) {
                 backendStats.avgRevenuePerAppointment = parseFloat(backendStats.totalRevenueInPeriod) / backendStats.totalAppointmentsInPeriod;
             } else {
@@ -340,25 +371,21 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             if (capacityRes instanceof Error) { currentError += `Auslastung: ${capacityRes.response?.data?.message || capacityRes.message}; `; setCapacityUtilizationData(null);}
             else setCapacityUtilizationData(capacityRes.data);
 
+            if (hourRes instanceof Error) { currentError += `Termine/Stunde: ${hourRes.response?.data?.message || hourRes.message}; `; setAppointmentsByHourData([]);}
+            else setAppointmentsByHourData(hourRes.data || []);
 
-            const exampleHourData = [8,9,10,11,12,13,14,15,16,17,18].map(h => ({ hour: h, appointments: Math.floor(Math.random() * (h > 11 && h < 18 ? 8 : 4)) + (h > 11 && h < 18 ? 2 : 0)}));
-            setAppointmentsByHourData(exampleHourData);
-
-            // Key Changes Logik
             const allChanges = [];
             const kpiChangeMapping = [
                 { dtoKey: 'appointmentCountChangePercentage', label: 'Terminanzahl', isGrowthGood: true },
                 { dtoKey: 'revenueChangePercentage', label: 'Umsatz', isGrowthGood: true },
                 { dtoKey: 'customerGrowthPercentage', label: 'Kundenwachstum', isGrowthGood: true },
-                { dtoKey: 'cancellationRateChangePercentage', label: 'Stornoquote', isGrowthGood: false, requiresBackendLogic: true },
-                { dtoKey: 'newCustomerShareChangePercentage', label: 'Neukundenanteil', isGrowthGood: true, requiresBackendLogic: true },
+                { dtoKey: 'cancellationRateChangePercentage', label: 'Stornoquote', isGrowthGood: false },
+                { dtoKey: 'newCustomerShareChangePercentage', label: 'Neukundenanteil', isGrowthGood: true },
             ];
 
             kpiChangeMapping.forEach(kpi => {
                 const value = backendStats[kpi.dtoKey];
                 if (value != null && !isNaN(parseFloat(value))) {
-                    // Nur hinzufügen, wenn Wert vorhanden UND nicht NaN
-                    // Die requiresBackendLogic-Prüfung ist hier nicht mehr nötig, da wir nur vorhandene Werte verarbeiten
                     allChanges.push({
                         label: kpi.label,
                         value: parseFloat(value),
@@ -373,20 +400,17 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                 }
             });
 
-            allChanges.sort((a, b) => Math.abs(b.value) - Math.abs(a.value)); // Nach absoluter Veränderung sortieren
-
+            allChanges.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
             const topPositive = allChanges.filter(c => c.value > 0).slice(0, 2);
             const topNegative = allChanges.filter(c => c.value < 0).slice(0, 2);
             const neutralOrNoChange = allChanges.filter(c => c.value === 0);
-
-            setKeyChanges({ positive: topPositive, negative: topNegative, neutral: neutralOrNoChange.slice(0,1) }); // Max 1 neutrale Änderung anzeigen
+            setKeyChanges({ positive: topPositive, negative: topNegative, neutral: neutralOrNoChange.slice(0,1) });
 
             const alerts = [];
-            if (backendStats.cancellationRate != null && Number(backendStats.cancellationRate) > 15 && !(KPI_DEFINITIONS.operationalDaily.kpis.find(k => k.id === 'stornoquote')?.requiresBackendLogic && backendStats.cancellationRate === null)) alerts.push({ type: 'warning', message: `Stornoquote bei ${Number(backendStats.cancellationRate).toFixed(1)}%`});
+            if (backendStats.cancellationRate != null && Number(backendStats.cancellationRate) > 15 ) alerts.push({ type: 'warning', message: `Stornoquote bei ${Number(backendStats.cancellationRate).toFixed(1)}%`});
             if (capacityRes.data && !(capacityRes instanceof Error) && capacityRes.data.utilizationPercentage < 40) alerts.push({ type: 'info', message: `Auslastung: ${Number(capacityRes.data.utilizationPercentage).toFixed(1)}%. Potenzial prüfen.`});
             if (backendStats && backendStats.totalAppointmentsInPeriod === 0 && (selectedPeriod === PERIOD_OPTIONS.THIS_MONTH || selectedPeriod === PERIOD_OPTIONS.LAST_30_DAYS)) alerts.push({ type: 'info', message: `Keine Termine in diesem Zeitraum. Marketing?` });
             setDashboardAlerts(alerts.slice(0,2));
-
 
             if (selectedPeriod === PERIOD_OPTIONS.CUSTOM && !showCustomDatePickersModal) {
                 setActiveDateRangeLabel(`Zeitraum: ${formatDateFns(parseISO(startDate), 'dd.MM.yy')} - ${formatDateFns(parseISO(endDate), 'dd.MM.yy')}`);
@@ -403,6 +427,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             setIsLoadingStats(false);
         }
     }, [selectedPeriod, topNServicesConfig, showCustomDatePickersModal]);
+
 
     const fetchActivityAndUpcoming = useCallback(async () => {
         setIsLoadingActivity(true); setIsLoadingDaily(true);
@@ -493,22 +518,29 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         }
         return <span className={`comparison-data ${colorClass}`}><FontAwesomeIcon icon={icon} /> {changeText}</span>;
     };
+
+    // KpiCard Komponente hier (oder global, wenn in mehreren Dateien verwendet)
     const KpiCard = ({ label, value, icon, iconClass, comparison, tooltipText, isMain = false, goalValue, isCurrency = false, isPercentage = false }) => {
         let progressPercent = null; let goalText = null;
         if (goalValue != null && value != null && value !== 'N/A') {
             const numericValue = isCurrency ? parseFloat(String(value).replace('€', '').replace('.', '').replace(',', '.')) : (isPercentage ? parseFloat(String(value).replace('%','').replace(',','.')) : Number(value));
             if (!isNaN(numericValue) && goalValue > 0) {
                 progressPercent = Math.min((numericValue / goalValue) * 100, 100);
-                goalText = `${isCurrency ? formatCurrency(numericValue) : (isPercentage ? formatPercentage(numericValue) : numericValue)} / ${isCurrency ? formatCurrency(goalValue) : (isPercentage ? formatPercentage(goalValue) : goalValue)}`;
+                goalText = `${isCurrency ? formatCurrency(numericValue, false) : (isPercentage ? formatPercentage(numericValue) : numericValue)} / ${isCurrency ? formatCurrency(goalValue, false) : (isPercentage ? formatPercentage(goalValue) : goalValue)}`;
             }
         }
-        const finalTooltipText = tooltipText || label;
+        const cardTitleTooltip = tooltipText || label;
+
         return (
-            <div className={`stat-card ${isMain ? 'main-kpi' : 'small-kpi'}`} title={finalTooltipText}>
+            <div className={`stat-card ${isMain ? 'main-kpi' : 'small-kpi'}`} title={cardTitleTooltip}>
                 <div className="stat-card-header">
                     <FontAwesomeIcon icon={icon} className={`stat-icon ${iconClass || ''}`} />
                     <span className="stat-label">{label}</span>
-                    {tooltipText && <FontAwesomeIcon icon={faQuestionCircle} className="stat-tooltip-icon" />}
+                    {tooltipText && (
+                        <span className="kpi-tooltip-wrapper" data-tooltip={tooltipText}>
+                            <FontAwesomeIcon icon={faQuestionCircle} className="stat-tooltip-icon" />
+                        </span>
+                    )}
                 </div>
                 <div className={`stat-value ${isMain ? 'large' : ''}`}>{value == null || value === undefined ? 'N/A' : value}</div>
                 {comparison && <div className="stat-comparison">{comparison}</div>}
@@ -521,6 +553,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             </div>
         );
     };
+
     const renderStatCards = () => {
         if (isLoadingStats && !detailedStats) {
             return (<div className="stats-overview-cards kpi-group">
@@ -567,10 +600,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                         if (kpiDef.comparisonKey && detailedStats[kpiDef.comparisonKey] != null && detailedStats[kpiDef.previousPeriodKey] !== undefined) {
                             comparisonValue = renderComparison(detailedStats[kpiDef.comparisonKey], detailedStats[kpiDef.previousPeriodKey], kpiDef.label !== 'Stornoquote');
                         }
-                        let displayValue = kpiData[kpiDef.dtoKey];
-                        if (kpiDef.requiresBackendLogic && (displayValue === 'N/A' || displayValue === null)) {
-                            displayValue = <span title="Erweiterte Backend-Logik für diese Kennzahl erforderlich">N/A <FontAwesomeIcon icon={faInfoCircle} style={{fontSize: '0.8em', opacity: 0.7}}/></span>;
-                        }
+                        let displayValue = kpiData[kpiDef.dtoKey] == null ? 'N/A' : kpiData[kpiDef.dtoKey];
 
                         return (
                             <KpiCard key={kpiDef.id} label={kpiDef.label} value={displayValue} icon={kpiDef.icon} iconClass={kpiDef.iconClass}
@@ -581,18 +611,17 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         })}</>);
     };
 
-    // Dynamisierte Key Changes Funktion
     const renderKeyChanges = () => {
         if (isLoadingStats || isLoadingActivity) return <p className="no-data-small"><FontAwesomeIcon icon={faSpinner} spin /> Lade Highlights...</p>;
 
         const { positive, negative, neutral } = keyChanges;
-        const allSortedChanges = [...positive, ...negative, ...neutral]; // Kann weiter sortiert werden nach Absolutwert etc.
+        const allSortedChanges = [...positive, ...negative, ...neutral];
 
         if (allSortedChanges.length === 0) return <p className="no-data-small">Keine signifikanten Veränderungen zur Vorperiode.</p>;
 
         return (
             <ul className="key-changes-list">
-                {allSortedChanges.slice(0, 3).map(change => ( // Zeige Top 3 (oder weniger)
+                {allSortedChanges.slice(0, 3).map(change => (
                     <li key={change.label} className={`key-change-item ${change.value === 0 ? 'neutral' : (change.isGood ? 'positive' : 'negative')}`}>
                         <FontAwesomeIcon icon={change.value === 0 ? faEquals : (change.value > 0 ? faArrowUp : faArrowDown)} />
                         <span>{change.label}: {change.value > 0 ? '+' : ''}{Number(change.value).toFixed(1)}%</span>
@@ -697,7 +726,10 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                             </div>
                             <div className="chart-card"><AppointmentsByDayRechart chartData={appointmentsByDayData} title="Termine / Wochentag" /><button onClick={() => exportToCsv(`termine_tag_${currentFilterStartDate}_${currentFilterEndDate}.csv`, appointmentsByDayData.labels.map((l,i) => ({Wochentag: l, Termine: appointmentsByDayData.data[i]})), ["Wochentag", "Termine"])} className="button-link-outline export-chart-btn" title="Termine/Tag Daten exportieren"><FontAwesomeIcon icon={faDownload} /></button></div>
                             <div className="chart-card"><AppointmentsByServiceRechart chartData={appointmentsByServiceData} title={`Top ${topNServicesConfig} Dienstleistungen`} /><button onClick={() => exportToCsv(`termine_service_${currentFilterStartDate}_${currentFilterEndDate}.csv`, appointmentsByServiceData.labels.map((l,i) => ({Dienstleistung: l, Termine: appointmentsByServiceData.data[i]})), ["Dienstleistung", "Termine"])} className="button-link-outline export-chart-btn" title="Termine/Service Daten exportieren"><FontAwesomeIcon icon={faDownload} /></button></div>
-                            <div className="chart-card"><AppointmentsByHourRechart chartData={appointmentsByHourData} title="Terminauslastung / Stunde" /><button onClick={() => exportToCsv(`termine_stunde_${currentFilterStartDate}_${currentFilterEndDate}.csv`, appointmentsByHourData.map(item => ({Stunde: `${String(item.hour).padStart(2, '0')}:00`, Termine: item.appointments})), ["Stunde", "Termine"])} className="button-link-outline export-chart-btn" title="Termine/Stunde Daten exportieren"><FontAwesomeIcon icon={faDownload} /></button></div>
+                            <div className="chart-card">
+                                <AppointmentsByHourRechart chartData={appointmentsByHourData} title="Terminauslastung / Stunde" />
+                                <button onClick={() => exportToCsv(`termine_stunde_${currentFilterStartDate}_${currentFilterEndDate}.csv`, appointmentsByHourData.map(item => ({Stunde: `${String(item.hour).padStart(2, '0')}:00`, Termine: item.appointmentCount})), ["Stunde", "Termine"])} className="button-link-outline export-chart-btn" title="Termine/Stunde Daten exportieren"><FontAwesomeIcon icon={faDownload} /></button>
+                            </div>
                             <div className="chart-card placeholder-chart-card"><AppointmentsByEmployeeRechart title="Termine / Mitarbeiter (Zukunft)" /></div>
                         </div>
                     </div>
@@ -745,6 +777,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                     </div>
                     <div className="dashboard-customize-section stats-section-box">
                         <h3 className="stats-section-title small-title"><span><FontAwesomeIcon icon={faCog} /> Dashboard Anpassen</span></h3>
+                        {customizationMessage && <div className="customization-feedback success"><FontAwesomeIcon icon={faCheckCircle} /> {customizationMessage}</div>}
                         <div className="dashboard-customize-content">
                             <p className="no-data-small">Passen Sie die Ansicht Ihres Dashboards an.</p>
                             {kpiGroupOrder.map((groupKey, index) => {const groupDef = KPI_DEFINITIONS[groupKey]; if (!groupDef) return null;

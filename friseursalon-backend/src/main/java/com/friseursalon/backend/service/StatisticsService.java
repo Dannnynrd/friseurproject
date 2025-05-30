@@ -7,13 +7,12 @@ import com.friseursalon.backend.model.BlockedTimeSlot;
 import com.friseursalon.backend.model.WorkingHours;
 import com.friseursalon.backend.repository.AppointmentRepository;
 import com.friseursalon.backend.repository.CustomerRepository;
-// Geändert zu vollqualifiziertem Namen, um Mehrdeutigkeit zu vermeiden, falls es andere Service-Klassen gibt
 import com.friseursalon.backend.repository.ServiceRepository;
 import com.friseursalon.backend.repository.WorkingHoursRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service; // Korrekter Import für @Service
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -35,7 +34,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Service // Korrekte Annotation für Spring Service
+@Service
 public class StatisticsService {
 
     private static final Logger logger = LoggerFactory.getLogger(StatisticsService.class);
@@ -43,7 +42,7 @@ public class StatisticsService {
     private final WorkingHoursRepository workingHoursRepository;
     private final BlockedTimeSlotService blockedTimeSlotService;
     private final CustomerRepository customerRepository;
-    private final ServiceRepository serviceRepository; // Verwendung des vollqualifizierten Namens hier auch möglich, aber Import ist sauberer
+    private final ServiceRepository serviceRepository;
 
     private final DateTimeFormatter GERMAN_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.GERMAN);
 
@@ -53,7 +52,7 @@ public class StatisticsService {
                              WorkingHoursRepository workingHoursRepository,
                              BlockedTimeSlotService blockedTimeSlotService,
                              CustomerRepository customerRepository,
-                             ServiceRepository serviceRepository) { // Direkt den Typ verwenden
+                             ServiceRepository serviceRepository) {
         this.appointmentRepository = appointmentRepository;
         this.workingHoursRepository = workingHoursRepository;
         this.blockedTimeSlotService = blockedTimeSlotService;
@@ -75,11 +74,10 @@ public class StatisticsService {
         LocalDateTime periodStartDateTime = startDate.atStartOfDay();
         LocalDateTime periodEndDateTime = endDate.atTime(LocalTime.MAX);
 
-        // Zählt nur nicht-stornierte Termine für die Haupt-KPI
         long totalAppointmentsInPeriod = appointmentRepository.findAll().stream()
                 .filter(a -> a.getStartTime().isAfter(periodStartDateTime.minusNanos(1)) && a.getStartTime().isBefore(periodEndDateTime.plusNanos(1)) && (a.getStatus() == null || a.getStatus() != AppointmentStatus.CANCELLED))
                 .count();
-        BigDecimal totalRevenueInPeriod = calculateRevenueForPeriod(periodStartDateTime, periodEndDateTime); // calculateRevenueForPeriod berücksichtigt bereits keine stornierten Termine
+        BigDecimal totalRevenueInPeriod = calculateRevenueForPeriod(periodStartDateTime, periodEndDateTime);
 
         long daysInPeriod = ChronoUnit.DAYS.between(startDate, endDate) + 1;
         if (daysInPeriod <= 0) daysInPeriod = 1;
@@ -128,7 +126,10 @@ public class StatisticsService {
         long thisMonthCount = appointmentRepository.findAll().stream()
                 .filter(a -> a.getStartTime().isAfter(startOfMonthLDT.minusNanos(1)) && a.getStartTime().isBefore(endOfMonthLDT.plusNanos(1)) && (a.getStatus() == null || a.getStatus() != AppointmentStatus.CANCELLED))
                 .count();
-        long totalUpcomingCount = appointmentRepository.countByStartTimeAfter(now); // Hier könnten auch stornierte zukünftige Termine gezählt werden, je nach Definition
+        long totalUpcomingCount = appointmentRepository.findByStartTimeAfterOrderByStartTimeAsc(now).stream()
+                .filter(a -> a.getStatus() == null || a.getStatus() != AppointmentStatus.CANCELLED)
+                .count();
+
 
         BigDecimal revenueToday = calculateRevenueForPeriod(startOfToday, endOfToday);
         BigDecimal revenueThisWeek = calculateRevenueForPeriod(startOfWeek, endOfWeek);
@@ -156,16 +157,27 @@ public class StatisticsService {
         Long newBookingsYesterdayCount = appointmentRepository.countNewAppointmentsCreatedBetween(startOfYesterday, startOfToday.minusNanos(1));
 
         Long cancelledInPeriod = appointmentRepository.countAppointmentsByStatusBetween(periodStartDateTime, periodEndDateTime, AppointmentStatus.CANCELLED);
-        Long allAppointmentsMadeForPeriod = appointmentRepository.countByStartTimeBetween(periodStartDateTime, periodEndDateTime); // Alle, inkl. stornierte
-        Double cancellationRateValue = (allAppointmentsMadeForPeriod > 0 && cancelledInPeriod != null)
-                ? ((double) cancelledInPeriod / allAppointmentsMadeForPeriod) * 100
+        Long allAppointmentsCreatedForPeriod = appointmentRepository.countByStartTimeBetween(periodStartDateTime, periodEndDateTime); // Alle Termine, die für den Zeitraum *erstellt* wurden (unabhängig vom aktuellen Status, wenn nicht storniert)
+        Long nonCancelledAppointmentsForPeriod = appointmentRepository.findAll().stream()
+                .filter(a -> a.getStartTime().isAfter(periodStartDateTime.minusNanos(1)) && a.getStartTime().isBefore(periodEndDateTime.plusNanos(1)) && (a.getStatus() == null || a.getStatus() != AppointmentStatus.CANCELLED))
+                .count();
+        Long totalAppointmentsConsideredForCancellationRate = nonCancelledAppointmentsForPeriod + (cancelledInPeriod != null ? cancelledInPeriod : 0L);
+
+
+        Double cancellationRateValue = (totalAppointmentsConsideredForCancellationRate > 0 && cancelledInPeriod != null)
+                ? ((double) cancelledInPeriod / totalAppointmentsConsideredForCancellationRate) * 100
                 : null;
 
         Long cancelledInPreviousPeriod = appointmentRepository.countAppointmentsByStatusBetween(previousPeriodStartDateTime, previousPeriodEndDateTime, AppointmentStatus.CANCELLED);
-        Long allAppointmentsMadeForPreviousPeriod = appointmentRepository.countByStartTimeBetween(previousPeriodStartDateTime, previousPeriodEndDateTime);
-        Double previousPeriodCancellationRate = (allAppointmentsMadeForPreviousPeriod > 0 && cancelledInPreviousPeriod != null)
-                ? ((double) cancelledInPreviousPeriod / allAppointmentsMadeForPreviousPeriod) * 100
+        Long nonCancelledAppointmentsForPreviousPeriod = appointmentRepository.findAll().stream()
+                .filter(a -> a.getStartTime().isAfter(previousPeriodStartDateTime.minusNanos(1)) && a.getStartTime().isBefore(previousPeriodEndDateTime.plusNanos(1)) && (a.getStatus() == null || a.getStatus() != AppointmentStatus.CANCELLED))
+                .count();
+        Long totalAppointmentsConsideredForCancellationRatePrevious = nonCancelledAppointmentsForPreviousPeriod + (cancelledInPreviousPeriod != null ? cancelledInPreviousPeriod : 0L);
+
+        Double previousPeriodCancellationRate = (totalAppointmentsConsideredForCancellationRatePrevious > 0 && cancelledInPreviousPeriod != null)
+                ? ((double) cancelledInPreviousPeriod / totalAppointmentsConsideredForCancellationRatePrevious) * 100
                 : null;
+
 
         Double cancellationRateChangePercentage = calculatePercentageChange(
                 cancellationRateValue != null ? BigDecimal.valueOf(cancellationRateValue) : null,
@@ -247,7 +259,7 @@ public class StatisticsService {
 
         if (previousValue.compareTo(BigDecimal.ZERO) == 0) {
             if (currentValue.compareTo(BigDecimal.ZERO) == 0) return 0.0;
-            return null; // Or a very large number if preferred, but null is safer for display
+            return null;
         }
         BigDecimal difference = currentValue.subtract(previousValue);
         return difference.divide(previousValue, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue();
@@ -313,11 +325,11 @@ public class StatisticsService {
         }
 
         results.forEach(result -> {
-            Object dayOfWeekFromDbObj = result.get("DAYOFWEEK");
-            if (dayOfWeekFromDbObj == null) dayOfWeekFromDbObj = result.get("dayofweek");
+            Object dayOfWeekFromDbObj = result.get("DAYOFWEEK"); // H2 returns uppercase
+            if (dayOfWeekFromDbObj == null) dayOfWeekFromDbObj = result.get("dayofweek"); // Fallback for lowercase
 
-            Object countFromDbObj = result.get("COUNT");
-            if (countFromDbObj == null) countFromDbObj = result.get("count");
+            Object countFromDbObj = result.get("COUNT"); // H2 returns uppercase
+            if (countFromDbObj == null) countFromDbObj = result.get("count"); // Fallback for lowercase
 
 
             if (dayOfWeekFromDbObj == null || countFromDbObj == null) {
@@ -373,30 +385,21 @@ public class StatisticsService {
         }
 
         long totalAppointmentsInPeriod = results.stream().mapToLong(r -> {
-            Object countObj = r.get("COUNT");
-            if (countObj == null) countObj = r.get("count");
+            Object countObj = r.get("count"); // JPQL returns lowercase
             if (countObj instanceof Number) return ((Number) countObj).longValue();
             return 0L;
         }).sum();
 
         return results.stream()
                 .sorted((r1, r2) -> {
-                    long count1 = ((Number) (r1.get("COUNT") != null ? r1.get("COUNT") : r1.getOrDefault("count", 0L))).longValue();
-                    long count2 = ((Number) (r2.get("COUNT") != null ? r2.get("COUNT") : r2.getOrDefault("count", 0L))).longValue();
+                    long count1 = ((Number) (r1.get("count") != null ? r1.get("count") : 0L)).longValue();
+                    long count2 = ((Number) (r2.get("count") != null ? r2.get("count") : 0L)).longValue();
                     return Long.compare(count2, count1);
                 })
                 .limit(topN)
                 .map(result -> {
-                    Object serviceNameObj = result.get("SERVICENAME");
-                    if (serviceNameObj == null) serviceNameObj = result.get("serviceName");
-                    if (serviceNameObj == null) serviceNameObj = result.get("name");
-
-                    Object countObj = result.get("COUNT");
-                    if (countObj == null) countObj = result.get("count");
-
-                    String serviceName = (serviceNameObj instanceof String) ? (String) serviceNameObj : "Unbekannt";
-                    long count = (countObj instanceof Number) ? ((Number) countObj).longValue() : 0L;
-
+                    String serviceName = (String) result.get("serviceName");
+                    long count = ((Number) result.get("count")).longValue();
                     double percentage = totalAppointmentsInPeriod > 0 ? ( (double) count / totalAppointmentsInPeriod) * 100 : 0;
                     return new AppointmentsPerServiceDTO(serviceName, count, Math.round(percentage * 100.0) / 100.0);
                 })
@@ -416,8 +419,8 @@ public class StatisticsService {
             final LocalDate finalCurrentDate = currentDate;
             Optional<Map<String, Object>> dayData = results.stream()
                     .filter(r -> {
-                        Object dateObj = r.get("APPOINTMENT_DATE");
-                        if (dateObj == null) dateObj = r.get("appointment_date");
+                        Object dateObj = r.get("APPOINTMENT_DATE"); // H2 returns uppercase
+                        if (dateObj == null) dateObj = r.get("appointment_date"); // Fallback
                         if (dateObj instanceof java.sql.Date) {
                             return ((java.sql.Date) dateObj).toLocalDate().isEqual(finalCurrentDate);
                         } else if (dateObj instanceof LocalDate) {
@@ -429,8 +432,8 @@ public class StatisticsService {
                     .findFirst();
 
             BigDecimal revenue = dayData.map(data -> {
-                Object revenueObj = data.get("DAILY_REVENUE");
-                if (revenueObj == null) revenueObj = data.get("daily_revenue");
+                Object revenueObj = data.get("DAILY_REVENUE"); // H2 returns uppercase
+                if (revenueObj == null) revenueObj = data.get("daily_revenue"); // Fallback
                 return (revenueObj instanceof Number) ? new BigDecimal(((Number) revenueObj).toString()) : BigDecimal.ZERO;
             }).orElse(BigDecimal.ZERO);
 
@@ -483,7 +486,7 @@ public class StatisticsService {
         }
 
         logger.info("Kapazitätsauslastung: {}% (Gebucht: {} Min, Verfügbar: {} Min)",
-                String.format("%.2f", utilizationPercentage), totalBookedMinutes, totalAvailableMinutes);
+                String.format(Locale.US, "%.2f", utilizationPercentage), totalBookedMinutes, totalAvailableMinutes); // Locale.US für Punkt als Dezimaltrennzeichen
 
         return new CapacityUtilizationDTO(
                 Math.round(utilizationPercentage * 100.0) / 100.0,
@@ -500,18 +503,18 @@ public class StatisticsService {
 
         logger.info("Suche Termine pro Stunde von {} bis {}", periodStartDateTime, periodEndDateTime);
         List<Map<String, Object>> results = appointmentRepository.countAppointmentsPerHourBetweenNative(periodStartDateTime, periodEndDateTime);
+        logger.info("DB Results für Termine pro Stunde: {}", results);
+
 
         List<AppointmentsByHourDTO> hourlyStats = new ArrayList<>();
-        // Erwartete Stunden (z.B. von 8 bis 20 Uhr) - anpassen, falls nötig
-        // Dynamisch basierend auf den Arbeitszeiten machen? Fürs Erste fix.
         LocalTime earliestOpening = LocalTime.MAX;
         LocalTime latestClosing = LocalTime.MIN;
 
         List<WorkingHours> allWorkingHours = workingHoursRepository.findAll();
-        if (allWorkingHours.isEmpty()) { // Fallback, falls keine Arbeitszeiten definiert sind
-            for (int i = 8; i <= 20; i++) {
-                hourlyStats.add(new AppointmentsByHourDTO(i, 0L));
-            }
+        if (allWorkingHours.isEmpty()) {
+            earliestOpening = LocalTime.of(8,0);
+            latestClosing = LocalTime.of(20,0);
+            logger.info("Keine Arbeitszeiten definiert, Fallback auf 8-20 Uhr für Stundenstatistik.");
         } else {
             for (WorkingHours wh : allWorkingHours) {
                 if (!wh.isClosed() && wh.getStartTime() != null && wh.getStartTime().isBefore(earliestOpening)) {
@@ -521,24 +524,27 @@ public class StatisticsService {
                     latestClosing = wh.getEndTime();
                 }
             }
-            if (earliestOpening == LocalTime.MAX) earliestOpening = LocalTime.of(8,0); // Fallback
-            if (latestClosing == LocalTime.MIN) latestClosing = LocalTime.of(20,0); // Fallback
+            if (earliestOpening == LocalTime.MAX) earliestOpening = LocalTime.of(8,0); // Fallback, falls alle Tage geschlossen
+            if (latestClosing == LocalTime.MIN || latestClosing.isBefore(earliestOpening)) latestClosing = LocalTime.of(20,0); // Fallback
+        }
+        logger.info("Ermittelte Kernarbeitszeit für Stundenstatistik: {} - {}", earliestOpening, latestClosing);
 
-            for (int i = earliestOpening.getHour(); i <= latestClosing.getHour(); i++) {
-                hourlyStats.add(new AppointmentsByHourDTO(i, 0L));
-            }
+
+        for (int i = earliestOpening.getHour(); i <= latestClosing.getHour(); i++) {
+            hourlyStats.add(new AppointmentsByHourDTO(i, 0L));
         }
 
-
         results.forEach(result -> {
-            Object hourFromDbObj = result.get("HOUR");
-            if (hourFromDbObj == null) hourFromDbObj = result.get("hour");
+            // Native Queries mit H2 geben Spaltennamen oft in Großbuchstaben zurück.
+            Object hourFromDbObj = result.get("APPOINTMENT_HOUR");
+            if (hourFromDbObj == null) hourFromDbObj = result.get("appointment_hour"); // Fallback für den Fall, dass es doch klein geschrieben ist
 
-            Object countFromDbObj = result.get("COUNT");
-            if (countFromDbObj == null) countFromDbObj = result.get("count");
+            Object countFromDbObj = result.get("APPOINTMENT_COUNT");
+            if (countFromDbObj == null) countFromDbObj = result.get("appointment_count");
+
 
             if (hourFromDbObj == null || countFromDbObj == null) {
-                logger.warn("Eintrag in Stundenstatistik übersprungen, da Schlüssel 'HOUR' oder 'COUNT' fehlen. Vorhandene Schlüssel: {}", result.keySet());
+                logger.warn("Eintrag in Stundenstatistik übersprungen, da Schlüssel 'APPOINTMENT_HOUR' oder 'APPOINTMENT_COUNT' fehlen. Vorhandene Schlüssel: {}", result.keySet());
                 return;
             }
 
@@ -546,7 +552,7 @@ public class StatisticsService {
             try {
                 hour = ((Number) hourFromDbObj).intValue();
             } catch (ClassCastException e) {
-                logger.error("Fehler beim Casten von HOUR: {} mit Wert: {}", hourFromDbObj.getClass(), hourFromDbObj, e);
+                logger.error("Fehler beim Casten von APPOINTMENT_HOUR: {} mit Wert: {}", hourFromDbObj.getClass(), hourFromDbObj, e);
                 return;
             }
 

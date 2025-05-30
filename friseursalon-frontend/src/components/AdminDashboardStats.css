@@ -1,10 +1,10 @@
 /* Datei: friseursalon-frontend/src/components/AdminDashboardStats.css */
 
 .admin-dashboard-stats {
-    padding: 1rem 0.5rem; /* Etwas Padding für den Gesamtcontainer */
+    padding: 1rem 0.5rem;
     font-family: var(--font-sans);
-    background-color: var(--light-bg); /* Hintergrund für den gesamten Dashboard-Bereich */
-    max-width: 1800px; /* Maximale Breite für sehr große Bildschirme */
+    background-color: var(--light-bg);
+    max-width: 1800px;
     margin-left: auto;
     margin-right: auto;
     box-sizing: border-box;
@@ -13,24 +13,21 @@
 .stats-section-box {
     background-color: var(--light-bg, #ffffff);
     border: 1px solid var(--border-color-light, #eeeeee);
-    border-radius: 10px; /* Weichere Kanten */
-    padding: 1rem 1.25rem; /* Innenabstand */
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04); /* Dezenter Schatten */
-    margin-bottom: 1.5rem; /* Abstand zwischen den Boxen */
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+    margin-bottom: 1.5rem;
 }
-/* Verhindert doppelten Rand unten bei der letzten Box in einer Spalte */
 .main-stats-column > .stats-section-box:last-child,
 .sidebar-stats-column > .stats-section-box:last-child {
     margin-bottom: 0;
 }
 
-
-/* Letzte Aktualisierung Zeitstempel */
 .last-updated-timestamp {
-    font-size: 0.7rem; /* Kleinere Schrift */
+    font-size: 0.7rem;
     color: var(--medium-grey-text);
     text-align: right;
-    margin: -1.25rem 0.5rem 1.5rem 0; /* Angepasster Margin */
+    margin: -1.25rem 0.5rem 1.5rem 0;
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -39,15 +36,13 @@
     margin-right: 0.3rem;
 }
 
-
-/* Filterleiste */
 .stats-period-filter-bar {
     display: flex;
-    flex-wrap: wrap; /* Buttons umbrechen lassen auf kleineren Schirmen */
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.75rem; /* Abstand zwischen Button-Gruppen */
+    gap: 0.75rem;
     margin-bottom: 1.75rem;
-    padding: 0.6rem 0.8rem; /* Etwas Padding für die Leiste */
+    padding: 0.6rem 0.8rem;
     background-color: var(--light-grey-bg, #f8f8f8);
     border-radius: 6px;
     border: 1px solid var(--border-color-light, #eeeeee);
@@ -55,12 +50,12 @@
 .period-buttons-main {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem; /* Abstand zwischen den Haupt-Buttons */
+    gap: 0.4rem;
 }
 .period-buttons-main button,
 .more-periods-dropdown button {
     padding: 0.45rem 0.9rem;
-    font-size: 0.78rem; /* Etwas kleiner für kompaktere Darstellung */
+    font-size: 0.78rem;
     font-weight: 500;
     border: 1px solid var(--border-color, #e0e0e0);
     background-color: var(--light-bg);
@@ -68,7 +63,7 @@
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
-    display: inline-flex; /* Für Icon-Ausrichtung, falls Icons hinzugefügt werden */
+    display: inline-flex;
     align-items: center;
     gap: 0.25rem;
 }
@@ -86,9 +81,9 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 .period-buttons-more {
-    position: relative; /* Für das Dropdown-Menü */
+    position: relative;
 }
-.more-periods-btn { /* Erbt Basisstile von .period-buttons-main button */
+.more-periods-btn {
     padding: 0.45rem 0.9rem;
     font-size: 0.78rem;
     font-weight: 500;
@@ -117,26 +112,26 @@
 
 .more-periods-dropdown {
     position: absolute;
-    top: calc(100% + 4px); /* Kleiner Abstand zum Button */
+    top: calc(100% + 4px);
     left: 0;
     background-color: var(--light-bg);
     border: 1px solid var(--border-color);
     border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* Deutlicherer Schatten */
-    z-index: 50; /* Stellt sicher, dass es über anderen Elementen liegt */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    z-index: 50;
     padding: 0.5rem;
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
-    min-width: 180px; /* Mindestbreite, um Inhalt gut darzustellen */
+    min-width: 180px;
 }
 .more-periods-dropdown button {
     width: 100%;
     text-align: left;
-    justify-content: flex-start; /* Text und Icon linksbündig */
+    justify-content: flex-start;
 }
 
-.custom-period-btn { /* Stile wie andere Periodenbuttons */
+.custom-period-btn {
     padding: 0.45rem 0.9rem;
     font-size: 0.78rem;
     font-weight: 500;
@@ -145,7 +140,6 @@
     color: var(--medium-grey-text);
     border-radius: 4px;
     cursor: pointer;
-    /* margin-left: auto; Schiebt den Button nach rechts, wenn er der letzte ist. Bei Bedarf anpassen. */
     transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
     display: inline-flex;
     align-items: center;
@@ -166,15 +160,14 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
-/* Custom Date Picker Modal */
 .custom-date-pickers-modal-overlay {
     position: fixed;
     inset: 0;
-    background-color: rgba(31, 31, 31, 0.7); /* Dunklerer Backdrop */
+    background-color: rgba(31, 31, 31, 0.7);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1070; /* Hoher z-index */
+    z-index: 1070;
     padding: 1rem;
     animation: fadeInModalOverlay 0.2s ease-out forwards;
 }
@@ -184,14 +177,14 @@
 }
 .custom-date-pickers-modal-content {
     background-color: var(--light-bg);
-    padding: 1.5rem 2rem 2rem; /* Mehr Padding */
+    padding: 1.5rem 2rem 2rem;
     border-radius: 8px;
     box-shadow: 0 5px 20px rgba(0,0,0,0.25);
     width: auto;
-    min-width: 300px; /* Mindestbreite */
-    max-width: 700px; /* Max-Breite für größere Kalender */
+    min-width: 300px;
+    max-width: 700px;
     animation: slideInModalContent 0.25s ease-out forwards;
-    position: relative; /* Für den Schließen-Button */
+    position: relative;
 }
 @keyframes slideInModalContent {
     from { opacity: 0; transform: translateY(-20px) scale(0.98); }
@@ -224,15 +217,14 @@
 }
 .custom-date-pickers-inline {
     display: flex;
-    gap: 1.5rem; /* Mehr Abstand zwischen den Kalendern */
+    gap: 1.5rem;
     justify-content: center;
-    flex-wrap: wrap; /* Erlaubt Umbruch auf kleineren Schirmen */
+    flex-wrap: wrap;
 }
-/* Stile für react-datepicker innerhalb des Modals */
 .custom-date-pickers-inline .react-datepicker {
-    border: none !important; /* Wichtig, um Standard-Rand zu entfernen */
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important; /* Leichter Schatten */
-    border-radius: 6px !important; /* Abgerundete Ecken */
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+    border-radius: 6px !important;
 }
 .custom-date-pickers-inline .react-datepicker__header {
     background-color: var(--light-grey-bg) !important;
@@ -264,13 +256,11 @@
     padding-top: 1rem;
     border-top: 1px solid var(--border-color-light);
 }
-.custom-date-modal-actions .small-button { /* Erbt von globalen Button-Stilen */
+.custom-date-modal-actions .small-button {
     font-size: 0.85rem;
     padding: 0.5rem 1rem;
 }
 
-
-/* Lade- und Fehlermeldungen */
 .loading-indicator-top {
     text-align: center;
     padding: 0.4rem;
@@ -287,7 +277,7 @@
     font-size: 0.85rem;
     border: 1px dashed var(--border-color-light, #eeeeee);
     border-radius: 6px;
-    background-color: #fdfdff; /* Sehr heller Hintergrund */
+    background-color: #fdfdff;
     margin-top: 0.5rem;
 }
 .stats-error-message {
@@ -308,26 +298,25 @@
     margin-top:0;
 }
 
-/* Dashboard Grid Layout */
 .dashboard-grid-layout {
     display: grid;
-    grid-template-columns: 1fr; /* Standard für Mobile */
+    grid-template-columns: 1fr;
     gap: 1.5rem;
 }
 
-@media (min-width: 1200px) { /* Größere Bildschirme: Zweispaltig */
+@media (min-width: 1200px) {
     .dashboard-grid-layout {
-        grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); /* Verhältnis Hauptspalte zu Sidebar */
+        grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
     }
-    .sidebar-stats-column { /* Sticky Sidebar für Desktop */
+    .sidebar-stats-column {
         position: sticky;
-        top: 1rem; /* Anpassen, falls ein fixer Header vorhanden ist */
-        align-self: flex-start; /* Wichtig, damit die Höhe sich an den Inhalt anpasst */
-        max-height: calc(100vh - 2rem); /* Verhindert, dass Sidebar länger als Viewport wird, 2rem Puffer */
-        overflow-y: auto; /* Scrollbar für Sidebar, falls Inhalt zu lang */
+        top: 1rem;
+        align-self: flex-start;
+        max-height: calc(100vh - 2rem);
+        overflow-y: auto;
     }
 }
-@media (min-width: 1500px) { /* Noch größere Bildschirme: Anderes Verhältnis */
+@media (min-width: 1500px) {
     .dashboard-grid-layout {
         grid-template-columns: minmax(0, 3.2fr) minmax(0, 1fr);
     }
@@ -337,21 +326,20 @@
 .main-stats-column, .sidebar-stats-column {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem; /* Abstand zwischen den Boxen in einer Spalte */
+    gap: 1.5rem;
 }
 
-/* Sektionsüberschriften */
 .stats-section-title {
     font-family: var(--font-serif);
-    font-size: 1.15rem; /* Etwas kleiner als Hauptüberschriften */
+    font-size: 1.15rem;
     color: var(--dark-text);
-    margin: 0 0 0.9rem 0; /* Abstand nach unten */
+    margin: 0 0 0.9rem 0;
     padding-bottom: 0.4rem;
     border-bottom: 1px solid var(--border-color-light, #eeeeee);
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Für Titel und Zeitraum */
-    flex-wrap: wrap; /* Für kleinere Bildschirme */
+    justify-content: space-between;
+    flex-wrap: wrap;
     gap: 0.4rem;
 }
 .stats-section-title.small-title {
@@ -359,38 +347,36 @@
     margin-bottom: 0.7rem;
     padding-bottom: 0.25rem;
 }
-.stats-section-title > span:first-child { /* Der eigentliche Titel-Text mit Icon */
+.stats-section-title > span:first-child {
     display: flex;
     align-items: center;
     gap: 0.35rem;
 }
 .stats-section-title .svg-inline--fa {
     color: var(--medium-grey-text);
-    font-size: 0.9rem; /* Icon-Größe */
+    font-size: 0.9rem;
 }
 .stats-period-display {
-    font-size: 0.68rem; /* Kleinere Schrift für den Zeitraum */
+    font-size: 0.68rem;
     font-weight: 400;
     color: var(--medium-grey-text);
     margin-left: 0.3rem;
 }
 
-
-/* Schnellzugriff & Aktivität Sektion */
 .quick-access-section .quick-access-content {
     display: flex;
-    flex-direction: column; /* Untereinander */
+    flex-direction: column;
     gap: 0.7rem;
 }
-.quick-create-button { /* Erbt von .button-link */
+.quick-create-button {
     padding: 0.6rem 1rem !important;
     font-size: 0.8rem !important;
     font-weight: 500 !important;
-    width: 100%; /* Volle Breite */
+    width: 100%;
 }
 .booking-activity-widget {
     width: 100%;
-    background-color: #fdfdfd; /* Sehr heller Hintergrund */
+    background-color: #fdfdfd;
     padding: 0.7rem 0.8rem;
     border-radius: 5px;
     border: 1px solid var(--border-color-extralight, #f1f1f1);
@@ -413,7 +399,6 @@
     color: var(--dark-text);
 }
 
-/* Salon Highlights: Wichtigste Veränderungen & Alerts Widget */
 .salon-highlights-section .key-changes-list,
 .salon-highlights-section .dashboard-alerts-list {
     list-style: none;
@@ -446,7 +431,6 @@
 .salon-highlights-section .dashboard-alert-item span {
     color: var(--dark-text);
 }
-/* Ergänzungen für Key Changes */
 .salon-highlights-section .key-changes-list {
     display: flex;
     flex-direction: column;
@@ -470,62 +454,54 @@
     flex-grow: 0;
 }
 
-
-/* KPI-Karten */
 .stats-overview-cards-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 0.7rem; /* Abstand zwischen Titel und Kartengruppe */
+    gap: 0.7rem;
 }
 .stats-section-subtitle {
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--medium-grey-text);
-    margin-top: 0.15rem; /* Kleiner Abstand nach oben, falls es eine hr gibt */
+    margin-top: 0.15rem;
     margin-bottom: 0.5rem;
-    padding-left: 0.05rem; /* Minimale Einrückung */
+    padding-left: 0.05rem;
 }
 .stats-overview-cards {
     display: grid;
-    gap: 0.65rem; /* Kleinerer Abstand zwischen den Karten selbst */
+    gap: 0.65rem;
 }
 .stats-overview-cards.kpi-group {
-    /* Passt die Anzahl der Spalten basierend auf der verfügbaren Breite an */
     grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
 }
 
 .kpi-divider {
     border: none;
     height: 1px;
-    background-color: var(--border-color-extralight, #f3f3f3); /* Sehr helle Linie */
-    margin: 0.5rem 0; /* Vertikaler Abstand für die Trennlinie */
+    background-color: var(--border-color-extralight, #f3f3f3);
+    margin: 0.5rem 0;
 }
 
 .stat-card {
     background-color: var(--light-bg, #ffffff);
     border: 1px solid var(--border-color-light, #f0f0f0);
-    border-radius: 6px; /* Etwas kleinere Rundung für kompaktere Karten */
-    padding: 0.7rem; /* Kompakteres Padding */
+    border-radius: 6px;
+    padding: 0.7rem;
     display: flex;
     flex-direction: column;
-    justify-content: space-between; /* Stellt sicher, dass der Inhalt verteilt wird */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03); /* Sehr dezenter Schatten */
+    justify-content: space-between;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     transition: box-shadow 0.2s ease, transform 0.2s ease;
-    overflow: hidden; /* Verhindert, dass Inhalte überlappen */
-    min-height: 85px; /* Mindesthöhe für Konsistenz */
+    overflow: hidden;
+    min-height: 85px;
 }
 .stat-card:hover {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-    transform: translateY(-1px); /* Leichter Hover-Effekt */
+    transform: translateY(-1px);
 }
-/* Haupt-KPIs können etwas größer sein */
-.stat-card.main-kpi {
-    /* padding: 0.8rem; */ /* Etwas mehr Padding für Haupt-KPIs */
-    /* min-height: 95px; */
-}
-.stat-card .stat-value.large { font-size: 1.4rem; } /* Für Haupt-KPIs */
+.stat-card .stat-value.large { font-size: 1.4rem; }
 .stat-card .stat-value { font-size: 1.1rem; font-weight: 600; color: var(--dark-text); }
-.stat-card .stat-label { font-size: 0.62rem; } /* Kleinere Schrift für Labels */
+.stat-card .stat-label { font-size: 0.62rem; }
 .stat-card-header {
     display: flex;
     align-items: center;
@@ -535,61 +511,42 @@
 .stat-icon {
     display: inline-flex; align-items: center; justify-content: center;
     border-radius: 50%;
-    padding: 0.2em; /* Relatives Padding basierend auf Schriftgröße */
+    padding: 0.2em;
     line-height: 1;
-    color: var(--dark-text); /* Standard Icon Farbe */
-    background-color: var(--light-grey-bg); /* Standard Icon Hintergrund */
-    font-size: 0.8rem; /* Kleinere Icons */
-    width: 18px; height: 18px; /* Feste Größe für Icons */
-}
-.stat-tooltip-icon {
-    margin-left: 0.3rem;
-    color: var(--light-grey-text);
-    font-size: 0.7rem; /* Klein und unaufdringlich */
-    cursor: help;
-    vertical-align: middle; /* Bessere vertikale Ausrichtung mit dem Label */
-}
-.stat-tooltip-icon:hover {
     color: var(--dark-text);
-}
-.stat-card .stat-value span[title] { /* Wenn der Wert ein Span mit Titel ist (für N/A mit Tooltip) */
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-}
-.stat-card .stat-value span[title] .svg-inline--fa {
-    font-size: 0.8em;
+    background-color: var(--light-grey-bg);
+    font-size: 0.8rem;
+    width: 18px; height: 18px;
 }
 
 .stat-label {
     font-weight: 500;
     color: var(--medium-grey-text, #5f5f5f);
-    line-height: 1.15; /* Für bessere Lesbarkeit bei Umbruch */
+    line-height: 1.15;
 }
 .stat-comparison {
-    font-size: 0.62rem; /* Sehr klein */
+    font-size: 0.62rem;
     font-weight: 500;
     display: flex;
     align-items: center;
-    gap: 0.05rem; /* Minimaler Abstand */
-    margin-top: auto; /* Schiebt es nach unten, wenn Platz ist */
-    padding-top: 0.05rem; /* Kleiner Abstand nach oben */
+    gap: 0.05rem;
+    margin-top: auto;
+    padding-top: 0.05rem;
 }
 .stat-comparison .comparison-data.positive { color: var(--success-color, #28a745); }
 .stat-comparison .comparison-data.negative { color: var(--danger-color, #c82333); }
 .stat-comparison .comparison-data.neutral { color: var(--medium-grey-text, #5f5f5f); }
 .stat-comparison .comparison-data .svg-inline--fa {
-    margin-right: 0.05rem; /* Minimaler Abstand zum Text */
-    font-size: 0.8em; /* Kleinere Pfeile */
+    margin-right: 0.05rem;
+    font-size: 0.8em;
 }
 
-/* KPI Goal Progress Bar */
 .kpi-goal-progress {
     margin-top: 0.3rem;
 }
 .progress-bar-container {
     width: 100%;
-    height: 6px; /* Dünnere Progress-Bar */
+    height: 6px;
     background-color: var(--border-color-light, #e9ecef);
     border-radius: 3px;
     overflow: hidden;
@@ -597,19 +554,17 @@
 }
 .progress-bar {
     height: 100%;
-    background-color: var(--success-color, #28a745); /* Standardmäßig grün */
+    background-color: var(--success-color, #28a745);
     border-radius: 3px;
     transition: width 0.3s ease-in-out;
 }
 .goal-text {
-    font-size: 0.6rem; /* Sehr kleine Schrift für Zieltext */
+    font-size: 0.6rem;
     color: var(--medium-grey-text);
     text-align: right;
     display: block;
 }
 
-
-/* Spezifische Icon-Farben (Beispiele, können erweitert werden) */
 .stat-icon.today, .stat-icon.fa-calendar-day { color: #28a745; background-color: rgba(40, 167, 69, 0.08); }
 .stat-icon.revenue, .stat-icon.fa-euro-sign, .stat-icon.fa-receipt  { color: #fd7e14; background-color: rgba(253, 126, 20, 0.08); }
 .stat-icon.fa-calendar-check { color: #007bff; background-color: rgba(0, 123, 255, 0.08); }
@@ -624,8 +579,6 @@
 .stat-icon.cancellation, .stat-icon.fa-user-slash { color: var(--danger-color); background-color: var(--danger-bg-light); }
 .stat-icon.leadtime, .stat-icon.fa-calendar-alt, .stat-icon.upcoming { color: #6f42c1; background-color: rgba(111, 66, 193, 0.08); }
 
-
-/* Chart-Bereich */
 .charts-section-wrapper {}
 .section-header-with-export {
     display: flex;
@@ -634,63 +587,62 @@
     margin-bottom: 0.9rem;
 }
 .section-header-with-export .stats-section-title {
-    margin-bottom: 0; /* Entfernt unteren Rand, da schon in .section-header-with-export */
-    flex-grow: 1; /* Nimmt verfügbaren Platz ein */
+    margin-bottom: 0;
+    flex-grow: 1;
 }
-.export-chart-btn, .export-list-btn { /* Erbt von .button-link-outline */
-    padding: 0.25rem 0.5rem; /* Kleinerer Button */
-    font-size: 0.7rem; /* Kleinere Schrift */
+.export-chart-btn, .export-list-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
     margin-left: 0.5rem;
-    line-height: 1; /* Verhindert zusätzliche Höhe */
-    background-color: var(--light-grey-bg); /* Leichter Hintergrund für bessere Sichtbarkeit */
+    line-height: 1;
+    background-color: var(--light-grey-bg);
     border: 1px solid var(--border-color-light);
 }
 .export-chart-btn:hover, .export-list-btn:hover {
-    background-color: var(--border-color-light); /* Dunklerer Hover */
+    background-color: var(--border-color-light);
 }
 
 .chart-card {
-    position: relative; /* Für den Export-Button */
+    position: relative;
     background-color: var(--light-bg, #ffffff);
     border: 1px solid var(--border-color-light, #f0f0f0);
     border-radius: 8px;
-    padding: 0.9rem; /* Kompakteres Padding */
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04); /* Leichter Schatten */
-    min-height: 240px; /* Mindesthöhe für Charts */
+    padding: 0.9rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    min-height: 240px;
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* Verhindert, dass Chart-Tooltips überlaufen */
+    overflow: hidden;
 }
 .chart-card .export-chart-btn {
     position: absolute;
     top: 0.45rem;
     right: 0.45rem;
-    z-index: 10; /* Stellt sicher, dass der Button über dem Chart liegt */
+    z-index: 10;
 }
-
 
 .charts-grid {
     display: grid;
     gap: 1rem;
-    grid-template-columns: 1fr; /* Standard für Mobile */
+    grid-template-columns: 1fr;
 }
-@media (min-width: 992px) { /* Desktop: Zweispaltig */
+@media (min-width: 992px) {
     .main-stats-column .charts-grid {
         grid-template-columns: repeat(2, 1fr);
     }
     .main-stats-column .charts-grid .chart-card.revenue-chart-card {
-        grid-column: 1 / -1; /* Nimmt volle Breite ein */
-        min-height: 280px; /* Etwas höher für das Hauptchart */
+        grid-column: 1 / -1;
+        min-height: 280px;
     }
     .main-stats-column .charts-grid > .chart-card:not(.revenue-chart-card) {
-        min-height: 240px; /* Standardhöhe für andere Charts */
+        min-height: 240px;
     }
 }
 
 .chart-title {
     font-family: var(--font-sans, sans-serif);
     font-weight: 600;
-    font-size: 0.9rem; /* Etwas kleiner */
+    font-size: 0.9rem;
     color: var(--dark-text);
     margin-bottom: 0.7rem;
     display: flex;
@@ -702,27 +654,26 @@
     font-size: 0.8em;
 }
 .chart-title .chart-period-label {
-    font-size: 0.55rem; /* Sehr klein */
+    font-size: 0.55rem;
     font-weight: 400;
     color: var(--light-grey-text);
     margin-left: 0.3rem;
 }
 .chart-card .recharts-responsive-container {
-    min-height: 180px; /* Mindesthöhe für den Chart-Container selbst */
+    min-height: 180px;
 }
 
-/* Tägliche Terminliste (Quick View) */
 .daily-appointments-section .daily-appointments-heading {
     font-family: var(--font-sans, sans-serif);
     font-weight: 600;
     font-size: 0.95rem;
     color: var(--dark-text);
-    margin-bottom: 0; /* Kein unterer Rand, da in .section-header-with-export */
+    margin-bottom: 0;
     display: flex;
     align-items: center;
     gap: 0.3rem;
-    padding-bottom: 0; /* Kein unteres Padding */
-    border-bottom: none; /* Keine Linie */
+    padding-bottom: 0;
+    border-bottom: none;
     flex-grow: 1;
 }
 .daily-appointments-section .section-header-with-export {
@@ -738,7 +689,7 @@
 .loading-message-stats.small-list-loader {
     padding: 0.7rem;
     font-size: 0.75rem;
-    border: none; /* Keine Linie für den kleinen Loader */
+    border: none;
     background-color: transparent;
 }
 
@@ -746,45 +697,45 @@
     list-style: none;
     padding: 0;
     margin: 0;
-    max-height: 280px; /* Begrenzte Höhe mit Scrollbar */
+    max-height: 280px;
     overflow-y: auto;
 }
 .daily-appointment-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.55rem 0.1rem; /* Etwas mehr vertikales Padding */
-    border-bottom: 1px solid var(--border-color-extralight, #f1f1f1); /* Sehr helle Trennlinie */
+    padding: 0.55rem 0.1rem;
+    border-bottom: 1px solid var(--border-color-extralight, #f1f1f1);
     font-size: 0.78rem;
     cursor: pointer;
     transition: background-color 0.15s ease;
-    border-radius: 3px; /* Leichte Abrundung für Hover-Effekt */
+    border-radius: 3px;
 }
 .daily-appointment-item:last-child {
     border-bottom: none;
 }
 .daily-appointment-item:hover, .daily-appointment-item:focus-visible {
-    background-color: #f9f9f9; /* Heller Hover-Effekt */
+    background-color: #f9f9f9;
 }
 .daily-appointment-item:focus-visible {
     outline: 2px solid var(--focus-ring-color);
     outline-offset: 1px;
 }
 .item-loader-icon {
-    margin-left: auto; /* Schiebt den Lade-Spinner nach rechts */
+    margin-left: auto;
     padding-left: 0.3rem;
     color: var(--medium-grey-text);
 }
 .daily-appointment-item .appointment-time {
     font-weight: 600;
     color: var(--dark-text);
-    min-width: 38px; /* Feste Breite für Zeit */
-    flex-shrink: 0; /* Verhindert Schrumpfen */
+    min-width: 38px;
+    flex-shrink: 0;
     font-size: 0.75rem;
 }
 .daily-appointment-item .appointment-info-group {
-    flex-grow: 1; /* Nimmt den meisten Platz ein */
-    margin: 0 0.4rem; /* Abstand links und rechts */
+    flex-grow: 1;
+    margin: 0 0.4rem;
     line-height: 1.2;
 }
 .daily-appointment-item .appointment-service {
@@ -800,26 +751,25 @@
 .appointment-status-tag {
     padding: 0.1em 0.35em;
     border-radius: 6px;
-    font-size: 0.55rem; /* Sehr klein */
+    font-size: 0.55rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.2px;
     border: 1px solid transparent;
-    min-width: 45px; /* Mindestbreite für Lesbarkeit */
+    min-width: 45px;
     text-align: center;
-    flex-shrink: 0; /* Verhindert Schrumpfen */
+    flex-shrink: 0;
 }
 .appointment-status-tag.status-heute { background-color: var(--info-bg-light); color: var(--info-color); border-color: var(--info-color); }
 .appointment-status-tag.status-morgen { background-color: #e9ecef; color: #495057; border-color: #ced4da; }
 .appointment-status-tag.status-datum,
 .appointment-status-tag.status-unbekannt { background-color: #f8f9fa; color: #6c757d; border-color: #dee2e6; }
 
-/* Dashboard Anpassen Sektion */
 .dashboard-customize-section .dashboard-customize-content {
     display: flex;
     flex-direction: column;
-    gap: 0.7rem; /* Abstand zwischen den Anpassungsoptionen */
-    align-items: flex-start; /* Stellt sicher, dass Labels linksbündig sind */
+    gap: 0.7rem;
+    align-items: flex-start;
 }
 .dashboard-customize-section .dashboard-customize-content p {
     border: none;
@@ -834,7 +784,7 @@
     padding: 0.3rem 0.65rem;
 }
 .kpi-visibility-controls {
-    border: none; /* Kein Rahmen um Fieldsets */
+    border: none;
     padding: 0;
     margin: 0.5rem 0 0 0;
     width: 100%;
@@ -846,17 +796,17 @@
     color: var(--dark-text);
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Für Sortierbuttons */
+    justify-content: space-between;
 }
 .kpi-visibility-controls legend input[type="checkbox"] {
     margin-right: 0.5rem;
-    width: 14px; /* Kleinere Checkboxen */
+    width: 14px;
     height: 14px;
-    accent-color: var(--dark-text); /* Passt die Farbe der Checkbox an */
+    accent-color: var(--dark-text);
 }
 .kpi-visibility-controls legend label {
     cursor: pointer;
-    flex-grow: 1; /* Label nimmt verfügbaren Platz ein */
+    flex-grow: 1;
 }
 .kpi-group-order-buttons button {
     background: none;
@@ -879,7 +829,7 @@
 
 
 .individual-kpi-toggles {
-    padding-left: 1.5rem; /* Einrückung für einzelne KPIs */
+    padding-left: 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 0.2rem;
@@ -902,7 +852,6 @@
     cursor: pointer;
 }
 
-/* KPI Goal Settings */
 .kpi-goal-settings {
     border: none;
     padding: 0;
@@ -924,14 +873,14 @@
 .kpi-goal-input label {
     font-size: 0.75rem;
     color: var(--medium-grey-text);
-    min-width: 120px; /* Für Ausrichtung */
+    min-width: 120px;
 }
 .kpi-goal-input input[type="number"] {
     padding: 0.3rem 0.5rem;
     font-size: 0.75rem;
     border: 1px solid var(--border-color);
     border-radius: 4px;
-    width: 100px; /* Feste Breite für Zahleninputs */
+    width: 100px;
 }
 
 .chart-settings {
@@ -950,16 +899,14 @@
     padding:0.3rem 0.5rem; font-size:0.75rem; border:1px solid var(--border-color); border-radius:4px;
 }
 
-
-/* Skeleton Loader Stile */
 .stat-card.is-loading-skeleton .stat-card-header-skeleton,
 .stat-card.is-loading-skeleton .stat-value-skeleton,
 .stat-card.is-loading-skeleton .stat-comparison-skeleton {
     background-color: var(--border-color-light, #eeeeee);
-    color: transparent; /* Versteckt Text während des Ladens */
+    color: transparent;
     animation: pulseBG 1.5s infinite ease-in-out;
     border-radius: 4px;
-    user-select: none; /* Verhindert Textauswahl */
+    user-select: none;
 }
 .stat-card.is-loading-skeleton .stat-card-header-skeleton { height: 1em; width: 60%; margin-bottom: 0.3em; }
 .stat-card.is-loading-skeleton .stat-value-skeleton { height: 1.3em; width: 40%; }
@@ -971,80 +918,133 @@
     50% { opacity: 1; }
 }
 
-/* Responsive Anpassungen für kleinere Bildschirme */
 @media (max-width: 767px) {
     .admin-dashboard-stats { padding: 0.5rem; }
     .stats-section-box { padding: 0.8rem; margin-bottom: 1rem;}
     .dashboard-grid-layout { grid-template-columns: 1fr; gap: 1rem; }
-    .charts-grid .chart-card.revenue-chart-card { grid-column: auto; } /* Auf Mobile nimmt es nur eine Spalte ein */
+    .charts-grid .chart-card.revenue-chart-card { grid-column: auto; }
     .quick-access-content { flex-direction: column; align-items: stretch; }
     .quick-create-button { width: 100%; margin-bottom: 0.75rem; }
     .booking-activity-widget { width: 100%; }
 
-    /* Anpassungen für Filterleiste auf Mobile */
     .stats-period-filter-bar {
         flex-direction: column;
-        align-items: stretch; /* Stellt sicher, dass Kindelemente volle Breite nehmen können */
+        align-items: stretch;
         gap: 0.5rem;
         padding: 0.5rem;
     }
     .period-buttons-main {
-        flex-wrap: wrap; /* Erlaubt Umbruch der Hauptbuttons */
-        justify-content: space-around; /* Verteilt Buttons gleichmäßiger */
+        flex-wrap: wrap;
+        justify-content: space-around;
     }
     .period-buttons-main button {
-        flex-grow: 1; /* Buttons nehmen verfügbaren Platz ein */
-        min-width: 120px; /* Mindestbreite, um Textlesbarkeit zu gewährleisten */
+        flex-grow: 1;
+        min-width: 120px;
     }
     .more-periods-btn {
-        width: 100%; /* Volle Breite für den "Mehr"-Button */
+        width: 100%;
         margin-top: 0.5rem;
     }
     .more-periods-dropdown {
-        position: static; /* Im normalen Fluss auf Mobile */
+        position: static;
         box-shadow: none;
         border-top: 1px solid var(--border-color-light);
         border-radius: 0 0 6px 6px;
-        margin-top: -1px; /* Überlappt leicht mit dem Button-Rand */
+        margin-top: -1px;
     }
     .custom-period-btn {
-        width: 100%; /* Volle Breite */
-        margin-left:0; /* Kein linker Rand auf Mobile */
+        width: 100%;
+        margin-left:0;
         margin-top: 0.5rem;
     }
 
-    /* Anpassungen für Custom Date Picker Modal auf Mobile */
     .custom-date-pickers-modal-content {
         max-width: 95%;
         padding: 1rem;
     }
     .custom-date-pickers-inline {
-        flex-direction: column; /* Kalender untereinander */
+        flex-direction: column;
     }
-    .custom-date-pickers-inline .react-datepicker { /* Stellt sicher, dass die Kalender im Modal die volle Breite nutzen */
+    .custom-date-pickers-inline .react-datepicker {
         width: 100%;
-        margin-bottom: 0.5rem; /* Abstand zwischen den Kalendern im Modal */
+        margin-bottom: 0.5rem;
     }
-    .custom-date-pickers-inline .react-datepicker-popper { /* Für den Fall, dass es als Popper gerendert wird */
+    .custom-date-pickers-inline .react-datepicker-popper {
         width: 100% !important;
-        max-width: calc(100vw - 2rem) !important; /* Verhindert Überlaufen des Viewports */
+        max-width: calc(100vw - 2rem) !important;
     }
 
-
-    /* Anpassungen für KPI-Karten auf Mobile */
     .stats-overview-cards.kpi-group {
-        grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); /* Kleinere Mindestbreite für Karten */
+        grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
     }
     .stat-card .stat-value.large { font-size: 1.3rem; }
     .stat-card .stat-value { font-size: 1.0rem; }
     .stat-card .stat-label { font-size: 0.6rem; }
     .stat-card .stat-icon { font-size: 0.75rem; width: 15px; height: 15px; }
 
-    /* Anpassungen für Charts auf Mobile */
     .chart-card { padding: 0.75rem; min-height: 220px; }
     .chart-card .recharts-responsive-container { min-height: 160px; }
     .daily-appointments-list { max-height: 250px; }
 }
+
+/* Custom Tooltip für KPI Fragezeichen-Icons */
+.kpi-tooltip-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.4rem;
+}
+
+.stat-tooltip-icon { /* Behält bestehende Stile für das Icon selbst bei */
+    color: var(--light-grey-text);
+    font-size: 0.8rem;
+    cursor: help;
+}
+.stat-tooltip-icon:hover { /* Hover-Effekt für das Icon */
+    color: var(--dark-text);
+}
+
+.kpi-tooltip-wrapper::before,
+.kpi-tooltip-wrapper::after {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease-in-out, visibility 0s linear 0.2s;
+    z-index: 100;
+}
+
+.kpi-tooltip-wrapper::before { /* Der Tooltip-Text-Container */
+    content: attr(data-tooltip);
+    bottom: calc(100% + 8px);
+    background-color: var(--dark-text, #333); /* Dunkler Hintergrund */
+    color: var(--light-bg, #fff); /* Heller Text */
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    white-space: nowrap;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.kpi-tooltip-wrapper::after { /* Der kleine Pfeil */
+    content: '';
+    bottom: calc(100% + 3px);
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--dark-text, #333) transparent transparent transparent; /* Pfeil zeigt nach oben */
+}
+
+.kpi-tooltip-wrapper:hover::before,
+.kpi-tooltip-wrapper:hover::after {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s, 0s; /* Tooltip erscheint sofort beim Hovern */
+}
+
+/* Feedback-Nachricht für Dashboard-Anpassungen */
 .customization-feedback {
     font-size: 0.75rem;
     padding: 0.4rem 0.7rem;
