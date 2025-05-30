@@ -13,17 +13,7 @@ import java.util.Optional;
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
     Optional<Customer> findByEmail(String email);
 
-    // --- Konzeptionelle Queries (benötigen Datenmodell-Erweiterungen) ---
-
-    /**
-     * Zählt die Anzahl der Kunden, die innerhalb eines bestimmten Zeitraums registriert wurden
-     * UND in der übergebenen Liste von Kunden-IDs enthalten sind.
-     * Benötigt ein Feld `registrationDate` (oder `createdAt` mit @CreationTimestamp) in der `Customer`-Entität.
-     * @param start Registrierungsdatum nicht früher als dieser Zeitpunkt.
-     * @param end Registrierungsdatum nicht später als dieser Zeitpunkt.
-     * @param customerIds Liste der Kunden-IDs, auf die die Zählung beschränkt werden soll.
-     * @return Anzahl der Neukunden, die auch in der customerIds Liste sind.
-     */
-    // @Query("SELECT COUNT(c.id) FROM Customer c WHERE c.registrationDate >= :start AND c.registrationDate <= :end AND c.id IN :customerIds")
-    // Long countNewCustomersRegisteredBetweenAndInIdList(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("customerIds") List<Long> customerIds);
+    // NEUE METHODE für Neukunden-KPI
+    @Query("SELECT COUNT(c.id) FROM Customer c WHERE c.registrationDate >= :start AND c.registrationDate <= :end AND c.id IN :customerIds")
+    Long countNewCustomersRegisteredBetweenAndInIdList(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("customerIds") List<Long> customerIds);
 }

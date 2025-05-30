@@ -2,14 +2,12 @@
 package com.friseursalon.backend.repository;
 
 import com.friseursalon.backend.model.Appointment;
+import com.friseursalon.backend.model.AppointmentStatus; // Import für Enum
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.math.BigDecimal;
-// import java.time.DayOfWeek; // Nicht direkt hier verwendet, aber im Service
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -68,14 +66,18 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     @Query("SELECT SUM(a.service.durationMinutes) FROM Appointment a WHERE a.startTime >= :start AND a.startTime <= :end")
     Long sumDurationMinutesByStartTimeBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    // @Query("SELECT COUNT(a.id) FROM Appointment a WHERE a.createdAt >= :startOfDay AND a.createdAt < :endOfDayPlusOne")
-    // Long countNewAppointmentsCreatedBetween(@Param("startOfDay") LocalDateTime startOfDay, @Param("endOfDayPlusOne") LocalDateTime endOfDayPlusOne);
+    // NEUE METHODEN für KPIs
+    @Query("SELECT COUNT(a.id) FROM Appointment a WHERE a.createdAt >= :startOfDay AND a.createdAt < :endOfDayPlusOne")
+    Long countNewAppointmentsCreatedBetween(@Param("startOfDay") LocalDateTime startOfDay, @Param("endOfDayPlusOne") LocalDateTime endOfDayPlusOne);
 
-    // @Query("SELECT COUNT(a.id) FROM Appointment a WHERE a.startTime >= :start AND a.startTime <= :end AND a.status = com.friseursalon.backend.model.AppointmentStatus.CANCELLED")
-    // Long countCancelledAppointmentsBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    @Query("SELECT COUNT(a.id) FROM Appointment a WHERE a.startTime >= :start AND a.startTime <= :end AND a.status = :status")
+    Long countAppointmentsByStatusBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("status") AppointmentStatus status);
 
-    // @Query("SELECT AVG(FUNCTION('DATEDIFF', DAY, a.createdAt, a.startTime)) FROM Appointment a WHERE a.startTime >= :start AND a.startTime <= :end AND a.createdAt IS NOT NULL AND a.startTime > a.createdAt")
-    // Double getAverageBookingLeadTimeInDays(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    // Für H2: DATEDIFF(unit, datetime1, datetime2)
+    // unit kann 'DAY', 'HOUR', 'MINUTE' etc. sein.
+    // Für PostgreSQL wäre es: AVG(EXTRACT(EPOCH FROM (a.startTime - a.createdAt)) / 86400.0)
+    @Query("SELECT AVG(CAST(FUNCTION('DATEDIFF', DAY, a.createdAt, a.startTime) AS DOUBLE)) FROM Appointment a WHERE a.startTime >= :start AND a.startTime <= :end AND a.createdAt IS NOT NULL AND a.startTime > a.createdAt")
+    Double getAverageBookingLeadTimeInDays(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     @Query("SELECT DISTINCT a.customer.id FROM Appointment a WHERE a.startTime >= :start AND a.startTime <= :end")
     List<Long> findDistinctCustomerIdsWithAppointmentsBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);

@@ -4,6 +4,7 @@ import jakarta.persistence.*; // Für alle JPA-Annotationen
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp; // Import für CreationTimestamp
 
 import java.time.LocalDateTime; // Für Datum und Uhrzeit
 
@@ -20,9 +21,6 @@ public class Appointment {
     // Startzeitpunkt des Termins (Datum und Uhrzeit)
     private LocalDateTime startTime;
 
-    // Endzeitpunkt des Termins (wird oft aus startTime + Service.durationMinutes berechnet)
-    // private LocalDateTime endTime; // Könnte hinzugefügt werden, wenn nötig
-
     // Verknüpfung zur gebuchten Dienstleistung
     @ManyToOne // Viele Termine können zu einer Dienstleistung gehören
     @JoinColumn(name = "service_id") // Name der Fremdschlüsselspalte in der Appointment-Tabelle
@@ -35,4 +33,14 @@ public class Appointment {
 
     // Zusätzliche Notizen zum Termin (optional)
     private String notes;
+
+    // NEU: Zeitpunkt der Terminerstellung
+    @CreationTimestamp // Wird automatisch beim Erstellen gesetzt
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    // NEU: Status des Termins
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = true) // Nullable, falls ein Standardstatus beim Erstellen gesetzt wird oder noch nicht relevant ist
+    private AppointmentStatus status;
 }

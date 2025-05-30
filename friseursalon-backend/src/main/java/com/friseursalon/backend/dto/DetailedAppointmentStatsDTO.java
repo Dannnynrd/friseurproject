@@ -56,6 +56,7 @@ public class DetailedAppointmentStatsDTO {
     private Integer avgBookingLeadTime;
     private BigDecimal projectedRevenueNext30Days;
 
+    // Konstruktor für Basiszahlen
     public DetailedAppointmentStatsDTO(
             long totalAppointmentsInPeriod, BigDecimal totalRevenueInPeriod,
             String periodStartDateFormatted, String periodEndDateFormatted,
