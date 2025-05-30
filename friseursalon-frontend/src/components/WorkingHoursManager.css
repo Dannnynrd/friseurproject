@@ -1,106 +1,290 @@
-/* src/components/WorkingHoursManager.css */
-
-.working-hours-manager {
-    padding: 1rem 0;
+/* File: src/components/WorkingHoursManager.css */
+.working-hours-manager-container {
+    padding: 1rem; /* Innenabstand für den gesamten Container */
+    background-color: transparent; /* Passt sich dem Kartenhintergrund an */
 }
 
-.day-config-row {
+.wh-loading-container {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--border-color);
-    gap: 1rem; /* Abstand zwischen Elementen, wenn sie umbrechen */
-}
-
-.day-config-row:last-child {
-    border-bottom: none;
-}
-
-.day-label {
-    font-family: var(--font-sans);
-    font-weight: 600;
-    font-size: 1rem;
-    color: var(--dark-text);
-    flex-basis: 120px; /* Mindestbreite für den Tag */
-    flex-grow: 0;
-    margin-right: 1rem;
-}
-
-.time-inputs {
-    display: flex;
-    gap: 1rem;
-    flex-grow: 1;
-    min-width: 280px; /* Verhindert zu starkes Quetschen */
-}
-
-.time-inputs .form-group {
-    flex: 1; /* Beide Zeit-Inputs nehmen gleich viel Platz ein */
-    margin-bottom: 0; /* Standard-Margin entfernen, da durch gap geregelt */
-}
-
-.time-inputs .form-group label {
-    font-size: 0.8rem;
-    margin-bottom: 0.25rem;
+    justify-content: center;
+    padding: 2rem;
     color: var(--medium-grey-text);
+    min-height: 200px; /* Mindesthöhe während des Ladens */
 }
-
-.time-inputs .form-group input[type="time"] {
-    padding: 0.5rem 0.6rem;
+.wh-loading-container p {
+    margin-top: 0.75rem;
     font-size: 0.9rem;
-    /* Weitere Stile werden von globalen .form-group input Stilen geerbt */
 }
 
-.form-group-checkbox {
+.wh-message {
+    padding: 0.8rem 1.2rem;
+    margin-bottom: 1.5rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-left: 1rem; /* Abstand zu den Zeit-Inputs */
-    flex-shrink: 0; /* Verhindert Schrumpfen */
+}
+.wh-message.wh-error {
+    background-color: var(--danger-bg-light);
+    color: var(--danger-color-dark);
+    border: 1px solid var(--danger-bg);
+}
+.wh-message.wh-success {
+    background-color: var(--success-bg-light);
+    color: var(--success-color-dark);
+    border: 1px solid var(--success-bg);
 }
 
-.form-group-checkbox input[type="checkbox"] {
-    width: 1rem;
-    height: 1rem;
-    accent-color: var(--dark-text);
+.working-hours-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Einspaltig auf kleinen Bildschirmen */
+    gap: 1.5rem; /* Abstand zwischen den Tageskarten */
+    margin-bottom: 1.5rem;
 }
 
-.form-group-checkbox label {
-    font-size: 0.9rem;
+@media (min-width: 768px) { /* md breakpoint */
+    .working-hours-grid {
+        /* Behält 1 Spalte bei, wenn Karten breiter werden, oder spezifische Spaltenanzahl */
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Angepasst für etwas breitere Karten */
+    }
+}
+@media (min-width: 1024px) { /* lg breakpoint für potenziell 3 Spalten */
+    .working-hours-grid {
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+}
+
+
+.day-settings-card {
+    background-color: var(--light-bg);
+    border: 1px solid var(--border-color-light);
+    border-radius: 8px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: background-color 0.3s ease, opacity 0.3s ease, box-shadow 0.2s ease;
+}
+.day-settings-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.06); /* Leichter Hover-Schatten */
+}
+.day-settings-card.is-closed {
+    background-color: var(--light-grey-bg); /* Heller Hintergrund für geschlossene Tage */
+    opacity: 0.85; /* Etwas weniger opak */
+}
+
+.day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color-extralight);
+}
+
+.day-label {
+    font-size: 1.05rem; /* Etwas kleiner für Kompaktheit */
+    font-weight: 600;
+    color: var(--dark-text);
+    font-family: var(--font-sans);
+}
+
+/* Toggle Switch Styling */
+.day-toggle-switch {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem; /* Mehr Abstand zum Text */
+}
+.day-toggle-switch input[type="checkbox"] {
+    height: 0;
+    width: 0;
+    visibility: hidden;
+    position: absolute;
+}
+.day-toggle-switch .toggle-label-text {
+    font-size: 0.75rem; /* Kleinerer Text */
     color: var(--medium-grey-text);
     font-weight: 500;
-    cursor: pointer;
+    user-select: none; /* Verhindert Textauswahl beim Klicken */
 }
 
-.working-hours-manager .form-actions {
+.day-toggle-switch label.slider {
+    cursor: pointer;
+    text-indent: -9999px;
+    width: 38px; /* Breite des Schalters */
+    height: 20px; /* Höhe des Schalters */
+    background: var(--border-color-medium, #cbd5e1); /* Deutlichere Farbe für "aus" */
+    display: block;
+    border-radius: 100px;
+    position: relative;
+    transition: background-color 0.2s ease; /* Schnellere Transition */
+    border: 1px solid var(--border-color-light); /* Leichter Rand für Definition */
+}
+.day-toggle-switch label.slider:after {
+    content: '';
+    position: absolute;
+    top: 1px; /* Angepasst an Rand */
+    left: 1px;  /* Angepasst an Rand */
+    width: 16px; /* Größe des Kreises */
+    height: 16px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1); /* Leichter Schatten für den Knopf */
+    transition: transform 0.2s ease, left 0.2s ease; /* Transform für sanftere Bewegung */
+}
+.day-toggle-switch input:checked + label.slider {
+    background: var(--success-color, #22c55e); /* Farbe für "an" (z.B. Grün) */
+    border-color: var(--success-color-dark, #16a34a);
+}
+.day-toggle-switch input:checked + label.slider:after {
+    /* left: calc(100% - 1px); */ /* Angepasst an Rand */
+    transform: translateX(18px); /* Bewegung des Knopfes = Breite_Slider - Breite_Knopf - 2*Rand_Knopf */
+}
+/* .day-toggle-switch label.slider:active:after { */
+/* Optional: Effekt beim aktiven Klicken, kann aber bei schnellen Toggles stören */
+/* } */
+
+.time-inputs {
+    display: grid;
+    grid-template-columns: 1fr; /* Standard: Untereinander */
+    gap: 1rem;
+    animation: fadeInForm 0.3s ease-out;
+    margin-top: 0.5rem; /* Kleiner Abstand zum Header, wenn sichtbar */
+}
+@media (min-width: 480px) { /* Nebeneinander, wenn genug Platz */
+    .time-inputs {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+
+.form-group-wh {
+    display: flex;
+    flex-direction: column;
+}
+.form-group-wh label {
+    font-size: 0.75rem; /* Kleineres Label */
+    color: var(--medium-grey-text);
+    margin-bottom: 0.3rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.form-group-wh label .svg-inline--fa {
+    font-size: 0.9em;
+    color: var(--light-grey-text); /* Dezenteres Icon */
+}
+
+.time-input-wh {
+    width: 100%;
+    padding: 0.6rem 0.8rem; /* Kompakteres Padding */
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.875rem; /* Kleinere Schrift */
+    background-color: var(--light-bg);
+    color: var(--dark-text);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
+    line-height: 1.4;
+    /* Styling für das native Uhr-Icon, falls möglich/gewünscht */
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 24 24%22 fill%3D%22%239CA3AF%22 width%3D%2218px%22 height%3D%2218px%22%3E%3Cpath d%3D%22M0 0h24v24H0V0z%22 fill%3D%22none%22/%3E%3Cpath d%3D%22M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z%22/%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    background-size: 1em auto;
+    padding-right: 2.5rem; /* Platz für das Icon */
+    appearance: none; /* Versteckt ggf. native Pfeile, aber nicht den Picker */
+    -webkit-appearance: none;
+    -moz-appearance: textfield; /* Für Firefox, um Pfeile zu entfernen */
+}
+.time-input-wh::-webkit-calendar-picker-indicator {
+    display: none; /* Versteckt das native Kalender/Uhr-Icon in Webkit */
+    -webkit-appearance: none;
+}
+/* Für Firefox, um die kleinen Pfeile zu entfernen, falls 'textfield' nicht reicht */
+.time-input-wh[type="time"]::-webkit-inner-spin-button,
+.time-input-wh[type="time"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+
+.time-input-wh:focus-visible {
+    border-color: var(--focus-ring-color);
+    box-shadow: 0 0 0 3px var(--focus-ring-subtle-color);
+    outline: none;
+}
+
+.closed-day-text {
+    font-size: 0.85rem; /* Etwas kleiner */
+    color: var(--medium-grey-text);
+    font-style: italic;
+    text-align: center;
+    padding: 0.8rem 0; /* Weniger Padding */
+    animation: fadeInForm 0.3s ease-out;
+}
+
+.wh-actions {
     margin-top: 2rem;
     padding-top: 1.5rem;
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid var(--border-color-light);
     display: flex;
-    justify-content: flex-end;
+    flex-direction: column; /* Buttons untereinander auf kleinen Bildschirmen */
+    gap: 0.75rem; /* Abstand zwischen den Buttons */
 }
 
-.working-hours-manager .form-actions .button-link .svg-inline--fa {
-    margin-right: 0.5rem;
+@media (min-width: 640px) { /* sm breakpoint */
+    .wh-actions {
+        flex-direction: row; /* Buttons nebeneinander auf größeren Bildschirmen */
+        justify-content: flex-end;
+    }
 }
 
-/* Responsive Anpassungen */
-@media (max-width: 768px) {
-    .day-config-row {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    .day-label {
-        margin-bottom: 0.5rem;
-        margin-right: 0;
-    }
-    .time-inputs {
-        width: 100%;
-    }
-    .form-group-checkbox {
-        margin-left: 0;
-        margin-top: 0.75rem;
-        width: 100%;
+.wh-actions .button-link,
+.wh-actions .button-link-outline { /* Gemeinsame Stile für alle Aktionsbuttons */
+    padding: 0.6rem 1.2rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    width: 100%; /* Volle Breite auf Mobile */
+}
+@media (min-width: 640px) {
+    .wh-actions .button-link,
+    .wh-actions .button-link-outline {
+        width: auto; /* Automatische Breite auf Desktop */
     }
 }
+
+.wh-actions .button-link .svg-inline--fa,
+.wh-actions .button-link-outline .svg-inline--fa {
+    margin-right: 0.3rem; /* Konsistenter Abstand */
+}
+
+.wh-apply-buttons-group { /* Gruppe für "Übernehmen"-Buttons */
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem; /* Abstand zum Speicherbutton auf Mobile */
+}
+@media (min-width: 640px) {
+    .wh-apply-buttons-group {
+        flex-direction: row;
+        margin-bottom: 0;
+        margin-right: auto; /* Schiebt diese Gruppe nach links, Speicherbutton bleibt rechts */
+    }
+}
+.wh-apply-buttons-group .button-link-outline {
+    background-color: var(--light-grey-bg); /* Hellerer Hintergrund für Sekundäraktionen */
+    border-color: var(--border-color-medium);
+    color: var(--medium-grey-text);
+}
+.wh-apply-buttons-group .button-link-outline:hover {
+    background-color: var(--border-color-light);
+    color: var(--dark-text);
+}
+
