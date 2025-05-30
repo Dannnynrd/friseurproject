@@ -12,6 +12,7 @@ import Login from './components/Login';
 import AuthService from './services/auth.service';
 import AuthVerify from './common/AuthVerify';
 import EventBus from './common/EventBus';
+import Register from './components/Register'; // Pfad anpassen, falls nötig
 
 // Statische Design-Komponenten (Homepage Sektionen)
 import HeroSection from './components/HeroSection';
@@ -223,6 +224,16 @@ function App() {
                         currentUser ? <Navigate to="/my-account" replace /> :
                             <div className="page-center-content">
                                 <Login onLoginSuccess={handleLoginSuccess} />
+                            </div>
+                    }
+                />
+                {/* HINZUGEFÜGTE ROUTE FÜR REGISTRIERUNG */}
+                <Route
+                    path="/register"
+                    element={
+                        currentUser ? <Navigate to="/my-account" replace /> : // Wenn bereits eingeloggt, zum Konto weiterleiten
+                            <div className="page-center-content">
+                                <Register />
                             </div>
                     }
                 />

@@ -1,0 +1,65 @@
+/* friseursalon-frontend/src/components/Register.module.css */
+
+/*
+  Die meisten Layout- und Formular-Stile werden durch Tailwind CSS
+  direkt in der JS-Datei gehandhabt.
+  Dieses Modul enthält spezifische Stile für die Registrierungsseite,
+  falls diese über Standard-Tailwind-Utilities hinausgehen.
+  Es ist sehr ähnlich zu Login.module.css.
+*/
+
+.registerPageContainer {
+    /*
+      Tailwind-Klassen im JS:
+      flex items-center justify-center min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8
+    */
+}
+
+.authContainer { /* Wiederverwendbare Klasse für Auth-Formulare */
+    /*
+      Tailwind-Klassen im JS:
+      w-full max-w-lg p-8 space-y-8 bg-white rounded-xl shadow-2xl animate-up
+      (max-w-lg statt max-w-md für etwas mehr Platz bei mehr Feldern)
+    */
+}
+
+.formGroup {
+    margin-bottom: 1.25rem; /* Tailwind: mb-5 */
+}
+
+.formInput {
+    /*
+      Tailwind-Klassen im JS:
+      mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm
+      placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm
+      Fehlerfall (border-red-500) wird dynamisch im JS gesetzt.
+    */
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.authButton {
+    /*
+      Tailwind-Klassen im JS:
+      group relative w-full flex justify-center py-3 px-4 border border-transparent
+      text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700
+      focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50
+    */
+}
+
+.authButton .svg-inline--fa:not(.fa-spinner) {
+    /* Farben für Icon werden im JS mit Tailwind gesetzt */
+}
+
+.formMessage {
+    /* Basis-Stile für Nachrichten, Farben etc. über Tailwind im JS */
+}
+
+.formMessage.error {
+    /* Semantischer Haken */
+}
+.formMessage.success {
+    /* Semantischer Haken */
+}
+
+/* Die .animate-up Klasse und die Logik mit .visible für die Animation
+   wird als global betrachtet und sollte in App.css oder index.css verbleiben. */

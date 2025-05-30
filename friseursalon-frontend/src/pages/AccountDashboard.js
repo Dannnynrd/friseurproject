@@ -1,365 +1,205 @@
-// File: src/pages/AccountDashboard.js
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+// friseursalon-frontend/src/pages/AccountDashboard.js
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import AuthService from '../services/auth.service';
+import styles from './AccountDashboard.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faTachometerAlt, faCalendarAlt, faListAlt, faTools, faUsers, faClock,
-    faCalendarTimes, faUserCog, faSignOutAlt, faChevronRight, faBars,
-    faPlusCircle, faMinusCircle, faEdit, faCheckCircle, faExclamationCircle,
-    faCog, faUser, faClipboardList, faTimes,
-    faSpinner,
-    faStarHalfAlt,
-    faCommentDots // NEU für Feedback-Tab Icon
+    faCalendarAlt, faUserEdit, faCog, faChartBar, faListAlt,
+    faUsers, faCut, faClock, faGift, faSignOutAlt, faBars, faTimes,
+    faThLarge, faBuilding // Salon-Icon
 } from '@fortawesome/free-solid-svg-icons';
 
-// Import der Kindkomponenten
-import AdminDashboardStats from '../components/AdminDashboardStats';
-import AdminCalendarView from '../components/AdminCalendarView';
+// Import der Unterkomponenten (Pfade ggf. anpassen)
 import AppointmentList from '../components/AppointmentList';
-import ServiceList from '../components/ServiceList';
-import ServiceForm from '../components/ServiceForm';
+import ProfileEditForm from '../components/ProfileEditForm';
+import AdminDashboardStats from '../components/AdminDashboardStats';
 import CustomerManagement from '../components/CustomerManagement';
+import ServiceList from '../components/ServiceList';
 import WorkingHoursManager from '../components/WorkingHoursManager';
 import BlockedTimeSlotManager from '../components/BlockedTimeSlotManager';
 import AdminTestimonialManagement from '../components/AdminTestimonialManagement';
-import ProfileEditForm from '../components/ProfileEditForm';
 import DashboardSettings from '../components/DashboardSettings';
-import TestimonialSubmitForm from '../components/TestimonialSubmitForm'; // NEU
+import AdminCalendarView from '../components/AdminCalendarView';
 
-import './AccountDashboard.css';
+function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppointmentsList, onServiceAdded, refreshServicesList, onProfileUpdateSuccess, onProfileUpdateError }) {
+    const navigate = useNavigate();
+    const location = useLocation();
 
-const TABS = {
-    ADMIN_DASHBOARD_STATS: 'adminDashboardStats', ADMIN_CALENDAR: 'adminCalendar',
-    ADMIN_APPOINTPOINTMENT_LIST: 'adminAppointmentList', ADMIN_SERVICES: 'adminServices',
-    ADMIN_CUSTOMER_MANAGEMENT: 'adminCustomerManagement', ADMIN_WORKING_HOURS: 'adminWorkingHours',
-    ADMIN_BLOCKED_SLOTS: 'adminBlockedSlots',
-    ADMIN_TESTIMONIALS: 'adminTestimonials',
-    ADMIN_SETTINGS: 'adminSettings',
-    PROFILE: 'profile', USER_BOOKINGS: 'userBookings',
-    USER_SUBMIT_TESTIMONIAL: 'userSubmitTestimonial', // NEU
-};
+    const getActiveTabFromQuery = () => {
+        const queryParams = new URLSearchParams(location.search);
+        return queryParams.get('tab') || (currentUser?.roles?.includes('ROLE_ADMIN') ? 'admin-dashboard' : 'appointments');
+    };
 
-const NAV_ITEMS_ADMIN = [
-    { id: TABS.ADMIN_DASHBOARD_STATS, label: 'Übersicht', icon: faTachometerAlt, category: 'Analyse' },
-    { id: TABS.ADMIN_CALENDAR, label: 'Kalender', icon: faCalendarAlt, category: 'Terminplanung' },
-    { id: TABS.ADMIN_APPOINTPOINTMENT_LIST, label: 'Terminliste', icon: faListAlt, category: 'Terminplanung' },
-    { id: TABS.ADMIN_SERVICES, label: 'Services', icon: faTools, category: 'Verwaltung' },
-    { id: TABS.ADMIN_CUSTOMER_MANAGEMENT, label: 'Kunden', icon: faUsers, category: 'Verwaltung' },
-    { id: TABS.ADMIN_TESTIMONIALS, label: 'Bewertungen', icon: faStarHalfAlt, category: 'Kundenfeedback' }, // Kategorie angepasst
-    { id: TABS.ADMIN_WORKING_HOURS, label: 'Arbeitszeiten', icon: faClock, category: 'Betrieb' },
-    { id: TABS.ADMIN_BLOCKED_SLOTS, label: 'Abwesenheiten', icon: faCalendarTimes, category: 'Betrieb' },
-    { id: TABS.PROFILE, label: 'Mein Profil', icon: faUserCog, category: 'Konto' },
-    { id: TABS.ADMIN_SETTINGS, label: 'Einstellungen', icon: faCog, category: 'Konto' },
-];
+    const [activeTab, setActiveTab] = useState(getActiveTabFromQuery());
+    const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
-const NAV_ITEMS_USER = [
-    { id: TABS.USER_BOOKINGS, label: 'Meine Termine', icon: faClipboardList, category: 'Mein Bereich' },
-    { id: TABS.PROFILE, label: 'Mein Profil', icon: faUser, category: 'Mein Bereich' },
-    { id: TABS.USER_SUBMIT_TESTIMONIAL, label: 'Feedback geben', icon: faCommentDots, category: 'Mein Bereich' }, // NEU
-];
-
-
-function AccountDashboard({
-                              currentUser, logOut, onAppointmentAdded, refreshAppointmentsList,
-                              onServiceAdded, refreshServicesList, onProfileUpdateSuccess, onProfileUpdateError
-                          }) {
-    const isAdmin = currentUser?.roles?.includes("ROLE_ADMIN");
-    // InitialTab für User jetzt USER_BOOKINGS, um Konsistenz zu wahren. User kann dann zu Feedback wechseln.
-    const initialTab = isAdmin ? TABS.ADMIN_DASHBOARD_STATS : TABS.USER_BOOKINGS;
-    const [activeTab, setActiveTab] = useState(initialTab);
-    const [isMobileView, setIsMobileView] = useState(window.innerWidth < 1024);
-    const [mobileNavOpen, setMobileNavOpen] = useState(false);
-    const [showServiceForm, setShowServiceForm] = useState(false);
-    const [isSubmittingService, setIsSubmittingService] = useState(false);
-    const [isEditingProfile, setIsEditingProfile] = useState(false);
-    const [profileMessages, setProfileMessages] = useState({ error: '', success: '' });
-    const [testimonialSubmittedMessage, setTestimonialSubmittedMessage] = useState(''); // Für Erfolgsmeldung nach Testimonial
-
-    const mainContentRef = useRef(null);
-
+    const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes('ROLE_ADMIN');
 
     useEffect(() => {
-        const handleResize = () => {
-            const mobile = window.innerWidth < 1024;
-            setIsMobileView(mobile);
-            if (!mobile && mobileNavOpen) setMobileNavOpen(false);
-        };
-        window.addEventListener('resize', handleResize);
-        handleResize();
-        return () => window.removeEventListener('resize', handleResize);
-    }, [mobileNavOpen]);
+        setActiveTab(getActiveTabFromQuery());
+    }, [location.search, currentUser]);
 
-    useEffect(() => {
-        if (activeTab !== TABS.ADMIN_SERVICES) setShowServiceForm(false);
-        if (activeTab !== TABS.PROFILE) {
-            setIsEditingProfile(false);
-        }
-        // Erfolgsmeldung für Testimonial zurücksetzen, wenn Tab gewechselt wird
-        if (activeTab !== TABS.USER_SUBMIT_TESTIMONIAL) {
-            setTestimonialSubmittedMessage('');
-        }
-        if (mainContentRef.current) {
-            mainContentRef.current.scrollTop = 0;
-        }
-    }, [activeTab]);
-
-    const handleTabClick = (tabName) => {
+    const handleTabChange = (tabName) => {
         setActiveTab(tabName);
-        if (isMobileView) setMobileNavOpen(false);
+        setIsMobileNavOpen(false);
+        navigate(`${location.pathname}?tab=${tabName}`, { replace: true });
     };
 
-    const handleServiceAddedCallback = () => {
-        if (onServiceAdded) onServiceAdded();
-        setShowServiceForm(false);
-        setIsSubmittingService(false);
-    };
+    const toggleMobileNav = () => setIsMobileNavOpen(!isMobileNavOpen);
 
-    const handleProfileSaveSuccess = (updatedPartialUser) => {
-        setIsEditingProfile(false);
-        setProfileMessages({ success: 'Ihre Daten wurden erfolgreich aktualisiert.', error: '' });
-        if (onProfileUpdateSuccess) onProfileUpdateSuccess(updatedPartialUser);
-        setTimeout(() => setProfileMessages({ error: '', success: '' }), 4000);
-    };
+    const userTabs = [
+        { name: 'appointments', label: 'Meine Termine', icon: faCalendarAlt, component: <AppointmentList key={`user-${refreshAppointmentsList}`} /> },
+        { name: 'profile', label: 'Profil bearbeiten', icon: faUserEdit, component: <ProfileEditForm user={currentUser} onProfileUpdateSuccess={onProfileUpdateSuccess} onProfileUpdateError={onProfileUpdateError} /> },
+    ];
 
-    const handleProfileSaveError = (errorMessage) => {
-        setProfileMessages({ error: errorMessage, success: '' });
-        if (onProfileUpdateError) onProfileUpdateError(errorMessage);
-        setTimeout(() => setProfileMessages({ error: '', success: '' }), 5000);
-    };
+    const adminTabs = [
+        { name: 'admin-dashboard', label: 'Übersicht', icon: faThLarge, component: <AdminDashboardStats /> },
+        { name: 'admin-calendar', label: 'Kalender', icon: faCalendarAlt, component: <AdminCalendarView /> },
+        { name: 'admin-appointments', label: 'Terminverwaltung', icon: faListAlt, component: <AppointmentList key={`admin-${refreshAppointmentsList}`} adminView={true} /> },
+        { name: 'admin-customers', label: 'Kundenverwaltung', icon: faUsers, component: <CustomerManagement /> },
+        { name: 'admin-services', label: 'Dienstleistungen', icon: faCut, component: <ServiceList onServiceAdded={onServiceAdded} refreshServicesList={refreshServicesList} /> },
+        { name: 'admin-working-hours', label: 'Öffnungszeiten', icon: faClock, component: <WorkingHoursManager /> },
+        { name: 'admin-blocked-slots', label: 'Sperrzeiten', icon: faGift, component: <BlockedTimeSlotManager /> },
+        { name: 'admin-testimonials', label: 'Bewertungen', icon: faChartBar, component: <AdminTestimonialManagement /> },
+        { name: 'admin-settings', label: 'Salon Einstellungen', icon: faCog, component: <DashboardSettings /> },
+    ];
 
-
-    const handleCancelEditProfile = () => {
-        setIsEditingProfile(false);
-        setProfileMessages({ error: '', success: '' });
-    };
-
-    // NEU: Callback für erfolgreich gesendetes Testimonial
-    const handleTestimonialSubmitted = (testimonial) => {
-        setTestimonialSubmittedMessage('Vielen Dank für Ihre Bewertung!');
-        // Optional: Nach kurzer Zeit zur "Meine Termine" Ansicht wechseln oder Nachricht ausblenden
-        setTimeout(() => {
-            setTestimonialSubmittedMessage('');
-            // Ggf. setActiveTab(TABS.USER_BOOKINGS);
-        }, 5000);
-    };
-
-
-    const renderTabContent = () => {
-        const currentNavInfo = (isAdmin ? NAV_ITEMS_ADMIN : NAV_ITEMS_USER).find(item => item.id === activeTab);
-        const tabTitle = currentNavInfo?.label || "Dashboard";
-        const tabIcon = currentNavInfo?.icon;
-
-        const Card = ({ children, title = tabTitle, icon = tabIcon, extraHeaderContent, cardClassName = '', noPadding = false }) => (
-            <div className={`dashboard-content-card ${cardClassName}`}>
-                <div className="dashboard-card__header">
-                    <h2 className="dashboard-card__title">
-                        {icon && <FontAwesomeIcon icon={icon} />}
-                        {title}
-                    </h2>
-                    {extraHeaderContent && <div className="dashboard-card__header-extra">{extraHeaderContent}</div>}
-                </div>
-                <div className={`dashboard-card__content ${noPadding ? 'no-padding' : ''}`}>
-                    {children}
-                </div>
-            </div>
-        );
-
-        switch (activeTab) {
-            case TABS.ADMIN_DASHBOARD_STATS:
-                return <AdminDashboardStats currentUser={currentUser} onAppointmentAction={onAppointmentAdded} />;
-
-            case TABS.ADMIN_CALENDAR:
-                return <Card cardClassName="calendar-card" noPadding><AdminCalendarView currentUser={currentUser} refreshTrigger={refreshAppointmentsList} onAppointmentUpdated={onAppointmentAdded} /></Card>;
-
-            case TABS.ADMIN_APPOINTPOINTMENT_LIST:
-                return <Card><AppointmentList refreshTrigger={refreshAppointmentsList} currentUser={currentUser} onAppointmentModified={onAppointmentAdded} /></Card>;
-
-            case TABS.PROFILE:
-                return (
-                    <Card extraHeaderContent={
-                        !isEditingProfile && (
-                            <button onClick={() => { setIsEditingProfile(true); setProfileMessages({ error: '', success: '' }); }}
-                                    className="button-link-outline small-button">
-                                <FontAwesomeIcon icon={faEdit} /> Bearbeiten
-                            </button> )}>
-                        {profileMessages.success && <p className="form-message success mb-4"><FontAwesomeIcon icon={faCheckCircle} /> {profileMessages.success}</p>}
-                        {profileMessages.error && <p className="form-message error mb-4"><FontAwesomeIcon icon={faExclamationCircle} /> {profileMessages.error}</p>}
-                        {isEditingProfile ? (
-                            <ProfileEditForm
-                                currentUser={currentUser}
-                                onSaveSuccess={handleProfileSaveSuccess}
-                                onCancel={handleCancelEditProfile}
-                                onProfileUpdateSuccess={handleProfileSaveSuccess}
-                                onProfileUpdateError={handleProfileSaveError}
-                            />
-                        ) : (
-                            <div className="profile-info-display">
-                                <p><strong>Vorname:</strong> {currentUser?.firstName || '-'}</p>
-                                <p><strong>Nachname:</strong> {currentUser?.lastName || '-'}</p>
-                                <p><strong>E-Mail:</strong> {currentUser?.email || '-'}</p>
-                                <p><strong>Telefon:</strong> {currentUser?.phoneNumber || 'Nicht angegeben'}</p>
-                                <p><strong>Rollen:</strong> {currentUser?.roles?.join(', ').replace("ROLE_", "") || '-'}</p>
-                            </div>
-                        )}
-                    </Card>
-                );
-
-            case TABS.ADMIN_SERVICES:
-                return (
-                    <Card extraHeaderContent={
-                        <button onClick={() => setShowServiceForm(!showServiceForm)} className="button-link-outline small-button" aria-expanded={showServiceForm}>
-                            <FontAwesomeIcon icon={showServiceForm ? faMinusCircle : faPlusCircle} />
-                            {showServiceForm ? ' Formular Schließen' : ' Service Hinzufügen'}
-                        </button> }>
-                        {showServiceForm && (
-                            <div className="form-in-card-wrapper">
-                                <ServiceForm onServiceAdded={handleServiceAddedCallback} setIsSubmitting={setIsSubmittingService} isSubmitting={isSubmittingService} />
-                            </div>
-                        )}
-                        <ServiceList key={refreshServicesList} currentUser={currentUser} />
-                    </Card>
-                );
-
-            case TABS.ADMIN_CUSTOMER_MANAGEMENT:
-                return <Card><CustomerManagement currentUser={currentUser} refreshTrigger={refreshAppointmentsList} /></Card>;
-
-            case TABS.ADMIN_WORKING_HOURS:
-                return <Card><WorkingHoursManager /></Card>;
-
-            case TABS.ADMIN_BLOCKED_SLOTS:
-                return <Card><BlockedTimeSlotManager /></Card>;
-
-            case TABS.ADMIN_TESTIMONIALS:
-                return <Card cardClassName="testimonial-management-card"><AdminTestimonialManagement currentUser={currentUser} /></Card>;
-
-            case TABS.ADMIN_SETTINGS:
-                return <DashboardSettings currentUser={currentUser} />;
-
-            case TABS.USER_BOOKINGS:
-                return <Card><AppointmentList refreshTrigger={refreshAppointmentsList} currentUser={currentUser} onAppointmentModified={onAppointmentAdded} /></Card>;
-
-            case TABS.USER_SUBMIT_TESTIMONIAL: // NEUER CASE für User
-                return (
-                    <Card title="Feedback geben" icon={faCommentDots}>
-                        {/* Das TestimonialSubmitForm wird hier nun gerendert.
-                            serviceIdProp könnte übergeben werden, wenn z.B. von einem spezifischen Termin aus verlinkt wird.
-                            Für einen generellen Feedback-Tab lassen wir es erstmal weg, das Formular kann dann Services laden.
-                        */}
-                        {testimonialSubmittedMessage && (
-                            <p className="form-message success mb-4 slide-in-down">
-                                <FontAwesomeIcon icon={faCheckCircle} /> {testimonialSubmittedMessage}
-                            </p>
-                        )}
-                        {!testimonialSubmittedMessage && (
-                            <TestimonialSubmitForm
-                                // serviceIdProp={...} // Optional, falls ein spezifischer Service bewertet werden soll
-                                onTestimonialSubmitted={handleTestimonialSubmitted}
-                            />
-                        )}
-                    </Card>
-                );
-
-            default:
-                return <Card title="Willkommen"><p>Wählen Sie eine Option aus dem Menü.</p></Card>;
+    const getTabContent = () => {
+        const allTabs = isAdmin ? [...userTabs, ...adminTabs] : userTabs;
+        const currentTabConfig = allTabs.find(tab => tab.name === activeTab);
+        if (!currentTabConfig) {
+            if (isAdmin) return <AdminDashboardStats />;
+            return <AppointmentList key={`user-fallback-${refreshAppointmentsList}`} />;
         }
+        return React.cloneElement(currentTabConfig.component, { key: activeTab });
     };
 
-    const renderNavItems = (items) => {
-        // Gruppierung nach Kategorien, um die Navigation übersichtlicher zu machen
-        const groupedItems = items.reduce((acc, item) => {
-            const category = item.category || 'Allgemein'; // Fallback-Kategorie
-            acc[category] = [...(acc[category] || []), item];
-            return acc;
-        }, {});
-
-        return Object.entries(groupedItems).map(([category, categoryItems]) => (
-            <React.Fragment key={category}>
-                <li className="sidebar__nav-category">{category}</li>
-                {categoryItems.map(item => (
-                    <li key={item.id} className="sidebar__nav-item">
-                        <button onClick={() => handleTabClick(item.id)}
-                                className={`sidebar__nav-button ${activeTab === item.id ? 'active' : ''}`}
-                                aria-current={activeTab === item.id ? 'page' : undefined}>
-                            <FontAwesomeIcon icon={item.icon} className="sidebar__nav-icon" />
-                            <span>{item.label}</span>
-                        </button>
-                    </li>
-                ))}
-            </React.Fragment>
+    const renderNavLinks = (tabs, isMobile = false) => {
+        return tabs.map(tab => (
+            <button
+                key={tab.name}
+                onClick={() => handleTabChange(tab.name)}
+                className={`w-full flex items-center px-4 py-2.5 text-sm rounded-md transition-all duration-200 ease-in-out group
+                    ${activeTab === tab.name
+                    ? `bg-slate-100 text-indigo-700 font-medium ${styles.navItemActive}` // Heller Hintergrund, Akzentfarbe Text
+                    : `text-gray-700 hover:bg-slate-50 hover:text-indigo-700 ${styles.navItem}`}
+                    ${isMobile ? 'text-left' : 'justify-start'}`}
+                aria-current={activeTab === tab.name ? 'page' : undefined}
+            >
+                <FontAwesomeIcon
+                    icon={tab.icon}
+                    className={`mr-3 h-5 w-5 flex-shrink-0 
+                        ${activeTab === tab.name ? 'text-indigo-600' : 'text-gray-400 group-hover:text-indigo-600'}`}
+                />
+                {tab.label}
+            </button>
         ));
     };
 
-    const navigationItems = isAdmin ? NAV_ITEMS_ADMIN : NAV_ITEMS_USER;
-    const currentActiveNavInfo = navigationItems.find(item => item.id === activeTab);
-
-    const SidebarNav = () => (
-        <aside className="dashboard__sidebar">
-            <div className="sidebar__header">
-                <span className="sidebar__logo-text">Friseur Admin</span>
-            </div>
-            <nav className="sidebar__nav">
-                <ul>{renderNavItems(navigationItems)}</ul>
-            </nav>
-            <div className="sidebar__footer">
-                <button onClick={logOut} className="sidebar__nav-button sidebar__logout-button">
-                    <FontAwesomeIcon icon={faSignOutAlt} className="sidebar__nav-icon" />
-                    <span>Abmelden</span>
-                </button>
-            </div>
-        </aside>
-    );
-
-    const MobileNav = () => (
-        <div className={`mobile-nav__overlay ${mobileNavOpen ? 'open' : ''}`} onClick={() => setMobileNavOpen(false)}>
-            <aside className={`mobile-nav__sidebar ${mobileNavOpen ? 'open' : ''}`} onClick={(e) => e.stopPropagation()}>
-                <div className="mobile-nav__header">
-                    <span className="sidebar__logo-text">Menü</span>
-                    <button className="mobile-nav__close-button" onClick={() => setMobileNavOpen(false)} aria-label="Menü schließen">
-                        <FontAwesomeIcon icon={faTimes} />
-                    </button>
-                </div>
-                <nav className="sidebar__nav">
-                    <ul>{renderNavItems(navigationItems)}</ul>
-                </nav>
-                <div className="sidebar__footer">
-                    <button onClick={() => { logOut(); setMobileNavOpen(false); }} className="sidebar__nav-button sidebar__logout-button">
-                        <FontAwesomeIcon icon={faSignOutAlt} className="sidebar__nav-icon" />
-                        <span>Abmelden</span>
-                    </button>
-                </div>
-            </aside>
-        </div>
-    );
-
     if (!currentUser) {
-        return <div className="loading-fullscreen"><FontAwesomeIcon icon={faSpinner} spin size="3x" /></div>;
+        return <p className="p-8 text-center text-gray-600">Bitte melden Sie sich an, um Ihr Dashboard anzuzeigen.</p>;
     }
 
     return (
-        <div className={`dashboard-page ${isMobileView && mobileNavOpen ? 'mobile-nav-is-open' : ''}`}>
-            {isMobileView && <MobileNav />}
-            <div className="dashboard-layout-container">
-                {!isMobileView && <SidebarNav />}
-                <main className="dashboard-main-content-area" ref={mainContentRef}>
-                    <header className="dashboard-content-header-sticky">
-                        <div className="dashboard-content-header__left">
-                            {isMobileView && (
-                                <button className="mobile-menu-trigger" onClick={() => setMobileNavOpen(true)} aria-label="Menü öffnen">
-                                    <FontAwesomeIcon icon={faBars} />
-                                </button>
-                            )}
-                            <h1 className="dashboard-content-title">
-                                {currentActiveNavInfo?.label || "Mein Account"}
-                            </h1>
-                        </div>
-                        <div className="dashboard-content-header__right">
-                            <span className="user-welcome-text">
-                                Hallo, {currentUser.firstName || currentUser.email}!
-                            </span>
-                        </div>
-                    </header>
-                    <div className="dashboard-active-tab-area">
-                        {renderTabContent()}
+        <div className={`min-h-screen bg-slate-100 ${styles.accountDashboardContainer}`}>
+            {/* Mobile Navigations-Toggle Bar */}
+            <div className="md:hidden bg-white shadow-sm fixed top-0 left-0 right-0 z-40 pt-safe-top">
+                <div className="container mx-auto px-4 h-16 flex justify-between items-center">
+                    <span className="text-lg font-semibold text-gray-800">
+                        { (isAdmin ? [...userTabs, ...adminTabs] : userTabs).find(t => t.name === activeTab)?.label || "Menü" }
+                    </span>
+                    <button
+                        onClick={toggleMobileNav}
+                        className="p-2 rounded-md text-gray-500 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+                        aria-controls="dashboard-mobile-nav"
+                        aria-expanded={isMobileNavOpen}
+                    >
+                        <span className="sr-only">{isMobileNavOpen ? 'Navigation schließen' : 'Navigation öffnen'}</span>
+                        <FontAwesomeIcon icon={isMobileNavOpen ? faTimes : faBars} className="h-6 w-6" />
+                    </button>
+                </div>
+            </div>
+
+            <div className="flex flex-col md:flex-row">
+                {/* Seitenleiste (Desktop) */}
+                <aside className={`hidden md:flex md:flex-col md:w-64 lg:w-72 bg-white fixed md:sticky top-0 left-0 md:!h-screen shadow-lg md:shadow-none md:border-r border-gray-200 z-30 ${styles.dashboardSidebar}`}>
+                    <div className="flex items-center justify-center h-16 md:h-20 border-b border-gray-200 px-4">
+                        <Link to="/" className="flex items-center space-x-2 group">
+                            <FontAwesomeIcon icon={faBuilding} className="h-7 w-7 text-indigo-600 group-hover:text-indigo-700 transition-colors" />
+                            <span className="text-xl font-bold text-gray-800 font-serif group-hover:text-indigo-700 transition-colors">Salon Dashboard</span>
+                        </Link>
                     </div>
+                    <nav className="flex-grow p-3 space-y-1 overflow-y-auto"> {/* Kleineres Padding und Space */}
+                        <span className="px-3 pt-2 pb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">Konto</span>
+                        {renderNavLinks(userTabs)}
+
+                        {isAdmin && (
+                            <>
+                                <div className="pt-3 mt-2">
+                                    <span className="px-3 pt-2 pb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">Admin Bereich</span>
+                                </div>
+                                <div className="mt-1 space-y-1"> {/* Kleineres Padding und Space */}
+                                    {renderNavLinks(adminTabs)}
+                                </div>
+                            </>
+                        )}
+                        <div className="mt-auto pt-3 pb-2 px-1"> {/* Logout-Button am Ende der Sidebar, mit weniger Padding */}
+                            <button
+                                onClick={logOut}
+                                className={`w-full flex items-center px-4 py-2.5 text-sm rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 group ${styles.navItem} ${styles.logoutButton}`}
+                            >
+                                <FontAwesomeIcon icon={faSignOutAlt} className="mr-3 h-5 w-5 text-gray-400 group-hover:text-red-500" />
+                                Ausloggen
+                            </button>
+                        </div>
+                    </nav>
+                </aside>
+
+                {/* Mobile Navigation (Overlay) */}
+                {isMobileNavOpen && (
+                    <div
+                        className={`fixed inset-0 z-40 bg-black bg-opacity-40 backdrop-blur-sm md:hidden ${styles.mobileNavOverlay}`}
+                        onClick={toggleMobileNav}
+                    ></div>
+                )}
+                <aside className={`fixed top-0 left-0 h-full w-72 bg-white shadow-xl z-50 transform transition-transform ease-in-out duration-300 md:hidden pt-safe-top
+                                 ${isMobileNavOpen ? 'translate-x-0' : '-translate-x-full'} ${styles.mobileDashboardNav}`}>
+                    <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+                        <span className="text-lg font-semibold text-gray-800">Menü</span>
+                        <button onClick={toggleMobileNav} className="p-2 text-gray-600 hover:text-indigo-600">
+                            <FontAwesomeIcon icon={faTimes} className="h-6 w-6" />
+                        </button>
+                    </div>
+                    <nav className="flex-grow p-3 space-y-1 overflow-y-auto">
+                        <span className="px-3 pt-2 pb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">Konto</span>
+                        {renderNavLinks(userTabs, true)}
+                        {isAdmin && (
+                            <>
+                                <div className="pt-3 mt-2">
+                                    <span className="px-3 pt-2 pb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">Admin Bereich</span>
+                                </div>
+                                <div className="mt-1 space-y-1">
+                                    {renderNavLinks(adminTabs, true)}
+                                </div>
+                            </>
+                        )}
+                        <div className="mt-auto pt-3 pb-2 px-1">
+                            <button
+                                onClick={logOut}
+                                className={`w-full flex items-center px-4 py-2.5 text-sm rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 group ${styles.navItem} ${styles.logoutButton}`}
+                            >
+                                <FontAwesomeIcon icon={faSignOutAlt} className="mr-3 h-5 w-5 text-gray-400 group-hover:text-red-500" />
+                                Ausloggen
+                            </button>
+                        </div>
+                    </nav>
+                </aside>
+
+
+                {/* Inhaltsbereich */}
+                <main className={`flex-1 p-6 md:p-8 lg:p-10 mt-16 md:mt-0 md:ml-64 lg:ml-72 ${styles.dashboardContent}`}>
+                    {getTabContent()}
                 </main>
             </div>
         </div>
