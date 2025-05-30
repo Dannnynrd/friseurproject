@@ -29,6 +29,15 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             @Param("proposedEnd") LocalDateTime proposedEnd,
             @Param("excludeId") Long excludeId
     );
+    // Innerhalb der Schnittstelle AppointmentRepository
+
+    @Query(value = "SELECT HOUR(a.start_time) as hour, COUNT(a.id) as count " +
+            "FROM Appointment a " +
+            "WHERE a.start_time >= :start AND a.start_time <= :end " +
+            "AND (a.status IS NULL OR a.status <> com.friseursalon.backend.model.AppointmentStatus.CANCELLED) " + // Stornierte Termine ausschließen
+            "GROUP BY HOUR(a.start_time) " +
+            "ORDER BY HOUR(a.start_time) ASC", nativeQuery = true)
+    List<Map<String, Object>> countAppointmentsPerHourBetweenNative(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     Long countByStartTimeBetween(LocalDateTime start, LocalDateTime end);
     Long countByStartTimeAfter(LocalDateTime start);

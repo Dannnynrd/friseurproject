@@ -2,20 +2,19 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBusinessTime } from '@fortawesome/free-solid-svg-icons'; // Passendes Icon
+import { faBusinessTime } from '@fortawesome/free-solid-svg-icons';
 
 const AppointmentsByHourRechart = ({ chartData, title }) => {
-    // chartData wird erwartet als Array von Objekten: [{ hour: 8, appointments: 5 }, ...]
-    const hasData = chartData && chartData.length > 0 && chartData.some(d => d.appointments > 0);
+    // chartData wird erwartet als Array von Objekten: [{ hour: 8, appointmentCount: 5 }, ...]
+    // Statt 'appointments' wird jetzt 'appointmentCount' verwendet, um mit dem neuen DTO übereinzustimmen.
+    const hasData = chartData && chartData.length > 0 && chartData.some(d => d.appointmentCount > 0);
 
     if (!hasData) {
         return (
             <>
                 <h4 className="chart-title"><FontAwesomeIcon icon={faBusinessTime} /> {title || 'Terminauslastung / Stunde'}</h4>
                 <p className="chart-no-data-message">
-                    Daten für die Terminauslastung pro Stunde werden geladen oder sind für den gewählten Zeitraum nicht verfügbar.
-                    <br/>
-                    <small>(Hinweis: Dieses Diagramm benötigt noch eine entsprechende Backend-Anpassung, um echte Daten anzuzeigen.)</small>
+                    Keine Daten für die Terminauslastung pro Stunde im gewählten Zeitraum verfügbar.
                 </p>
             </>
         );
@@ -24,7 +23,7 @@ const AppointmentsByHourRechart = ({ chartData, title }) => {
     // Daten für Recharts formatieren
     const data = chartData.map(item => ({
         name: `${String(item.hour).padStart(2, '0')}:00`, // z.B. "08:00"
-        Termine: item.appointments,
+        Termine: item.appointmentCount, // Geändert von 'appointments' zu 'appointmentCount'
     }));
 
     const CustomTooltip = ({ active, payload, label }) => {
@@ -70,7 +69,7 @@ const AppointmentsByHourRechart = ({ chartData, title }) => {
                         tick={{ fontSize: 10, fill: 'var(--dark-text, #333)' }}
                         axisLine={{ stroke: 'var(--border-color, #ccc)' }}
                         tickLine={{ stroke: 'var(--border-color, #ccc)' }}
-                        interval={0} // Zeige alle Stunden-Labels an, wenn nicht zu viele
+                        interval={0}
                     />
                     <YAxis
                         allowDecimals={false}
@@ -84,7 +83,7 @@ const AppointmentsByHourRechart = ({ chartData, title }) => {
                     <Bar dataKey="Termine" radius={[4, 4, 0, 0]}>
                         <LabelList dataKey="Termine" content={renderCustomBarLabel} />
                         {data.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={'#82ca9d'} opacity={0.8} /> // Einheitliche Farbe für dieses Beispiel
+                            <Cell key={`cell-${index}`} fill={'#82ca9d'} opacity={0.8} />
                         ))}
                     </Bar>
                 </BarChart>

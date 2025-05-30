@@ -1045,3 +1045,26 @@
     .chart-card .recharts-responsive-container { min-height: 160px; }
     .daily-appointments-list { max-height: 250px; }
 }
+.customization-feedback {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.7rem;
+    border-radius: 4px;
+    margin-bottom: 0.8rem;
+    text-align: center;
+    animation: fadeInMessage 0.3s ease-out;
+}
+
+.customization-feedback.success {
+    color: var(--success-color);
+    background-color: var(--success-bg-light);
+    border: 1px solid var(--success-color);
+}
+
+.customization-feedback .svg-inline--fa {
+    margin-right: 0.4rem;
+}
+
+@keyframes fadeInMessage {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}

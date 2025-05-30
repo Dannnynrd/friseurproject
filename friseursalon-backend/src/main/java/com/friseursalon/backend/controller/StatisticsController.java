@@ -1,4 +1,3 @@
-// Datei: friseursalon-backend/src/main/java/com/friseursalon/backend/controller/StatisticsController.java
 package com.friseursalon.backend.controller;
 
 import com.friseursalon.backend.dto.*;
@@ -73,7 +72,6 @@ public class StatisticsController {
         return ResponseEntity.ok(statisticsService.getAppointmentsPerService(sDate, eDate, topN));
     }
 
-    // NEUER ENDPUNKT: Umsatzentwicklung
     @GetMapping("/revenue-over-time")
     public ResponseEntity<List<RevenueDataPointDTO>> getRevenueOverTime(
             @RequestParam(name = "startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -85,7 +83,6 @@ public class StatisticsController {
         return ResponseEntity.ok(statisticsService.getRevenueOverTime(startDate, endDate));
     }
 
-    // NEUER ENDPUNKT: Kapazitätsauslastung
     @GetMapping("/capacity-utilization")
     public ResponseEntity<CapacityUtilizationDTO> getCapacityUtilization(
             @RequestParam(name = "startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -95,5 +92,19 @@ public class StatisticsController {
             return ResponseEntity.badRequest().build();
         }
         return ResponseEntity.ok(statisticsService.getCapacityUtilization(startDate, endDate));
+    }
+
+    // NEUER ENDPUNKT
+    @GetMapping("/by-hour-of-day")
+    public ResponseEntity<List<AppointmentsByHourDTO>> getAppointmentsByHourOfDay(
+            @RequestParam(name = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(name = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    ) {
+        LocalDate sDate = (startDate == null) ? LocalDate.now().with(TemporalAdjusters.firstDayOfMonth()) : startDate;
+        LocalDate eDate = (endDate == null) ? LocalDate.now().with(TemporalAdjusters.lastDayOfMonth()) : endDate;
+        if (sDate.isAfter(eDate)) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(statisticsService.getAppointmentsByHourOfDay(sDate, eDate));
     }
 }

@@ -1,19 +1,19 @@
-// Datei: friseursalon-backend/src/main/java/com/friseursalon/backend/service/StatisticsService.java
 package com.friseursalon.backend.service;
 
 import com.friseursalon.backend.dto.*;
 import com.friseursalon.backend.model.Appointment;
-import com.friseursalon.backend.model.AppointmentStatus; // Import für Enum
+import com.friseursalon.backend.model.AppointmentStatus;
 import com.friseursalon.backend.model.BlockedTimeSlot;
 import com.friseursalon.backend.model.WorkingHours;
 import com.friseursalon.backend.repository.AppointmentRepository;
 import com.friseursalon.backend.repository.CustomerRepository;
+// Geändert zu vollqualifiziertem Namen, um Mehrdeutigkeit zu vermeiden, falls es andere Service-Klassen gibt
 import com.friseursalon.backend.repository.ServiceRepository;
 import com.friseursalon.backend.repository.WorkingHoursRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Service; // Korrekter Import für @Service
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Service
+@Service // Korrekte Annotation für Spring Service
 public class StatisticsService {
 
     private static final Logger logger = LoggerFactory.getLogger(StatisticsService.class);
@@ -43,7 +43,7 @@ public class StatisticsService {
     private final WorkingHoursRepository workingHoursRepository;
     private final BlockedTimeSlotService blockedTimeSlotService;
     private final CustomerRepository customerRepository;
-    private final com.friseursalon.backend.repository.ServiceRepository serviceRepository; // Fully qualified name
+    private final ServiceRepository serviceRepository; // Verwendung des vollqualifizierten Namens hier auch möglich, aber Import ist sauberer
 
     private final DateTimeFormatter GERMAN_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.GERMAN);
 
@@ -53,7 +53,7 @@ public class StatisticsService {
                              WorkingHoursRepository workingHoursRepository,
                              BlockedTimeSlotService blockedTimeSlotService,
                              CustomerRepository customerRepository,
-                             com.friseursalon.backend.repository.ServiceRepository serviceRepository) { // Fully qualified name
+                             ServiceRepository serviceRepository) { // Direkt den Typ verwenden
         this.appointmentRepository = appointmentRepository;
         this.workingHoursRepository = workingHoursRepository;
         this.blockedTimeSlotService = blockedTimeSlotService;
@@ -75,8 +75,11 @@ public class StatisticsService {
         LocalDateTime periodStartDateTime = startDate.atStartOfDay();
         LocalDateTime periodEndDateTime = endDate.atTime(LocalTime.MAX);
 
-        long totalAppointmentsInPeriod = appointmentRepository.countByStartTimeBetween(periodStartDateTime, periodEndDateTime);
-        BigDecimal totalRevenueInPeriod = calculateRevenueForPeriod(periodStartDateTime, periodEndDateTime);
+        // Zählt nur nicht-stornierte Termine für die Haupt-KPI
+        long totalAppointmentsInPeriod = appointmentRepository.findAll().stream()
+                .filter(a -> a.getStartTime().isAfter(periodStartDateTime.minusNanos(1)) && a.getStartTime().isBefore(periodEndDateTime.plusNanos(1)) && (a.getStatus() == null || a.getStatus() != AppointmentStatus.CANCELLED))
+                .count();
+        BigDecimal totalRevenueInPeriod = calculateRevenueForPeriod(periodStartDateTime, periodEndDateTime); // calculateRevenueForPeriod berücksichtigt bereits keine stornierten Termine
 
         long daysInPeriod = ChronoUnit.DAYS.between(startDate, endDate) + 1;
         if (daysInPeriod <= 0) daysInPeriod = 1;
@@ -87,7 +90,9 @@ public class StatisticsService {
         LocalDateTime previousPeriodStartDateTime = previousPeriodStartDate.atStartOfDay();
         LocalDateTime previousPeriodEndDateTime = previousPeriodEndDate.atTime(LocalTime.MAX);
 
-        Long previousPeriodTotalAppointments = appointmentRepository.countByStartTimeBetween(previousPeriodStartDateTime, previousPeriodEndDateTime);
+        Long previousPeriodTotalAppointments = appointmentRepository.findAll().stream()
+                .filter(a -> a.getStartTime().isAfter(previousPeriodStartDateTime.minusNanos(1)) && a.getStartTime().isBefore(previousPeriodEndDateTime.plusNanos(1)) && (a.getStatus() == null || a.getStatus() != AppointmentStatus.CANCELLED))
+                .count();
         BigDecimal previousPeriodTotalRevenue = calculateRevenueForPeriod(previousPeriodStartDateTime, previousPeriodEndDateTime);
         Long previousPeriodUniqueCustomers = appointmentRepository.countDistinctCustomersByStartTimeBetween(previousPeriodStartDateTime, previousPeriodEndDateTime);
 
@@ -106,7 +111,6 @@ public class StatisticsService {
         LocalDateTime startOfToday = today.atStartOfDay();
         LocalDateTime endOfToday = today.atTime(LocalTime.MAX);
         LocalDateTime startOfYesterday = startOfToday.minusDays(1);
-        // LocalDateTime endOfYesterday = endOfToday.minusDays(1); // Nicht direkt verwendet, aber gut zu wissen
 
         WeekFields weekFields = WeekFields.of(Locale.GERMANY);
         LocalDateTime startOfWeek = today.with(weekFields.dayOfWeek(), 1).atStartOfDay();
@@ -115,16 +119,21 @@ public class StatisticsService {
         LocalDateTime startOfMonthLDT = today.withDayOfMonth(1).atStartOfDay();
         LocalDateTime endOfMonthLDT = today.with(TemporalAdjusters.lastDayOfMonth()).atTime(LocalTime.MAX);
 
-        long todayCount = appointmentRepository.countByStartTimeBetween(startOfToday, endOfToday);
-        long thisWeekCount = appointmentRepository.countByStartTimeBetween(startOfWeek, endOfWeek);
-        long thisMonthCount = appointmentRepository.countByStartTimeBetween(startOfMonthLDT, endOfMonthLDT);
-        long totalUpcomingCount = appointmentRepository.countByStartTimeAfter(now);
+        long todayCount = appointmentRepository.findAll().stream()
+                .filter(a -> a.getStartTime().isAfter(startOfToday.minusNanos(1)) && a.getStartTime().isBefore(endOfToday.plusNanos(1)) && (a.getStatus() == null || a.getStatus() != AppointmentStatus.CANCELLED))
+                .count();
+        long thisWeekCount = appointmentRepository.findAll().stream()
+                .filter(a -> a.getStartTime().isAfter(startOfWeek.minusNanos(1)) && a.getStartTime().isBefore(endOfWeek.plusNanos(1)) && (a.getStatus() == null || a.getStatus() != AppointmentStatus.CANCELLED))
+                .count();
+        long thisMonthCount = appointmentRepository.findAll().stream()
+                .filter(a -> a.getStartTime().isAfter(startOfMonthLDT.minusNanos(1)) && a.getStartTime().isBefore(endOfMonthLDT.plusNanos(1)) && (a.getStatus() == null || a.getStatus() != AppointmentStatus.CANCELLED))
+                .count();
+        long totalUpcomingCount = appointmentRepository.countByStartTimeAfter(now); // Hier könnten auch stornierte zukünftige Termine gezählt werden, je nach Definition
 
         BigDecimal revenueToday = calculateRevenueForPeriod(startOfToday, endOfToday);
         BigDecimal revenueThisWeek = calculateRevenueForPeriod(startOfWeek, endOfWeek);
         BigDecimal revenueThisMonth = calculateRevenueForPeriod(startOfMonthLDT, endOfMonthLDT);
 
-        // --- Berechnung der neuen KPIs ---
         Long uniqueCustomersInPeriod = appointmentRepository.countDistinctCustomersByStartTimeBetween(periodStartDateTime, periodEndDateTime);
 
         Double customerGrowthPercentage = calculatePercentageChange(
@@ -143,33 +152,27 @@ public class StatisticsService {
 
         long totalActiveServices = serviceRepository.count();
 
-        // newBookingsToday & newBookingsYesterday
         Long newBookingsTodayCount = appointmentRepository.countNewAppointmentsCreatedBetween(startOfToday, endOfToday.plusDays(1).minusNanos(1));
         Long newBookingsYesterdayCount = appointmentRepository.countNewAppointmentsCreatedBetween(startOfYesterday, startOfToday.minusNanos(1));
 
-        // cancellationRate
         Long cancelledInPeriod = appointmentRepository.countAppointmentsByStatusBetween(periodStartDateTime, periodEndDateTime, AppointmentStatus.CANCELLED);
-        Long totalPotentiallyBookedInPeriod = totalAppointmentsInPeriod + (cancelledInPeriod != null ? cancelledInPeriod : 0L);
-        Double cancellationRateValue = (totalPotentiallyBookedInPeriod > 0 && cancelledInPeriod != null)
-                ? ((double) cancelledInPeriod / totalPotentiallyBookedInPeriod) * 100
+        Long allAppointmentsMadeForPeriod = appointmentRepository.countByStartTimeBetween(periodStartDateTime, periodEndDateTime); // Alle, inkl. stornierte
+        Double cancellationRateValue = (allAppointmentsMadeForPeriod > 0 && cancelledInPeriod != null)
+                ? ((double) cancelledInPeriod / allAppointmentsMadeForPeriod) * 100
                 : null;
-        if (totalPotentiallyBookedInPeriod == 0) {
-            cancellationRateValue = null;
-        }
 
         Long cancelledInPreviousPeriod = appointmentRepository.countAppointmentsByStatusBetween(previousPeriodStartDateTime, previousPeriodEndDateTime, AppointmentStatus.CANCELLED);
-        Long totalPotentiallyBookedInPreviousPeriod = (previousPeriodTotalAppointments != null ? previousPeriodTotalAppointments : 0L) + (cancelledInPreviousPeriod != null ? cancelledInPreviousPeriod : 0L);
-        Double previousPeriodCancellationRate = (totalPotentiallyBookedInPreviousPeriod > 0 && cancelledInPreviousPeriod != null)
-                ? ((double) cancelledInPreviousPeriod / totalPotentiallyBookedInPreviousPeriod) * 100
+        Long allAppointmentsMadeForPreviousPeriod = appointmentRepository.countByStartTimeBetween(previousPeriodStartDateTime, previousPeriodEndDateTime);
+        Double previousPeriodCancellationRate = (allAppointmentsMadeForPreviousPeriod > 0 && cancelledInPreviousPeriod != null)
+                ? ((double) cancelledInPreviousPeriod / allAppointmentsMadeForPreviousPeriod) * 100
                 : null;
 
         Double cancellationRateChangePercentage = calculatePercentageChange(
                 cancellationRateValue != null ? BigDecimal.valueOf(cancellationRateValue) : null,
                 previousPeriodCancellationRate != null ? BigDecimal.valueOf(previousPeriodCancellationRate) : null,
-                false // Höher ist schlechter für Stornoquote
+                false
         );
 
-        // newCustomerShare
         List<Long> customerIdsInPeriod = appointmentRepository.findDistinctCustomerIdsWithAppointmentsBetween(periodStartDateTime, periodEndDateTime);
         Long newCustomersAmongAttendees = 0L;
         if (customerIdsInPeriod != null && !customerIdsInPeriod.isEmpty()) {
@@ -178,9 +181,6 @@ public class StatisticsService {
         Double newCustomerShareValue = (uniqueCustomersInPeriod != null && uniqueCustomersInPeriod > 0 && newCustomersAmongAttendees != null)
                 ? ((double) newCustomersAmongAttendees / uniqueCustomersInPeriod) * 100
                 : null;
-        if (uniqueCustomersInPeriod == null || uniqueCustomersInPeriod == 0) {
-            newCustomerShareValue = null;
-        }
 
         List<Long> customerIdsInPreviousPeriod = appointmentRepository.findDistinctCustomerIdsWithAppointmentsBetween(previousPeriodStartDateTime, previousPeriodEndDateTime);
         Long newCustomersAmongAttendeesPrevious = 0L;
@@ -196,9 +196,9 @@ public class StatisticsService {
                 previousPeriodNewCustomerShare != null ? BigDecimal.valueOf(previousPeriodNewCustomerShare) : null
         );
 
-        // avgBookingLeadTime
         Double avgLeadTimeDays = appointmentRepository.getAverageBookingLeadTimeInDays(periodStartDateTime, periodEndDateTime);
-        Integer avgBookingLeadTimeValue = (avgLeadTimeDays != null) ? (int) Math.round(avgLeadTimeDays) : null;
+        Integer avgBookingLeadTimeValue = (avgLeadTimeDays != null && !avgLeadTimeDays.isNaN() && !avgLeadTimeDays.isInfinite()) ? (int) Math.round(avgLeadTimeDays) : null;
+
 
         BigDecimal projectedRevenueNext30DaysValue = null;
         if (totalRevenueInPeriod != null && daysInPeriod > 0) {
@@ -241,12 +241,13 @@ public class StatisticsService {
     private Double calculatePercentageChange(BigDecimal currentValue, BigDecimal previousValue) {
         return calculatePercentageChange(currentValue, previousValue, true);
     }
+
     private Double calculatePercentageChange(BigDecimal currentValue, BigDecimal previousValue, boolean isGrowthGood) {
         if (currentValue == null || previousValue == null) return null;
 
         if (previousValue.compareTo(BigDecimal.ZERO) == 0) {
             if (currentValue.compareTo(BigDecimal.ZERO) == 0) return 0.0;
-            return null;
+            return null; // Or a very large number if preferred, but null is safer for display
         }
         BigDecimal difference = currentValue.subtract(previousValue);
         return difference.divide(previousValue, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue();
@@ -256,7 +257,7 @@ public class StatisticsService {
     private BigDecimal calculateRevenueForPeriod(LocalDateTime start, LocalDateTime end) {
         List<Appointment> appointmentsInPeriod = appointmentRepository.findByStartTimeBetween(start, end);
         return appointmentsInPeriod.stream()
-                .filter(appointment -> appointment.getService() != null && appointment.getService().getPrice() > 0 && appointment.getStatus() != AppointmentStatus.CANCELLED) // Stornierte Termine nicht zählen
+                .filter(appointment -> appointment.getService() != null && appointment.getService().getPrice() > 0 && (appointment.getStatus() == null || appointment.getStatus() != AppointmentStatus.CANCELLED))
                 .map(appointment -> BigDecimal.valueOf(appointment.getService().getPrice()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
@@ -271,7 +272,7 @@ public class StatisticsService {
         List<Appointment> appointments = appointmentRepository.findUpcomingAppointmentsForNextDays(todayStart, upcomingEndRange);
 
         return appointments.stream()
-                .filter(apt -> apt.getStatus() != AppointmentStatus.CANCELLED) // Stornierte Termine herausfiltern
+                .filter(apt -> apt.getStatus() == null || apt.getStatus() != AppointmentStatus.CANCELLED)
                 .map(apt -> {
                     String status;
                     LocalDate appointmentDate = apt.getStartTime().toLocalDate();
@@ -333,8 +334,6 @@ public class StatisticsService {
             }
 
             DayOfWeek actualDayOfWeek;
-            // H2 DAY_OF_WEEK gibt 1 (So) bis 7 (Sa) zurück.
-            // java.time.DayOfWeek gibt 1 (Mo) bis 7 (So) zurück.
             switch (dayOfWeekFromDb) {
                 case 1: actualDayOfWeek = DayOfWeek.SUNDAY; break;
                 case 2: actualDayOfWeek = DayOfWeek.MONDAY; break;
@@ -471,7 +470,7 @@ public class StatisticsService {
 
             List<Appointment> appointmentsOnDate = appointmentRepository.findByStartTimeBetween(currentDate.atStartOfDay(), currentDate.atTime(LocalTime.MAX));
             for (Appointment app : appointmentsOnDate) {
-                if (app.getService() != null && app.getStatus() != AppointmentStatus.CANCELLED) { // Stornierte Termine nicht für Auslastung zählen
+                if (app.getService() != null && (app.getStatus() == null || app.getStatus() != AppointmentStatus.CANCELLED)) {
                     totalBookedMinutes += app.getService().getDurationMinutes();
                 }
             }
@@ -493,5 +492,72 @@ public class StatisticsService {
                 startDate.format(GERMAN_DATE_FORMATTER),
                 endDate.format(GERMAN_DATE_FORMATTER)
         );
+    }
+
+    public List<AppointmentsByHourDTO> getAppointmentsByHourOfDay(LocalDate startDate, LocalDate endDate) {
+        LocalDateTime periodStartDateTime = startDate.atStartOfDay();
+        LocalDateTime periodEndDateTime = endDate.atTime(LocalTime.MAX);
+
+        logger.info("Suche Termine pro Stunde von {} bis {}", periodStartDateTime, periodEndDateTime);
+        List<Map<String, Object>> results = appointmentRepository.countAppointmentsPerHourBetweenNative(periodStartDateTime, periodEndDateTime);
+
+        List<AppointmentsByHourDTO> hourlyStats = new ArrayList<>();
+        // Erwartete Stunden (z.B. von 8 bis 20 Uhr) - anpassen, falls nötig
+        // Dynamisch basierend auf den Arbeitszeiten machen? Fürs Erste fix.
+        LocalTime earliestOpening = LocalTime.MAX;
+        LocalTime latestClosing = LocalTime.MIN;
+
+        List<WorkingHours> allWorkingHours = workingHoursRepository.findAll();
+        if (allWorkingHours.isEmpty()) { // Fallback, falls keine Arbeitszeiten definiert sind
+            for (int i = 8; i <= 20; i++) {
+                hourlyStats.add(new AppointmentsByHourDTO(i, 0L));
+            }
+        } else {
+            for (WorkingHours wh : allWorkingHours) {
+                if (!wh.isClosed() && wh.getStartTime() != null && wh.getStartTime().isBefore(earliestOpening)) {
+                    earliestOpening = wh.getStartTime();
+                }
+                if (!wh.isClosed() && wh.getEndTime() != null && wh.getEndTime().isAfter(latestClosing)) {
+                    latestClosing = wh.getEndTime();
+                }
+            }
+            if (earliestOpening == LocalTime.MAX) earliestOpening = LocalTime.of(8,0); // Fallback
+            if (latestClosing == LocalTime.MIN) latestClosing = LocalTime.of(20,0); // Fallback
+
+            for (int i = earliestOpening.getHour(); i <= latestClosing.getHour(); i++) {
+                hourlyStats.add(new AppointmentsByHourDTO(i, 0L));
+            }
+        }
+
+
+        results.forEach(result -> {
+            Object hourFromDbObj = result.get("HOUR");
+            if (hourFromDbObj == null) hourFromDbObj = result.get("hour");
+
+            Object countFromDbObj = result.get("COUNT");
+            if (countFromDbObj == null) countFromDbObj = result.get("count");
+
+            if (hourFromDbObj == null || countFromDbObj == null) {
+                logger.warn("Eintrag in Stundenstatistik übersprungen, da Schlüssel 'HOUR' oder 'COUNT' fehlen. Vorhandene Schlüssel: {}", result.keySet());
+                return;
+            }
+
+            int hour;
+            try {
+                hour = ((Number) hourFromDbObj).intValue();
+            } catch (ClassCastException e) {
+                logger.error("Fehler beim Casten von HOUR: {} mit Wert: {}", hourFromDbObj.getClass(), hourFromDbObj, e);
+                return;
+            }
+
+            long count = ((Number) countFromDbObj).longValue();
+
+            hourlyStats.stream()
+                    .filter(dto -> dto.getHour() == hour)
+                    .findFirst()
+                    .ifPresent(dto -> dto.setAppointmentCount(count));
+        });
+        logger.info("Verarbeitete Termine pro Stunde: {}", hourlyStats);
+        return hourlyStats;
     }
 }
