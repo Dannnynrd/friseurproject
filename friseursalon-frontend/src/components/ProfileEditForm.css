@@ -1,0 +1,95 @@
+/* File: friseursalon-frontend/src/components/ProfileEditForm.css */
+.profile-edit-forms-container {
+    margin-top: 1rem;
+    padding: 0.5rem;
+}
+
+.profile-edit-form.section-style {
+    background-color: var(--light-grey-bg, #f8f9fa);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #e9ecef);
+    margin-bottom: 2rem;
+}
+
+.profile-edit-form .form-section-heading {
+    font-family: var(--font-sans);
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--dark-text);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color-light, #eeeeee);
+}
+
+.profile-edit-form .form-group {
+    margin-bottom: 1.25rem;
+}
+
+.profile-edit-form .form-group label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--medium-grey-text);
+}
+
+.profile-edit-form .form-group input[type="text"],
+.profile-edit-form .form-group input[type="email"],
+.profile-edit-form .form-group input[type="tel"],
+.profile-edit-form .form-group input[type="password"] {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.95rem;
+    background-color: var(--light-bg);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-edit-form .form-group input:focus-visible {
+    border-color: var(--focus-ring-color);
+    box-shadow: 0 0 0 2px var(--focus-ring-subtle-color);
+    outline: none;
+}
+
+.profile-edit-form .form-group input[readonly] {
+    background-color: var(--disabled-bg, #e9ecef);
+    color: var(--medium-grey-text); /* Slightly darker for better readability */
+    cursor: not-allowed;
+    border-color: var(--disabled-border, #ced4da); /* Add border for consistency */
+}
+
+
+.profile-edit-form .form-hint.small-hint {
+    font-size: 0.75rem;
+    color: var(--light-grey-text);
+    margin-top: 0.3rem;
+}
+
+.profile-edit-form .form-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.profile-edit-form .form-actions .button-link .svg-inline--fa {
+    margin-right: 0.5rem;
+}
+
+.profile-form-divider {
+    border: none;
+    border-top: 1px dashed var(--border-color, #ced4da);
+    margin: 2.5rem 0;
+}
+
+.profile-edit-forms-container .form-actions.overall-cancel {
+    justify-content: center; /* Zentriert den globalen "Abbrechen"-Button */
+    margin-top: 0; /* Kein zusätzlicher Abstand nach dem letzten Formular */
+}
+
+.profile-edit-forms-container .form-message.small {
+    font-size: 0.8rem;
+    padding: 0.6rem 1rem;
+    margin-bottom: 1rem; /* Abstand nach unten, falls eine Nachricht angezeigt wird */
+}

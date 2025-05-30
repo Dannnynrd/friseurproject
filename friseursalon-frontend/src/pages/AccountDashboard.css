@@ -558,3 +558,38 @@
         margin-right: 0.4rem; /* Wieder etwas Rand für den Text */
     }
 }
+/* File: friseursalon-frontend/src/pages/AccountDashboard.css */
+/* ... existing styles ... */
+
+.profile-tab-content .profile-header-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /* dashboard-section-heading already has margin-bottom, so no need for more here */
+}
+
+.profile-tab-content .dashboard-section-heading {
+    margin-bottom: 0; /* Remove bottom margin if controls are on the same line */
+    border-bottom: none; /* Remove border if it's part of header-controls */
+    padding-bottom: 0;
+}
+/* Re-apply heading styles if they were removed by the above, or adjust as needed */
+.profile-tab-content .profile-header-controls + .dashboard-profile-info,
+.profile-tab-content .profile-header-controls + .profile-edit-forms-container,
+.profile-tab-content .profile-header-controls + .form-message {
+    margin-top: 1.5rem; /* Add space below the header controls row */
+}
+
+
+.edit-profile-button {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+}
+.edit-profile-button .svg-inline--fa {
+    margin-right: 0.4rem;
+}
+
+.dashboard-profile-info {
+    /* Styles for this are already in AccountDashboard.css, ensure they are appropriate */
+    /* Consider adding a max-width or specific layout if needed */
+}

@@ -1,4 +1,4 @@
-// Datei: friseursalon-frontend/src/App.js
+// File: friseursalon-frontend/src/App.js
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './App.css'; // Globale Stile
 import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
@@ -33,42 +33,29 @@ import AccountDashboard from './pages/AccountDashboard';
 // ProtectedRoute Komponente zum Schutz von Routen, die eine Anmeldung erfordern
 const ProtectedRoute = ({ children, currentUser, redirectPath = '/login' }) => {
     if (!currentUser) {
-        // Wenn kein Benutzer angemeldet ist, zur Login-Seite weiterleiten
         return <Navigate to={redirectPath} replace />;
     }
-    // Wenn Benutzer angemeldet ist, die angeforderte Komponente rendern
     return children;
 };
 
 function App() {
-    // State für den aktuell angemeldeten Benutzer
     const [currentUser, setCurrentUser] = useState(undefined);
-    // State für die Sichtbarkeit des mobilen Menüs
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    // State, um zu erkennen, ob der Header gescrollt wurde (für Styling-Änderungen)
     const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
-
-    // States, um Aktualisierungen in Kindkomponenten auszulösen
     const [refreshServicesList, setRefreshServicesList] = useState(0);
     const [refreshAppointmentsList, setRefreshAppointmentsList] = useState(0);
 
-    // Refs für DOM-Elemente
     const headerRef = useRef(null);
     const preloaderRef = useRef(null);
-
-    // Hooks von react-router-dom für Navigation und aktuellen Standort
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Schließt das mobile Menü (optimiert mit useCallback)
     const closeMobileMenu = useCallback(() => setIsMobileMenuOpen(false), []);
 
-    // Effekt, der das mobile Menü schließt, wenn sich der Pfad ändert
     useEffect(() => {
         closeMobileMenu();
     }, [location.pathname, closeMobileMenu]);
 
-    // Effekt, der die body-Klasse für das offene mobile Menü verwaltet (verhindert Scrollen des Body)
     useEffect(() => {
         const bodyClass = 'mobile-menu-active';
         if (isMobileMenuOpen) {
@@ -78,77 +65,90 @@ function App() {
             document.body.classList.remove(bodyClass);
             document.documentElement.classList.remove(bodyClass);
         }
-        // Cleanup-Funktion, um die Klasse beim Unmounten der Komponente zu entfernen
         return () => {
             document.body.classList.remove(bodyClass);
             document.documentElement.classList.remove(bodyClass);
         };
     }, [isMobileMenuOpen]);
 
-    // Funktion zum Ausloggen des Benutzers (optimiert mit useCallback)
     const logOut = useCallback(() => {
-        AuthService.logout(); // Benutzerdaten aus dem LocalStorage entfernen
-        setCurrentUser(undefined); // Benutzerstatus in der App zurücksetzen
-        setIsMobileMenuOpen(false); // Mobiles Menü schließen
-        navigate('/'); // Zur Startseite navigieren
+        AuthService.logout();
+        setCurrentUser(undefined);
+        setIsMobileMenuOpen(false);
+        navigate('/');
     }, [navigate]);
 
-    // Callbacks, um das Neuladen von Listen in Kindkomponenten zu triggern
     const handleServiceAdded = useCallback(() => setRefreshServicesList(p => p + 1), []);
     const handleAppointmentAdded = useCallback(() => setRefreshAppointmentsList(p => p + 1), []);
 
-    // Callback nach erfolgreichem Login (optimiert mit useCallback)
     const handleLoginSuccess = useCallback(() => {
         const user = AuthService.getCurrentUser();
         setCurrentUser(user);
-        setIsMobileMenuOpen(false); // Mobiles Menü schließen
-        navigate('/my-account'); // Zum Account-Dashboard navigieren
+        setIsMobileMenuOpen(false);
+        navigate('/my-account');
     }, [navigate]);
 
-    // Effekt zum Initialisieren des Benutzerstatus und zum Einrichten des Logout-Event-Listeners
+    // NEW: Callback to handle profile update from AccountDashboard
+    const handleProfileUpdateSuccess = useCallback((updatedPartialUser) => {
+        // When profile is updated, AuthService.getCurrentUser() should ideally return the fresh user
+        // if AuthService.updateProfile (which is still a stub) updates localStorage.
+        // For a robust solution, the backend should return the full updated user object,
+        // and that should be used to set the state and update localStorage.
+
+        // Attempt to get the latest from localStorage (assuming AuthService.updateProfile updates it)
+        const freshUserFromStorage = AuthService.getCurrentUser();
+        if (freshUserFromStorage && freshUserFromStorage.id === updatedPartialUser.id) {
+            // If the user in storage matches the one being updated, use it
+            setCurrentUser(freshUserFromStorage);
+        } else {
+            // Fallback: merge the partial update with the existing currentUser state
+            // This is less ideal if other parts of currentUser (like roles, token) could change
+            // or if updatedPartialUser doesn't contain all necessary fields.
+            setCurrentUser(prevUser => {
+                if (prevUser && prevUser.id === updatedPartialUser.id) {
+                    return { ...prevUser, ...updatedPartialUser };
+                }
+                return prevUser; // Or handle error/logout if IDs don't match
+            });
+        }
+        console.log("App.js: currentUser updated after profile save.");
+    }, []);
+
+
     useEffect(() => {
         const user = AuthService.getCurrentUser();
         if (user) {
             setCurrentUser(user);
         }
-
-        // Event-Listener für globales Logout-Event (z.B. bei Token-Ablauf)
         const handleLogoutEvent = () => logOut();
         EventBus.on("logout", handleLogoutEvent);
-        // Cleanup-Funktion, um Event-Listener beim Unmounten zu entfernen
         return () => {
             EventBus.remove("logout", handleLogoutEvent);
         };
     }, [logOut]);
 
-    // Effekt für Preloader und Scroll-Verhalten des Headers
     useEffect(() => {
         const preloader = preloaderRef.current;
         let preloaderTimeoutId;
         if (preloader) {
-            // Preloader nach kurzer Verzögerung ausblenden
             preloaderTimeoutId = setTimeout(() => preloader.classList.add('loaded'), 300);
         }
-
         const headerElement = headerRef.current;
         let scrollHandler;
         if (headerElement) {
-            // Handler, um festzustellen, ob die Seite gescrollt wurde
             scrollHandler = () => {
                 const scrolled = window.scrollY > 20;
                 setIsHeaderScrolled(scrolled);
             };
             window.addEventListener('scroll', scrollHandler, { passive: true });
-            scrollHandler(); // Initialer Check beim Laden
+            scrollHandler();
         }
-        // Cleanup-Funktion
         return () => {
             if (preloaderTimeoutId) clearTimeout(preloaderTimeoutId);
             if (scrollHandler && headerElement) window.removeEventListener('scroll', scrollHandler);
         };
     }, []);
 
-    // Effekt zum Anpassen des Body-Paddings basierend auf der Header-Höhe
     useEffect(() => {
         const updateBodyPadding = () => {
             if (headerRef.current) {
@@ -156,38 +156,29 @@ function App() {
                 document.body.style.paddingTop = `${headerHeight}px`;
             }
         };
-        updateBodyPadding(); // Initial aufrufen
-        // ResizeObserver, um auf Größenänderungen des Headers zu reagieren
+        updateBodyPadding();
         const resizeObserver = new ResizeObserver(updateBodyPadding);
         if (headerRef.current) {
             resizeObserver.observe(headerRef.current);
         }
-        // Timeout, um sicherzustellen, dass das Padding nach CSS-Transitionen korrekt ist
         const transitionTimeout = setTimeout(updateBodyPadding, 300);
-
-        // Cleanup-Funktion
         return () => {
             if (headerRef.current) {
                 resizeObserver.unobserve(headerRef.current);
             }
             clearTimeout(transitionTimeout);
-            document.body.style.paddingTop = '0'; // Padding beim Unmounten zurücksetzen
+            document.body.style.paddingTop = '0';
         };
     }, [isHeaderScrolled, isMobileMenuOpen, location.pathname]);
 
-    // Funktion zum Navigieren zur Buchungsseite (optimiert mit useCallback)
-    // Wird jetzt `navigateToBooking` genannt für mehr Klarheit.
     const navigateToBooking = useCallback((serviceName = null) => {
         const path = serviceName ? `/buchen/${encodeURIComponent(serviceName)}` : '/buchen';
-        console.log('Navigating to (navigateToBooking):', path); // Debugging
         navigate(path);
-        closeMobileMenu(); // Mobiles Menü nach Navigation schließen
+        closeMobileMenu();
     }, [navigate, closeMobileMenu]);
 
-    // Funktion zum Umschalten des mobilen Menüs
     const toggleMobileMenu = () => setIsMobileMenuOpen(prev => !prev);
 
-    // Layout-Komponente für die Startseite
     const HomePageLayout = () => (
         <main>
             <HeroSection />
@@ -199,22 +190,19 @@ function App() {
                 currentUser={currentUser}
                 onServiceAdded={handleServiceAdded}
                 refreshServicesList={refreshServicesList}
-                openBookingModal={navigateToBooking} // Hier die umbenannte Funktion verwenden
+                openBookingModal={navigateToBooking}
             />
             <GalleryJournalSection />
             <EssentialsSection />
             <FAQSection />
-            <LocationSection openBookingModal={navigateToBooking} /> {/* Hier die umbenannte Funktion verwenden */}
+            <LocationSection openBookingModal={navigateToBooking} />
             <NewsletterSection />
         </main>
     );
 
     return (
         <div className="App">
-            {/* Preloader-Element */}
             <div id="preloader" ref={preloaderRef}><span className="loader-char">IMW</span></div>
-
-            {/* Header-Komponente */}
             <Header
                 currentUser={currentUser}
                 isMobileMenuOpen={isMobileMenuOpen}
@@ -222,15 +210,12 @@ function App() {
                 closeMobileMenu={closeMobileMenu}
                 isHeaderScrolled={isHeaderScrolled}
                 headerRef={headerRef}
-                navigateToBooking={navigateToBooking} // Prop hier übergeben (umbenannt)
+                navigateToBooking={navigateToBooking}
             />
-
-            {/* Routen-Definitionen */}
             <Routes>
                 <Route path="/" element={<HomePageLayout />} />
                 <Route path="/buchen" element={<BookingPage onAppointmentAdded={handleAppointmentAdded} currentUser={currentUser} onLoginSuccess={handleLoginSuccess} />} />
                 <Route path="/buchen/:serviceName" element={<BookingPage onAppointmentAdded={handleAppointmentAdded} currentUser={currentUser} onLoginSuccess={handleLoginSuccess} />} />
-
                 <Route
                     path="/login"
                     element={
@@ -251,13 +236,13 @@ function App() {
                                 refreshAppointmentsList={refreshAppointmentsList}
                                 onServiceAdded={handleServiceAdded}
                                 refreshServicesList={refreshServicesList}
+                                onProfileUpdateSuccess={handleProfileUpdateSuccess} // Pass new prop
                             />
                         </ProtectedRoute>
                     }
                 />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-
             <Footer />
             <AuthVerify logOut={logOut} />
         </div>

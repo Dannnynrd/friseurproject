@@ -1,3 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Your existing CSS variables and global styles */
+/* It's good practice to have :root variables defined here or in App.css */
+
 /* src/index.css */
 body {
   margin: 0;
