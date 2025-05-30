@@ -775,41 +775,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                                     </li>);})}</ul>
                         ) : (!isLoadingDaily && !error && <p className="no-upcoming-appointments">Keine anstehenden Termine.</p>)}
                     </div>
-                    <div className="dashboard-customize-section stats-section-box">
-                        <h3 className="stats-section-title small-title"><span><FontAwesomeIcon icon={faCog} /> Dashboard Anpassen</span></h3>
-                        {customizationMessage && <div className="customization-feedback success"><FontAwesomeIcon icon={faCheckCircle} /> {customizationMessage}</div>}
-                        <div className="dashboard-customize-content">
-                            <p className="no-data-small">Passen Sie die Ansicht Ihres Dashboards an.</p>
-                            {kpiGroupOrder.map((groupKey, index) => {const groupDef = KPI_DEFINITIONS[groupKey]; if (!groupDef) return null;
-                                return (<fieldset key={groupKey} className="kpi-visibility-controls">
-                                    <legend>
-                                        <input type="checkbox" id={`toggle-group-${groupKey}`} checked={kpiVisibility[groupKey]?.visible ?? true} onChange={() => toggleKpiGroupVisibility(groupKey)} />
-                                        <label htmlFor={`toggle-group-${groupKey}`}>{groupDef.label}</label>
-                                        <span className="kpi-group-order-buttons">
-                                            <button onClick={() => moveKpiGroup(groupKey, 'up')} disabled={index === 0} aria-label="Nach oben"><FontAwesomeIcon icon={faAngleUp} /></button>
-                                            <button onClick={() => moveKpiGroup(groupKey, 'down')} disabled={index === kpiGroupOrder.length - 1} aria-label="Nach unten"><FontAwesomeIcon icon={faAngleDown} /></button>
-                                        </span></legend>
-                                    {kpiVisibility[groupKey]?.visible && (<div className="individual-kpi-toggles">
-                                        {groupDef.kpis.map(kpi => (<div key={kpi.id} className="kpi-visibility-toggle">
-                                            <input type="checkbox" id={`toggle-kpi-${kpi.id}`} checked={kpiVisibility[groupKey]?.kpis[kpi.id] ?? true} onChange={() => toggleIndividualKpiVisibility(groupKey, kpi.id)} />
-                                            <label htmlFor={`toggle-kpi-${kpi.id}`}>{kpi.label}</label></div>))}</div>)}</fieldset>)})}
-                            <hr className="kpi-divider" />
-                            <fieldset className="kpi-goal-settings">
-                                <legend>Monatsziele festlegen:</legend>
-                                <div className="kpi-goal-input"><label htmlFor="monthlyRevenueGoal">Umsatzziel (€):</label><input type="number" id="monthlyRevenueGoal" value={kpiGoals.monthlyRevenueGoal ?? ''} onChange={(e) => handleGoalChange('monthlyRevenueGoal', e.target.value)} placeholder="z.B. 5000"/></div>
-                                <div className="kpi-goal-input"><label htmlFor="monthlyAppointmentsGoal">Terminanzahl-Ziel:</label><input type="number" id="monthlyAppointmentsGoal" value={kpiGoals.monthlyAppointmentsGoal ?? ''} onChange={(e) => handleGoalChange('monthlyAppointmentsGoal', e.target.value)} placeholder="z.B. 100"/></div>
-                            </fieldset>
-                            <fieldset className="chart-settings">
-                                <legend>Diagramm-Einstellungen:</legend>
-                                <div className="top-n-services-config">
-                                    <label htmlFor="topNServices">Top Dienstleistungen (Chart):</label>
-                                    <select id="topNServices" value={topNServicesConfig} onChange={(e) => setTopNServicesConfig(parseInt(e.target.value, 10))}>
-                                        {[3, 5, 7, 10].map(n => <option key={n} value={n}>Top {n}</option>)}
-                                    </select>
-                                </div>
-                            </fieldset>
-                        </div>
-                    </div>
+
                 </div>
             </div>
 

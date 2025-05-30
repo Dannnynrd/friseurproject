@@ -2,17 +2,17 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../services/api.service';
 import AppointmentEditModal from './AppointmentEditModal';
-import ConfirmModal from './ConfirmModal'; // Import ConfirmModal
+import ConfirmModal from './ConfirmModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faEdit, faTrashAlt, faBan, faFilter, faCalendarDay,
     faSyncAlt, faTimesCircle, faSpinner, faExclamationCircle,
-    faCheckCircle, faChevronDown, faChevronUp, faPlusCircle,
-    faCalendarWeek, faCalendarCheck, faHistory // Added new icons
+    faCheckCircle, faChevronDown, faChevronUp,
+    faCalendarWeek, faCalendarCheck, faHistory, faSearch // faSearch hinzugefügt
 } from '@fortawesome/free-solid-svg-icons';
-import { format, parseISO, isValid, startOfDay, endOfDay, startOfWeek, endOfWeek, subDays, isPast, isToday, isFuture } from 'date-fns';
-import { de } from 'date-fns/locale'; // German locale for date-fns
-import './AppointmentList.css'; // Import new CSS
+import { format, parseISO, isValid, startOfDay, endOfDay, startOfWeek, endOfWeek, isPast, isToday, isFuture } from 'date-fns';
+import { de } from 'date-fns/locale';
+import './AppointmentList.css';
 
 // Helper function to format date for display
 const formatDateForDisplay = (dateString) => {
@@ -32,7 +32,7 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
     const [appointments, setAppointments] = useState([]);
     const [error, setError] = useState(null);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
-    const [message, setMessage] = useState({ type: '', text: '' }); // For success/error messages
+    const [message, setMessage] = useState({ type: '', text: '' });
     const [isLoading, setIsLoading] = useState(false);
 
     // Admin filter states
@@ -40,107 +40,105 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
     const [filterEndDate, setFilterEndDate] = useState('');
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
     const [activeQuickFilter, setActiveQuickFilter] = useState(QUICK_FILTER_OPTIONS.ALL);
+    const [searchTerm, setSearchTerm] = useState(''); // NEU: Suchbegriff-State
 
-    // Delete confirmation modal
     const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
     const [appointmentToDelete, setAppointmentToDelete] = useState(null);
-
 
     const isAdmin = useMemo(() => currentUser && currentUser.roles && currentUser.roles.includes("ROLE_ADMIN"), [currentUser]);
 
     const fetchAppointments = useCallback(async () => {
         setIsLoading(true);
         setError(null);
-        setMessage({ type: '', text: '' }); // Clear previous messages
-        setAppointments([]);
+        setMessage({ type: '', text: '' });
+        // setAppointments([]); // Nicht leeren, um Flackern zu vermeiden, wenn nur gefiltert wird
 
         let params = {};
+        let endpoint = 'appointments/my-appointments'; // Standard-Endpunkt
+
         if (isAdmin) {
+            // Logik für Datumsfilter (Quick oder Advanced)
             if (activeQuickFilter === QUICK_FILTER_OPTIONS.TODAY) {
                 params.start = format(startOfDay(new Date()), 'yyyy-MM-dd');
                 params.end = format(endOfDay(new Date()), 'yyyy-MM-dd');
+                endpoint = 'appointments/by-date-range';
             } else if (activeQuickFilter === QUICK_FILTER_OPTIONS.THIS_WEEK) {
                 params.start = format(startOfWeek(new Date(), { weekStartsOn: 1, locale: de }), 'yyyy-MM-dd');
                 params.end = format(endOfWeek(new Date(), { weekStartsOn: 1, locale: de }), 'yyyy-MM-dd');
+                endpoint = 'appointments/by-date-range';
             } else if (filterStartDate && filterEndDate) {
                 params.start = filterStartDate;
                 params.end = filterEndDate;
+                endpoint = 'appointments/by-date-range';
             }
-            // For 'UPCOMING' and 'PAST', we might need to fetch all and filter client-side,
-            // or have specific backend endpoints if lists are very large.
-            // For now, if no date range is set, admin fetches all via 'my-appointments' which is not ideal.
-            // Let's adjust this: if admin and 'all' or specific upcoming/past, fetch a wider range or all.
+            // Wenn 'ALL', 'UPCOMING', 'PAST' ohne explizite Daten, wird der Standard-Admin-Endpunkt verwendet,
+            // der alle Termine zurückgibt, und dann clientseitig gefiltert.
         }
 
         try {
-            let response;
+            const response = await api.get(endpoint, { params });
+            let fetchedAppointments = response.data.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+
+            // Client-seitige Filterung für Admin (Suche, und UPCOMING/PAST ohne Datumsbereich)
             if (isAdmin) {
-                // If specific date filters are set, use them regardless of quick filter (unless quick filter is 'all')
-                if (filterStartDate && filterEndDate && activeQuickFilter !== QUICK_FILTER_OPTIONS.ALL) {
-                    params = { start: filterStartDate, end: filterEndDate };
-                } else if (activeQuickFilter === QUICK_FILTER_OPTIONS.ALL && !filterStartDate && !filterEndDate) {
-                    // Admin, "All" selected, no date range: Fetch all appointments (could be large)
-                    // Consider adding a default range or pagination in a real-world scenario
-                    response = await api.get('appointments/my-appointments'); // This endpoint currently returns all for admin
-                } else {
-                    response = await api.get('appointments/by-date-range', { params });
+                if (searchTerm) {
+                    fetchedAppointments = fetchedAppointments.filter(apt =>
+                        (apt.customer?.firstName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                        (apt.customer?.lastName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                        (apt.customer?.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                        (apt.service?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+                    );
                 }
-                if (!response) response = await api.get('appointments/my-appointments'); // Fallback if params were empty
-
-            } else if (currentUser) {
-                response = await api.get('appointments/my-appointments');
-            } else {
-                setError("Benutzer nicht authentifiziert.");
-                setIsLoading(false);
-                return;
-            }
-
-            let fetchedAppointments = response.data.sort((a, b) =>
-                new Date(a.startTime) - new Date(b.startTime)
-            );
-
-            // Client-side filtering for UPCOMING and PAST if admin and no specific date range
-            if (isAdmin) {
-                if (activeQuickFilter === QUICK_FILTER_OPTIONS.UPCOMING && !(filterStartDate && filterEndDate)) {
-                    fetchedAppointments = fetchedAppointments.filter(apt => isFuture(parseISO(apt.startTime)) || isToday(parseISO(apt.startTime)));
-                } else if (activeQuickFilter === QUICK_FILTER_OPTIONS.PAST && !(filterStartDate && filterEndDate)) {
-                    fetchedAppointments = fetchedAppointments.filter(apt => isPast(parseISO(apt.startTime)) && !isToday(parseISO(apt.startTime)));
+                if (!(filterStartDate && filterEndDate)) { // Nur filtern, wenn kein expliziter Datumsbereich gesetzt ist
+                    if (activeQuickFilter === QUICK_FILTER_OPTIONS.UPCOMING) {
+                        fetchedAppointments = fetchedAppointments.filter(apt => isFuture(parseISO(apt.startTime)) || isToday(parseISO(apt.startTime)));
+                    } else if (activeQuickFilter === QUICK_FILTER_OPTIONS.PAST) {
+                        fetchedAppointments = fetchedAppointments.filter(apt => isPast(parseISO(apt.startTime)) && !isToday(parseISO(apt.startTime)));
+                    }
                 }
             }
-
-
             setAppointments(fetchedAppointments);
         } catch (err) {
             console.error("Fehler beim Abrufen der Termine:", err);
-            // ... (error message handling as before)
             setError(err.response?.data?.message || "Termine konnten nicht geladen werden.");
         } finally {
             setIsLoading(false);
         }
-    }, [currentUser, isAdmin, filterStartDate, filterEndDate, activeQuickFilter]);
+    }, [currentUser, isAdmin, filterStartDate, filterEndDate, activeQuickFilter, searchTerm]); // searchTerm hinzugefügt
 
     useEffect(() => {
         fetchAppointments();
     }, [fetchAppointments, refreshTrigger]);
 
+    // Debounced search effect
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            if (isAdmin) { // Nur für Admin die Suche auslösen
+                fetchAppointments();
+            }
+        }, 500); // 500ms Verzögerung
+        return () => clearTimeout(handler);
+    }, [searchTerm, isAdmin, fetchAppointments]);
+
+
     const handleApplyDateFilter = () => {
-        setActiveQuickFilter(QUICK_FILTER_OPTIONS.ALL); // Reset quick filter when custom date is applied
+        setActiveQuickFilter(''); // Benutzerdefinierter Bereich, kein Schnellfilter aktiv
         fetchAppointments();
-        setShowAdvancedFilters(false); // Close advanced filters after applying
+        // setShowAdvancedFilters(false); // Optional: Filter nach Anwendung schließen
     };
 
     const handleClearDateFilters = () => {
         setFilterStartDate('');
         setFilterEndDate('');
-        setActiveQuickFilter(QUICK_FILTER_OPTIONS.ALL);
-        // fetchAppointments will be called by useEffect due to state change
+        setActiveQuickFilter(QUICK_FILTER_OPTIONS.ALL); // Zurück zu "Alle"
+        // fetchAppointments wird durch useEffect ausgelöst
     };
 
     const handleQuickFilterChange = (filter) => {
-        setFilterStartDate(''); // Clear date range when using quick filter
+        setFilterStartDate('');
         setFilterEndDate('');
         setActiveQuickFilter(filter);
-        // fetchAppointments will be called by useEffect
+        // fetchAppointments wird durch useEffect ausgelöst
     };
 
     const handleDeleteOrCancelClick = (appointment) => {
@@ -150,28 +148,25 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
 
     const confirmDeleteOrCancelAppointment = async () => {
         if (!appointmentToDelete) return;
-
         setMessage({ type: '', text: '' });
-        setIsLoading(true); // Use general loading for this action for simplicity
-
+        setIsLoading(true);
         try {
             await api.delete(`appointments/${appointmentToDelete.id}`);
             setShowDeleteConfirmModal(false);
             setAppointmentToDelete(null);
             setMessage({type: 'success', text: 'Termin erfolgreich storniert/gelöscht.'});
-            if (onAppointmentModified) onAppointmentModified(); // Trigger refresh in parent
-            else fetchAppointments(); // Fallback to local refresh
+            if (onAppointmentModified) onAppointmentModified();
+            else fetchAppointments();
         } catch (err) {
             console.error("Fehler beim Stornieren/Löschen des Termins:", err);
             const errorMsg = err.response?.data?.message || "Fehler beim Stornieren/Löschen.";
             setMessage({type: 'error', text: errorMsg});
-            setShowDeleteConfirmModal(false); // Close modal even on error
+            setShowDeleteConfirmModal(false);
         } finally {
             setIsLoading(false);
             setTimeout(() => setMessage({ type: '', text: '' }), 4000);
         }
     };
-
 
     const handleEditClick = (appointment) => {
         setSelectedAppointment(appointment);
@@ -190,39 +185,55 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
     };
 
     const getAppointmentStatus = (startTime, appointmentStatusValue) => {
-        if (appointmentStatusValue === 'CANCELLED') { // Assuming backend sends 'CANCELLED' string
-            return { text: 'Storniert', className: 'status-cancelled' };
+        // Annahme: appointment.status vom Backend könnte 'CANCELLED', 'COMPLETED', etc. sein.
+        if (appointmentStatusValue === 'CANCELLED') {
+            return { text: 'Storniert', className: 'status-cancelled', icon: faTimesCircle };
         }
+        if (appointmentStatusValue === 'COMPLETED') { // Falls Sie diesen Status verwenden
+            return { text: 'Abgeschlossen', className: 'status-completed', icon: faCheckCircle };
+        }
+
         const now = new Date();
         const appointmentDate = parseISO(startTime);
-        if (!isValid(appointmentDate)) return { text: 'Unbekannt', className: 'status-unknown' };
+        if (!isValid(appointmentDate)) return { text: 'Unbekannt', className: 'status-unknown', icon: faExclamationCircle };
 
         if (isPast(appointmentDate) && !isToday(appointmentDate)) {
-            return { text: 'Vergangen', className: 'status-past' };
+            return { text: 'Vergangen', className: 'status-past', icon: faHistory };
         }
-        return { text: 'Anstehend', className: 'status-upcoming' };
+        return { text: 'Anstehend', className: 'status-upcoming', icon: faCalendarCheck };
     };
 
     const renderAdminFilters = () => (
         <div className="admin-appointment-controls">
+            <div className="filter-section search-and-quick-filters">
+                <div className="search-input-container admin-search">
+                    <FontAwesomeIcon icon={faSearch} className="search-icon" />
+                    <input
+                        type="text"
+                        placeholder="Suche (Kunde, Service)..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="admin-search-input"
+                    />
+                </div>
+                <div className="quick-filter-buttons">
+                    <button onClick={() => handleQuickFilterChange(QUICK_FILTER_OPTIONS.ALL)} className={`quick-filter-btn ${activeQuickFilter === QUICK_FILTER_OPTIONS.ALL ? 'active' : ''}`}>Alle</button>
+                    <button onClick={() => handleQuickFilterChange(QUICK_FILTER_OPTIONS.TODAY)} className={`quick-filter-btn ${activeQuickFilter === QUICK_FILTER_OPTIONS.TODAY ? 'active' : ''}`}><FontAwesomeIcon icon={faCalendarDay}/> Heute</button>
+                    <button onClick={() => handleQuickFilterChange(QUICK_FILTER_OPTIONS.THIS_WEEK)} className={`quick-filter-btn ${activeQuickFilter === QUICK_FILTER_OPTIONS.THIS_WEEK ? 'active' : ''}`}><FontAwesomeIcon icon={faCalendarWeek}/> Woche</button>
+                    <button onClick={() => handleQuickFilterChange(QUICK_FILTER_OPTIONS.UPCOMING)} className={`quick-filter-btn ${activeQuickFilter === QUICK_FILTER_OPTIONS.UPCOMING ? 'active' : ''}`}><FontAwesomeIcon icon={faCalendarCheck}/> Anstehend</button>
+                    <button onClick={() => handleQuickFilterChange(QUICK_FILTER_OPTIONS.PAST)} className={`quick-filter-btn ${activeQuickFilter === QUICK_FILTER_OPTIONS.PAST ? 'active' : ''}`}><FontAwesomeIcon icon={faHistory}/> Vergangen</button>
+                </div>
+            </div>
+
             <div className="filter-controls-header">
-                <h3 className="text-md font-semibold text-gray-700">Terminfilter</h3>
                 <button
                     onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                     className="button-link-outline small-button filter-toggle-button"
                     aria-expanded={showAdvancedFilters}
                 >
                     <FontAwesomeIcon icon={showAdvancedFilters ? faChevronUp : faChevronDown} />
-                    {showAdvancedFilters ? 'Erweiterte Filter ausblenden' : 'Datumsfilter anzeigen'}
+                    {showAdvancedFilters ? 'Datumsfilter ausblenden' : 'Nach Datum filtern'}
                 </button>
-            </div>
-
-            <div className="quick-filter-buttons">
-                <button onClick={() => handleQuickFilterChange(QUICK_FILTER_OPTIONS.ALL)} className={`button-link-outline ${activeQuickFilter === QUICK_FILTER_OPTIONS.ALL ? 'active' : ''}`}>Alle</button>
-                <button onClick={() => handleQuickFilterChange(QUICK_FILTER_OPTIONS.TODAY)} className={`button-link-outline ${activeQuickFilter === QUICK_FILTER_OPTIONS.TODAY ? 'active' : ''}`}><FontAwesomeIcon icon={faCalendarDay}/> Heute</button>
-                <button onClick={() => handleQuickFilterChange(QUICK_FILTER_OPTIONS.THIS_WEEK)} className={`button-link-outline ${activeQuickFilter === QUICK_FILTER_OPTIONS.THIS_WEEK ? 'active' : ''}`}><FontAwesomeIcon icon={faCalendarWeek}/> Diese Woche</button>
-                <button onClick={() => handleQuickFilterChange(QUICK_FILTER_OPTIONS.UPCOMING)} className={`button-link-outline ${activeQuickFilter === QUICK_FILTER_OPTIONS.UPCOMING ? 'active' : ''}`}><FontAwesomeIcon icon={faCalendarCheck}/> Anstehend</button>
-                <button onClick={() => handleQuickFilterChange(QUICK_FILTER_OPTIONS.PAST)} className={`button-link-outline ${activeQuickFilter === QUICK_FILTER_OPTIONS.PAST ? 'active' : ''}`}><FontAwesomeIcon icon={faHistory}/> Vergangen</button>
             </div>
 
             {showAdvancedFilters && (
@@ -238,11 +249,11 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
                         </div>
                     </div>
                     <div className="filter-actions">
-                        <button onClick={handleApplyDateFilter} className="button-link small-button" disabled={isLoading || !filterStartDate || !filterEndDate}>
-                            <FontAwesomeIcon icon={faFilter} /> Datumsfilter anwenden
-                        </button>
                         <button onClick={handleClearDateFilters} className="button-link-outline small-button" disabled={isLoading}>
-                            <FontAwesomeIcon icon={faSyncAlt} /> Filter zurücksetzen
+                            <FontAwesomeIcon icon={faSyncAlt} /> Zurücksetzen
+                        </button>
+                        <button onClick={handleApplyDateFilter} className="button-link small-button" disabled={isLoading || !filterStartDate || !filterEndDate}>
+                            <FontAwesomeIcon icon={faFilter} /> Anwenden
                         </button>
                     </div>
                 </div>
@@ -271,8 +282,8 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
                 {appointments.map(appointment => {
                     const statusInfo = getAppointmentStatus(appointment.startTime, appointment.status);
                     return (
-                        <tr key={appointment.id} className={statusInfo.className.replace('status-','') /* For potential row styling */}>
-                            {isAdmin && <td data-label="Status:"><span className={`status-badge ${statusInfo.className}`}>{statusInfo.text}</span></td>}
+                        <tr key={appointment.id} className={`appointment-row ${statusInfo.className}`}>
+                            {isAdmin && <td data-label="Status:"><span className={`status-badge ${statusInfo.className}`}><FontAwesomeIcon icon={statusInfo.icon} className="mr-1.5"/>{statusInfo.text}</span></td>}
                             <td data-label="Datum & Zeit:">{formatDateForDisplay(appointment.startTime)}</td>
                             <td data-label="Dienstleistung:">{appointment.service?.name || 'N/A'}</td>
                             {isAdmin && <>
@@ -280,12 +291,12 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
                                 <td data-label="E-Mail:">{appointment.customer?.email || 'N/A'}</td>
                                 <td data-label="Telefon:">{appointment.customer?.phoneNumber || '-'}</td>
                             </>}
-                            <td data-label="Notizen:" className="max-w-xs truncate" title={appointment.notes}>{appointment.notes || '-'}</td>
+                            <td data-label="Notizen:" className="notes-cell" title={appointment.notes}>{appointment.notes || '-'}</td>
                             <td data-label="Aktionen:">
                                 <div className="action-buttons-table">
                                     {isAdmin && (
                                         <button onClick={() => handleEditClick(appointment)} className="button-link-outline small-button icon-button" title="Bearbeiten">
-                                            <FontAwesomeIcon icon={faEdit} /><span className="sr-only md:not-sr-only ml-1">Bearbeiten</span>
+                                            <FontAwesomeIcon icon={faEdit} /><span className="action-button-text">Bearbeiten</span>
                                         </button>
                                     )}
                                     <button
@@ -295,7 +306,7 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
                                         disabled={!isAdmin && statusInfo.className === 'status-past'}
                                     >
                                         <FontAwesomeIcon icon={isAdmin ? faTrashAlt : (statusInfo.className === 'status-past' ? faTimesCircle : faBan)} />
-                                        <span className="sr-only md:not-sr-only ml-1">{isAdmin ? "Löschen" : "Stornieren"}</span>
+                                        <span className="action-button-text">{isAdmin ? "Löschen" : "Stornieren"}</span>
                                     </button>
                                 </div>
                             </td>
@@ -308,22 +319,21 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
     );
 
     const renderAppointmentCards = () => (
-        <div className="space-y-4"> {/* Tailwind: space-y-4 */}
+        <div className="appointment-cards-grid">
             {appointments.map(appointment => {
                 const statusInfo = getAppointmentStatus(appointment.startTime, appointment.status);
                 return (
                     <div key={appointment.id} className={`appointment-card-mobile ${statusInfo.className}`}>
                         <div className="appointment-card-header-mobile">
                             <p className="appointment-card-datetime-mobile">{formatDateForDisplay(appointment.startTime)}</p>
-                            <span className={`status-badge ${statusInfo.className}`}>{statusInfo.text}</span>
+                            <span className={`status-badge ${statusInfo.className}`}><FontAwesomeIcon icon={statusInfo.icon} className="mr-1"/>{statusInfo.text}</span>
                         </div>
                         <div className="appointment-card-details-mobile">
                             <p><strong>Dienstleistung:</strong> {appointment.service?.name || 'N/A'}</p>
                             {isAdmin && (
                                 <>
                                     <p><strong>Kunde:</strong> {appointment.customer ? `${appointment.customer.firstName} ${appointment.customer.lastName}` : 'N/A'}</p>
-                                    <p><strong>E-Mail:</strong> {appointment.customer?.email || 'N/A'}</p>
-                                    <p><strong>Telefon:</strong> {appointment.customer?.phoneNumber || '-'}</p>
+                                    {/* E-Mail und Telefon können hier auch angezeigt werden, wenn gewünscht */}
                                 </>
                             )}
                             {appointment.notes && <p className="appointment-card-notes-mobile"><strong>Notizen:</strong> {appointment.notes}</p>}
@@ -348,7 +358,6 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
         </div>
     );
 
-
     return (
         <div className="appointment-list-container">
             {isAdmin && renderAdminFilters()}
@@ -370,10 +379,10 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
 
             {!isLoading && !error && appointments.length > 0 && (
                 <>
-                    <div className="hidden md:block"> {/* Tailwind: hidden on mobile, block on medium screens and up */}
+                    <div className="hidden md:block">
                         {renderAppointmentTable()}
                     </div>
-                    <div className="md:hidden"> {/* Tailwind: block on mobile, hidden on medium screens and up */}
+                    <div className="md:hidden">
                         {renderAppointmentCards()}
                     </div>
                 </>

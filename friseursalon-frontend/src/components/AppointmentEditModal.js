@@ -1,259 +1,261 @@
+// File: src/components/AppointmentEditModal.js
 import React, { useState, useEffect } from 'react';
 import api from '../services/api.service';
+import AuthService from '../services/auth.service';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import { de } from 'date-fns/locale';
+import "react-datepicker/dist/react-datepicker.css";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSave, faTimes, faTrashAlt, faSpinner } from '@fortawesome/free-solid-svg-icons';
-import ConfirmModal from './ConfirmModal'; // Import ConfirmModal
+import {
+  faTimes, faSave, faSpinner, faUser, faClock,
+  faConciergeBell, faStickyNote, faPhone, faEnvelope,
+  faCalendarAlt, faExclamationCircle, faCheckCircle,
+  faEdit, faCalendarDay, faInfoCircle, faTag, faEuroSign,
+  faAlignLeft
+} from '@fortawesome/free-solid-svg-icons';
+import { format, parseISO, isValid } from 'date-fns';
+import './AppointmentEditModal.css';
+
+registerLocale('de', de);
 
 function AppointmentEditModal({ appointment, onClose, onAppointmentUpdated }) {
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
-  const [notes, setNotes] = useState('');
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [formData, setFormData] = useState({
+    serviceId: '',
+    notes: '',
+  });
   const [services, setServices] = useState([]);
-  const [selectedServiceId, setSelectedServiceId] = useState('');
-  const [customerFirstName, setCustomerFirstName] = useState('');
-  const [customerLastName, setCustomerLastName] = useState('');
-  const [customerEmail, setCustomerEmail] = useState(''); // Added for display
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  // State for messages and loading
-  const [message, setMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false); // For save operation
-  const [isDeleting, setIsDeleting] = useState(false); // For delete operation
-
-  // State for delete confirmation
-  const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
-  const [deleteError, setDeleteError] = useState('');
-
+  const currentUser = AuthService.getCurrentUser();
+  const isAdmin = currentUser?.roles?.includes("ROLE_ADMIN");
 
   useEffect(() => {
-    if (appointment) {
-      const apptDate = appointment.startTime ? appointment.startTime.substring(0, 10) : '';
-      const apptTime = appointment.startTime ? appointment.startTime.substring(11, 16) : '';
-
-      setDate(apptDate);
-      setTime(apptTime);
-      setNotes(appointment.notes || '');
-      setSelectedServiceId(appointment.service ? String(appointment.service.id) : '');
-      setCustomerFirstName(appointment.customer ? appointment.customer.firstName : 'N/A');
-      setCustomerLastName(appointment.customer ? appointment.customer.lastName : '');
-      setCustomerEmail(appointment.customer ? appointment.customer.email : 'N/A');
-
-      setMessage('');
-      setDeleteError('');
-      setIsSubmitting(false);
-      setIsDeleting(false);
+    if (appointment && appointment.startTime) {
+      const startTimeDate = parseISO(appointment.startTime);
+      if (isValid(startTimeDate)) {
+        setSelectedDate(startTimeDate);
+      } else {
+        // Fallback if startTime is invalid, try to parse just the date part if time is the issue
+        const dateOnly = appointment.startTime.split('T')[0];
+        const parsedDateOnly = parseISO(dateOnly);
+        if(isValid(parsedDateOnly)) {
+          setSelectedDate(parsedDateOnly); // Set to midnight if time was invalid
+        } else {
+          setSelectedDate(new Date()); // Absolute fallback
+        }
+        console.error("Invalid startTime received, used fallback:", appointment.startTime);
+      }
+      setFormData({
+        serviceId: appointment.service?.id?.toString() || '', // Ensure serviceId is a string for select value
+        notes: appointment.notes || '',
+      });
+    } else if (appointment) {
+      setSelectedDate(new Date());
+      setFormData({
+        serviceId: appointment.service?.id?.toString() || '',
+        notes: appointment.notes || '',
+      });
     }
   }, [appointment]);
 
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const response = await api.get('/services'); // Path should be relative to API_BASE_URL
-        setServices(response.data || []);
-      } catch (error) {
-        console.error("Fehler beim Laden der Dienstleistungen für Modal:", error);
-        setMessage('Dienstleistungen konnten nicht geladen werden.');
+        const serviceResponse = await api.get('/services');
+        setServices(serviceResponse.data || []);
+      } catch (err) {
+        console.error("Fehler beim Laden der Services:", err);
       }
     };
-    if (appointment) { // Fetch services only when modal is open for an appointment
-      fetchServices();
-    }
-  }, [appointment]);
+    fetchServices();
+  }, []);
 
+  const handleDateChange = (date) => {
+    setSelectedDate(date);
+    setError('');
+    setSuccessMessage('');
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    setError('');
+    setSuccessMessage('');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage('');
-    setDeleteError('');
-    setIsSubmitting(true);
+    setIsLoading(true);
+    setError('');
+    setSuccessMessage('');
 
-    if (!date || !time || !selectedServiceId) {
-      setMessage('Bitte Datum, Uhrzeit und Dienstleistung auswählen.');
-      setIsSubmitting(false);
+    if (!selectedDate) {
+      setError("Datum und Uhrzeit sind Pflichtfelder.");
+      setIsLoading(false);
+      return;
+    }
+    if (!formData.serviceId) {
+      setError("Dienstleistung ist ein Pflichtfeld. Bitte wählen Sie eine Dienstleistung aus.");
+      setIsLoading(false);
       return;
     }
 
-    const updatedStartTime = `${date}T${time}:00`;
+    const formattedStartTime = format(selectedDate, "yyyy-MM-dd'T'HH:mm:ss");
+
+    const payload = {
+      startTime: formattedStartTime,
+      serviceId: formData.serviceId, // serviceId is already a string from the select
+      notes: formData.notes,
+    };
 
     try {
-      // Customer data should ideally not be modifiable here unless intended
-      // For now, we pass the existing customer ID.
-      // If customer details (like name) were editable, they'd need to be part of the payload.
-      const customerData = {
-        id: appointment.customer.id,
-        firstName: customerFirstName, // Assuming these are not changed in this modal
-        lastName: customerLastName,
-        email: customerEmail,
-        // phoneNumber: appointment.customer.phoneNumber // if available and needed
-      };
-
-      const updatedAppointmentPayload = {
-        id: appointment.id,
-        startTime: updatedStartTime,
-        service: { id: parseInt(selectedServiceId) },
-        customer: customerData, // Pass the original customer data or updated if form allows
-        notes
-      };
-
-      await api.put(`appointments/${appointment.id}`, updatedAppointmentPayload);
-      setMessage('Termin erfolgreich aktualisiert!');
-      if(onAppointmentUpdated) onAppointmentUpdated();
+      await api.put(`/appointments/${appointment.id}`, payload);
+      setSuccessMessage('Termin erfolgreich aktualisiert!');
+      setIsLoading(false);
+      if (onAppointmentUpdated) {
+        onAppointmentUpdated();
+      }
+      // Optional: Modal nach kurzer Verzögerung schließen
       setTimeout(() => {
-        onClose();
-        setMessage(''); // Clear message on close
-      }, 1500);
-    } catch (error) {
-      console.error("Fehler beim Aktualisieren des Termins:", error);
-      const errMsg = error.response?.data?.message || 'Fehler beim Aktualisieren des Termins. Bitte versuchen Sie es erneut.';
-      setMessage(errMsg);
-    } finally {
-      setIsSubmitting(false);
+        if (!error) { // Nur schließen, wenn kein neuer Fehler während des Speicherns aufgetreten ist
+          onClose();
+        }
+      }, 1800);
+    } catch (err) {
+      console.error("Fehler beim Aktualisieren des Termins:", err);
+      const errMsg = err.response?.data?.message || "Fehler beim Aktualisieren des Termins.";
+      if (errMsg.toLowerCase().includes("service id") || errMsg.toLowerCase().includes("dienstleistungs-id")) {
+        setError("Dienstleistungs-ID für Update fehlt oder ist ungültig. Bitte wählen Sie eine Dienstleistung.");
+      } else {
+        setError(errMsg);
+      }
+      setIsLoading(false);
     }
   };
 
-  const handleDeleteClick = () => {
-    setDeleteError(''); // Clear previous delete errors
-    setShowConfirmDeleteModal(true);
-  };
+  const selectedServiceFull = services.find(s => s.id === parseInt(formData.serviceId));
 
-  const handleConfirmDelete = async () => {
-    if (!appointment || !appointment.id) return;
+  if (!appointment) return null;
 
-    setIsDeleting(true);
-    setDeleteError('');
-    setShowConfirmDeleteModal(false);
-
-    try {
-      await api.delete(`appointments/${appointment.id}`);
-      // setMessage('Termin erfolgreich gelöscht!'); // Success message handled by onAppointmentUpdated if needed
-      if(onAppointmentUpdated) onAppointmentUpdated(); // This will trigger a refresh in the parent
-      onClose(); // Close the edit modal
-    } catch (error) {
-      console.error("Fehler beim Löschen des Termins:", error);
-      const errMsg = error.response?.data?.message || 'Fehler beim Löschen des Termins.';
-      setDeleteError(errMsg); // Show delete error in the modal
-      // setMessage(errMsg); // Or use the general message state
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-
-  if (!appointment) {
-    return null;
-  }
+  const DetailItem = ({ icon, label, value, className = '' }) => (
+      <div className={`detail-item ${className}`}>
+        <FontAwesomeIcon icon={icon} className="detail-item-icon" />
+        <span className="detail-item-label">{label}:</span>
+        <span className="detail-item-value">{value || 'N/A'}</span>
+      </div>
+  );
 
   return (
-      <>
-        <div className="modal-overlay">
-          <div className="modal-content appointment-edit-modal-content">
-            <h3>Termin Details & Bearbeitung</h3>
-            <form onSubmit={handleSubmit} className="service-edit-form"> {/* Re-using class, consider renaming if styles diverge significantly */}
-              <div className="form-group">
-                <label>Kunde:</label>
-                <input
-                    type="text"
-                    value={`${customerFirstName} ${customerLastName} (${customerEmail})`}
-                    disabled
-                    className="form-input-disabled"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="editService">Dienstleistung:</label>
-                <select
-                    id="editService"
-                    value={selectedServiceId}
-                    onChange={(e) => setSelectedServiceId(e.target.value)}
-                    required
-                    disabled={isSubmitting || isDeleting}
-                >
-                  <option value="">Wählen Sie eine Dienstleistung</option>
-                  {services.map(service => (
-                      <option key={service.id} value={service.id}>
-                        {service.name} ({service.durationMinutes} Min, {service.price ? service.price.toFixed(2) : 'N/A'} €)
-                      </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-grid-halved">
-                <div className="form-group">
-                  <label htmlFor="editDate">Datum:</label>
-                  <input
-                      type="date"
-                      id="editDate"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      required
-                      disabled={isSubmitting || isDeleting}
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="editTime">Uhrzeit:</label>
-                  <input
-                      type="time"
-                      id="editTime"
-                      value={time}
-                      onChange={(e) => setTime(e.target.value)}
-                      required
-                      disabled={isSubmitting || isDeleting}
-                  />
-                </div>
-              </div>
-              <div className="form-group">
-                <label htmlFor="editNotes">Notizen:</label>
-                <textarea
-                    id="editNotes"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    rows="3"
-                    disabled={isSubmitting || isDeleting}
-                ></textarea>
-              </div>
+      <div className="modal-overlay-modern" onClick={onClose}>
+        <div className="modal-content-modern appointment-edit-modal-modern" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header-modern">
+            <h2 className="modal-title-modern">
+              <FontAwesomeIcon icon={faCalendarAlt} /> Terminübersicht
+            </h2>
+            <button onClick={onClose} className="modal-close-button-modern" aria-label="Schließen">
+              <FontAwesomeIcon icon={faTimes} />
+            </button>
+          </div>
 
-              {message && <p className={`form-message ${message.includes('erfolgreich') ? 'success' : 'error'} mt-3`}>{message}</p>}
-              {deleteError && <p className="form-message error mt-3">{deleteError}</p>}
+          {error && <p className="form-message error modal-form-message-modern"><FontAwesomeIcon icon={faExclamationCircle} /> {error}</p>}
+          {successMessage && <p className="form-message success modal-form-message-modern"><FontAwesomeIcon icon={faCheckCircle} /> {successMessage}</p>}
 
-              <div className="modal-actions">
-                <button
-                    type="button"
-                    onClick={handleDeleteClick}
-                    className="button-link-outline danger" // Danger styling for delete
-                    disabled={isSubmitting || isDeleting}
-                >
-                  {isDeleting ? <FontAwesomeIcon icon={faSpinner} spin /> : <FontAwesomeIcon icon={faTrashAlt} />} Löschen
-                </button>
-                <div className="modal-actions-right">
-                  <button
-                      type="button"
-                      onClick={onClose}
-                      className="button-link-outline"
-                      disabled={isSubmitting || isDeleting}
-                  >
-                    <FontAwesomeIcon icon={faTimes} /> Abbrechen
-                  </button>
-                  <button
-                      type="submit"
-                      className="button-link" // Primary action for save
-                      disabled={isSubmitting || isDeleting}
-                  >
-                    {isSubmitting ? <FontAwesomeIcon icon={faSpinner} spin /> : <FontAwesomeIcon icon={faSave} />} Speichern
-                  </button>
+          <div className="modal-body-modern">
+            <div className="modal-sections-container">
+              <section className="modal-section customer-info-section">
+                <h3 className="modal-section-title"><FontAwesomeIcon icon={faUser} /> Kundendetails</h3>
+                <div className="customer-details-content">
+                  <DetailItem icon={faUser} label="Name" value={`${appointment.customer?.firstName} ${appointment.customer?.lastName}`} />
+                  <DetailItem icon={faEnvelope} label="E-Mail" value={appointment.customer?.email} />
+                  <DetailItem icon={faPhone} label="Telefon" value={appointment.customer?.phoneNumber} />
                 </div>
-              </div>
-            </form>
+              </section>
+
+              <section className="modal-section appointment-form-section-modern">
+                <h3 className="modal-section-title"><FontAwesomeIcon icon={faEdit} /> Termin anpassen</h3>
+                <form onSubmit={handleSubmit} className="appointment-edit-form-fields">
+                  <div className="form-group-modern datepicker-group">
+                    <label htmlFor="appointmentDateTime"><FontAwesomeIcon icon={faCalendarDay} /> Datum & Uhrzeit</label>
+                    <DatePicker
+                        selected={selectedDate}
+                        onChange={handleDateChange}
+                        locale="de"
+                        showTimeSelect
+                        timeFormat="HH:mm"
+                        timeIntervals={15}
+                        dateFormat="dd.MM.yyyy HH:mm"
+                        className="custom-datepicker-input"
+                        wrapperClassName="datepicker-wrapper"
+                        id="appointmentDateTime"
+                        disabled={!isAdmin}
+                        minDate={isAdmin ? null : new Date()} // Admins can select past dates
+                        placeholderText="Datum und Uhrzeit wählen"
+                        autoComplete="off"
+                        popperPlacement="top-end" // Versucht, das Popup besser zu positionieren
+                    />
+                  </div>
+
+                  <div className="form-group-modern">
+                    <label htmlFor="serviceId"><FontAwesomeIcon icon={faConciergeBell} /> Dienstleistung</label>
+                    <select
+                        id="serviceId"
+                        name="serviceId"
+                        value={formData.serviceId}
+                        onChange={handleChange}
+                        required
+                        disabled={!isAdmin}
+                        className="custom-select-input"
+                    >
+                      <option value="" disabled>Bitte Dienstleistung wählen...</option>
+                      {services.map(service => (
+                          <option key={service.id} value={service.id.toString()}> {/* Ensure value is string */}
+                            {service.name}
+                          </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {selectedServiceFull && (
+                      <div className="service-details-preview">
+                        <DetailItem icon={faInfoCircle} label="Ausgewählt" value={selectedServiceFull.name} />
+                        <DetailItem icon={faClock} label="Dauer" value={`${selectedServiceFull.duration} Min.`} />
+                        <DetailItem icon={faEuroSign} label="Preis" value={`${selectedServiceFull.price}€`} />
+                      </div>
+                  )}
+
+                  <div className="form-group-modern">
+                    <label htmlFor="notes"><FontAwesomeIcon icon={faAlignLeft} /> Notizen (optional)</label>
+                    <textarea
+                        id="notes"
+                        name="notes"
+                        value={formData.notes}
+                        onChange={handleChange}
+                        rows="3"
+                        placeholder="Zusätzliche Informationen zum Termin..."
+                        disabled={!isAdmin}
+                        className="custom-textarea-input"
+                    ></textarea>
+                  </div>
+
+                  {isAdmin && (
+                      <div className="modal-actions-modern">
+                        <button type="button" onClick={onClose} className="button-link-outline modal-button-modern">
+                          Abbrechen
+                        </button>
+                        <button type="submit" className="button-link modal-button-modern primary" disabled={isLoading}>
+                          {isLoading ? <><FontAwesomeIcon icon={faSpinner} spin /> Speichern...</> : <><FontAwesomeIcon icon={faSave} /> Änderungen Speichern</>}
+                        </button>
+                      </div>
+                  )}
+                </form>
+              </section>
+            </div>
           </div>
         </div>
-
-        <ConfirmModal
-            isOpen={showConfirmDeleteModal}
-            onClose={() => setShowConfirmDeleteModal(false)}
-            onConfirm={handleConfirmDelete}
-            title="Termin löschen"
-            message={`Möchten Sie diesen Termin wirklich endgültig löschen? Dieser Schritt kann nicht rückgängig gemacht werden.`}
-            confirmText="Ja, löschen"
-            cancelText="Abbrechen"
-            type="danger"
-        />
-      </>
+      </div>
   );
 }
 
