@@ -3,6 +3,7 @@
     background-color: var(--dark-text);
     color: var(--light-text-on-dark);
     padding: 4rem 0;
+    position: relative; /* Für Lade-/Fehler-Overlays, falls benötigt */
 }
 #testimonials .section-header {
     text-align: center; max-width: 600px; margin: 0 auto 2.5rem auto;
@@ -29,6 +30,9 @@
     overflow: hidden;
     max-width: 700px;
     margin: 0 auto;
+    background-color: rgba(255, 255, 255, 0.05); /* Leichter Hintergrund für den Slider-Bereich */
+    border-radius: 8px;
+    padding: 1.5rem 0; /* Innenabstand oben/unten für den Slider-Bereich */
 }
 .testimonial-slides {
     display: flex;
@@ -36,25 +40,42 @@
 }
 .testimonial-slide {
     flex: 0 0 100%;
-    padding: 1.5rem;
+    padding: 1rem 2rem; /* Innenabstand für einzelne Slides */
     text-align: center;
+    box-sizing: border-box;
 }
 .testimonial-slide .stars {
     margin-bottom: 0.8rem;
+    font-size: 1rem; /* Etwas kleiner für Konsistenz */
+}
+.testimonial-slide .stars .star-active {
     color: #ffd700;
 }
+.testimonial-slide .stars .star-inactive {
+    color: rgba(245,245,245,0.3);
+}
+
 .testimonial-slide blockquote {
     font-family: var(--font-serif), serif;
     font-size: 1.2rem;
     line-height: 1.6;
     margin-bottom: 1rem;
     font-style: italic;
+    color: var(--light-text-on-dark); /* Sicherstellen, dass Text lesbar ist */
 }
 .testimonial-slide cite {
     font-size: 0.9rem;
     font-weight: 500;
     color: rgba(245,245,245,0.9);
+    display: block; /* Damit es unter dem Zitat steht */
 }
+
+.testimonial-service-context {
+    font-size: 0.8rem;
+    color: rgba(245,245,245,0.6);
+    margin-top: 0.5rem;
+}
+
 .slider-nav {
     display: flex;
     justify-content: center;
@@ -70,6 +91,9 @@
     width: 2.5rem !important;
     height: 2.5rem !important;
     line-height: 1 !important;
+    display: inline-flex; /* Für Icon-Zentrierung */
+    align-items: center;
+    justify-content: center;
 }
 .slider-nav button.interactive .svg-inline--fa {
     font-size: 0.9rem;
@@ -85,4 +109,31 @@
     box-shadow: 0 0 0 2px var(--dark-text), 0 0 0 4px rgba(255,255,255,0.5) !important;
     background: rgba(255,255,255,0.25) !important;
     border-color: rgba(255,255,255,0.6) !important;
+}
+
+/* Stile für Lade-, Fehler- und Leerzustände */
+.testimonial-loading,
+.testimonial-error,
+.testimonial-empty {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: rgba(245,245,245,0.8);
+    font-size: 1rem;
+}
+.testimonial-loading .svg-inline--fa {
+    margin-right: 0.5rem;
+}
+.testimonial-error {
+    background-color: rgba(255, 0, 0, 0.1); /* Leicht rötlicher Hintergrund für Fehler */
+    border: 1px solid rgba(255, 0, 0, 0.3);
+    border-radius: 6px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+.testimonial-error .svg-inline--fa {
+    color: var(--danger-color);
+    margin-right: 0.5rem;
+}
+.testimonial-empty {
+    font-style: italic;
 }

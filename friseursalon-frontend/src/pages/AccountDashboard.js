@@ -7,7 +7,8 @@ import {
     faPlusCircle, faMinusCircle, faEdit, faCheckCircle, faExclamationCircle,
     faCog, faUser, faClipboardList, faTimes,
     faSpinner,
-    faStarHalfAlt // NEU für Testimonials
+    faStarHalfAlt,
+    faCommentDots // NEU für Feedback-Tab Icon
 } from '@fortawesome/free-solid-svg-icons';
 
 // Import der Kindkomponenten
@@ -19,9 +20,10 @@ import ServiceForm from '../components/ServiceForm';
 import CustomerManagement from '../components/CustomerManagement';
 import WorkingHoursManager from '../components/WorkingHoursManager';
 import BlockedTimeSlotManager from '../components/BlockedTimeSlotManager';
-import AdminTestimonialManagement from '../components/AdminTestimonialManagement'; // NEU
+import AdminTestimonialManagement from '../components/AdminTestimonialManagement';
 import ProfileEditForm from '../components/ProfileEditForm';
 import DashboardSettings from '../components/DashboardSettings';
+import TestimonialSubmitForm from '../components/TestimonialSubmitForm'; // NEU
 
 import './AccountDashboard.css';
 
@@ -30,9 +32,10 @@ const TABS = {
     ADMIN_APPOINTPOINTMENT_LIST: 'adminAppointmentList', ADMIN_SERVICES: 'adminServices',
     ADMIN_CUSTOMER_MANAGEMENT: 'adminCustomerManagement', ADMIN_WORKING_HOURS: 'adminWorkingHours',
     ADMIN_BLOCKED_SLOTS: 'adminBlockedSlots',
-    ADMIN_TESTIMONIALS: 'adminTestimonials', // NEU
+    ADMIN_TESTIMONIALS: 'adminTestimonials',
     ADMIN_SETTINGS: 'adminSettings',
     PROFILE: 'profile', USER_BOOKINGS: 'userBookings',
+    USER_SUBMIT_TESTIMONIAL: 'userSubmitTestimonial', // NEU
 };
 
 const NAV_ITEMS_ADMIN = [
@@ -41,9 +44,9 @@ const NAV_ITEMS_ADMIN = [
     { id: TABS.ADMIN_APPOINTPOINTMENT_LIST, label: 'Terminliste', icon: faListAlt, category: 'Terminplanung' },
     { id: TABS.ADMIN_SERVICES, label: 'Services', icon: faTools, category: 'Verwaltung' },
     { id: TABS.ADMIN_CUSTOMER_MANAGEMENT, label: 'Kunden', icon: faUsers, category: 'Verwaltung' },
+    { id: TABS.ADMIN_TESTIMONIALS, label: 'Bewertungen', icon: faStarHalfAlt, category: 'Kundenfeedback' }, // Kategorie angepasst
     { id: TABS.ADMIN_WORKING_HOURS, label: 'Arbeitszeiten', icon: faClock, category: 'Betrieb' },
     { id: TABS.ADMIN_BLOCKED_SLOTS, label: 'Abwesenheiten', icon: faCalendarTimes, category: 'Betrieb' },
-    { id: TABS.ADMIN_TESTIMONIALS, label: 'Bewertungen', icon: faStarHalfAlt, category: 'Kundenfeedback' }, // NEU
     { id: TABS.PROFILE, label: 'Mein Profil', icon: faUserCog, category: 'Konto' },
     { id: TABS.ADMIN_SETTINGS, label: 'Einstellungen', icon: faCog, category: 'Konto' },
 ];
@@ -51,14 +54,16 @@ const NAV_ITEMS_ADMIN = [
 const NAV_ITEMS_USER = [
     { id: TABS.USER_BOOKINGS, label: 'Meine Termine', icon: faClipboardList, category: 'Mein Bereich' },
     { id: TABS.PROFILE, label: 'Mein Profil', icon: faUser, category: 'Mein Bereich' },
+    { id: TABS.USER_SUBMIT_TESTIMONIAL, label: 'Feedback geben', icon: faCommentDots, category: 'Mein Bereich' }, // NEU
 ];
 
 
 function AccountDashboard({
                               currentUser, logOut, onAppointmentAdded, refreshAppointmentsList,
-                              onServiceAdded, refreshServicesList, onProfileUpdateSuccess, onProfileUpdateError // onProfileUpdateError hinzugefügt
+                              onServiceAdded, refreshServicesList, onProfileUpdateSuccess, onProfileUpdateError
                           }) {
     const isAdmin = currentUser?.roles?.includes("ROLE_ADMIN");
+    // InitialTab für User jetzt USER_BOOKINGS, um Konsistenz zu wahren. User kann dann zu Feedback wechseln.
     const initialTab = isAdmin ? TABS.ADMIN_DASHBOARD_STATS : TABS.USER_BOOKINGS;
     const [activeTab, setActiveTab] = useState(initialTab);
     const [isMobileView, setIsMobileView] = useState(window.innerWidth < 1024);
@@ -67,6 +72,7 @@ function AccountDashboard({
     const [isSubmittingService, setIsSubmittingService] = useState(false);
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [profileMessages, setProfileMessages] = useState({ error: '', success: '' });
+    const [testimonialSubmittedMessage, setTestimonialSubmittedMessage] = useState(''); // Für Erfolgsmeldung nach Testimonial
 
     const mainContentRef = useRef(null);
 
@@ -86,8 +92,10 @@ function AccountDashboard({
         if (activeTab !== TABS.ADMIN_SERVICES) setShowServiceForm(false);
         if (activeTab !== TABS.PROFILE) {
             setIsEditingProfile(false);
-            // profileMessages sollten nur hier zurückgesetzt werden, wenn sie nicht von einem Timeout gesteuert werden
-            // setProfileMessages({ error: '', success: '' });
+        }
+        // Erfolgsmeldung für Testimonial zurücksetzen, wenn Tab gewechselt wird
+        if (activeTab !== TABS.USER_SUBMIT_TESTIMONIAL) {
+            setTestimonialSubmittedMessage('');
         }
         if (mainContentRef.current) {
             mainContentRef.current.scrollTop = 0;
@@ -97,8 +105,6 @@ function AccountDashboard({
     const handleTabClick = (tabName) => {
         setActiveTab(tabName);
         if (isMobileView) setMobileNavOpen(false);
-        // Das Zurücksetzen von isEditingProfile und profileMessages wird nun innerhalb von renderTabContent / useEffect[activeTab] gehandhabt,
-        // um Nachrichten bei Profilaktualisierung nicht sofort zu löschen.
     };
 
     const handleServiceAddedCallback = () => {
@@ -114,9 +120,7 @@ function AccountDashboard({
         setTimeout(() => setProfileMessages({ error: '', success: '' }), 4000);
     };
 
-    // NEU: Hinzugefügt für onProfileUpdateError Prop
     const handleProfileSaveError = (errorMessage) => {
-        // Fehlerbehandlung bereits in ProfileEditForm, aber hier für zusätzliche Logik falls nötig
         setProfileMessages({ error: errorMessage, success: '' });
         if (onProfileUpdateError) onProfileUpdateError(errorMessage);
         setTimeout(() => setProfileMessages({ error: '', success: '' }), 5000);
@@ -127,6 +131,17 @@ function AccountDashboard({
         setIsEditingProfile(false);
         setProfileMessages({ error: '', success: '' });
     };
+
+    // NEU: Callback für erfolgreich gesendetes Testimonial
+    const handleTestimonialSubmitted = (testimonial) => {
+        setTestimonialSubmittedMessage('Vielen Dank für Ihre Bewertung!');
+        // Optional: Nach kurzer Zeit zur "Meine Termine" Ansicht wechseln oder Nachricht ausblenden
+        setTimeout(() => {
+            setTestimonialSubmittedMessage('');
+            // Ggf. setActiveTab(TABS.USER_BOOKINGS);
+        }, 5000);
+    };
+
 
     const renderTabContent = () => {
         const currentNavInfo = (isAdmin ? NAV_ITEMS_ADMIN : NAV_ITEMS_USER).find(item => item.id === activeTab);
@@ -173,8 +188,8 @@ function AccountDashboard({
                                 currentUser={currentUser}
                                 onSaveSuccess={handleProfileSaveSuccess}
                                 onCancel={handleCancelEditProfile}
-                                onProfileUpdateSuccess={handleProfileSaveSuccess} // Weiterleiten
-                                onProfileUpdateError={handleProfileSaveError}   // Weiterleiten
+                                onProfileUpdateSuccess={handleProfileSaveSuccess}
+                                onProfileUpdateError={handleProfileSaveError}
                             />
                         ) : (
                             <div className="profile-info-display">
@@ -213,7 +228,7 @@ function AccountDashboard({
             case TABS.ADMIN_BLOCKED_SLOTS:
                 return <Card><BlockedTimeSlotManager /></Card>;
 
-            case TABS.ADMIN_TESTIMONIALS: // NEUER CASE
+            case TABS.ADMIN_TESTIMONIALS:
                 return <Card cardClassName="testimonial-management-card"><AdminTestimonialManagement currentUser={currentUser} /></Card>;
 
             case TABS.ADMIN_SETTINGS:
@@ -222,14 +237,37 @@ function AccountDashboard({
             case TABS.USER_BOOKINGS:
                 return <Card><AppointmentList refreshTrigger={refreshAppointmentsList} currentUser={currentUser} onAppointmentModified={onAppointmentAdded} /></Card>;
 
+            case TABS.USER_SUBMIT_TESTIMONIAL: // NEUER CASE für User
+                return (
+                    <Card title="Feedback geben" icon={faCommentDots}>
+                        {/* Das TestimonialSubmitForm wird hier nun gerendert.
+                            serviceIdProp könnte übergeben werden, wenn z.B. von einem spezifischen Termin aus verlinkt wird.
+                            Für einen generellen Feedback-Tab lassen wir es erstmal weg, das Formular kann dann Services laden.
+                        */}
+                        {testimonialSubmittedMessage && (
+                            <p className="form-message success mb-4 slide-in-down">
+                                <FontAwesomeIcon icon={faCheckCircle} /> {testimonialSubmittedMessage}
+                            </p>
+                        )}
+                        {!testimonialSubmittedMessage && (
+                            <TestimonialSubmitForm
+                                // serviceIdProp={...} // Optional, falls ein spezifischer Service bewertet werden soll
+                                onTestimonialSubmitted={handleTestimonialSubmitted}
+                            />
+                        )}
+                    </Card>
+                );
+
             default:
                 return <Card title="Willkommen"><p>Wählen Sie eine Option aus dem Menü.</p></Card>;
         }
     };
 
     const renderNavItems = (items) => {
+        // Gruppierung nach Kategorien, um die Navigation übersichtlicher zu machen
         const groupedItems = items.reduce((acc, item) => {
-            acc[item.category] = [...(acc[item.category] || []), item];
+            const category = item.category || 'Allgemein'; // Fallback-Kategorie
+            acc[category] = [...(acc[category] || []), item];
             return acc;
         }, {});
 
