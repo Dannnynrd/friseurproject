@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import './ExperienceSection.css'; // HIER den Import hinzufügen
+import './ExperienceSection.module.css'; // HIER den Import hinzufügen
 
 function ExperienceSection() {
     // ... (Rest der Komponente bleibt gleich) ...

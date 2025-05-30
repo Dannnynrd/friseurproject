@@ -1,0 +1,92 @@
+/* friseursalon-frontend/src/components/TestimonialsSection.module.css */
+
+/*
+  Die meisten Layout- und Typografie-Stile werden durch Tailwind CSS
+  direkt in der JS-Datei oder über die tailwind.config.js gehandhabt.
+*/
+
+/* Stile für den Slider-Container und den Slider selbst */
+.sliderContainer {
+    /* Tailwind-Klassen im JS: relative animate-up */
+    /* Hier könnten spezifische Stile für den Container hin, falls benötigt */
+}
+
+.testimonialSlider {
+    /* Tailwind-Klassen im JS: flex transition-transform duration-500 ease-in-out */
+    /* Stellt sicher, dass die Slides nicht umbrechen und nebeneinander liegen */
+    scroll-snap-type: x mandatory; /* Ermöglicht sanftes Snapping beim Scrollen (optional) */
+    overflow-x: auto; /* Erlaubt horizontales Scrollen, falls JS fehlschlägt oder für Touch */
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+.testimonialSlider::-webkit-scrollbar { /* Chrome, Safari, Opera */
+    display: none;
+}
+
+
+.testimonialSlide {
+    /* Tailwind-Klassen im JS: flex-shrink-0 w-full p-2 md:p-4 */
+    scroll-snap-align: start; /* Für Scroll-Snapping */
+}
+
+.testimonialCard {
+    /*
+      Tailwind-Klassen im JS:
+      bg-white p-6 md:p-8 rounded-lg shadow-lg mx-auto max-w-2xl
+      Diese decken das Basis-Styling der Karten ab.
+    */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.quoteIcon {
+    /*
+      Tailwind-Klassen im JS:
+      text-3xl text-gray-300 mb-4
+    */
+    /* Die Farbe könnte auch spezifischer sein, z.B. var(--border-color) */
+}
+
+.testimonialText {
+    /*
+      Tailwind-Klassen im JS:
+      text-medium-grey-text italic text-base md:text-lg mb-6
+    */
+    /* Ggf. eine Mindesthöhe, um Layoutsprünge bei unterschiedlich langen Texten zu vermeiden,
+       aber das kann auch knifflig sein. */
+}
+
+.testimonialAuthor {
+    /*
+      Tailwind-Klassen im JS:
+      font-semibold text-dark-text text-sm
+    */
+}
+
+.sliderButton {
+    /*
+      Tailwind-Klassen im JS:
+      absolute top-1/2 transform -translate-y-1/2 z-10 p-2 bg-white/70 hover:bg-white rounded-full shadow-md transition-colors duration-200
+    */
+    /* Zusätzliche Stile für die Buttons, falls benötigt */
+    width: 2.5rem; /* 40px */
+    height: 2.5rem; /* 40px */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.prevButton {
+    /* Tailwind-Klassen im JS: left-0 sm:-left-4 md:-left-6 */
+}
+
+.nextButton {
+    /* Tailwind-Klassen im JS: right-0 sm:-right-4 md:-right-6 */
+}
+
+/*
+  Die .animate-up Klasse und die Logik mit .visible für die Animation
+  wird als global betrachtet und sollte in App.css oder index.css verbleiben.
+*/

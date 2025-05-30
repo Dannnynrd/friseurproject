@@ -1,0 +1,54 @@
+/* friseursalon-frontend/src/components/AboutFounderSection.module.css */
+
+/*
+  Die meisten Layout- und Typografie-Stile werden durch Tailwind CSS
+  direkt in der JS-Datei oder über die tailwind.config.js gehandhabt.
+*/
+
+.founderImageContainer {
+    /*
+      Tailwind-Klassen im JS: animate-up
+      Kann für spezifische Positionierung oder Effekte des Bildcontainers genutzt werden.
+    */
+    position: relative; /* Für eventuelle Pseudo-Elemente oder Overlays */
+}
+
+.founderImage {
+    /*
+      Tailwind-Klassen im JS:
+      w-full h-auto object-cover rounded-lg shadow-lg
+      Diese decken das Basis-Styling des Bildes ab.
+    */
+    /* Beispiel für einen leichten Filter oder spezifischen Schatten, falls gewünscht: */
+    /* filter: grayscale(30%); */
+    /* transition: filter 0.3s ease-in-out; */
+    max-height: 70vh; /* Verhindert, dass das Bild auf großen Bildschirmen zu hoch wird */
+    aspect-ratio: 3/4; /* Sorgt für ein konsistentes Seitenverhältnis, falls gewünscht */
+}
+
+/* .founderImageContainer:hover .founderImage { */
+/* filter: grayscale(0%); */
+/* } */
+
+.founderTextContainer {
+    /*
+      Tailwind-Klassen im JS: animate-up
+      Kann für spezifische Ausrichtung oder Abstände des Textcontainers genutzt werden.
+    */
+}
+
+.founderBio { /* ehemals #about-founder p */
+    /*
+      Tailwind-Klassen im JS:
+      text-medium-grey-text mb-4 (oder mb-6)
+      Diese decken Schriftfarbe und unteren Abstand ab.
+      Die Zeilenhöhe wird global oder durch Tailwind-Utilities wie `leading-relaxed` gesteuert.
+    */
+    line-height: 1.8; /* Etwas großzügigere Zeilenhöhe für bessere Lesbarkeit längerer Texte */
+}
+
+/*
+  Die .animate-up Klasse und die Logik mit .visible für die Animation
+  wird als global betrachtet und sollte in App.css oder index.css verbleiben.
+  Die inline-styles für transition-delay bleiben im JS, da sie dynamisch sind.
+*/

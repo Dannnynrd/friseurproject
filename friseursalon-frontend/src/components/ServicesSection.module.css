@@ -1,0 +1,88 @@
+/* friseursalon-frontend/src/components/ServicesSection.module.css */
+
+.servicesGrid {
+    /*
+      Tailwind-Klassen im JS:
+      grid md:grid-cols-2 lg:grid-cols-3 gap-8
+    */
+}
+
+.serviceCard {
+    /*
+      Tailwind-Klassen im JS:
+      bg-light-bg border border-border-color-light rounded-lg shadow-sm overflow-hidden flex flex-col
+      Die Klasse 'flex flex-col' ist wichtig, damit der Button unten bleibt, wenn flex-grow auf der Beschreibung ist.
+    */
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.serviceCard:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08); /* Etwas stärkerer Schatten beim Hover */
+}
+
+.serviceImageContainer {
+    /* Container für das Bild, falls spezifische Stile benötigt werden, z.B. für Seitenverhältnisse */
+    position: relative;
+    overflow: hidden; /* Stellt sicher, dass das Bild innerhalb der Rundung bleibt, falls das Bild selbst nicht gerundet ist */
+}
+
+.serviceImage {
+    /*
+      Tailwind-Klassen im JS:
+      w-full h-48 object-cover
+    */
+    transition: transform 0.4s ease-in-out;
+}
+
+.serviceCard:hover .serviceImage {
+    transform: scale(1.05); /* Leichter Zoom-Effekt auf das Bild beim Hover der Karte */
+}
+
+.serviceName { /* ehemals #services-dynamic .service-item h3 */
+    /*
+      Tailwind-Klassen im JS:
+      font-serif text-xl font-medium text-dark-text mb-2
+    */
+}
+
+.serviceDescription { /* ehemals #services-dynamic .service-item p */
+    /*
+      Tailwind-Klassen im JS:
+      text-sm text-medium-grey-text mb-4 flex-grow
+      'flex-grow' ist wichtig, damit dieser Bereich den verfügbaren Platz einnimmt
+      und der Button darunter am unteren Rand der Karte bleibt.
+    */
+    min-height: 4.5em; /* Ca. 3 Zeilen Text, um Layout-Sprünge zu reduzieren */
+}
+
+.servicePrice,
+.serviceDuration {
+    /*
+      Tailwind-Klassen im JS:
+      text-sm text-dark-text
+    */
+    font-weight: 500; /* Etwas fetter für bessere Lesbarkeit */
+}
+
+.bookButton { /* ehemals #services-dynamic .service-item .button-link */
+    /*
+      Tailwind-Klassen im JS:
+      mt-auto w-full inline-flex items-center justify-center bg-dark-text text-light-bg px-6 py-3 rounded font-medium text-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200
+    */
+}
+
+
+/* Globale Klasse für Modal offen Zustand (aus App.css übernommen, falls noch nicht in index.css) */
+/* body.modal-open {
+  overflow: hidden;
+} */
+/* Diese Klasse sollte idealerweise in index.css oder einer globalen Styling-Datei sein,
+   da sie den body direkt beeinflusst. Wenn sie bereits in App.css oder index.css existiert
+   und dort bleibt, ist das in Ordnung.
+*/
+
+/*
+  Die .animate-up Klasse und die Logik mit .visible für die Animation
+  wird als global betrachtet und sollte in App.css oder index.css verbleiben.
+*/

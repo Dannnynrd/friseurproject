@@ -1,0 +1,874 @@
+/* friseursalon-frontend/src/pages/BookingPage.module.css */
+/* Dein bereitgestellter Code für die Schritt-Indikatoren und das Seitenlayout */
+
+/* CSS Variablen spezifisch für die BookingPage Schritt-Indikatoren */
+:root {
+    --step-indicator-default-border: var(--border-color, #e7e7e7); /* Fallback zu globaler Variable */
+    --step-indicator-default-text: var(--light-grey-text, #8c8c8c);
+    --step-indicator-line-default: #e0e0e0;
+    --step-indicator-line-height: 3px;
+
+    --step-indicator-active-bg: var(--dark-text, #1f1f1f);
+    --step-indicator-active-border: var(--dark-text, #1f1f1f);
+    --step-indicator-active-text-in-circle: var(--light-bg, #ffffff);
+    --step-indicator-active-label-text: var(--dark-text, #1f1f1f);
+
+    --step-indicator-completed-bg: var(--success-color, #28a745);
+    --step-indicator-completed-border: var(--success-color, #28a745);
+    --step-indicator-completed-text-in-circle: var(--light-bg, #ffffff);
+    --step-indicator-completed-label-text: var(--dark-text, #1f1f1f);
+    --step-indicator-line-completed: var(--success-color, #28a745);
+}
+
+.bookingPageContainer { /* Umbenannt von .booking-page-container für Konsistenz mit Modulnamen */
+    padding: 2rem 0;
+    background-color: var(--light-bg);
+    min-height: calc(100vh - var(--header-height-desktop, 5rem) - var(--footer-height, 14rem) - 4rem);
+}
+
+@media (max-width: 992px) {
+    .bookingPageContainer {
+        min-height: calc(100vh - var(--header-height-mobile, 4.5rem) - var(--footer-height, 14rem) - 2rem);
+        padding: 1rem 0;
+    }
+}
+
+.bookingFormContainer { /* Umbenannt von .booking-form-container */
+    max-width: 750px;
+    margin: 0 auto;
+    padding: 2rem 2.5rem;
+    background-color: var(--light-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.07);
+}
+
+@media (max-width: 768px) {
+    .bookingFormContainer {
+        padding: 1.5rem 1rem;
+    }
+}
+
+.bookingPageMainHeading { /* Umbenannt von .booking-page-main-heading */
+    font-family: var(--font-serif, serif);
+    font-size: 2.2rem;
+    color: var(--dark-text);
+    text-align: center;
+    margin-bottom: 2rem;
+}
+@media (max-width: 768px) {
+    .bookingPageMainHeading {
+        font-size: 1.8rem;
+        margin-bottom: 1.5rem;
+    }
+}
+
+/* --- Modernisierte Schritt-Indikatoren --- */
+.bookingStepIndicators { /* Umbenannt von .booking-step-indicators */
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 3rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    list-style: none;
+    position: relative;
+}
+
+.bookingStepIndicators::before {
+    content: '';
+    position: absolute;
+    top: calc(1.125rem - (var(--step-indicator-line-height) / 2));
+    left: 0;
+    right: 0;
+    height: var(--step-indicator-line-height);
+    background-color: var(--step-indicator-line-default);
+    z-index: 1;
+    width: calc(100% - (100% / 4)); /* Standard für 4 Schritte */
+    margin: 0 auto;
+}
+.bookingStepIndicators.threeSteps::before { /* Angepasst für Modul: .threeSteps statt .three-steps */
+    width: calc(100% - (100% / 3));
+}
+
+
+.bookingStepIndicator { /* Umbenannt von .booking-step-indicator */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex-basis: 0;
+    flex-grow: 1;
+    position: relative;
+    z-index: 2;
+    min-width: 60px;
+}
+
+.bookingStepIndicator .stepNumberWrapper { /* Angepasst für Modul: .stepNumberWrapper statt .step-number-wrapper */
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    border: 2px solid var(--step-indicator-default-border);
+    background-color: var(--light-bg);
+    color: var(--step-indicator-default-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.4rem;
+    transition: all 0.3s var(--transition-ease, ease-in-out);
+    font-weight: 600;
+    position: relative;
+    z-index: 3;
+}
+
+.bookingStepIndicator .stepNumber { /* Angepasst für Modul: .stepNumber statt .step-number */
+    font-size: 0.85rem;
+}
+.bookingStepIndicator .stepNumber .svgInlineFa { /* Angepasst für Modul: .svgInlineFa statt .svg-inline--fa */
+    font-size: 0.9rem;
+    color: var(--step-indicator-completed-text-in-circle);
+}
+
+.bookingStepIndicator .stepLabel { /* Angepasst für Modul: .stepLabel statt .step-label */
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--step-indicator-default-text);
+    transition: color 0.3s ease, font-weight 0.3s ease;
+    line-height: 1.2;
+    padding: 0 0.1rem;
+}
+
+.bookingStepIndicator.completed .stepNumberWrapper {
+    background-color: var(--step-indicator-completed-bg);
+    border-color: var(--step-indicator-completed-border);
+}
+.bookingStepIndicator.completed .stepLabel {
+    color: var(--step-indicator-completed-label-text);
+}
+
+.bookingStepIndicator.completed::after {
+    content: '';
+    position: absolute;
+    top: calc(1.125rem - (var(--step-indicator-line-height) / 2));
+    left: 50%;
+    width: 100%;
+    height: var(--step-indicator-line-height);
+    background-color: var(--step-indicator-line-completed);
+    z-index: 1;
+}
+.bookingStepIndicator:last-child.completed::after {
+    width: 0;
+}
+
+.bookingStepIndicator.active .stepNumberWrapper {
+    background-color: var(--step-indicator-active-bg);
+    border-color: var(--step-indicator-active-border);
+    color: var(--step-indicator-active-text-in-circle);
+    transform: scale(1.1);
+    box-shadow: 0 0 8px rgba(0,0,0,0.1);
+}
+.bookingStepIndicator.active .stepLabel {
+    color: var(--step-indicator-active-label-text);
+    font-weight: 700;
+}
+
+@media (max-width: 576px) {
+    .bookingStepIndicators::before {
+        margin: 0 calc(25% / 2 - 0.5rem);
+    }
+    .bookingStepIndicators.threeSteps::before {
+        margin: 0 calc(33.33% / 2 - 0.5rem);
+    }
+    .bookingStepIndicator .stepNumberWrapper {
+        width: 2rem;
+        height: 2rem;
+    }
+    .bookingStepIndicator .stepNumber {
+        font-size: 0.75rem;
+    }
+    .bookingStepIndicator .stepNumber .svgInlineFa {
+        font-size: 0.8rem;
+    }
+    .bookingStepIndicator .stepLabel {
+        font-size: 0.7rem;
+    }
+    .bookingStepIndicators::before,
+    .bookingStepIndicator.completed::after {
+        top: calc(1rem - (var(--step-indicator-line-height) / 2) + 1px);
+        height: calc(var(--step-indicator-line-height) - 1px);
+    }
+}
+
+@media (max-width: 420px) {
+    .bookingStepIndicator .stepLabel {
+        display: none;
+    }
+    .bookingStepIndicator .stepNumberWrapper {
+        margin-bottom: 0;
+    }
+    .bookingStepIndicators {
+        padding-bottom: 0.5rem;
+        margin-bottom: 2rem;
+    }
+    .bookingStepIndicators::before,
+    .bookingStepIndicator.completed::after {
+        top: calc(1rem - (var(--step-indicator-line-height) / 2) + 1px);
+    }
+}
+/* --- Ende Modernisierte Schritt-Indikatoren --- */
+
+
+.bookingStepContent { /* Umbenannt von .booking-step-content */
+    padding-top: 1rem;
+}
+.animateStep { /* Umbenannt von .animate-step */
+    animation: fadeInStep 0.4s var(--transition-ease, ease-in-out) forwards;
+    opacity: 0;
+}
+@keyframes fadeInStep {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.bookingStepHeading { /* Umbenannt von .booking-step-heading */
+    font-family: var(--font-serif, serif);
+    font-size: 1.8rem;
+    color: var(--dark-text);
+    text-align: left;
+    margin-bottom: 1.5rem;
+}
+.bookingConfirmation .bookingStepHeading { /* Angepasst für Modul: .bookingConfirmation statt .booking-confirmation */
+    text-align: center;
+}
+
+.bookingStepSubheading { /* Umbenannt von .booking-step-subheading */
+    font-size: 0.9rem;
+    color: var(--medium-grey-text);
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--light-grey-bg);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.bookingStepSubheading .serviceInfoText { /* Angepasst für Modul: .serviceInfoText statt .service-info-text */
+    flex-grow: 1;
+    line-height: 1.5;
+}
+.bookingStepSubheading .serviceInfoText strong {
+    color: var(--dark-text);
+    font-weight: 600;
+    display: block;
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+}
+.bookingStepSubheading .servicePriceDuration { /* Angepasst für Modul: .servicePriceDuration statt .service-price-duration */
+    display: block;
+    font-size: 0.85rem;
+    color: var(--medium-grey-text);
+}
+.bookingStepSubheading .editSelectionButton { /* Angepasst für Modul: .editSelectionButton statt .edit-selection-button */
+    margin-left: 1rem;
+    flex-shrink: 0;
+    align-self: center;
+}
+
+.servicesGrid { /* Umbenannt von .services-grid */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.25rem;
+}
+.serviceCard { /* Umbenannt von .service-card */
+    padding: 1.2rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s var(--transition-ease, ease-in-out);
+    background-color: var(--light-bg);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+}
+.serviceCard:hover {
+    border-color: var(--medium-grey-text, #5f5f5f);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transform: translateY(-3px);
+}
+.serviceCard.selected {
+    border-color: var(--dark-text, #1f1f1f);
+    background-color: var(--light-grey-bg, #f8f8f8);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-3px);
+}
+.serviceCard.selected::after {
+    content: '\\f00c'; /* FontAwesome check icon */
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    color: var(--success-color, #28a745);
+    font-size: 1rem;
+    background-color: var(--light-bg);
+    border-radius: 50%;
+    padding: 0.2rem;
+    line-height: 1;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.serviceName { /* Umbenannt von .service-name */
+    font-family: var(--font-sans, sans-serif);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    color: var(--dark-text);
+}
+.serviceDescription { /* Umbenannt von .service-description */
+    font-family: var(--font-sans, sans-serif);
+    font-size: 0.88rem;
+    color: var(--medium-grey-text);
+    margin-bottom: 0.6rem;
+    flex-grow: 1;
+    line-height: 1.5;
+}
+.serviceDetails { /* Umbenannt von .service-details */
+    font-family: var(--font-sans, sans-serif);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--dark-text);
+    margin-top: 0.75rem;
+}
+.serviceDuration { /* Umbenannt von .service-duration */
+    color: var(--medium-grey-text);
+    font-size: 0.8em;
+}
+
+.datepickerTimeContainer { /* Umbenannt von .datepicker-time-container */
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 0;
+}
+@media (min-width: 768px) {
+    .datepickerTimeContainer {
+        flex-direction: row;
+        align-items: stretch;
+    }
+    .datepickerWrapperOuter, .timeSlotsWrapperOuter { /* Angepasst für Modul */
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+    .datepickerWrapper, .timeSlotsWrapper { /* Angepasst für Modul */
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 0.75rem;
+        background-color: var(--light-bg);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .timeSlotsGrid, .noTimesMessage, .selectDateMessage { /* Angepasst für Modul */
+        flex-grow: 1;
+        background-color: transparent;
+        border: none;
+        padding: 0;
+        border-radius: 0;
+    }
+    .timeSlotsGrid { /* Angepasst für Modul */
+        padding: 0.5rem;
+        background-color: var(--light-grey-bg);
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+    }
+}
+
+/* --- Verbesserte Kalender-Stile (global, da react-datepicker Klassen direkt angesprochen werden) --- */
+:global(.react-datepicker) { /* Als :global belassen für direkte Ansprache */
+    width: 100%;
+    font-family: var(--font-sans, sans-serif) !important;
+    font-size: 0.9rem;
+    border: none !important;
+    border-radius: 4px !important;
+    box-shadow: none !important;
+    display: block !important;
+}
+:global(.react-datepicker__month-container) {
+    width: 100%;
+    float: none !important;
+}
+:global(.react-datepicker__header) {
+    background-color: transparent !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    border-top-left-radius: 3px !important;
+    border-top-right-radius: 3px !important;
+    padding: 0.8rem 0.5rem !important;
+}
+:global(.react-datepicker__current-month) {
+    color: var(--dark-text) !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    padding-bottom: 0.3rem;
+}
+:global(.react-datepicker__day-name), :global(.react-datepicker__day) {
+    color: var(--medium-grey-text) !important;
+    font-size: 0.85rem !important;
+    line-height: 2.1rem !important;
+    width: 2.1rem !important;
+    margin: 0.2rem 0.15rem !important;
+    border-radius: 3px !important;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    border: 1px solid transparent;
+    padding: 0 !important;
+}
+:global(.react-datepicker__day--selected), :global(.react-datepicker__day--keyboard-selected) {
+    background-color: var(--dark-text) !important;
+    color: var(--light-bg) !important;
+    border-color: var(--dark-text) !important;
+}
+:global(.react-datepicker__day:hover:not(.react-datepicker__day--disabled):not(.react-datepicker__day--selected)) {
+    background-color: var(--light-grey-bg) !important;
+    color: var(--dark-text) !important;
+    border-color: var(--medium-grey-text) !important;
+}
+:global(.react-datepicker__day--outside-month) {
+    color: var(--light-grey-text) !important;
+    opacity: 0.4;
+}
+:global(.react-datepicker__day--disabled) {
+    opacity: 0.3 !important;
+    cursor: not-allowed !important;
+    background-color: transparent !important;
+    border-color: transparent !important;
+}
+:global(.react-datepicker__day--today) {
+    font-weight: bold;
+    border-color: var(--dark-text) !important;
+    background-color: rgba(0,0,0,0.03) !important;
+    color: var(--dark-text) !important;
+}
+:global(.react-datepicker__navigation) {
+    top: 1rem !important;
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+}
+:global(.react-datepicker__navigation:hover) {
+    background-color: rgba(0,0,0,0.05);
+}
+:global(.react-datepicker__navigation--previous) {
+    border-right-color: var(--dark-text) !important;
+    left: 0.75rem;
+}
+:global(.react-datepicker__navigation--next) {
+    border-left-color: var(--dark-text) !important;
+    right: 0.75rem;
+}
+:global(.react-datepicker__navigation-icon::before) {
+    border-width: 2px 2px 0 0 !important;
+    height: 7px !important;
+    width: 7px !important;
+}
+:global(.react-datepicker__navigation--next .react-datepicker__navigation-icon::before) {
+    left: -1px;
+}
+:global(.react-datepicker__navigation--previous .react-datepicker__navigation-icon::before) {
+    right: -1px;
+}
+
+@media (max-width: 768px) {
+    :global(.react-datepicker) {
+        font-size: 0.85rem;
+    }
+    :global(.react-datepicker__current-month) {
+        font-size: 0.9rem !important;
+    }
+    :global(.react-datepicker__day-name), :global(.react-datepicker__day) {
+        line-height: 1.8rem !important;
+        width: 1.8rem !important;
+        font-size: 0.8rem !important;
+        margin: 0.1rem 0.25rem !important;
+    }
+    :global(.react-datepicker__navigation) {
+        width: 2rem;
+        height: 2rem;
+        top: 0.8rem !important;
+    }
+}
+/* --- Ende Verbesserte Kalender-Stile --- */
+
+.subHeading { /* Umbenannt von .sub-heading */
+    font-family: var(--font-sans), sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+    color: var(--dark-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.subHeading .svgInlineFa { /* Angepasst für Modul */
+    font-size: 0.9em;
+    color: var(--medium-grey-text);
+}
+
+.timeSlotsGrid { /* Umbenannt von .time-slots-grid */
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 0.75rem;
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 0.75rem;
+}
+.timeSlotButton { /* Umbenannt von .time-slot-button */
+    padding: 0.75rem 0.5rem;
+    font-size: 0.9rem;
+    background-color: var(--light-bg);
+    color: var(--dark-text);
+    border: 1px solid var(--border-color);
+    font-weight: 500;
+    border-radius: 4px;
+}
+.timeSlotButton:hover:not(.selected):not(:disabled) {
+    background-color: #e9e9e9;
+    border-color: var(--medium-grey-text);
+    color: var(--dark-text);
+    transform: translateY(-1px);
+}
+.timeSlotButton.selected {
+    background-color: var(--dark-text);
+    color: var(--light-bg);
+    border-color: var(--dark-text);
+    font-weight: 600;
+}
+
+.noTimesMessage, .selectDateMessage { /* Angepasst für Modul */
+    text-align: center;
+    color: var(--medium-grey-text);
+    padding: 2rem 1rem;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 150px;
+    flex-grow: 1;
+}
+.selectedDatetimeInfo { /* Umbenannt von .selected-datetime-info und .summary-above-datepicker */
+    margin-bottom: 1.5rem;
+    border-radius: 6px;
+    padding: 0.8rem 1.25rem;
+    text-align: left;
+    font-size: 0.9rem;
+    min-height: 45px;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+.selectedDatetimeInfo.placeholder {
+    background-color: var(--info-bg-light, #cce5ff);
+    border: 1px solid var(--info-color, #004085);
+    color: var(--info-color, #004085);
+}
+.selectedDatetimeInfo:not(.placeholder) {
+    background-color: var(--success-bg-light, #e2f0e6);
+    border: 1px solid var(--success-color, #28a745);
+    color: var(--success-color, #28a745);
+}
+.selectedDatetimeInfo strong {
+    font-weight: 600;
+    margin: 0 0.25em;
+}
+
+.bookingNavigationButtons { /* Umbenannt von .booking-navigation-buttons */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+.bookingNavigationButtons .buttonLink, /* Angepasst für Modul */
+.bookingNavigationButtons .buttonLinkOutline { /* Angepasst für Modul */
+    padding: 0.8rem 1.5rem;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.loginPromptBooking { /* Umbenannt von .login-prompt-booking */
+    text-align: center;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    background-color: var(--light-grey-bg);
+}
+.loginPromptBooking p {
+    margin-bottom: 0.8rem;
+    color: var(--medium-grey-text);
+    font-size: 0.9rem;
+}
+.loginPromptBooking .buttonLink { /* Angepasst für Modul */
+    font-size: 0.85rem;
+    padding: 0.6rem 1rem;
+}
+.loginPromptBooking a:not(.buttonLink) { /* Angepasst für Modul */
+    color: var(--dark-text);
+    text-decoration: underline;
+    font-weight: 500;
+}
+.loginPromptBooking a:not(.buttonLink):hover { /* Angepasst für Modul */
+    color: var(--medium-grey-text);
+}
+
+.appointmentSummaryInline { /* Umbenannt von .appointment-summary-inline */
+    padding: 0.8rem 1.25rem;
+    background-color: var(--light-grey-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+.appointmentSummaryInline p {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0;
+}
+.appointmentSummaryInline .summaryIcon { /* Angepasst für Modul */
+    color: var(--success-color);
+    margin-right: 0.5rem;
+    font-size: 1.1em;
+    width: 1.2em;
+    text-align: center;
+}
+.appointmentSummaryInline .editSelectionButton { /* Angepasst für Modul */
+    margin-left: auto;
+}
+
+.appointmentSummaryFinal { /* Umbenannt von .appointment-summary-final */
+    padding: 1.5rem;
+    background-color: var(--light-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+}
+.appointmentSummaryFinal h3 {
+    font-family: var(--font-serif), serif;
+    font-size: 1.3rem;
+    color: var(--dark-text);
+    margin-top: 1.25rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed var(--border-color);
+}
+.appointmentSummaryFinal h3:first-of-type {
+    margin-top: 0;
+}
+.appointmentSummaryFinal p {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+    line-height: 1.6;
+}
+.appointmentSummaryFinal p .svgInlineFa { /* Angepasst für Modul */
+    margin-right: 0.5rem;
+    color: var(--medium-grey-text);
+    width: 1.2em;
+    text-align: center;
+    margin-top: 0.15em;
+}
+.appointmentSummaryFinal strong {
+    color: var(--dark-text);
+    font-weight: 600;
+}
+
+.editSelectionButton { /* Umbenannt von .edit-selection-button */
+    background: none;
+    border: none;
+    color: var(--medium-grey-text);
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+}
+.editSelectionButton:hover {
+    color: var(--dark-text);
+    background-color: var(--border-color);
+}
+.editSelectionButton.smallEdit { /* Angepasst für Modul */
+    font-size: 0.75rem;
+    padding: 0.1rem 0.3rem;
+    margin-left: 0.5rem;
+}
+.editSelectionButton.subtleEdit { /* Angepasst für Modul */
+    font-size: 0.85rem;
+    padding: 0.1rem 0.2rem;
+    text-decoration: underline;
+}
+.editSelectionButton.subtleEdit:hover, /* Angepasst für Modul */
+.editSelectionButton.subtleEdit:focus-visible { /* Angepasst für Modul */
+    background-color: transparent;
+    color: var(--dark-text);
+    text-decoration: underline;
+}
+
+.bookingConfirmation { /* Umbenannt von .booking-confirmation */
+    text-align: center;
+    padding: 2rem 0;
+}
+.confirmationIcon { /* Umbenannt von .confirmation-icon */
+    font-size: 4rem;
+    color: var(--success-color);
+    margin-bottom: 1.2rem;
+}
+.bookingConfirmation .bookingStepHeading { /* Angepasst für Modul */
+    font-family: var(--font-serif), serif;
+    border-bottom: none;
+    margin-bottom: 1rem;
+    font-size: 2rem;
+    text-align: center;
+}
+.bookingConfirmation p {
+    color: var(--medium-grey-text);
+    margin-bottom: 1.8rem;
+    font-size: 1.05rem;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.bookingConfirmation .appointmentSummary.light { /* Angepasst für Modul */
+    background-color: var(--light-bg);
+    border: 1px solid var(--border-color);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-top: 1.5rem;
+    margin-bottom: 2rem;
+    text-align: left;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.bookingConfirmation .appointmentSummary.light h4 { /* Angepasst für Modul */
+    font-family: var(--font-sans), sans-serif;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--dark-text);
+    font-size: 1.1rem;
+}
+.bookingConfirmation .appointmentSummary.light p { /* Angepasst für Modul */
+    font-size: 0.9rem;
+    color: var(--medium-grey-text);
+    margin-bottom: 0.5rem;
+}
+.bookingConfirmation .appointmentSummary.light p strong { /* Angepasst für Modul */
+    color: var(--dark-text);
+}
+
+.calendarActions { /* Umbenannt von .calendar-actions */
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+@media (min-width: 576px) {
+    .calendarActions {
+        flex-direction: row;
+        justify-content: center;
+    }
+}
+.calendarActions .buttonLinkOutline.smallButton { /* Angepasst für Modul */
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    min-width: 200px;
+}
+.calendarActions .buttonLinkOutline.smallButton .svgInlineFa { /* Angepasst für Modul */
+    margin-right: 0.4rem;
+}
+
+.confirmationButtons { /* Umbenannt von .confirmation-buttons */
+    justify-content: center;
+    gap: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+}
+.confirmationButtons .buttonLink, .confirmationButtons .buttonLinkOutline { /* Angepasst für Modul */
+    min-width: 180px;
+}
+
+.appointmentFormFields .formGroup { /* Angepasst für Modul */
+    /* Stile hier */
+}
+.appointmentFormFields .formGrid { /* Angepasst für Modul */
+    /* Stile hier */
+}
+.appointmentFormFields .formHint { /* Angepasst für Modul */
+    /* Stile hier */
+}
+
+.loadingMessage { /* Umbenannt von .loading-message */
+    text-align: center;
+    padding: 2rem;
+    font-size: 1rem;
+    color: var(--medium-grey-text);
+}
+.loadingMessage .svgInlineFa { /* Angepasst für Modul */
+    margin-right: 0.5rem;
+    font-size: 1.2em;
+}
+.loadingMessage.small {
+    font-size: 0.9rem;
+    padding: 0.5rem;
+}
+
+/* Die .form-message Stile sind wahrscheinlich globaler, aber hier mit angepassten Namen für den Fall,
+   dass sie spezifisch im BookingPage Modul verwendet werden sollen. */
+.formMessage {
+    margin-top: 1rem;
+    padding: 0.7rem 1rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.formMessage.error {
+    color: var(--danger-color);
+    background-color: var(--danger-bg-light);
+    border: 1px solid var(--danger-color);
+}
+.formMessage.success {
+    color: var(--success-color);
+    background-color: var(--success-bg-light);
+    border: 1px solid var(--success-color);
+}
+.formMessage.info {
+    color: var(--info-color);
+    background-color: var(--info-bg-light);
+    border: 1px solid var(--info-color);
+}
+.formMessage.small {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.8rem;
+    margin-top: 0.5rem;
+}
+

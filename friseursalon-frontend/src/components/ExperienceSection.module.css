@@ -1,0 +1,73 @@
+/* friseursalon-frontend/src/components/ExperienceSection.module.css */
+
+/*
+  Die meisten Layout- und Typografie-Stile werden durch Tailwind CSS
+  direkt in der JS-Datei oder über die tailwind.config.js gehandhabt.
+  Diese Datei ist für spezifische Stile, die darüber hinausgehen oder
+  zur besseren Lesbarkeit ausgelagert werden.
+*/
+
+/*
+  Die Klasse .section-header und ihre Kindelemente werden jetzt mit
+  Tailwind-Utility-Klassen direkt im JSX gestylt.
+  Beispiel für .section-header: text-center max-w-xl mx-auto mb-10 md:mb-16
+  Beispiel für .section-header h2: font-serif text-3xl md:text-4xl font-medium text-dark-text mb-2
+  Beispiel für .section-header .subtitle: text-xs font-semibold text-medium-grey-text uppercase tracking-wider mb-1
+  Beispiel für .section-header p: text-base text-dark-text
+  Diese müssen in der JS-Datei entsprechend mit Tailwind-Klassen versehen werden.
+  Die globalen Klassen in App.css wurden bereits reduziert.
+*/
+
+.experienceGrid {
+    /*
+      Tailwind-Klassen im JS:
+      grid md:grid-cols-3 gap-8
+      Diese decken das responsive Grid-Layout ab.
+    */
+}
+
+.experienceStep {
+    /*
+      Tailwind-Klassen im JS:
+      text-center p-6 bg-light-bg border border-border-color rounded-md shadow-sm hover:shadow-lg transition-shadow duration-300
+      Diese decken das Basis-Styling der Karten ab.
+      Spezifische Hover-Effekte oder komplexe Hintergrund-Layer könnten hierhin.
+    */
+    /* Beispiel für einen zusätzlichen Effekt, der nicht einfach mit Tailwind geht: */
+    /*
+    transition: transform 0.3s var(--transition-ease), box-shadow 0.3s var(--transition-ease);
+    */
+}
+
+/* .experienceStep:hover { */
+/* transform: translateY(-5px); */ /* Bereits durch Tailwind 'hover:shadow-lg' und 'transition-shadow' abgedeckt,
+                                        aber 'transform' könnte hier explizit hinzugefügt werden, wenn gewünscht. */
+/* box-shadow: 0 6px 15px rgba(0,0,0,0.1); */
+/* } */
+
+.stepNumber {
+    /*
+      Tailwind-Klassen im JS:
+      block text-sm font-semibold text-medium-grey-text mb-3
+    */
+}
+
+.stepTitle { /* ehemals .experience-step h3 */
+    /*
+      Tailwind-Klassen im JS:
+      font-serif text-xl font-medium text-dark-text mb-2
+    */
+}
+
+.stepDescription { /* ehemals .experience-step p */
+    /*
+      Tailwind-Klassen im JS:
+      text-sm text-medium-grey-text leading-relaxed
+    */
+}
+
+/*
+  Die .animate-up Klasse und die Logik mit .visible für die Animation
+  wird als global betrachtet und sollte in App.css oder index.css verbleiben.
+  Die inline-styles für transition-delay bleiben im JS, da sie dynamisch sind.
+*/

@@ -1,0 +1,56 @@
+/* friseursalon-frontend/src/components/TrustBarSection.module.css */
+
+/*
+  Die grundlegenden Layout-Stile für das Grid und die Textausrichtung
+  werden jetzt durch Tailwind-Klassen in der JS-Datei gehandhabt.
+  Hier können spezifische Stile für .trustItem verbleiben,
+  falls sie nicht einfach mit Tailwind umsetzbar sind oder
+  für eine bessere Lesbarkeit der JS-Datei ausgelagert werden sollen.
+*/
+
+.trustGrid {
+    /*
+      Tailwind-Klassen im JS:
+      grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 text-center
+      Diese decken das responsive Grid-Layout und die Textausrichtung ab.
+    */
+}
+
+.trustItem {
+    /*
+      Eventuelle zusätzliche Stile für die einzelnen Trust-Items,
+      die über Tailwind hinausgehen (z.B. spezifische Rahmen, Hover-Effekte,
+      die nicht durch Tailwind-Utilities einfach darstellbar sind).
+      Momentan werden die meisten visuellen Aspekte durch Tailwind im JS abgedeckt.
+    */
+}
+
+.trustItemValue {
+    /*
+      Tailwind-Klassen im JS:
+      font-serif text-3xl sm:text-4xl font-semibold text-dark-text mb-1
+      Diese definieren Schriftart, Größe, Gewicht, Farbe und unteren Abstand.
+      Die .trustItem h3 Selektoren aus der alten CSS-Datei sind hiermit abgedeckt.
+    */
+    /* Falls spezifische Effekte benötigt werden: */
+    /* transition: color 0.3s ease; */
+}
+
+/* .trustItem:hover .trustItemValue { */
+/* color: var(--focus-ring-color); Beispiel für einen Hover-Effekt */
+/* } */
+
+.trustItemLabel {
+    /*
+      Tailwind-Klassen im JS:
+      text-sm text-medium-grey-text
+      Diese definieren Schriftgröße und Farbe.
+      Die .trustItem p Selektoren aus der alten CSS-Datei sind hiermit abgedeckt.
+    */
+}
+
+/*
+  Die .animate-up Klasse und die Logik mit .visible für die Animation
+  wird als global betrachtet und sollte in App.css oder index.css verbleiben.
+  Die inline-styles für transition-delay bleiben im JS, da sie dynamisch sind.
+*/

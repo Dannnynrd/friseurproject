@@ -1,38 +1,33 @@
-// src/components/TestimonialsSection.js
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import api from '../services/api.service'; // API Service importieren
+// friseursalon-frontend/src/components/TestimonialsSection.js
+import React, { useEffect, useState, useRef } from 'react';
+import TestimonialService from '../services/testimonial.service';
+// HIER den Import ändern:
+import styles from './TestimonialsSection.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faStar, faArrowLeft, faArrowRight, faSpinner, faExclamationCircle } from '@fortawesome/free-solid-svg-icons';
-import "./TestimonialsSection.css";
-
-// Hilfskomponente für Sterne-Anzeige
-const RenderStars = ({ rating }) => {
-    const stars = [];
-    for (let i = 1; i <= 5; i++) {
-        stars.push(
-            <FontAwesomeIcon
-                key={i}
-                icon={faStar}
-                className={i <= rating ? 'star-active' : 'star-inactive'}
-            />
-        );
-    }
-    return <div className="stars">{stars}</div>;
-};
-
+import { faQuoteLeft, faChevronLeft, faChevronRight, faStar as fasStar } from '@fortawesome/free-solid-svg-icons'; // fasStar für gefüllten Stern
+import { faStar as farStar } from '@fortawesome/free-regular-svg-icons'; // farStar für leeren Stern
 
 function TestimonialsSection() {
-    const sectionRef = useRef(null);
-    const slidesRef = useRef(null);
-
     const [testimonials, setTestimonials] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(null);
-
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [totalSlides, setTotalSlides] = useState(0);
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(true);
+    const sectionRef = useRef(null);
+    const sliderRef = useRef(null);
 
-    // IntersectionObserver für die "animate-up" Klasse (bleibt bestehen)
+    useEffect(() => {
+        TestimonialService.getApprovedTestimonials()
+            .then(response => {
+                setTestimonials(response.data || []);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Error fetching testimonials:", err);
+                setError('Bewertungen konnten nicht geladen werden.');
+                setLoading(false);
+            });
+    }, []);
+
     useEffect(() => {
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -46,7 +41,6 @@ function TestimonialsSection() {
         if (currentSectionRef) {
             observer.observe(currentSectionRef);
         }
-
         return () => {
             if (currentSectionRef) {
                 observer.unobserve(currentSectionRef);
@@ -54,105 +48,143 @@ function TestimonialsSection() {
         };
     }, []);
 
-    // Testimonials laden
-    const fetchTestimonials = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const response = await api.get('/testimonials'); // Öffentlicher Endpunkt für genehmigte Testimonials
-            const approvedTestimonials = (response.data || []).filter(t => t.isApproved);
-            setTestimonials(approvedTestimonials);
-            setTotalSlides(approvedTestimonials.length);
-            setCurrentIndex(0); // Reset index when testimonials change
-        } catch (err) {
-            console.error("Fehler beim Laden der Testimonials:", err);
-            setError("Bewertungen konnten nicht geladen werden.");
-            setTestimonials([]);
-            setTotalSlides(0);
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-
     useEffect(() => {
-        fetchTestimonials();
-    }, [fetchTestimonials]);
-
-
-    // Slider-Logik (angepasst für dynamische Daten)
-    useEffect(() => {
-        if (slidesRef.current && totalSlides > 0) {
-            slidesRef.current.style.transform = `translateX(-${currentIndex * 100}%)`;
-        } else if (slidesRef.current && totalSlides === 0) {
-            slidesRef.current.style.transform = `translateX(0%)`;
+        if (sliderRef.current && testimonials.length > 0) {
+            const scrollAmount = sliderRef.current.offsetWidth * currentIndex;
+            sliderRef.current.scrollTo({
+                left: scrollAmount,
+                behavior: 'smooth'
+            });
         }
-    }, [currentIndex, totalSlides]);
+    }, [currentIndex, testimonials.length]);
 
-    const handleNext = () => {
-        if (totalSlides > 0) {
-            setCurrentIndex((prevIndex) => (prevIndex + 1) % totalSlides);
-        }
+
+    const nextTestimonial = () => {
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % testimonials.length);
     };
 
-    const handlePrev = () => {
-        if (totalSlides > 0) {
-            setCurrentIndex((prevIndex) => (prevIndex - 1 + totalSlides) % totalSlides);
-        }
+    const prevTestimonial = () => {
+        setCurrentIndex((prevIndex) => (prevIndex - 1 + testimonials.length) % testimonials.length);
     };
+
+    const renderStars = (rating) => {
+        const stars = [];
+        for (let i = 1; i <= 5; i++) {
+            stars.push(
+                <FontAwesomeIcon
+                    key={i}
+                    icon={i <= rating ? fasStar : farStar}
+                    className="text-yellow-400" // Tailwind class for star color
+                />
+            );
+        }
+        return stars;
+    };
+
+
+    if (loading) {
+        return (
+            <section id="testimonials" className="py-16 md:py-24 bg-light-grey-bg">
+                <div className="container mx-auto px-6 text-center">
+                    <p className="text-medium-grey-text">Lade Bewertungen...</p>
+                </div>
+            </section>
+        );
+    }
+
+    if (error) {
+        return (
+            <section id="testimonials" className="py-16 md:py-24 bg-light-grey-bg">
+                <div className="container mx-auto px-6 text-center">
+                    <p className="text-red-600">{error}</p>
+                </div>
+            </section>
+        );
+    }
+
+    if (testimonials.length === 0) {
+        return null; // Keine Sektion anzeigen, wenn keine Testimonials vorhanden sind
+    }
 
     return (
-        <section id="testimonials" ref={sectionRef}>
-            <div className="container">
-                <div className="section-header animate-up">
-                    <span className="subtitle">Was meine Kunden sagen</span>
-                    <h2>Vertrauen & Ergebnisse</h2>
+        <section
+            id="testimonials"
+            ref={sectionRef}
+            className="py-16 md:py-24 bg-light-grey-bg overflow-hidden" // overflow-hidden für den Slider
+        >
+            <div className="container mx-auto px-6">
+                <div className="section-header text-center max-w-xl mx-auto mb-10 md:mb-16 animate-up">
+                    <span className="text-xs font-semibold text-medium-grey-text uppercase tracking-wider mb-1">
+                        Das sagen meine Kunden
+                    </span>
+                    <h2 className="font-serif text-3xl md:text-4xl font-medium text-dark-text mb-2">
+                        Bewertungen
+                    </h2>
                 </div>
 
-                {isLoading && (
-                    <div className="testimonial-loading">
-                        <FontAwesomeIcon icon={faSpinner} spin size="2x" />
-                        <p>Lade Bewertungen...</p>
-                    </div>
-                )}
-
-                {error && !isLoading && (
-                    <div className="testimonial-error form-message error">
-                        <FontAwesomeIcon icon={faExclamationCircle} /> {error}
-                    </div>
-                )}
-
-                {!isLoading && !error && testimonials.length === 0 && (
-                    <div className="testimonial-empty">
-                        <p>Es gibt noch keine Bewertungen. Seien Sie der Erste!</p>
-                    </div>
-                )}
-
-                {!isLoading && !error && testimonials.length > 0 && (
-                    <div className="testimonial-slider animate-up">
-                        <div className="testimonial-slides" ref={slidesRef}>
-                            {testimonials.map((testimonial) => (
-                                <div key={testimonial.id} className="testimonial-slide">
-                                    <RenderStars rating={testimonial.rating} />
-                                    <blockquote>"{testimonial.comment}"</blockquote>
-                                    <cite>– {testimonial.customerName || 'Ein Kunde'}</cite>
-                                    {testimonial.service && testimonial.service.name && (
-                                        <p className="testimonial-service-context">
-                                            für: {testimonial.service.name}
+                <div className={`relative animate-up ${styles.sliderContainer}`}>
+                    <div
+                        ref={sliderRef}
+                        className={`flex transition-transform duration-500 ease-in-out ${styles.testimonialSlider}`}
+                    >
+                        {testimonials.map((testimonial) => (
+                            <div
+                                key={testimonial.id}
+                                className={`flex-shrink-0 w-full p-2 md:p-4 ${styles.testimonialSlide}`}
+                            >
+                                <div className={`bg-white p-6 md:p-8 rounded-lg shadow-lg mx-auto max-w-2xl ${styles.testimonialCard}`}>
+                                    <FontAwesomeIcon icon={faQuoteLeft} className={`text-3xl text-gray-300 mb-4 ${styles.quoteIcon}`} />
+                                    <div className="mb-3 flex items-center justify-center space-x-1">
+                                        {renderStars(testimonial.rating)}
+                                    </div>
+                                    <p className={`text-medium-grey-text italic text-base md:text-lg mb-6 ${styles.testimonialText}`}>
+                                        "{testimonial.comment}"
+                                    </p>
+                                    <p className={`font-semibold text-dark-text text-sm ${styles.testimonialAuthor}`}>
+                                        - {testimonial.customerName}
+                                    </p>
+                                    {/* Optional: Datum anzeigen, wenn vorhanden und gewünscht */}
+                                    {/* testimonial.date && (
+                                        <p className="text-xs text-light-grey-text mt-1">
+                                            {new Date(testimonial.date).toLocaleDateString()}
                                         </p>
-                                    )}
+                                    )*/}
                                 </div>
-                            ))}
-                        </div>
-                        {totalSlides > 1 && ( // Navigation nur anzeigen, wenn mehr als ein Slide
-                            <div className="slider-nav">
-                                <button id="prev-testimonial" className="interactive" onClick={handlePrev} aria-label="Vorherige Bewertung">
-                                    <FontAwesomeIcon icon={faArrowLeft} />
-                                </button>
-                                <button id="next-testimonial" className="interactive" onClick={handleNext} aria-label="Nächste Bewertung">
-                                    <FontAwesomeIcon icon={faArrowRight} />
-                                </button>
                             </div>
-                        )}
+                        ))}
+                    </div>
+
+                    {testimonials.length > 1 && (
+                        <>
+                            <button
+                                onClick={prevTestimonial}
+                                aria-label="Vorherige Bewertung"
+                                className={`absolute top-1/2 left-0 sm:-left-4 md:-left-6 transform -translate-y-1/2 z-10 p-2 bg-white/70 hover:bg-white rounded-full shadow-md transition-colors duration-200 ${styles.sliderButton} ${styles.prevButton}`}
+                            >
+                                <FontAwesomeIcon icon={faChevronLeft} className="text-dark-text h-5 w-5" />
+                            </button>
+                            <button
+                                onClick={nextTestimonial}
+                                aria-label="Nächste Bewertung"
+                                className={`absolute top-1/2 right-0 sm:-right-4 md:-right-6 transform -translate-y-1/2 z-10 p-2 bg-white/70 hover:bg-white rounded-full shadow-md transition-colors duration-200 ${styles.sliderButton} ${styles.nextButton}`}
+                            >
+                                <FontAwesomeIcon icon={faChevronRight} className="text-dark-text h-5 w-5" />
+                            </button>
+                        </>
+                    )}
+                </div>
+                {/* Navigation Dots */}
+                {testimonials.length > 1 && (
+                    <div className="flex justify-center mt-8 space-x-2">
+                        {testimonials.map((_, index) => (
+                            <button
+                                key={index}
+                                onClick={() => setCurrentIndex(index)}
+                                aria-label={`Gehe zu Bewertung ${index + 1}`}
+                                className={`w-3 h-3 rounded-full transition-colors duration-200
+                                            ${currentIndex === index ? 'bg-dark-text' : 'bg-gray-300 hover:bg-gray-400'}`}
+                            />
+                        ))}
                     </div>
                 )}
             </div>

@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import "./ExperienceSection.css"
+import './ExperienceSection.module.css'; // HIER den Import hinzufügen
+
 function ExperienceSection() {
+    // ... (Rest der Komponente bleibt gleich) ...
     const sectionRef = useRef(null);
 
     useEffect(() => {
@@ -26,6 +28,7 @@ function ExperienceSection() {
     return (
         <section id="experience" ref={sectionRef}>
             <div className="container">
+                {/* section-header wird global in App.css gestyled, oder könnte hier spezifisch werden */}
                 <div className="section-header animate-up">
                     <span className="subtitle">Mein Versprechen</span>
                     <h2>Die Erfahrung</h2>

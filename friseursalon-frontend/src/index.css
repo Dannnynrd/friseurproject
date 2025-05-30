@@ -1,50 +1,66 @@
+/* friseursalon-frontend/src/index.css */
+
+/* Tailwind Basis-Importe */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Your existing CSS variables and global styles */
-/* It's good practice to have :root variables defined here or in App.css */
-
-/* src/index.css */
-body {
-  margin: 0;
-  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-  'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-  sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: var(--light-bg); /* Globale Hintergrundfarbe */
-  color: var(--dark-text); /* Globale Textfarbe */
-  line-height: 1.7; /* Grundlegende Zeilenhöhe */
-  overflow-x: hidden; /* Verhindert horizontales Scrollen */
-}
+/*
+  Globale HTML und Body Basis-Stile.
+  Viele davon werden bereits durch Tailwind's Preflight (basierend auf modern-normalize)
+  oder deine Tailwind-Konfiguration (z.B. Schriftarten) abgedeckt.
+  Überprüfe, was hier wirklich noch nötig ist.
+*/
 
 html {
   scroll-behavior: smooth;
-  font-size: 16px; /* Basis-Schriftgröße */
+  font-size: 16px; /* Basis für REM-Einheiten, Standard-Browsergröße */
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+body {
+  margin: 0; /* Bereits in Tailwind Preflight */
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  sans-serif; /* Wird durch tailwind.config.js (fontFamily.sans) gesetzt */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--light-bg); /* Tailwind: bg-light-bg, falls in config gemappt */
+  color: var(--dark-text); /* Tailwind: text-dark-text, falls in config gemappt */
+  line-height: 1.7; /* Tailwind: leading-relaxed oder spezifischer */
+  overflow-x: hidden; /* Wichtig, um horizontales Scrollen zu verhindern */
 }
 
+/*
+  Die Klassen .mobile-menu-active und .mobile-dashboard-nav-open,
+  die overflow: hidden auf body/html setzen, sind hier gut platziert,
+  da sie das globale Scrollverhalten der Seite beeinflussen.
+*/
 body.mobile-menu-active, html.mobile-menu-active,
 body.mobile-dashboard-nav-open, html.mobile-dashboard-nav-open {
   overflow: hidden;
 }
 
+/*
+  Die ::selection Stile können hier bleiben, da sie global sind.
+*/
 ::selection {
   background-color: var(--dark-text);
   color: var(--light-bg);
 }
 
+/*
+  Der `code`-Block kann hier bleiben, wenn eine spezifische Schriftart für Code-Blöcke
+  gewünscht ist, die sich von der Basis-Sans-Serif-Schrift unterscheidet.
+*/
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
   monospace;
 }
 
-/* :root Variablen bleiben hier oder in App.css, je nach Präferenz.
-   Ich lasse sie vorerst in App.css, da sie dort schon definiert sind.
-   Wenn App.css sehr klein wird, können sie auch hierher. */
+/*
+  Die CSS-Variablen (`:root`) sind besser in `App.css` aufgehoben, da `App.css`
+  typischerweise vor `index.css` im Bundle geladen wird (abhängig von der Importreihenfolge in `index.js`),
+  was sicherstellt, dass die Variablen verfügbar sind, wenn Tailwind sie verarbeitet.
+  Da sie bereits in App.css sind, ist das hier nicht nötig.
+*/
+

@@ -100,5 +100,5 @@
 }
 
 .customer-edit-modal-content .modal-actions {
-    /* Erbt Stile von .modal-actions aus App.css oder BookingPage.css */
+    /* Erbt Stile von .modal-actions aus App.css oder BookingPage.module.css */
 }
