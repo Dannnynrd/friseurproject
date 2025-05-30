@@ -3,22 +3,32 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../services/api.service';
 import AppointmentEditModal from './AppointmentEditModal';
 import ConfirmModal from './ConfirmModal';
+import DatePicker, { registerLocale } from 'react-datepicker'; // Import DatePicker
+import { de } from 'date-fns/locale'; // Import German locale for date-fns
+import "react-datepicker/dist/react-datepicker.css"; // Import default styles for react-datepicker
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faEdit, faTrashAlt, faBan, faFilter, faCalendarDay,
     faSyncAlt, faTimesCircle, faSpinner, faExclamationCircle,
     faCheckCircle, faChevronDown, faChevronUp,
-    faCalendarWeek, faCalendarCheck, faHistory, faSearch // faSearch hinzugefügt
+    faCalendarWeek, faCalendarCheck, faHistory, faSearch
 } from '@fortawesome/free-solid-svg-icons';
 import { format, parseISO, isValid, startOfDay, endOfDay, startOfWeek, endOfWeek, isPast, isToday, isFuture } from 'date-fns';
-import { de } from 'date-fns/locale';
 import './AppointmentList.css';
+
+registerLocale('de', de); // Register German locale for DatePicker
 
 // Helper function to format date for display
 const formatDateForDisplay = (dateString) => {
     if (!dateString || !isValid(parseISO(dateString))) return 'N/A';
     return format(parseISO(dateString), 'dd.MM.yyyy HH:mm', { locale: de });
 };
+// Helper function to format date for API (yyyy-MM-dd)
+const formatDateForApi = (date) => {
+    if (!date || !isValid(date)) return '';
+    return format(date, 'yyyy-MM-dd');
+};
+
 
 const QUICK_FILTER_OPTIONS = {
     ALL: 'all',
@@ -35,12 +45,12 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
     const [message, setMessage] = useState({ type: '', text: '' });
     const [isLoading, setIsLoading] = useState(false);
 
-    // Admin filter states
-    const [filterStartDate, setFilterStartDate] = useState('');
-    const [filterEndDate, setFilterEndDate] = useState('');
+    // Admin filter states - use Date objects for react-datepicker
+    const [filterStartDate, setFilterStartDate] = useState(null);
+    const [filterEndDate, setFilterEndDate] = useState(null);
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
     const [activeQuickFilter, setActiveQuickFilter] = useState(QUICK_FILTER_OPTIONS.ALL);
-    const [searchTerm, setSearchTerm] = useState(''); // NEU: Suchbegriff-State
+    const [searchTerm, setSearchTerm] = useState('');
 
     const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
     const [appointmentToDelete, setAppointmentToDelete] = useState(null);
@@ -51,13 +61,14 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
         setIsLoading(true);
         setError(null);
         setMessage({ type: '', text: '' });
-        // setAppointments([]); // Nicht leeren, um Flackern zu vermeiden, wenn nur gefiltert wird
 
         let params = {};
-        let endpoint = 'appointments/my-appointments'; // Standard-Endpunkt
+        let endpoint = 'appointments/my-appointments';
 
         if (isAdmin) {
-            // Logik für Datumsfilter (Quick oder Advanced)
+            const apiStartDate = formatDateForApi(filterStartDate);
+            const apiEndDate = formatDateForApi(filterEndDate);
+
             if (activeQuickFilter === QUICK_FILTER_OPTIONS.TODAY) {
                 params.start = format(startOfDay(new Date()), 'yyyy-MM-dd');
                 params.end = format(endOfDay(new Date()), 'yyyy-MM-dd');
@@ -66,20 +77,17 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
                 params.start = format(startOfWeek(new Date(), { weekStartsOn: 1, locale: de }), 'yyyy-MM-dd');
                 params.end = format(endOfWeek(new Date(), { weekStartsOn: 1, locale: de }), 'yyyy-MM-dd');
                 endpoint = 'appointments/by-date-range';
-            } else if (filterStartDate && filterEndDate) {
-                params.start = filterStartDate;
-                params.end = filterEndDate;
+            } else if (apiStartDate && apiEndDate) { // Use formatted dates for API
+                params.start = apiStartDate;
+                params.end = apiEndDate;
                 endpoint = 'appointments/by-date-range';
             }
-            // Wenn 'ALL', 'UPCOMING', 'PAST' ohne explizite Daten, wird der Standard-Admin-Endpunkt verwendet,
-            // der alle Termine zurückgibt, und dann clientseitig gefiltert.
         }
 
         try {
             const response = await api.get(endpoint, { params });
             let fetchedAppointments = response.data.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 
-            // Client-seitige Filterung für Admin (Suche, und UPCOMING/PAST ohne Datumsbereich)
             if (isAdmin) {
                 if (searchTerm) {
                     fetchedAppointments = fetchedAppointments.filter(apt =>
@@ -89,7 +97,8 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
                         (apt.service?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
                     );
                 }
-                if (!(filterStartDate && filterEndDate)) { // Nur filtern, wenn kein expliziter Datumsbereich gesetzt ist
+                // Client-side for UPCOMING/PAST if no specific date range from date pickers
+                if (!formatDateForApi(filterStartDate) && !formatDateForApi(filterEndDate)) {
                     if (activeQuickFilter === QUICK_FILTER_OPTIONS.UPCOMING) {
                         fetchedAppointments = fetchedAppointments.filter(apt => isFuture(parseISO(apt.startTime)) || isToday(parseISO(apt.startTime)));
                     } else if (activeQuickFilter === QUICK_FILTER_OPTIONS.PAST) {
@@ -104,41 +113,37 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
         } finally {
             setIsLoading(false);
         }
-    }, [currentUser, isAdmin, filterStartDate, filterEndDate, activeQuickFilter, searchTerm]); // searchTerm hinzugefügt
+    }, [currentUser, isAdmin, filterStartDate, filterEndDate, activeQuickFilter, searchTerm]);
 
     useEffect(() => {
         fetchAppointments();
     }, [fetchAppointments, refreshTrigger]);
 
-    // Debounced search effect
     useEffect(() => {
         const handler = setTimeout(() => {
-            if (isAdmin) { // Nur für Admin die Suche auslösen
+            if (isAdmin) {
                 fetchAppointments();
             }
-        }, 500); // 500ms Verzögerung
+        }, 500);
         return () => clearTimeout(handler);
     }, [searchTerm, isAdmin, fetchAppointments]);
 
 
     const handleApplyDateFilter = () => {
-        setActiveQuickFilter(''); // Benutzerdefinierter Bereich, kein Schnellfilter aktiv
+        setActiveQuickFilter('');
         fetchAppointments();
-        // setShowAdvancedFilters(false); // Optional: Filter nach Anwendung schließen
     };
 
     const handleClearDateFilters = () => {
-        setFilterStartDate('');
-        setFilterEndDate('');
-        setActiveQuickFilter(QUICK_FILTER_OPTIONS.ALL); // Zurück zu "Alle"
-        // fetchAppointments wird durch useEffect ausgelöst
+        setFilterStartDate(null);
+        setFilterEndDate(null);
+        setActiveQuickFilter(QUICK_FILTER_OPTIONS.ALL);
     };
 
     const handleQuickFilterChange = (filter) => {
-        setFilterStartDate('');
-        setFilterEndDate('');
+        setFilterStartDate(null);
+        setFilterEndDate(null);
         setActiveQuickFilter(filter);
-        // fetchAppointments wird durch useEffect ausgelöst
     };
 
     const handleDeleteOrCancelClick = (appointment) => {
@@ -185,15 +190,13 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
     };
 
     const getAppointmentStatus = (startTime, appointmentStatusValue) => {
-        // Annahme: appointment.status vom Backend könnte 'CANCELLED', 'COMPLETED', etc. sein.
         if (appointmentStatusValue === 'CANCELLED') {
             return { text: 'Storniert', className: 'status-cancelled', icon: faTimesCircle };
         }
-        if (appointmentStatusValue === 'COMPLETED') { // Falls Sie diesen Status verwenden
+        if (appointmentStatusValue === 'COMPLETED') {
             return { text: 'Abgeschlossen', className: 'status-completed', icon: faCheckCircle };
         }
 
-        const now = new Date();
         const appointmentDate = parseISO(startTime);
         if (!isValid(appointmentDate)) return { text: 'Unbekannt', className: 'status-unknown', icon: faExclamationCircle };
 
@@ -241,11 +244,38 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
                     <div className="date-filter-grid">
                         <div className="form-group">
                             <label htmlFor="filterStartDate">Startdatum:</label>
-                            <input type="date" id="filterStartDate" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} className="admin-filter-date-input"/>
+                            <DatePicker
+                                selected={filterStartDate}
+                                onChange={(date) => setFilterStartDate(date)}
+                                selectsStart
+                                startDate={filterStartDate}
+                                endDate={filterEndDate}
+                                dateFormat="dd.MM.yyyy"
+                                locale="de"
+                                className="admin-filter-date-input custom-datepicker-input-filter" // Eigene Klasse für Styling
+                                wrapperClassName="datepicker-wrapper"
+                                placeholderText="TT.MM.JJJJ"
+                                id="filterStartDate"
+                                autoComplete="off"
+                            />
                         </div>
                         <div className="form-group">
                             <label htmlFor="filterEndDate">Enddatum:</label>
-                            <input type="date" id="filterEndDate" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} min={filterStartDate} className="admin-filter-date-input"/>
+                            <DatePicker
+                                selected={filterEndDate}
+                                onChange={(date) => setFilterEndDate(date)}
+                                selectsEnd
+                                startDate={filterStartDate}
+                                endDate={filterEndDate}
+                                minDate={filterStartDate}
+                                dateFormat="dd.MM.yyyy"
+                                locale="de"
+                                className="admin-filter-date-input custom-datepicker-input-filter" // Eigene Klasse für Styling
+                                wrapperClassName="datepicker-wrapper"
+                                placeholderText="TT.MM.JJJJ"
+                                id="filterEndDate"
+                                autoComplete="off"
+                            />
                         </div>
                     </div>
                     <div className="filter-actions">
@@ -333,7 +363,6 @@ function AppointmentList({ refreshTrigger, currentUser, onAppointmentModified })
                             {isAdmin && (
                                 <>
                                     <p><strong>Kunde:</strong> {appointment.customer ? `${appointment.customer.firstName} ${appointment.customer.lastName}` : 'N/A'}</p>
-                                    {/* E-Mail und Telefon können hier auch angezeigt werden, wenn gewünscht */}
                                 </>
                             )}
                             {appointment.notes && <p className="appointment-card-notes-mobile"><strong>Notizen:</strong> {appointment.notes}</p>}

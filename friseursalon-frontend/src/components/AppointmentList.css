@@ -128,6 +128,10 @@
     gap: 1rem;
     margin-bottom: 1rem;
 }
+.date-filter-grid .form-group {
+    display: flex; /* Stellt sicher, dass der Datepicker-Wrapper die volle Breite nimmt */
+    flex-direction: column;
+}
 .date-filter-grid .form-group label {
     font-size: 0.8rem;
     color: var(--medium-grey-text);
@@ -135,6 +139,37 @@
     display: block;
     font-weight: 500;
 }
+/* Styling für react-datepicker Inputs in AppointmentList Filtern */
+.custom-datepicker-input-filter {
+    width: 100%;
+    padding: 0.65rem 0.75rem; /* Konsistent mit anderen Inputs */
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background-color: var(--light-bg);
+    color: var(--dark-text);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    line-height: 1.5;
+    box-sizing: border-box;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 24 24%22 fill%3D%22%236B7280%22 width%3D%2224px%22 height%3D%2224px%22%3E%3Cpath d%3D%22M0 0h24v24H0V0z%22 fill%3D%22none%22/%3E%3Cpath d%3D%22M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z%22/%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1em auto;
+    padding-right: 2.5rem; /* Platz für das Icon */
+}
+.custom-datepicker-input-filter:focus-visible {
+    border-color: var(--focus-ring-color);
+    box-shadow: 0 0 0 3px var(--focus-ring-subtle-color);
+    outline: none;
+}
+.custom-datepicker-input-filter::placeholder {
+    color: var(--light-grey-text);
+    font-size: 0.9rem;
+}
+.datepicker-wrapper { /* Stellt sicher, dass der Wrapper von react-datepicker volle Breite nimmt */
+    width: 100%;
+}
+
 
 .filter-actions {
     display: flex;
@@ -236,118 +271,80 @@
     background-color: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe;
 }
 
-/* --- Verbesserte Stile für Aktionsbuttons in der Liste --- */
 .action-buttons-table {
     display: flex;
-    gap: 0.6rem; /* Etwas mehr Abstand */
+    gap: 0.6rem;
     align-items: center;
 }
-
 .action-buttons-table .button-link-outline.small-button {
-    padding: 0.4rem 0.8rem; /* Angepasstes Padding */
-    font-size: 0.75rem; /* Kleinere Schrift für kompaktere Buttons */
+    padding: 0.4rem 0.8rem;
+    font-size: 0.75rem;
     font-weight: 500;
     border-radius: 5px;
-    border: 1px solid var(--border-color-medium, #cbd5e1); /* Deutlicherer Rand */
+    border: 1px solid var(--border-color-medium, #cbd5e1);
     color: var(--medium-grey-text, #4b5563);
     background-color: var(--light-bg, #ffffff);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.35rem; /* Abstand zwischen Icon und Text */
+    gap: 0.35rem;
     transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
     cursor: pointer;
-    line-height: 1.2; /* Bessere vertikale Zentrierung */
+    line-height: 1.2;
 }
-
 .action-buttons-table .button-link-outline.small-button:hover {
     border-color: var(--dark-text, #374151);
     background-color: var(--light-grey-bg, #f9fafb);
     color: var(--dark-text, #1f2937);
-    /* box-shadow: 0 1px 2px rgba(0,0,0,0.05); */ /* Optional: dezenter Schatten */
-    transform: translateY(-1px); /* Leichter Anhebe-Effekt */
+    transform: translateY(-1px);
 }
-
 .action-buttons-table .button-link-outline.small-button:focus-visible {
     outline: 2px solid var(--focus-ring-subtle-color, #bfdbfe);
     outline-offset: 1px;
     border-color: var(--focus-ring-color, #3b82f6);
 }
-
 .action-buttons-table .button-link-outline.small-button.danger {
     color: var(--danger-color, #dc2626);
-    border-color: var(--danger-bg, #fee2e2); /* Hellerer Rand für Danger */
+    border-color: var(--danger-bg, #fee2e2);
 }
-
 .action-buttons-table .button-link-outline.small-button.danger:hover {
     background-color: var(--danger-bg-light, #fef2f2);
     border-color: var(--danger-color, #dc2626);
     color: var(--danger-color-dark, #b91c1c);
 }
-
 .action-buttons-table .button-link-outline.small-button .svg-inline--fa {
-    font-size: 0.9em; /* Icon-Größe relativ zum Button-Text */
-    /* Farbe wird vom Button-Text geerbt */
+    font-size: 0.9em;
 }
-
 .action-buttons-table .button-link-outline.small-button:disabled,
 .action-buttons-table .button-link-outline.small-button.danger:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-    background-color: var(--disabled-bg);
-    border-color: var(--border-color-light);
-    color: var(--light-grey-text);
+    opacity: 0.5; cursor: not-allowed; transform: none;
+    background-color: var(--disabled-bg); border-color: var(--border-color-light); color: var(--light-grey-text);
 }
 
-
-.action-buttons-table .action-button-text {
-    /* Standardmäßig sichtbar */
-}
+.action-buttons-table .action-button-text { /* Standardmäßig sichtbar */ }
 @media (max-width: 1100px) and (min-width: 769px) {
-    .action-buttons-table .action-button-text {
-        display: none;
-    }
-    .action-buttons-table .button-link-outline.small-button .svg-inline--fa {
-        margin-right: 0;
-    }
-    .action-buttons-table .button-link-outline.small-button {
-        padding: 0.5rem 0.6rem; /* Kompaktere Buttons nur mit Icon */
-    }
+    .action-buttons-table .action-button-text { display: none; }
+    .action-buttons-table .button-link-outline.small-button .svg-inline--fa { margin-right: 0; }
+    .action-buttons-table .button-link-outline.small-button { padding: 0.5rem 0.6rem; }
 }
 @media (max-width: 768px) {
-    .action-buttons-table .action-button-text {
-        display: inline;
-    }
-    .action-buttons-table .button-link-outline.small-button .svg-inline--fa {
-        margin-right: 0.25rem;
-    }
+    .action-buttons-table .action-button-text { display: inline; }
+    .action-buttons-table .button-link-outline.small-button .svg-inline--fa { margin-right: 0.25rem; }
 }
 
-
-.appointment-cards-grid {
-    display: grid;
-    gap: 1rem;
-}
+.appointment-cards-grid { display: grid; gap: 1rem; }
 .appointment-card-mobile {
-    background-color: var(--light-bg);
-    padding: 1rem;
-    border-radius: 8px;
+    background-color: var(--light-bg); padding: 1rem; border-radius: 8px;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
-    border: 1px solid var(--border-color-light);
-    position: relative;
+    border: 1px solid var(--border-color-light); position: relative;
     transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
 }
 .appointment-card-mobile:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
 }
-.appointment-card-mobile.status-past {
-    background-color: #f9fafb; opacity: 0.85;
-}
-.appointment-card-mobile.status-cancelled {
-    background-color: #fee2e2; opacity: 0.7;
-}
+.appointment-card-mobile.status-past { background-color: #f9fafb; opacity: 0.85; }
+.appointment-card-mobile.status-cancelled { background-color: #fee2e2; opacity: 0.7; }
 
 .appointment-card-header-mobile {
     display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;
@@ -358,16 +355,12 @@
 .appointment-card-mobile .status-badge {
     margin-top: 0; font-size: 0.65rem; padding: 0.2em 0.5em;
 }
-.appointment-card-mobile .status-badge .svg-inline--fa {
-    margin-right: 0.25rem;
-}
+.appointment-card-mobile .status-badge .svg-inline--fa { margin-right: 0.25rem; }
 
 .appointment-card-details-mobile p {
     font-size: 0.8rem; color: var(--medium-grey-text); margin-bottom: 0.3rem; line-height: 1.5;
 }
-.appointment-card-details-mobile p strong {
-    color: var(--dark-text); font-weight: 500;
-}
+.appointment-card-details-mobile p strong { color: var(--dark-text); font-weight: 500; }
 .appointment-card-notes-mobile {
     font-style: italic; font-size: 0.75rem; color: var(--light-grey-text); margin-top: 0.5rem;
     padding-top: 0.5rem; border-top: 1px dashed var(--border-color-extralight); word-break: break-word;
@@ -378,28 +371,18 @@
     display: flex; justify-content: flex-end; gap: 0.5rem;
 }
 .appointment-card-actions-mobile .button-link-outline {
-    padding: 0.4rem 0.8rem; /* Angepasst an Tabellenbuttons */
-    font-size: 0.75rem;
-    /* Weitere Stile werden von .action-buttons-table .button-link-outline.small-button geerbt, wenn die Klassen übereinstimmen */
+    padding: 0.4rem 0.8rem; font-size: 0.75rem;
 }
-/* Sicherstellen, dass die mobilen Buttons die gleichen Basisstile wie die Tabellenbuttons haben */
-.appointment-card-actions-mobile .button-link-outline.small-button {
-    /* Erbt Stile von oben, ggf. spezifische Größenanpassungen hier */
-}
-
+.appointment-card-actions-mobile .button-link-outline.small-button { /* Erbt Stile */ }
 
 .appointment-list-loading,
 .appointment-list-empty {
     text-align: center; padding: 2rem 1rem; color: var(--medium-grey-text); font-size: 0.9rem;
     border: 1px dashed var(--border-color-light); border-radius: 6px; background-color: #fdfdfe; margin-top: 1rem;
 }
-.appointment-list-loading .svg-inline--fa {
-    margin-right: 0.5rem; font-size: 1.2em;
-}
+.appointment-list-loading .svg-inline--fa { margin-right: 0.5rem; font-size: 1.2em; }
 
-.appointment-list-container .form-message {
-    margin-bottom: 1rem;
-}
+.appointment-list-container .form-message { margin-bottom: 1rem; }
 
 .sr-only {
     position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
