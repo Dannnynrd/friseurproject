@@ -1,24 +1,66 @@
 // File: friseursalon-frontend/src/pages/AccountDashboard.js
-import React, { useState, useEffect, useCallback } from 'react';
-import "./AccountDashboard.css";
-import AdminCalendarView from '../components/AdminCalendarView';
-import AppointmentList from '../components/AppointmentList';
-import ServiceForm from '../components/ServiceForm';
-import ServiceList from '../components/ServiceList';
-import WorkingHoursManager from '../components/WorkingHoursManager';
-import BlockedTimeSlotManager from '../components/BlockedTimeSlotManager';
-import AdminDashboardStats from '../components/AdminDashboardStats';
-import AppointmentEditModal from '../components/AppointmentEditModal';
-import CustomerManagement from '../components/CustomerManagement';
-import ProfileEditForm from '../components/ProfileEditForm'; // NEW IMPORT
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faClipboardList, faUserCog, faTools, faSignOutAlt,
-    faChevronRight, faChevronDown, faPlusCircle, faMinusCircle,
-    faChartBar, faUser, faTimesCircle, faClock, faCalendarTimes,
-    faCalendarAlt, faListAlt, faTachometerAlt,
-    faUsers, faEdit, faCheckCircle, faExclamationCircle // Added faEdit, faCheckCircle, faExclamationCircle
+    faTachometerAlt, faCalendarAlt, faListAlt, faTools, faUsers, faClock,
+    faCalendarTimes, faUserCog, faSignOutAlt, faChevronRight, faChevronDown,
+    faPlusCircle, faMinusCircle, faEdit, faCheckCircle, faExclamationCircle,
+    faCog, // For new Settings tab
+    faUser, // For non-admin profile
+    faClipboardList, // For user bookings
+    faTimesCircle, // ADDED: For mobile nav close button
+    faSpinner // ADDED: For loading states
 } from '@fortawesome/free-solid-svg-icons';
+
+// Import der Kindkomponenten
+import AdminDashboardStats from '../components/AdminDashboardStats';
+import AdminCalendarView from '../components/AdminCalendarView';
+import AppointmentList from '../components/AppointmentList';
+import ServiceList from '../components/ServiceList';
+import ServiceForm from '../components/ServiceForm';
+import CustomerManagement from '../components/CustomerManagement';
+import WorkingHoursManager from '../components/WorkingHoursManager';
+import BlockedTimeSlotManager from '../components/BlockedTimeSlotManager';
+import ProfileEditForm from '../components/ProfileEditForm';
+import DashboardSettings from '../components/DashboardSettings';
+
+import './AccountDashboard.css';
+
+// Definition der Tabs für bessere Struktur und Lesbarkeit
+const TABS = {
+    // Admin Tabs
+    ADMIN_DASHBOARD_STATS: 'adminDashboardStats',
+    ADMIN_CALENDAR: 'adminCalendar',
+    ADMIN_APPOINTMENT_LIST: 'adminAppointmentList',
+    ADMIN_SERVICES: 'adminServices',
+    ADMIN_CUSTOMER_MANAGEMENT: 'adminCustomerManagement',
+    ADMIN_WORKING_HOURS: 'adminWorkingHours',
+    ADMIN_BLOCKED_SLOTS: 'adminBlockedSlots',
+    ADMIN_SETTINGS: 'adminSettings',
+
+    // Gemeinsame Tabs
+    PROFILE: 'profile',
+
+    // User Tabs
+    USER_BOOKINGS: 'userBookings',
+};
+
+const NAV_ITEMS_ADMIN = [
+    { id: TABS.ADMIN_DASHBOARD_STATS, label: 'Übersicht', icon: faTachometerAlt, category: 'Hauptmenü' },
+    { id: TABS.ADMIN_CALENDAR, label: 'Kalender', icon: faCalendarAlt, category: 'Terminplanung' },
+    { id: TABS.ADMIN_APPOINTMENT_LIST, label: 'Terminliste', icon: faListAlt, category: 'Terminplanung' },
+    { id: TABS.ADMIN_SERVICES, label: 'Services', icon: faTools, category: 'Verwaltung' },
+    { id: TABS.ADMIN_CUSTOMER_MANAGEMENT, label: 'Kunden', icon: faUsers, category: 'Verwaltung' },
+    { id: TABS.ADMIN_WORKING_HOURS, label: 'Arbeitszeiten', icon: faClock, category: 'Verwaltung' },
+    { id: TABS.ADMIN_BLOCKED_SLOTS, label: 'Abwesenheiten', icon: faCalendarTimes, category: 'Verwaltung' },
+    { id: TABS.ADMIN_SETTINGS, label: 'Einstellungen', icon: faCog, category: 'System' },
+    { id: TABS.PROFILE, label: 'Mein Profil', icon: faUserCog, category: 'System' },
+];
+
+const NAV_ITEMS_USER = [
+    { id: TABS.USER_BOOKINGS, label: 'Meine Termine', icon: faClipboardList, category: 'Mein Bereich' },
+    { id: TABS.PROFILE, label: 'Mein Profil', icon: faUser, category: 'Mein Bereich' },
+];
 
 
 function AccountDashboard({
@@ -28,177 +70,112 @@ function AccountDashboard({
                               refreshAppointmentsList,
                               onServiceAdded,
                               refreshServicesList,
-                              onProfileUpdateSuccess // NEW PROP
+                              onProfileUpdateSuccess
                           }) {
+    const isAdmin = currentUser?.roles?.includes("ROLE_ADMIN");
+    const initialTab = isAdmin ? TABS.ADMIN_DASHBOARD_STATS : TABS.USER_BOOKINGS;
+    const [activeTab, setActiveTab] = useState(initialTab);
 
-    const initialAdminTab = 'adminDashboardStats';
-    const initialUserTab = 'bookings';
-
-    const [activeTab, setActiveTab] = useState(
-        currentUser?.roles?.includes("ROLE_ADMIN") ? initialAdminTab : initialUserTab
-    );
-
-    const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 992);
+    const [isMobileView, setIsMobileView] = useState(window.innerWidth < 1024);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
-    const [showServiceForm, setShowServiceForm] = useState(false);
     const [isSubmittingService, setIsSubmittingService] = useState(false);
-    const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes("ROLE_ADMIN");
-    const [selectedAppointmentForEditFromStats, setSelectedAppointmentForEditFromStats] = useState(null);
+    const [showServiceForm, setShowServiceForm] = useState(false);
 
-    // NEW STATES for profile editing
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [profileMessages, setProfileMessages] = useState({ error: '', success: '' });
 
-
-    const handleAppointmentAction = useCallback(() => {
-        if (onAppointmentAdded) {
-            onAppointmentAdded();
-        }
-    }, [onAppointmentAdded]);
+    const headerRef = useRef(null);
 
     useEffect(() => {
         const handleResize = () => {
-            const mobile = window.innerWidth <= 992;
+            const mobile = window.innerWidth < 1024;
             setIsMobileView(mobile);
-            if (!mobile) setMobileNavOpen(false);
+            if (!mobile && mobileNavOpen) {
+                setMobileNavOpen(false);
+            }
         };
         window.addEventListener('resize', handleResize);
         handleResize();
         return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    }, [mobileNavOpen]);
 
     useEffect(() => {
-        if (currentUser) {
-            const adminTabs = ['adminDashboardStats', 'adminCalendar', 'adminAppointmentList', 'adminServices', 'adminCustomerManagement', 'adminWorkingHours', 'adminBlockedSlots', 'profile'];
-            const userTabs = ['bookings', 'profile'];
-
-            if (isAdmin) {
-                if (!adminTabs.includes(activeTab)) {
-                    setActiveTab(initialAdminTab);
-                }
-            } else {
-                if (!userTabs.includes(activeTab)) {
-                    setActiveTab(initialUserTab);
-                }
-            }
-        } else {
-            setActiveTab(initialUserTab);
-        }
-
-        if (activeTab !== 'adminServices') {
-            setShowServiceForm(false);
-        }
-        if (activeTab !== 'profile') { // Reset edit mode if navigating away from profile
+        if (activeTab !== TABS.ADMIN_SERVICES) setShowServiceForm(false);
+        if (activeTab !== TABS.PROFILE) {
             setIsEditingProfile(false);
             setProfileMessages({ error: '', success: '' });
         }
-        setSelectedAppointmentForEditFromStats(null);
-    }, [currentUser, isAdmin, activeTab, initialAdminTab, initialUserTab]);
+    }, [activeTab]);
 
+    const handleTabClick = (tabName) => {
+        setActiveTab(tabName);
+        if (isMobileView) setMobileNavOpen(false);
+        setIsEditingProfile(false);
+        setProfileMessages({ error: '', success: '' });
+    };
 
     const handleServiceAddedCallback = () => {
-        if (onServiceAdded) {
-            onServiceAdded();
-        }
+        if (onServiceAdded) onServiceAdded();
         setShowServiceForm(false);
         setIsSubmittingService(false);
     };
 
-    const handleTabClick = (tabName) => {
-        setActiveTab(tabName);
-        if (isMobileView) {
-            setMobileNavOpen(false);
-        }
-    };
-
-    const handleCloseAppointmentEditModalFromStats = () => {
-        setSelectedAppointmentForEditFromStats(null);
-    };
-
-    const handleAppointmentUpdatedFromStatsModal = () => {
-        handleCloseAppointmentEditModalFromStats();
-        if (onAppointmentAdded) {
-            onAppointmentAdded();
-        }
-    };
-
-    // NEW: Callback for successful profile update
     const handleProfileSaveSuccess = (updatedPartialUser) => {
         setIsEditingProfile(false);
         setProfileMessages({ success: 'Ihre Daten wurden erfolgreich aktualisiert.', error: '' });
-        if (onProfileUpdateSuccess) {
-            onProfileUpdateSuccess(updatedPartialUser); // Pass data up to App.js
-        }
+        if (onProfileUpdateSuccess) onProfileUpdateSuccess(updatedPartialUser);
         setTimeout(() => setProfileMessages({ error: '', success: '' }), 4000);
     };
 
-    // NEW: Callback to cancel profile editing
     const handleCancelEditProfile = () => {
         setIsEditingProfile(false);
-        setProfileMessages({ error: '', success: '' }); // Clear any lingering messages
+        setProfileMessages({ error: '', success: '' });
     };
 
-    const renderTabContent = (tabName) => {
-        switch (tabName) {
-            case 'adminDashboardStats':
-                return isAdmin && (
-                    <div className="dashboard-section-content admin-stats-tab-content">
-                        <AdminDashboardStats
-                            currentUser={currentUser}
-                            onAppointmentAction={handleAppointmentAction}
-                        />
-                    </div>
-                );
-            case 'bookings':
+    const renderTabContent = () => {
+        const CardWrapper = ({ title, children, icon, extraHeaderContent, cardClassName = '' }) => (
+            <div className={`dashboard-card ${cardClassName}`}>
+                <div className="dashboard-card-header">
+                    <h2 className="dashboard-card-title">
+                        {icon && <FontAwesomeIcon icon={icon} className="mr-2 text-gray-500" />}
+                        {title}
+                    </h2>
+                    {extraHeaderContent && <div className="dashboard-card-header-extra">{extraHeaderContent}</div>}
+                </div>
+                <div className="dashboard-card-content">
+                    {children}
+                </div>
+            </div>
+        );
+
+        switch (activeTab) {
+            case TABS.ADMIN_DASHBOARD_STATS:
+                return <AdminDashboardStats currentUser={currentUser} onAppointmentAction={onAppointmentAdded} />;
+
+            case TABS.ADMIN_CALENDAR:
+                return <CardWrapper title="Terminkalender" icon={faCalendarAlt} cardClassName="calendar-card-full-height"><AdminCalendarView currentUser={currentUser} refreshTrigger={refreshAppointmentsList} onAppointmentUpdated={onAppointmentAdded} /></CardWrapper>;
+
+            case TABS.ADMIN_APPOINTMENT_LIST:
+                return <CardWrapper title="Terminübersicht" icon={faListAlt}><AppointmentList refreshTrigger={refreshAppointmentsList} currentUser={currentUser} /></CardWrapper>;
+
+            case TABS.PROFILE:
                 return (
-                    <div className="dashboard-section-content">
-                        <h2 className="dashboard-section-heading">Meine Termine</h2>
-                        <AppointmentList
-                            refreshTrigger={refreshAppointmentsList}
-                            currentUser={currentUser}
-                        />
-                    </div>
-                );
-            case 'adminCalendar':
-                return isAdmin && (
-                    <div className="dashboard-section-content admin-calendar-tab-content">
-                        <h2 className="dashboard-section-heading">Terminkalender</h2>
-                        <AdminCalendarView
-                            currentUser={currentUser}
-                            refreshTrigger={refreshAppointmentsList}
-                            onAppointmentUpdated={handleAppointmentAction}
-                        />
-                    </div>
-                );
-            case 'adminAppointmentList':
-                return isAdmin && (
-                    <div className="dashboard-section-content">
-                        <h2 className="dashboard-section-heading">Terminübersicht (Liste)</h2>
-                        <AppointmentList
-                            refreshTrigger={refreshAppointmentsList}
-                            currentUser={currentUser}
-                        />
-                    </div>
-                );
-            case 'profile': // MODIFIED "Meine Daten" (Profile) Tab
-                return (
-                    <div className="dashboard-section-content profile-tab-content">
-                        <div className="profile-header-controls">
-                            <h2 className="dashboard-section-heading">Meine Daten</h2>
-                            {!isEditingProfile && (
+                    <CardWrapper
+                        title="Mein Profil"
+                        icon={isAdmin ? faUserCog : faUser}
+                        extraHeaderContent={
+                            !isEditingProfile && (
                                 <button
                                     onClick={() => { setIsEditingProfile(true); setProfileMessages({ error: '', success: '' }); }}
-                                    className="button-link-outline small-button edit-profile-button"
+                                    className="button-link-outline small-button"
                                 >
                                     <FontAwesomeIcon icon={faEdit} /> Bearbeiten
                                 </button>
-                            )}
-                        </div>
-
-                        {profileMessages.success &&
-                            <p className="form-message success mb-4"><FontAwesomeIcon icon={faCheckCircle} /> {profileMessages.success}</p>}
-                        {profileMessages.error &&
-                            <p className="form-message error mb-4"><FontAwesomeIcon icon={faExclamationCircle} /> {profileMessages.error}</p>}
+                            )
+                        }
+                    >
+                        {profileMessages.success && <p className="form-message success mb-4"><FontAwesomeIcon icon={faCheckCircle} /> {profileMessages.success}</p>}
+                        {profileMessages.error && <p className="form-message error mb-4"><FontAwesomeIcon icon={faExclamationCircle} /> {profileMessages.error}</p>}
 
                         {isEditingProfile ? (
                             <ProfileEditForm
@@ -207,7 +184,7 @@ function AccountDashboard({
                                 onCancel={handleCancelEditProfile}
                             />
                         ) : (
-                            <div className="dashboard-profile-info">
+                            <div className="dashboard-profile-info-display">
                                 <p><strong>Vorname:</strong> {currentUser?.firstName || '-'}</p>
                                 <p><strong>Nachname:</strong> {currentUser?.lastName || '-'}</p>
                                 <p><strong>E-Mail:</strong> {currentUser?.email || '-'}</p>
@@ -215,24 +192,27 @@ function AccountDashboard({
                                 <p><strong>Rollen:</strong> {currentUser?.roles?.join(', ') || '-'}</p>
                             </div>
                         )}
-                    </div>
+                    </CardWrapper>
                 );
-            case 'adminServices':
-                return isAdmin && (
-                    <div className="dashboard-section-content">
-                        <div className="dashboard-section-header-controls">
-                            <h2 className="dashboard-section-heading">Dienstleistungen verwalten</h2>
+
+            case TABS.ADMIN_SERVICES:
+                return (
+                    <CardWrapper
+                        title="Dienstleistungen Verwalten"
+                        icon={faTools}
+                        extraHeaderContent={
                             <button
                                 onClick={() => setShowServiceForm(!showServiceForm)}
-                                className="button-link-outline toggle-service-form-button"
+                                className="button-link-outline small-button"
                                 aria-expanded={showServiceForm}
                             >
                                 <FontAwesomeIcon icon={showServiceForm ? faMinusCircle : faPlusCircle} />
-                                {showServiceForm ? ' Formular schließen' : ' Neuen Service hinzufügen'}
+                                {showServiceForm ? ' Formular schließen' : ' Neuer Service'}
                             </button>
-                        </div>
+                        }
+                    >
                         {showServiceForm && (
-                            <div className="service-form-wrapper">
+                            <div className="service-form-wrapper-collapsible">
                                 <ServiceForm
                                     onServiceAdded={handleServiceAddedCallback}
                                     setIsSubmitting={setIsSubmittingService}
@@ -240,81 +220,70 @@ function AccountDashboard({
                                 />
                             </div>
                         )}
-                        <hr className="dashboard-section-hr" />
                         <ServiceList key={refreshServicesList} currentUser={currentUser} />
-                    </div>
+                    </CardWrapper>
                 );
-            case 'adminCustomerManagement':
-                return isAdmin && (
-                    <div className="dashboard-section-content">
-                        <CustomerManagement currentUser={currentUser} refreshTrigger={refreshAppointmentsList} />
-                    </div>
-                );
-            case 'adminWorkingHours':
-                return isAdmin && (
-                    <div className="dashboard-section-content">
-                        <h2 className="dashboard-section-heading">Arbeitszeiten verwalten</h2>
-                        <WorkingHoursManager />
-                    </div>
-                );
-            case 'adminBlockedSlots':
-                return isAdmin && (
-                    <div className="dashboard-section-content">
-                        <h2 className="dashboard-section-heading">Abwesenheiten & Pausen</h2>
-                        <BlockedTimeSlotManager />
-                    </div>
-                );
+
+            case TABS.ADMIN_CUSTOMER_MANAGEMENT:
+                return <CardWrapper title="Kundenverwaltung" icon={faUsers}><CustomerManagement currentUser={currentUser} refreshTrigger={refreshAppointmentsList} /></CardWrapper>;
+
+            case TABS.ADMIN_WORKING_HOURS:
+                return <CardWrapper title="Arbeitszeiten Verwalten" icon={faClock}><WorkingHoursManager /></CardWrapper>;
+
+            case TABS.ADMIN_BLOCKED_SLOTS:
+                return <CardWrapper title="Abwesenheiten & Pausen" icon={faCalendarTimes}><BlockedTimeSlotManager /></CardWrapper>;
+
+            case TABS.ADMIN_SETTINGS:
+                return <DashboardSettings currentUser={currentUser} />;
+
+            case TABS.USER_BOOKINGS:
+                return <CardWrapper title="Meine Termine" icon={faClipboardList}><AppointmentList refreshTrigger={refreshAppointmentsList} currentUser={currentUser} /></CardWrapper>;
+
             default:
-                if (isAdmin) return renderTabContent(initialAdminTab);
-                return renderTabContent(initialUserTab);
+                return <CardWrapper title="Willkommen"><p>Bitte wählen Sie einen Bereich aus dem Menü.</p></CardWrapper>;
         }
     };
 
-    const renderNavItem = (tabName, icon, label) => (
-        <li key={tabName} className="dashboard-nav-item">
-            <button
-                onClick={() => handleTabClick(tabName)}
-                className={`dashboard-nav-button ${activeTab === tabName ? 'active' : ''}`}
-            >
-                <FontAwesomeIcon icon={icon} fixedWidth /> <span>{label}</span>
-            </button>
-        </li>
-    );
+    const renderNavItems = (items) => {
+        const groupedItems = items.reduce((acc, item) => {
+            acc[item.category] = [...(acc[item.category] || []), item];
+            return acc;
+        }, {});
 
-    if (!currentUser) {
-        return <div className="page-center-content"><p>Laden...</p></div>;
-    }
+        return Object.entries(groupedItems).map(([category, categoryItems]) => (
+            <React.Fragment key={category}>
+                <li className="nav-category-title">{category}</li>
+                {categoryItems.map(item => (
+                    <li key={item.id} className="dashboard-nav-item">
+                        <button
+                            onClick={() => handleTabClick(item.id)}
+                            className={`dashboard-nav-button ${activeTab === item.id ? 'active' : ''}`}
+                            aria-current={activeTab === item.id ? 'page' : undefined}
+                        >
+                            <FontAwesomeIcon icon={item.icon} className="nav-icon" />
+                            <span>{item.label}</span>
+                        </button>
+                    </li>
+                ))}
+            </React.Fragment>
+        ));
+    };
 
-    const DesktopNav = () => (
+    const navigationItems = isAdmin ? NAV_ITEMS_ADMIN : NAV_ITEMS_USER;
+
+    const SidebarNav = () => (
         <aside className="dashboard-sidebar">
-            <nav>
+            <div className="dashboard-sidebar-header">
+                <span className="text-xl font-semibold text-gray-700">Salon Management</span>
+            </div>
+            <nav className="dashboard-sidebar-nav">
                 <ul>
-                    {!isAdmin && (
-                        <>
-                            <li className="nav-category-title">Mein Bereich</li>
-                            {renderNavItem('bookings', faClipboardList, 'Meine Termine')}
-                            {renderNavItem('profile', faUser, 'Meine Daten')}
-                        </>
-                    )}
-
-                    {isAdmin && (
-                        <>
-                            {renderNavItem('adminDashboardStats', faTachometerAlt, 'Übersicht')}
-                            <li className="nav-category-title mt-4">Terminplanung</li>
-                            {renderNavItem('adminCalendar', faCalendarAlt, 'Kalender')}
-                            {renderNavItem('adminAppointmentList', faListAlt, 'Terminliste')}
-                            <li className="nav-category-title mt-4">Verwaltung</li>
-                            {renderNavItem('adminServices', faTools, 'Services')}
-                            {renderNavItem('adminCustomerManagement', faUsers, 'Kunden')}
-                            {renderNavItem('adminWorkingHours', faClock, 'Arbeitszeiten')}
-                            {renderNavItem('adminBlockedSlots', faCalendarTimes, 'Abwesenheiten')}
-                            <li className="nav-category-title mt-4">Mein Account (Admin)</li>
-                            {renderNavItem('profile', faUserCog, 'Meine Daten')}
-                        </>
-                    )}
-                    <li className="dashboard-nav-item logout-button-container">
+                    {renderNavItems(navigationItems)}
+                    <li className="dashboard-nav-item logout-item-separator"></li>
+                    <li className="dashboard-nav-item">
                         <button onClick={logOut} className="dashboard-nav-button logout-button">
-                            <FontAwesomeIcon icon={faSignOutAlt} fixedWidth /> <span>Abmelden</span>
+                            <FontAwesomeIcon icon={faSignOutAlt} className="nav-icon" />
+                            <span>Abmelden</span>
                         </button>
                     </li>
                 </ul>
@@ -323,78 +292,62 @@ function AccountDashboard({
     );
 
     const MobileNav = () => (
-        <div className={`mobile-dashboard-nav ${mobileNavOpen ? 'open' : ''}`} id="mobile-dashboard-navigation">
-            <button className="mobile-nav-close-button" onClick={() => setMobileNavOpen(false)}>
-                <FontAwesomeIcon icon={faTimesCircle} /> Menü schließen
-            </button>
-            <nav>
-                <ul>
-                    {!isAdmin && (
-                        <>
-                            <li className="nav-category-title">Mein Bereich</li>
-                            {renderNavItem('bookings', faClipboardList, 'Meine Termine')}
-                            {renderNavItem('profile', faUser, 'Meine Daten')}
-                        </>
-                    )}
-                    {isAdmin && (
-                        <>
-                            {renderNavItem('adminDashboardStats', faTachometerAlt, 'Übersicht')}
-                            <li className="nav-category-title mt-4">Terminplanung</li>
-                            {renderNavItem('adminCalendar', faCalendarAlt, 'Kalender')}
-                            {renderNavItem('adminAppointmentList', faListAlt, 'Terminliste')}
-                            <li className="nav-category-title mt-4">Verwaltung</li>
-                            {renderNavItem('adminServices', faTools, 'Services')}
-                            {renderNavItem('adminCustomerManagement', faUsers, 'Kunden')}
-                            {renderNavItem('adminWorkingHours', faClock, 'Arbeitszeiten')}
-                            {renderNavItem('adminBlockedSlots', faCalendarTimes, 'Abwesenheiten')}
-                            <li className="nav-category-title mt-4">Mein Account (Admin)</li>
-                            {renderNavItem('profile', faUserCog, 'Meine Daten')}
-                        </>
-                    )}
-                    <li className="dashboard-nav-item logout-button-container">
-                        <button onClick={() => { logOut(); setMobileNavOpen(false); }} className="dashboard-nav-button logout-button">
-                            <FontAwesomeIcon icon={faSignOutAlt} fixedWidth /> <span>Abmelden</span>
-                        </button>
-                    </li>
-                </ul>
-            </nav>
+        <div className={`mobile-dashboard-nav-overlay ${mobileNavOpen ? 'open' : ''}`} onClick={() => setMobileNavOpen(false)}>
+            <div className={`mobile-dashboard-nav ${mobileNavOpen ? 'open' : ''}`} onClick={(e) => e.stopPropagation()}>
+                <div className="mobile-nav-header">
+                    <span className="text-lg font-semibold">Menü</span>
+                    <button className="mobile-nav-close-button" onClick={() => setMobileNavOpen(false)} aria-label="Menü schließen">
+                        <FontAwesomeIcon icon={faTimesCircle} /> {/* Corrected: faTimesCircle is now imported */}
+                    </button>
+                </div>
+                <nav>
+                    <ul>
+                        {renderNavItems(navigationItems)}
+                        <li className="dashboard-nav-item logout-item-separator"></li>
+                        <li className="dashboard-nav-item">
+                            <button onClick={() => { logOut(); setMobileNavOpen(false); }} className="dashboard-nav-button logout-button">
+                                <FontAwesomeIcon icon={faSignOutAlt} className="nav-icon" />
+                                <span>Abmelden</span>
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
         </div>
     );
 
-    return (
-        <div className="account-dashboard-container">
-            <div className="container">
-                <div className="dashboard-header">
-                    <h1 className="dashboard-main-heading">Mein Account</h1>
-                    {isMobileView && (
-                        <button
-                            className="mobile-nav-toggle-button button-link-outline small-button"
-                            onClick={() => setMobileNavOpen(true)}
-                            aria-expanded={mobileNavOpen}
-                            aria-controls="mobile-dashboard-navigation"
-                        >
-                            <FontAwesomeIcon icon={faChevronRight} /> Menü
-                        </button>
-                    )}
-                </div>
-                <p className="dashboard-welcome-message">
-                    Hallo, {currentUser.firstName || currentUser.email}! Hier verwalten Sie Ihre Daten und Termine.
-                </p>
+    if (!currentUser) {
+        return <div className="flex items-center justify-center h-screen"><FontAwesomeIcon icon={faSpinner} spin size="3x" /></div>; {/* Corrected: faSpinner is now imported */}
+    }
 
-                <div className="dashboard-layout">
-                    {isMobileView ? <MobileNav /> : <DesktopNav />}
-                    <section className="dashboard-content" aria-live="polite">
-                        {renderTabContent(activeTab)}
-                    </section>
-                </div>
+    return (
+        <div className="account-dashboard-page bg-gray-100 min-h-screen">
+            {isMobileView && <MobileNav />}
+            <div className="dashboard-container-flex">
+                {!isMobileView && <SidebarNav />}
+                <main className="dashboard-main-content">
+                    <div className="dashboard-content-header" ref={headerRef}>
+                        {isMobileView && (
+                            <button
+                                className="mobile-menu-toggle-main"
+                                onClick={() => setMobileNavOpen(true)}
+                                aria-label="Menü öffnen"
+                            >
+                                <FontAwesomeIcon icon={faChevronRight} />
+                            </button>
+                        )}
+                        <h1 className="dashboard-main-title">
+                            {navigationItems.find(item => item.id === activeTab)?.label || "Mein Account"}
+                        </h1>
+                        <div className="user-greeting">
+                            Hallo, {currentUser.firstName || currentUser.email}!
+                        </div>
+                    </div>
+                    <div className="dashboard-active-tab-content">
+                        {renderTabContent()}
+                    </div>
+                </main>
             </div>
-            {selectedAppointmentForEditFromStats && currentUser?.roles?.includes("ROLE_ADMIN") && (
-                <AppointmentEditModal
-                    appointment={selectedAppointmentForEditFromStats}
-                    onClose={handleCloseAppointmentEditModalFromStats}
-                    onAppointmentUpdated={handleAppointmentUpdatedFromStatsModal}
-                />
-            )}
         </div>
     );
 }
