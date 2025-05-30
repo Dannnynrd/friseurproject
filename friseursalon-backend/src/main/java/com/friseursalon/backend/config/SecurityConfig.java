@@ -86,12 +86,17 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/appointments").permitAll()
                         .requestMatchers("/api/statistics/**").hasRole("ADMIN")
-                        // NEUE REGELN für Benutzerprofil und Passwortänderung
+                        // Regeln für Benutzerprofil und Passwortänderung
                         .requestMatchers(HttpMethod.PUT, "/api/users/profile").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/users/change-password").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/users/**").hasRole("ADMIN") // Admin kann andere User-Daten abrufen
-                        .requestMatchers(HttpMethod.PUT, "/api/users/**").hasRole("ADMIN") // Admin kann andere User-Daten ändern
-                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN") // Admin kann andere User löschen
+                        .requestMatchers(HttpMethod.GET, "/api/users/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/users/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
+                        // NEUE REGELN für Testimonials
+                        .requestMatchers(HttpMethod.POST, "/api/testimonials/submit").hasRole("USER")
+                        .requestMatchers(HttpMethod.POST, "/api/testimonials/submit-guest").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/testimonials").permitAll()
+                        .requestMatchers("/api/testimonials/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 );
 

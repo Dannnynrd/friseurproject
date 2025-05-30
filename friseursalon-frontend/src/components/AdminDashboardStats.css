@@ -988,19 +988,21 @@
 }
 
 /* Custom Tooltip für KPI Fragezeichen-Icons */
+
 .kpi-tooltip-wrapper {
     position: relative;
-    display: inline-flex;
+    display: inline-flex; /* Changed from inline-block to inline-flex for better alignment with icon */
     align-items: center;
     margin-left: 0.4rem;
 }
 
-.stat-tooltip-icon { /* Behält bestehende Stile für das Icon selbst bei */
+.stat-tooltip-icon {
     color: var(--light-grey-text);
-    font-size: 0.8rem;
+    font-size: 0.8rem; /* Slightly smaller for a more subtle look */
     cursor: help;
+    transition: color 0.2s ease; /* Smooth color transition on hover */
 }
-.stat-tooltip-icon:hover { /* Hover-Effekt für das Icon */
+.stat-tooltip-icon:hover {
     color: var(--dark-text);
 }
 
@@ -1012,36 +1014,44 @@
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.2s ease-in-out, visibility 0s linear 0.2s;
+    transition: opacity 0.2s ease-in-out, visibility 0s linear 0.2s, transform 0.2s ease-in-out; /* Added transform transition */
     z-index: 100;
 }
 
-.kpi-tooltip-wrapper::before { /* Der Tooltip-Text-Container */
+.kpi-tooltip-wrapper::before { /* Tooltip-Text-Container */
     content: attr(data-tooltip);
-    bottom: calc(100% + 8px);
-    background-color: var(--dark-text, #333); /* Dunkler Hintergrund */
-    color: var(--light-bg, #fff); /* Heller Text */
-    padding: 6px 10px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    line-height: 1.4;
-    white-space: nowrap;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    bottom: calc(100% + 10px); /* Increased distance from icon */
+    background-color: var(--dark-text, #2c3e50); /* Slightly adjusted dark color */
+    color: var(--light-bg, #ffffff);
+    padding: 8px 12px; /* Slightly more padding */
+    border-radius: 5px; /* Slightly more rounded */
+    font-size: 0.78rem; /* Adjusted font size for readability */
+    line-height: 1.5; /* Improved line height */
+    /* MODIFICATION START */
+    white-space: normal; /* Allow text to wrap */
+    width: max-content; /* Adjust width to content */
+    max-width: 220px; /* Prevent tooltip from becoming too wide */
+    text-align: left; /* Align text to the left for multi-line tooltips */
+    /* MODIFICATION END */
+    box-shadow: 0 3px 7px rgba(0,0,0,0.25); /* Softer, more modern shadow */
+    transform: translateX(-50%) translateY(-5px); /* Initial position for transition */
 }
 
-.kpi-tooltip-wrapper::after { /* Der kleine Pfeil */
+.kpi-tooltip-wrapper::after { /* Pfeil */
     content: '';
-    bottom: calc(100% + 3px);
-    border-width: 5px;
+    bottom: calc(100% + 5px); /* Adjusted to match increased distance */
+    border-width: 6px; /* Slightly larger arrow */
     border-style: solid;
-    border-color: var(--dark-text, #333) transparent transparent transparent; /* Pfeil zeigt nach oben */
+    border-color: var(--dark-text, #2c3e50) transparent transparent transparent;
+    transform: translateX(-50%) translateY(-5px); /* Initial position for transition */
 }
 
 .kpi-tooltip-wrapper:hover::before,
 .kpi-tooltip-wrapper:hover::after {
     opacity: 1;
     visibility: visible;
-    transition-delay: 0s, 0s; /* Tooltip erscheint sofort beim Hovern */
+    transition-delay: 0s, 0s, 0s; /* Ensure all transitions happen on hover */
+    transform: translateX(-50%) translateY(0); /* Final position for smooth appearance */
 }
 
 /* Feedback-Nachricht für Dashboard-Anpassungen */

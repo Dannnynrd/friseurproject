@@ -3,10 +3,11 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faTachometerAlt, faCalendarAlt, faListAlt, faTools, faUsers, faClock,
-    faCalendarTimes, faUserCog, faSignOutAlt, faChevronRight, faBars, // faBars für Mobile Toggle
+    faCalendarTimes, faUserCog, faSignOutAlt, faChevronRight, faBars,
     faPlusCircle, faMinusCircle, faEdit, faCheckCircle, faExclamationCircle,
-    faCog, faUser, faClipboardList, faTimes, // faTimes für Mobile Nav Schließen
-    faSpinner // HINZUGEFÜGT: Fehlendes Icon importiert
+    faCog, faUser, faClipboardList, faTimes,
+    faSpinner,
+    faStarHalfAlt // NEU für Testimonials
 } from '@fortawesome/free-solid-svg-icons';
 
 // Import der Kindkomponenten
@@ -18,16 +19,19 @@ import ServiceForm from '../components/ServiceForm';
 import CustomerManagement from '../components/CustomerManagement';
 import WorkingHoursManager from '../components/WorkingHoursManager';
 import BlockedTimeSlotManager from '../components/BlockedTimeSlotManager';
+import AdminTestimonialManagement from '../components/AdminTestimonialManagement'; // NEU
 import ProfileEditForm from '../components/ProfileEditForm';
 import DashboardSettings from '../components/DashboardSettings';
 
-import './AccountDashboard.css'; // Stark überarbeitete CSS-Datei
+import './AccountDashboard.css';
 
 const TABS = {
     ADMIN_DASHBOARD_STATS: 'adminDashboardStats', ADMIN_CALENDAR: 'adminCalendar',
     ADMIN_APPOINTPOINTMENT_LIST: 'adminAppointmentList', ADMIN_SERVICES: 'adminServices',
     ADMIN_CUSTOMER_MANAGEMENT: 'adminCustomerManagement', ADMIN_WORKING_HOURS: 'adminWorkingHours',
-    ADMIN_BLOCKED_SLOTS: 'adminBlockedSlots', ADMIN_SETTINGS: 'adminSettings',
+    ADMIN_BLOCKED_SLOTS: 'adminBlockedSlots',
+    ADMIN_TESTIMONIALS: 'adminTestimonials', // NEU
+    ADMIN_SETTINGS: 'adminSettings',
     PROFILE: 'profile', USER_BOOKINGS: 'userBookings',
 };
 
@@ -39,6 +43,7 @@ const NAV_ITEMS_ADMIN = [
     { id: TABS.ADMIN_CUSTOMER_MANAGEMENT, label: 'Kunden', icon: faUsers, category: 'Verwaltung' },
     { id: TABS.ADMIN_WORKING_HOURS, label: 'Arbeitszeiten', icon: faClock, category: 'Betrieb' },
     { id: TABS.ADMIN_BLOCKED_SLOTS, label: 'Abwesenheiten', icon: faCalendarTimes, category: 'Betrieb' },
+    { id: TABS.ADMIN_TESTIMONIALS, label: 'Bewertungen', icon: faStarHalfAlt, category: 'Kundenfeedback' }, // NEU
     { id: TABS.PROFILE, label: 'Mein Profil', icon: faUserCog, category: 'Konto' },
     { id: TABS.ADMIN_SETTINGS, label: 'Einstellungen', icon: faCog, category: 'Konto' },
 ];
@@ -51,7 +56,7 @@ const NAV_ITEMS_USER = [
 
 function AccountDashboard({
                               currentUser, logOut, onAppointmentAdded, refreshAppointmentsList,
-                              onServiceAdded, refreshServicesList, onProfileUpdateSuccess
+                              onServiceAdded, refreshServicesList, onProfileUpdateSuccess, onProfileUpdateError // onProfileUpdateError hinzugefügt
                           }) {
     const isAdmin = currentUser?.roles?.includes("ROLE_ADMIN");
     const initialTab = isAdmin ? TABS.ADMIN_DASHBOARD_STATS : TABS.USER_BOOKINGS;
@@ -81,9 +86,9 @@ function AccountDashboard({
         if (activeTab !== TABS.ADMIN_SERVICES) setShowServiceForm(false);
         if (activeTab !== TABS.PROFILE) {
             setIsEditingProfile(false);
-            setProfileMessages({ error: '', success: '' });
+            // profileMessages sollten nur hier zurückgesetzt werden, wenn sie nicht von einem Timeout gesteuert werden
+            // setProfileMessages({ error: '', success: '' });
         }
-        // Scroll content to top on tab change
         if (mainContentRef.current) {
             mainContentRef.current.scrollTop = 0;
         }
@@ -92,8 +97,8 @@ function AccountDashboard({
     const handleTabClick = (tabName) => {
         setActiveTab(tabName);
         if (isMobileView) setMobileNavOpen(false);
-        setIsEditingProfile(false);
-        setProfileMessages({ error: '', success: '' });
+        // Das Zurücksetzen von isEditingProfile und profileMessages wird nun innerhalb von renderTabContent / useEffect[activeTab] gehandhabt,
+        // um Nachrichten bei Profilaktualisierung nicht sofort zu löschen.
     };
 
     const handleServiceAddedCallback = () => {
@@ -109,6 +114,15 @@ function AccountDashboard({
         setTimeout(() => setProfileMessages({ error: '', success: '' }), 4000);
     };
 
+    // NEU: Hinzugefügt für onProfileUpdateError Prop
+    const handleProfileSaveError = (errorMessage) => {
+        // Fehlerbehandlung bereits in ProfileEditForm, aber hier für zusätzliche Logik falls nötig
+        setProfileMessages({ error: errorMessage, success: '' });
+        if (onProfileUpdateError) onProfileUpdateError(errorMessage);
+        setTimeout(() => setProfileMessages({ error: '', success: '' }), 5000);
+    };
+
+
     const handleCancelEditProfile = () => {
         setIsEditingProfile(false);
         setProfileMessages({ error: '', success: '' });
@@ -119,7 +133,6 @@ function AccountDashboard({
         const tabTitle = currentNavInfo?.label || "Dashboard";
         const tabIcon = currentNavInfo?.icon;
 
-        // Card Wrapper for consistent styling of tab content
         const Card = ({ children, title = tabTitle, icon = tabIcon, extraHeaderContent, cardClassName = '', noPadding = false }) => (
             <div className={`dashboard-content-card ${cardClassName}`}>
                 <div className="dashboard-card__header">
@@ -137,12 +150,12 @@ function AccountDashboard({
 
         switch (activeTab) {
             case TABS.ADMIN_DASHBOARD_STATS:
-                return <AdminDashboardStats currentUser={currentUser} onAppointmentAction={onAppointmentAdded} />; // This component often has its own card-like structure
+                return <AdminDashboardStats currentUser={currentUser} onAppointmentAction={onAppointmentAdded} />;
 
             case TABS.ADMIN_CALENDAR:
                 return <Card cardClassName="calendar-card" noPadding><AdminCalendarView currentUser={currentUser} refreshTrigger={refreshAppointmentsList} onAppointmentUpdated={onAppointmentAdded} /></Card>;
 
-            case TABS.ADMIN_APPOINTPOINTMENT_LIST: // Corrected typo from TABS definition
+            case TABS.ADMIN_APPOINTPOINTMENT_LIST:
                 return <Card><AppointmentList refreshTrigger={refreshAppointmentsList} currentUser={currentUser} onAppointmentModified={onAppointmentAdded} /></Card>;
 
             case TABS.PROFILE:
@@ -156,7 +169,13 @@ function AccountDashboard({
                         {profileMessages.success && <p className="form-message success mb-4"><FontAwesomeIcon icon={faCheckCircle} /> {profileMessages.success}</p>}
                         {profileMessages.error && <p className="form-message error mb-4"><FontAwesomeIcon icon={faExclamationCircle} /> {profileMessages.error}</p>}
                         {isEditingProfile ? (
-                            <ProfileEditForm currentUser={currentUser} onSaveSuccess={handleProfileSaveSuccess} onCancel={handleCancelEditProfile} />
+                            <ProfileEditForm
+                                currentUser={currentUser}
+                                onSaveSuccess={handleProfileSaveSuccess}
+                                onCancel={handleCancelEditProfile}
+                                onProfileUpdateSuccess={handleProfileSaveSuccess} // Weiterleiten
+                                onProfileUpdateError={handleProfileSaveError}   // Weiterleiten
+                            />
                         ) : (
                             <div className="profile-info-display">
                                 <p><strong>Vorname:</strong> {currentUser?.firstName || '-'}</p>
@@ -194,8 +213,11 @@ function AccountDashboard({
             case TABS.ADMIN_BLOCKED_SLOTS:
                 return <Card><BlockedTimeSlotManager /></Card>;
 
+            case TABS.ADMIN_TESTIMONIALS: // NEUER CASE
+                return <Card cardClassName="testimonial-management-card"><AdminTestimonialManagement currentUser={currentUser} /></Card>;
+
             case TABS.ADMIN_SETTINGS:
-                return <DashboardSettings currentUser={currentUser} />; // DashboardSettings now renders its own card structure
+                return <DashboardSettings currentUser={currentUser} />;
 
             case TABS.USER_BOOKINGS:
                 return <Card><AppointmentList refreshTrigger={refreshAppointmentsList} currentUser={currentUser} onAppointmentModified={onAppointmentAdded} /></Card>;
@@ -234,7 +256,6 @@ function AccountDashboard({
     const SidebarNav = () => (
         <aside className="dashboard__sidebar">
             <div className="sidebar__header">
-                {/* Optional: Logo oder Salon-Name hier */}
                 <span className="sidebar__logo-text">Friseur Admin</span>
             </div>
             <nav className="sidebar__nav">
@@ -253,12 +274,12 @@ function AccountDashboard({
         <div className={`mobile-nav__overlay ${mobileNavOpen ? 'open' : ''}`} onClick={() => setMobileNavOpen(false)}>
             <aside className={`mobile-nav__sidebar ${mobileNavOpen ? 'open' : ''}`} onClick={(e) => e.stopPropagation()}>
                 <div className="mobile-nav__header">
-                    <span className="sidebar__logo-text">Menü</span> {/* Konsistenter Titel */}
+                    <span className="sidebar__logo-text">Menü</span>
                     <button className="mobile-nav__close-button" onClick={() => setMobileNavOpen(false)} aria-label="Menü schließen">
                         <FontAwesomeIcon icon={faTimes} />
                     </button>
                 </div>
-                <nav className="sidebar__nav"> {/* Wiederverwendung der Desktop-Nav-Struktur */}
+                <nav className="sidebar__nav">
                     <ul>{renderNavItems(navigationItems)}</ul>
                 </nav>
                 <div className="sidebar__footer">
@@ -296,7 +317,6 @@ function AccountDashboard({
                             <span className="user-welcome-text">
                                 Hallo, {currentUser.firstName || currentUser.email}!
                             </span>
-                            {/* Hier könnten weitere Header-Aktionen platziert werden, z.B. Benachrichtigungs-Icon */}
                         </div>
                     </header>
                     <div className="dashboard-active-tab-area">
