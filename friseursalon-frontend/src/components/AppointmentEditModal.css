@@ -7,7 +7,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1050; /* Base z-index for modal overlay */
+    z-index: 1050; /* Basis z-index für das Modal-Overlay */
     padding: 1rem;
     backdrop-filter: blur(5px);
 }
@@ -21,10 +21,10 @@
     max-height: 90vh;
     display: flex;
     flex-direction: column;
-    /* overflow: hidden; /* Temporarily removed to check if it clips datepicker */
+    /* overflow: hidden; Temporär entfernt, um Clipping-Probleme mit dem Datepicker zu untersuchen */
     animation: modalFadeInScale 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-    position: relative; /* Ensure z-index context for children if needed */
-    z-index: 1051; /* Above overlay, below datepicker popper */
+    position: relative; /* Wichtig für den Stacking Context, falls Datepicker nicht im Portal rendert */
+    z-index: 1051; /* Stellt sicher, dass der Modal-Inhalt über dem Overlay liegt */
 }
 
 @keyframes modalFadeInScale {
@@ -72,7 +72,7 @@
 
 .modal-body-modern {
     padding: 1.5rem;
-    overflow-y: auto; /* Scrollen nur für den Body-Inhalt */
+    overflow-y: auto; /* Nur den Body scrollbar machen */
     flex-grow: 1;
     background-color: #f9fafb;
 }
@@ -93,9 +93,9 @@
     gap: 1.5rem;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 768px) { /* md breakpoint */
     .modal-sections-container {
-        grid-template-columns: minmax(280px, 0.7fr) 1.3fr;
+        grid-template-columns: minmax(280px, 0.7fr) 1.3fr; /* Linke Spalte min. 280px */
     }
 }
 
@@ -153,8 +153,9 @@
     word-break: break-word;
     color: var(--dark-text);
     flex-grow: 1;
-    min-width: 0;
+    min-width: 0; /* Erlaubt dem Element zu schrumpfen und umzubrechen */
 }
+
 
 /* Appointment Form Section */
 .appointment-edit-form-fields {
@@ -177,6 +178,7 @@
     font-size: 0.9em;
 }
 
+/* Base styles for custom inputs including DatePicker */
 .custom-datepicker-input,
 .custom-select-input,
 .custom-textarea-input {
@@ -238,12 +240,12 @@
 /* Styling for react-datepicker */
 .datepicker-group {
     width: 100%;
-    position: relative; /* Für z-index Kontext, falls Datepicker nicht im Portal rendert */
+    position: relative; /* Wichtig für die Positionierung des Popups, falls nicht im Portal */
 }
 .datepicker-wrapper .react-datepicker-wrapper {
     width: 100%;
 }
-.custom-datepicker-input {
+.custom-datepicker-input { /* Wird von react-datepicker als Input verwendet */
     background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 24 24%22 fill%3D%22%236B7280%22 width%3D%2224px%22 height%3D%2224px%22%3E%3Cpath d%3D%22M0 0h24v24H0V0z%22 fill%3D%22none%22/%3E%3Cpath d%3D%22M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z%22/%3E%3C%2Fsvg%3E');
     background-repeat: no-repeat;
     background-position: right 0.9rem center;
@@ -254,54 +256,45 @@
     background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 24 24%22 fill%3D%22%23A0AEC0%22 width%3D%2224px%22 height%3D%2224px%22%3E%3Cpath d%3D%22M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z%22/%3E%3C%2Fsvg%3E');
 }
 
+
 /* react-datepicker portal (popup) styling */
-/* WICHTIG: react-datepicker rendert standardmäßig in einem Portal direkt im body.
-   Wenn es trotzdem unter dem Modal erscheint, kann es sein, dass das Modal
-   eine Transformation (z.B. scale, translate) verwendet, die einen neuen Stacking Context erzeugt.
-   In diesem Fall muss der DatePicker so konfiguriert werden, dass er sich innerhalb des Modals rendert
-   (z.B. mit popperContainer Prop), oder die z-index Hierarchie muss sorgfältig geprüft werden. */
-
 .react-datepicker-popper {
-    z-index: 1100 !important; /* HÖCHSTER z-index, um sicher über allem zu sein */
+    z-index: 1060 !important; /* Höher als das Modal (1051) und Overlay (1050) */
 }
-
-.react-datepicker-portal { /* Fallback, falls es nicht im Popper ist */
-    z-index: 1100 !important;
-}
-.react-datepicker__tab-loop { /* Wird von react-datepicker für a11y verwendet */
-    z-index: 1100 !important;
-}
-
 
 .react-datepicker {
     font-family: var(--font-sans, "Manrope", sans-serif);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15); /* Stärkerer Schatten für Popup */
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     font-size: 0.875rem;
-    background-color: var(--light-bg); /* Hintergrund für den Picker selbst */
+    background-color: var(--light-bg);
 }
+.react-datepicker__triangle { /* Versteckt das Standard-Dreieck, falls vorhanden */
+    display: none !important;
+}
+
 .react-datepicker__header {
     background-color: var(--light-grey-bg);
     border-bottom: 1px solid var(--border-color-light);
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
+    border-top-left-radius: 8px; /* Abrundung an Popup anpassen */
+    border-top-right-radius: 8px; /* Abrundung an Popup anpassen */
     padding: 0.8rem;
 }
 .react-datepicker__current-month,
 .react-datepicker-time__header,
 .react-datepicker-year-header {
     color: var(--dark-text);
-    font-weight: 600; /* Deutlicherer Header-Text */
-    font-size: 0.95rem; /* Etwas größer */
+    font-weight: 600;
+    font-size: 0.95rem;
 }
 .react-datepicker__navigation {
-    top: 0.7rem; /* Bessere vertikale Ausrichtung der Pfeile */
+    top: 0.7rem;
 }
 .react-datepicker__navigation-icon::before {
     border-color: var(--dark-text);
     border-width: 2px 2px 0 0;
-    height: 8px; /* Leicht größere Pfeile */
+    height: 8px;
     width: 8px;
 }
 .react-datepicker__navigation:hover .react-datepicker__navigation-icon::before {
@@ -315,7 +308,7 @@
     width: 2.2rem;
     line-height: 2.2rem;
     margin: 0.15rem;
-    border-radius: 50%; /* Alle Tage rund für Konsistenz */
+    border-radius: 50%;
     transition: background-color 0.2s ease, color 0.2s ease;
 }
 .react-datepicker__day:hover,
@@ -332,14 +325,14 @@
 .react-datepicker__month-text--in-range {
     background-color: var(--dark-text);
     color: var(--light-bg);
-    font-weight: 600; /* Ausgewählte Tage fetter */
+    font-weight: 600;
 }
 .react-datepicker__day--selected:hover,
 .react-datepicker__day--in-selecting-range:hover,
 .react-datepicker__day--in-range:hover {
     background-color: var(--medium-grey-text);
 }
-.react-datepicker__day--keyboard-selected { /* Wichtig für A11y */
+.react-datepicker__day--keyboard-selected {
     background-color: var(--focus-ring-subtle-color);
     color: var(--dark-text);
 }
@@ -354,7 +347,7 @@
 .react-datepicker__day--today {
     font-weight: bold;
     color: var(--focus-ring-color);
-    border: 1px solid var(--focus-ring-subtle-color); /* Heutigen Tag umranden */
+    border: 1px solid var(--focus-ring-subtle-color);
 }
 .react-datepicker__day--today:not(.react-datepicker__day--selected):hover {
     background-color: var(--focus-ring-subtle-color);
@@ -363,17 +356,17 @@
 
 .react-datepicker__time-container {
     border-left: 1px solid var(--border-color-light);
-    width: 110px; /* Etwas breiter für besseres Scrollen */
+    width: 110px;
 }
 .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box {
-    width: 100%; /* Volle Breite des Containers nutzen */
+    width: 100%;
 }
 .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list {
     padding: 0;
-    height: calc(198px + 1rem) !important; /* Höhe anpassen, falls nötig, default ist 198px */
+    height: calc(198px + 1rem) !important; /* Default ist 198px, +1rem für mehr Platz */
 }
 .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item {
-    padding: 8px 0; /* Vertikales Padding, kein horizontales (Text-align center) */
+    padding: 8px 0;
     color: var(--medium-grey-text);
     text-align: center;
     transition: background-color 0.2s, color 0.2s;
