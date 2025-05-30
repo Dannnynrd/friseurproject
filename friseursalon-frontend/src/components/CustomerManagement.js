@@ -5,7 +5,7 @@ import CustomerEditModal from './CustomerEditModal';
 import ConfirmModal from './ConfirmModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faTrashAlt, faSpinner, faExclamationCircle, faSearch, faUsers, faCheckCircle } from '@fortawesome/free-solid-svg-icons'; // faCheckCircle HINZUGEFÜGT
-import './CustomerManagement.css'; // Eigene CSS-Datei importieren
+import './CustomerManagement.module.css'; // Eigene CSS-Datei importieren
 
 function CustomerManagement({ currentUser, refreshTrigger: parentRefreshTrigger }) {
     const [customers, setCustomers] = useState([]);

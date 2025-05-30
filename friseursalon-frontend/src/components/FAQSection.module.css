@@ -1,0 +1,67 @@
+/* friseursalon-frontend/src/components/FAQSection.module.css */
+
+/*
+  Die meisten Basis-Layouts (Container, Padding, Section Header)
+  werden durch Tailwind-Klassen im JS gehandhabt.
+  Dieses Modul enthält spezifische Stile für die FAQ-Elemente,
+  insbesondere für das Akkordeon-Verhalten und das Aussehen.
+*/
+
+.faqContainer {
+    /*
+      Tailwind-Klassen im JS: max-w-3xl mx-auto
+    */
+}
+
+.faqItem {
+    /*
+      Tailwind-Klassen im JS: border-b border-border-color-light animate-up
+    */
+    /* Letztes Item hat keinen unteren Rand mehr */
+}
+.faqItem:last-child {
+    border-bottom: none;
+}
+
+.faqQuestion {
+    /*
+      Tailwind-Klassen im JS: text-base md:text-lg font-medium text-dark-text
+      Die Hover-Farbe wird durch 'group-hover:text-indigo-600' auf dem Button erreicht,
+      wenn der Button als 'group' definiert wird.
+      Hier wird die Klasse direkt auf h3 angewendet.
+    */
+    transition: color 0.2s ease-in-out;
+}
+
+.faqItem button:hover .faqQuestion {
+    color: #4f46e5; /* Tailwind: hover:text-indigo-600 */
+}
+
+
+.faqIcon {
+    /*
+      Tailwind-Klassen im JS: text-indigo-600 transition-transform duration-300
+      Die Rotation wird durch 'transform rotate-180' bei offenem Zustand gesteuert.
+    */
+    min-width: 1em; /* Verhindert, dass das Icon zu klein wird oder springt */
+}
+
+.faqAnswerContainer {
+    /*
+      Tailwind-Klassen im JS:
+      overflow-hidden transition-all duration-500 ease-in-out
+      (openFAQ === index ? 'max-h-screen opacity-100 pb-5' : 'max-h-0 opacity-0')
+      'max-h-screen' ist ein gängiger Trick für CSS-Transitionen mit Höhe,
+      man könnte hier auch einen spezifischeren Wert setzen, wenn die max. Höhe bekannt ist.
+      'pb-5' fügt Padding hinzu, wenn das Element offen ist.
+    */
+}
+
+.faqAnswer {
+    /*
+      Tailwind-Klassen im JS: text-sm md:text-base text-medium-grey-text leading-relaxed px-1 md:px-2
+    */
+}
+
+/* Die .animate-up Klasse und die Logik mit .visible für die Animation
+   wird als global betrachtet und sollte in App.css oder index.css verbleiben. */

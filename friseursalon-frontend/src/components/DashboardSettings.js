@@ -5,7 +5,7 @@ import {
     faSave, faEye, faEyeSlash, faAngleUp, faAngleDown, faCheckCircle,
     faExclamationCircle, faSpinner, faStore, faBell, faCalendarCheck as faCalendarAlt
 } from '@fortawesome/free-solid-svg-icons';
-import './DashboardSettings.css';
+import './DashboardSettings.module.css';
 
 // Default KPI definitions (could be moved to a config file)
 const KPI_DEFINITIONS_DEFAULT = {

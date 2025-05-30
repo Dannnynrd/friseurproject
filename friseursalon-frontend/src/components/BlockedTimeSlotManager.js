@@ -3,7 +3,7 @@ import api from '../services/api.service';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner, faSave, faExclamationCircle, faCheckCircle, faPlusCircle, faTrashAlt, faEdit, faTimes } from '@fortawesome/free-solid-svg-icons';
 import ConfirmModal from './ConfirmModal';
-import './BlockedTimeSlotManager.css';
+import './BlockedTimeSlotManager.module.css';
 
 const daysOfWeek = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
 const germanDays = {

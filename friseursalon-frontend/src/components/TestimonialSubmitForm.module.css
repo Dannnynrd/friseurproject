@@ -1,4 +1,4 @@
-/* src/components/TestimonialSubmitForm.css */
+/* src/components/TestimonialSubmitForm.module.css */
 .testimonial-submit-form-container {
     background-color: var(--light-bg);
     padding: 2rem 2.5rem;

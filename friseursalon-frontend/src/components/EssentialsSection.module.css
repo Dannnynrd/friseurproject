@@ -1,0 +1,69 @@
+/* friseursalon-frontend/src/components/EssentialsSection.module.css */
+
+/*
+  Die meisten Basis-Layouts (Grid, Container, Padding, Section Header)
+  werden durch Tailwind-Klassen im JS gehandhabt.
+  Dieses Modul enthält spezifische Stile für die Produktkarten,
+  falls diese über Standard-Tailwind-Utilities hinausgehen.
+*/
+
+.essentialsGrid {
+    /*
+      Tailwind-Klassen im JS:
+      grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8
+    */
+}
+
+.productCard {
+    /*
+      Tailwind-Klassen im JS:
+      group bg-light-bg rounded-lg shadow-md overflow-hidden flex flex-col
+      transition-all duration-300 ease-in-out hover:shadow-xl
+      'group' wird verwendet, um Hover-Effekte auf Kindelementen (z.B. Bild-Zoom) zu steuern.
+      'flex flex-col' ist wichtig, damit der Preis mit 'mt-auto' nach unten geschoben werden kann.
+    */
+}
+
+/* Das Bild-Styling (Zoom-Effekt, object-cover) wird direkt mit Tailwind-Klassen
+   und 'group-hover' auf dem img-Tag im JS gehandhabt. */
+/*
+.productCard:hover .productImage img {
+  transform: scale(1.05); // Dies wird durch group-hover:scale-105 im JS erreicht
+}
+*/
+
+.productCategory {
+    /*
+      Tailwind-Klassen im JS:
+      block text-xs font-medium text-medium-grey-text uppercase tracking-wide mb-1
+    */
+}
+
+.productName {
+    /*
+      Tailwind-Klassen im JS:
+      font-serif text-lg font-semibold text-dark-text mb-2
+    */
+    /* Ggf. Mindesthöhe für Konsistenz, falls Namen sehr unterschiedlich lang sind */
+    min-height: 2.5em; /* Ca. 2 Zeilen */
+}
+
+.productName a {
+    /*
+      Tailwind-Klassen im JS:
+      hover:text-indigo-600 transition-colors duration-200
+    */
+    text-decoration: none;
+    color: inherit; /* Erbt die Farbe von .productName */
+}
+
+.productPrice {
+    /*
+      Tailwind-Klassen im JS:
+      text-base font-semibold text-indigo-600 mt-auto pt-2
+      'mt-auto' schiebt diesen Block an den unteren Rand der flex-col Produktinfo.
+    */
+}
+
+/* Die .animate-up Klasse und die Logik mit .visible für die Animation
+   wird als global betrachtet und sollte in App.css oder index.css verbleiben. */

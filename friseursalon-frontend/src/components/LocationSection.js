@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import api from '../services/api.service'; // API Service importieren
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; // Für Lade-Icon
 import { faSpinner, faExclamationCircle } from '@fortawesome/free-solid-svg-icons'; // Für Lade-Icon
-import "./LocationSection.css";
+import "./LocationSection.module.css";
 
 const germanDaysShort = {
     MONDAY: "Mo",

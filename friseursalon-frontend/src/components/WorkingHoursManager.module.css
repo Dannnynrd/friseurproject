@@ -1,4 +1,4 @@
-/* File: src/components/WorkingHoursManager.css */
+/* File: src/components/WorkingHoursManager.module.css */
 .working-hours-manager-container {
     padding: 1rem; /* Innenabstand für den gesamten Container */
     background-color: transparent; /* Passt sich dem Kartenhintergrund an */

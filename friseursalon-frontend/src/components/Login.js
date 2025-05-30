@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import AuthService from "../services/auth.service";
-import "./Login.css"; // Stelle sicher, dass die CSS-Datei existiert und korrekt verlinkt ist
+import "./Login.module.css"; // Stelle sicher, dass die CSS-Datei existiert und korrekt verlinkt ist
 
 function Login({ onLoginSuccess }) {
     const [email, setEmail] = useState("");

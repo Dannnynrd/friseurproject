@@ -1,7 +1,7 @@
 // src/components/ProfileEditForm.js
 import React, { useState, useEffect } from 'react';
 import AuthService from '../services/auth.service';
-import './ProfileEditForm.css'; // Stelle sicher, dass die CSS-Datei existiert oder erstelle sie
+import './ProfileEditForm.module.css'; // Stelle sicher, dass die CSS-Datei existiert oder erstelle sie
 
 const ProfileEditForm = ({ currentUser, onProfileUpdateSuccess, onProfileUpdateError }) => {
     const [formData, setFormData] = useState({

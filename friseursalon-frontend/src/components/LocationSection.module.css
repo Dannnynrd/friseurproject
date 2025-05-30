@@ -1,4 +1,4 @@
-/* src/components/LocationSection.css */
+/* src/components/LocationSection.module.css */
 #location {
     background-color: var(--light-grey-bg);
 }

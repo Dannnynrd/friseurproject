@@ -1,7 +1,7 @@
 // Datei: friseursalon-frontend/src/components/AdminDashboardStats.js
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import api from '../services/api.service';
-import './AdminDashboardStats.css'; // CSS-Import
+import './AdminDashboardStats.module.css'; // CSS-Import
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faChartLine, faCalendarCheck, faSpinner, faUsers,

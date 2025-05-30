@@ -4,7 +4,7 @@ import api from '../services/api.service';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle, faTimesCircle, faTrashAlt, faSpinner, faExclamationCircle, faStar, faUser, faCommentDots, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 import ConfirmModal from './ConfirmModal';
-import './AdminTestimonialManagement.css'; // Eigene CSS-Datei
+import './AdminTestimonialManagement.module.css'; // Eigene CSS-Datei
 import { format, parseISO, isValid } from 'date-fns';
 import { de } from 'date-fns/locale';
 

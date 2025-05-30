@@ -1,4 +1,4 @@
-/* src/components/ProfileEditForm.css */
+/* src/components/ProfileEditForm.module.css */
 .profile-edit-container {
     max-width: 600px;
     margin: 20px auto;

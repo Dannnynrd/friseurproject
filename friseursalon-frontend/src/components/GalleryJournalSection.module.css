@@ -1,0 +1,148 @@
+/* friseursalon-frontend/src/components/GalleryJournalSection.module.css */
+
+/*
+  Die meisten Basis-Layouts (Grid, Container, Padding, Section Header)
+  werden durch Tailwind-Klassen im JS gehandhabt.
+  Dieses Modul enthält spezifische Stile für die Galerie-Elemente
+  und den Before/After-Slider.
+*/
+
+/* Stile für Galerie-Elemente, falls komplexer als Tailwind-Utilities */
+.galleryItem {
+    /*
+      Tailwind-Klassen im JS:
+      block aspect-[4/3] rounded-lg shadow-md relative overflow-hidden
+      group (für Hover-Effekte auf Kindelementen)
+    */
+}
+
+.galleryItemImage {
+    /*
+      Tailwind-Klassen im JS: w-full h-full
+    */
+}
+
+.galleryItemImage img {
+    /*
+      Tailwind-Klassen im JS:
+      block w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105 group-focus-visible:scale-105
+    */
+}
+
+.galleryItemOverlay {
+    /*
+      Tailwind-Klassen im JS:
+      absolute inset-0 p-4 md:p-6 flex flex-col justify-end text-white
+      bg-gradient-to-t from-black/70 via-black/40 to-transparent
+      opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-300
+    */
+    /* Falls der Gradient komplexer sein muss oder spezifische Mischmodi benötigt,
+       kann das hier definiert bleiben. Tailwind-Gradienten sind recht flexibel. */
+}
+
+/* Stile für den Before/After Slider */
+.beforeAfterSlider {
+    /*
+      Tailwind-Klassen im JS:
+      aspect-[4/3] rounded-lg shadow-md relative overflow-hidden bg-gray-200 cursor-ew-resize
+      user-select-none (wird durch JS/Browser-Standard meist schon verhindert bei Dragging)
+    */
+    cursor: ew-resize;
+    user-select: none; /* Verhindert Textauswahl beim Ziehen */
+}
+
+.baImageContainer {
+    position: absolute;
+    inset: 0; /* top, right, bottom, left = 0 */
+    overflow: hidden; /* Stellt sicher, dass das Bild innerhalb des Containers bleibt */
+}
+
+.baImageContainer img {
+    /*
+      Tailwind-Klassen im JS:
+      block w-full h-full object-cover
+    */
+}
+
+.baImageBefore {
+    /* Ist der untere Layer, immer voll sichtbar, es sei denn, .baImageAfter liegt darüber */
+}
+
+.baImageAfter {
+    /*
+      Das clip-path wird durch JavaScript dynamisch gesetzt.
+      Initialer Zustand (50% sichtbar):
+    */
+    clip-path: inset(0 50% 0 0); /* Zeigt die rechte Hälfte des Bildes */
+    /* Wenn der Slider von links nach rechts zieht und das 'Nachher'-Bild aufdeckt */
+}
+
+
+.baSliderHandle {
+    position: absolute;
+    top: 0;
+    left: 50%; /* Startposition, wird durch JS angepasst */
+    width: 3px; /* Dicke des Trenners */
+    height: 100%;
+    background: rgba(255, 255, 255, 0.85); /* Heller Trenner, leicht transparent */
+    transform: translateX(-50%); /* Zentriert den Handle auf seiner Position */
+    pointer-events: none; /* Wichtig, damit Klicks durch den Handle zum Slider gehen */
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.3); /* Leichter Schatten für bessere Sichtbarkeit */
+    z-index: 10; /* Stellt sicher, dass der Handle über den Bildern liegt */
+}
+
+/* Verbesserter Griff für den Slider-Handle */
+.baSliderHandle::before,
+.baSliderHandle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 36px; /* Breite des Griff-Elements */
+    height: 36px; /* Höhe des Griff-Elements */
+    background-color: rgba(255, 255, 255, 0.85);
+    border: 2px solid rgba(0, 0, 0, 0.15);
+    border-radius: 50%; /* Runder Griff */
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Pfeile im Griff (optional, aber verbessert UX) */
+.baSliderHandle::before {
+    /* Linker Pfeil (vereinfacht als Dreieck) */
+    /* Dieser Teil ist etwas komplexer mit reinem CSS für Pfeile in einem Kreis.
+       Für eine einfachere Version könnte man FontAwesome Icons oder SVGs verwenden.
+       Hier ein Ansatz mit clip-path für zwei Halbkreise, die wie Pfeile aussehen.
+       Oder wir lassen die ::before und ::after Elemente einfach als vergrößerten Kreis.
+    */
+    /* Für einen simplen, größeren Kreis als Griff: */
+    /* clip-path: none; Weglassen, wenn kein Pfeil-Effekt gewünscht */
+}
+
+.baSliderHandle::after {
+    /* Rechter Pfeil (vereinfacht) */
+    /* clip-path: none; */
+}
+
+/* Alternative: Einfacherer, aber größerer Kreis als Griff */
+/*
+.baSliderHandle::before {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.7);
+    border: 2px solid rgba(0,0,0,0.2);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+.baSliderHandle::after { display: none; }
+*/
+
+/* Die .animate-up Klasse und die Logik mit .visible für die Animation
+   wird als global betrachtet und sollte in App.css oder index.css verbleiben. */
+

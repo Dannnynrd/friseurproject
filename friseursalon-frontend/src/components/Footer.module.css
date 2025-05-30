@@ -1,0 +1,54 @@
+/* friseursalon-frontend/src/components/Footer.module.css */
+
+/*
+  Die meisten Basis-Layouts (Grid, Container, Padding, Typografie)
+  werden durch Tailwind-Klassen im JS gehandhabt.
+  Dieses Modul enthält spezifische Stile für den Footer,
+  falls diese über Standard-Tailwind-Utilities hinausgehen.
+*/
+
+.siteFooter {
+    /*
+      Tailwind-Klassen im JS:
+      bg-dark-text text-gray-300 pt-16 pb-8
+    */
+    /* Hier könnten z.B. spezifische Hintergrundbilder oder -muster für den Footer hin,
+       die nicht einfach mit Tailwind umsetzbar sind. */
+}
+
+.footerColumn {
+    /* Dient als semantischer Haken für die Spalten im Footer-Grid.
+       Das Grid-Layout selbst wird durch Tailwind im JS definiert.
+       (grid md:grid-cols-2 lg:grid-cols-4 gap-10 md:gap-8)
+    */
+}
+
+.footerColumn h3, /* Für den Salon-Namen */
+.footerColumn h4 {  /* Für die Überschriften der Link-Listen */
+    /*
+      Tailwind-Klassen im JS:
+      text-xl (für h3) / text-lg (für h4) font-serif (für h3) font-semibold text-white mb-4
+    */
+    /* Ggf. spezifische untere Ränder oder Linien hier definieren, falls gewünscht. */
+}
+
+.footerLink {
+    /*
+      Tailwind-Klassen im JS:
+      text-sm hover:text-indigo-400 hover:underline transition-colors duration-200
+    */
+    /* Spezifische Stile für Footer-Links, falls benötigt. */
+}
+
+/* Spezifische Anpassungen für die Kontakt-Icons und Texte, falls Tailwind nicht ausreicht */
+.footerColumn address p {
+    /* Tailwind: flex items-start (oder items-center) */
+}
+.footerColumn address .svg-inline--fa { /* FontAwesome Icons */
+    /* Tailwind: mr-3 mt-1 (oder nur mr-3) w-4 text-indigo-400 */
+    /* Die Größe und Farbe wird bereits durch Tailwind gesetzt. */
+}
+
+/* Die .animate-up Klasse (falls im Footer verwendet) und die Logik mit .visible
+   wird als global betrachtet und sollte in App.css oder index.css verbleiben. */
+

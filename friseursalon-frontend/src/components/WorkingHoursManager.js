@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api.service';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSave, faSpinner, faExclamationCircle, faCheckCircle, faClock, faCopy, faCalendarWeek } from '@fortawesome/free-solid-svg-icons';
-import './WorkingHoursManager.css';
+import './WorkingHoursManager.module.css';
 
 const daysOfWeekMap = [
     { key: "MONDAY", label: "Montag" },

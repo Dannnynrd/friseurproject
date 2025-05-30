@@ -1,7 +1,7 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faExclamationTriangle, faCheckCircle, faTimesCircle, faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
-import './ConfirmModal.css';
+import './ConfirmModal.module.css';
 
 function ConfirmModal({
                           isOpen,

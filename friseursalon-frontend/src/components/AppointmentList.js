@@ -14,7 +14,7 @@ import {
     faCalendarWeek, faCalendarCheck, faHistory, faSearch
 } from '@fortawesome/free-solid-svg-icons';
 import { format, parseISO, isValid, startOfDay, endOfDay, startOfWeek, endOfWeek, isPast, isToday, isFuture } from 'date-fns';
-import './AppointmentList.css';
+import './AppointmentList.module.css';
 
 registerLocale('de', de); // Register German locale for DatePicker
 

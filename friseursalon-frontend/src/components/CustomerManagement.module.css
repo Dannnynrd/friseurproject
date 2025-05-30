@@ -1,4 +1,4 @@
-/* src/components/CustomerManagement.css */
+/* src/components/CustomerManagement.module.css */
 .customer-management-container {
     padding: 1rem 0; /* Konsistent mit anderen Dashboard-Sektionen */
 }

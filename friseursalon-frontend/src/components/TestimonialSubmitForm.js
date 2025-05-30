@@ -4,7 +4,7 @@ import api from '../services/api.service';
 import AuthService from '../services/auth.service';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faStar, faPaperPlane, faSpinner, faExclamationCircle, faCheckCircle, faConciergeBell } from '@fortawesome/free-solid-svg-icons';
-import './TestimonialSubmitForm.css'; // Eigene CSS-Datei
+import './TestimonialSubmitForm.module.css'; // Eigene CSS-Datei
 
 const MAX_COMMENT_LENGTH = 1000;
 

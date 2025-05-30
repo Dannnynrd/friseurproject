@@ -1,4 +1,4 @@
-/* File: src/components/DashboardSettings.css */
+/* File: src/components/DashboardSettings.module.css */
 .dashboard-settings-container {
     padding: 1rem;
     max-width: 900px; /* Etwas breiter für mehr Einstellungssektionen */

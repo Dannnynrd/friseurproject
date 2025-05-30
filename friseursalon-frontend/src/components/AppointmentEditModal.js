@@ -14,7 +14,7 @@ import {
   faAlignLeft
 } from '@fortawesome/free-solid-svg-icons';
 import { format, parseISO, isValid } from 'date-fns';
-import './AppointmentEditModal.css';
+import './AppointmentEditModal.module.css';
 
 registerLocale('de', de);
 

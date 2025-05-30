@@ -1,0 +1,59 @@
+/* friseursalon-frontend/src/components/NewsletterSection.module.css */
+
+/*
+  Die meisten Basis-Layouts (Container, Padding, Section Header, Formular-Layout)
+  werden durch Tailwind-Klassen im JS gehandhabt.
+  Dieses Modul enthält spezifische Stile für das Newsletter-Formular,
+  falls diese über Standard-Tailwind-Utilities hinausgehen.
+*/
+
+.newsletterForm {
+    /*
+      Tailwind-Klassen im JS:
+      flex flex-col sm:flex-row gap-3 max-w-md mx-auto
+    */
+}
+
+.newsletterInput {
+    /*
+      Tailwind-Klassen im JS:
+      flex-grow p-3 rounded-md border bg-gray-800 border-gray-700 text-gray-200
+      placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none
+    */
+    /* Spezifische Transitions oder andere Effekte könnten hierhin. */
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.newsletterButton {
+    /*
+      Tailwind-Klassen im JS:
+      inline-flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white
+      font-medium py-3 px-6 rounded-md transition-colors duration-200
+      focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-dark-text focus:ring-indigo-500
+    */
+}
+
+/* Stile für Erfolgs-/Fehlermeldungen (angepasst für dunklen Hintergrund) */
+.formMessage {
+    /*
+      Tailwind-Klassen im JS:
+      mt-4 p-3 rounded-md text-sm flex items-center justify-center
+    */
+    /* Die spezifischen Hintergrund- und Textfarben werden direkt im JS mit Tailwind gesetzt,
+       z.B. bg-green-500 bg-opacity-20 text-green-300 für Erfolg.
+       Diese Modulklassen dienen hier eher als semantische Haken, falls komplexere
+       Basisstile für alle Nachrichten gewünscht wären.
+    */
+}
+
+.formMessage.success {
+    /* Spezifische Modulstile für Erfolgsmeldungen, falls Tailwind nicht ausreicht. */
+}
+
+.formMessage.error {
+    /* Spezifische Modulstile für Fehlermeldungen, falls Tailwind nicht ausreicht. */
+}
+
+
+/* Die .animate-up Klasse und die Logik mit .visible für die Animation
+   wird als global betrachtet und sollte in App.css oder index.css verbleiben. */
