@@ -24,6 +24,20 @@
     margin-bottom: 0;
 }
 
+/* Letzte Aktualisierung Zeitstempel */
+.last-updated-timestamp {
+    font-size: 0.7rem;
+    color: var(--medium-grey-text);
+    text-align: right;
+    margin: -1.25rem 0.5rem 1.5rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+.last-updated-timestamp .svg-inline--fa {
+    margin-right: 0.3rem;
+}
+
 
 /* Filterleiste */
 .stats-period-filter-bar {
@@ -82,7 +96,7 @@
 .stat-card-no-data, .chart-no-data-message, .no-upcoming-appointments, .report-options-content > p, .dashboard-customize-content > p, .key-changes-list + .no-data-small, .dashboard-alerts-list + .no-data-small { font-style: italic; }
 .no-data-small { font-size: 0.75rem; color: var(--light-grey-text); padding: 0.3rem; text-align: center; border:none; background:none; margin-top:0;}
 
-/* Neues Dashboard Grid Layout */
+/* Dashboard Grid Layout */
 .dashboard-grid-layout {
     display: grid;
     grid-template-columns: 1fr;
@@ -92,6 +106,13 @@
 @media (min-width: 1200px) {
     .dashboard-grid-layout {
         grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+    }
+    .sidebar-stats-column { /* Sticky Sidebar für Desktop */
+        position: sticky;
+        top: 1rem; /* Anpassen, falls ein fixer Header vorhanden ist */
+        align-self: flex-start; /* Wichtig, damit die Höhe sich an den Inhalt anpasst */
+        max-height: calc(100vh - 2rem); /* Verhindert, dass Sidebar länger als Viewport wird, 2rem Puffer */
+        overflow-y: auto; /* Scrollbar für Sidebar, falls Inhalt zu lang */
     }
 }
 @media (min-width: 1500px) {
@@ -227,6 +248,32 @@
 .stat-comparison .comparison-data.neutral { color: var(--medium-grey-text, #5f5f5f); }
 .stat-comparison .comparison-data .svg-inline--fa { margin-right: 0.05rem; font-size: 0.8em; }
 
+/* KPI Goal Progress Bar */
+.kpi-goal-progress {
+    margin-top: 0.3rem;
+}
+.progress-bar-container {
+    width: 100%;
+    height: 6px;
+    background-color: var(--border-color-light, #e9ecef);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 0.15rem;
+}
+.progress-bar {
+    height: 100%;
+    background-color: var(--success-color, #28a745);
+    border-radius: 3px;
+    transition: width 0.3s ease-in-out;
+}
+.goal-text {
+    font-size: 0.6rem;
+    color: var(--medium-grey-text);
+    text-align: right;
+    display: block;
+}
+
+
 /* Spezifische Icon-Farben */
 .stat-icon.today, .stat-icon.fa-calendar-day { color: #28a745; background-color: rgba(40, 167, 69, 0.08); }
 .stat-icon.revenue, .stat-icon.fa-euro-sign  { color: #fd7e14; background-color: rgba(253, 126, 20, 0.08); }
@@ -245,7 +292,40 @@
 
 
 /* Chart-Bereich */
-.charts-section-wrapper { }
+.charts-section-wrapper {}
+.section-header-with-export {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.9rem;
+}
+.section-header-with-export .stats-section-title {
+    margin-bottom: 0;
+    flex-grow: 1;
+}
+.export-chart-btn, .export-list-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+    margin-left: 0.5rem;
+    line-height: 1;
+    background-color: var(--light-grey-bg); /* Leichter Hintergrund für bessere Sichtbarkeit */
+    border: 1px solid var(--border-color-light);
+}
+.export-chart-btn:hover, .export-list-btn:hover {
+    background-color: var(--border-color-light);
+}
+
+.chart-card {
+    position: relative;
+}
+.chart-card .export-chart-btn {
+    position: absolute;
+    top: 0.45rem;
+    right: 0.45rem;
+    z-index: 10;
+}
+
+
 .charts-grid {
     display: grid;
     gap: 1rem;
@@ -279,13 +359,20 @@
 .chart-card .recharts-responsive-container { min-height: 180px; }
 
 /* Tägliche Terminliste (Quick View) */
-.daily-appointments-section { }
-.daily-appointments-heading {
+.daily-appointments-section .daily-appointments-heading {
     font-family: var(--font-sans, sans-serif); font-weight: 600; font-size: 0.95rem;
-    color: var(--dark-text); margin-bottom: 0.7rem; display: flex;
-    align-items: center; gap: 0.3rem; padding-bottom: 0.35rem;
-    border-bottom: 1px solid var(--border-color-light, #eeeeee);
+    color: var(--dark-text); margin-bottom: 0;
+    display: flex;
+    align-items: center; gap: 0.3rem; padding-bottom: 0;
+    border-bottom: none;
+    flex-grow: 1;
 }
+.daily-appointments-section .section-header-with-export {
+    border-bottom: 1px solid var(--border-color-light, #eeeeee);
+    padding-bottom: 0.35rem;
+    margin-bottom: 0.7rem;
+}
+
 .daily-appointments-heading .svg-inline--fa { color: var(--medium-grey-text); font-size: 0.85em; }
 .loading-message-stats.small-list-loader { padding: 0.7rem; font-size: 0.75rem; border: none; background-color: transparent; }
 
@@ -335,8 +422,9 @@
     font-weight: 600;
     margin-bottom: 0.4rem;
     color: var(--dark-text);
-    display: flex; /* Für Checkbox neben Legende */
+    display: flex;
     align-items: center;
+    justify-content: space-between;
 }
 .kpi-visibility-controls legend input[type="checkbox"] {
     margin-right: 0.5rem;
@@ -344,15 +432,35 @@
     height: 14px;
     accent-color: var(--dark-text);
 }
-.kpi-visibility-controls legend label { /* Label für die Gruppen-Checkbox */
+.kpi-visibility-controls legend label {
     cursor: pointer;
+    flex-grow: 1;
+}
+.kpi-group-order-buttons button {
+    background: none;
+    border: 1px solid var(--border-color-light);
+    color: var(--medium-grey-text);
+    padding: 0.1rem 0.3rem;
+    margin-left: 0.2rem;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 0.7rem;
+}
+.kpi-group-order-buttons button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.kpi-group-order-buttons button:hover:not(:disabled) {
+    background-color: var(--light-grey-bg);
+    color: var(--dark-text);
 }
 
+
 .individual-kpi-toggles {
-    padding-left: 1.5rem; /* Einrücken der individuellen KPIs */
+    padding-left: 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 0.2rem; /* Kleinerer Abstand zwischen einzelnen KPI-Toggles */
+    gap: 0.2rem;
 }
 
 .kpi-visibility-toggle {
@@ -370,6 +478,38 @@
     font-size: 0.78rem;
     color: var(--medium-grey-text);
     cursor: pointer;
+}
+
+/* KPI Goal Settings */
+.kpi-goal-settings {
+    border: none;
+    padding: 0;
+    margin-top: 0.8rem;
+    width: 100%;
+}
+.kpi-goal-settings legend {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--dark-text);
+}
+.kpi-goal-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+.kpi-goal-input label {
+    font-size: 0.75rem;
+    color: var(--medium-grey-text);
+    min-width: 120px;
+}
+.kpi-goal-input input[type="number"] {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    width: 100px;
 }
 
 
