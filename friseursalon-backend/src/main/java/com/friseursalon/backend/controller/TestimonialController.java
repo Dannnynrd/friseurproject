@@ -1,8 +1,10 @@
 package com.friseursalon.backend.controller;
 
+import com.friseursalon.backend.model.Customer; // NEU
 import com.friseursalon.backend.model.Testimonial;
-import com.friseursalon.backend.payload.request.TestimonialRequest; // Wird noch erstellt
+import com.friseursalon.backend.payload.request.TestimonialRequest;
 import com.friseursalon.backend.payload.response.MessageResponse;
+import com.friseursalon.backend.repository.CustomerRepository; // NEU
 import com.friseursalon.backend.service.TestimonialService;
 import com.friseursalon.backend.security.details.UserDetailsImpl;
 import jakarta.validation.Valid;
@@ -26,39 +28,47 @@ public class TestimonialController {
     private static final Logger logger = LoggerFactory.getLogger(TestimonialController.class);
 
     private final TestimonialService testimonialService;
+    private final CustomerRepository customerRepository; // NEU injizieren
 
     @Autowired
-    public TestimonialController(TestimonialService testimonialService) {
+    public TestimonialController(TestimonialService testimonialService, CustomerRepository customerRepository) { // NEU: CustomerRepository im Konstruktor
         this.testimonialService = testimonialService;
+        this.customerRepository = customerRepository; // NEU
     }
 
-    // Endpunkt zum Einreichen eines Testimonials (für eingeloggte User)
     @PostMapping("/submit")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> submitTestimonial(@Valid @RequestBody TestimonialRequest testimonialRequest) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        Long customerId = userDetails.getId(); // Annahme: User ID ist Customer ID oder es gibt eine Verknüpfung
+        String userEmail = userDetails.getEmail();
 
-        // Hier könntest du prüfen, ob der User berechtigt ist, ein Testimonial abzugeben
-        // (z.B. kürzlich einen Termin gehabt)
-        if (!testimonialService.canCustomerSubmitTestimonial(customerId)) {
+        // Den Customer anhand der E-Mail des Users finden, um die korrekte Customer-ID zu erhalten
+        Customer customer = customerRepository.findByEmail(userEmail)
+                .orElseThrow(() -> {
+                    logger.error("Kunde für Testimonial-Einreichung nicht gefunden. User-Email: {}", userEmail);
+                    return new RuntimeException("Zugehöriger Kunde für Benutzer nicht gefunden.");
+                });
+        Long customerIdForTestimonial = customer.getId();
+
+
+        if (!testimonialService.canCustomerSubmitTestimonial(customerIdForTestimonial)) { // Hier die korrekte customerId verwenden
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new MessageResponse("Sie müssen Kunde sein, um eine Bewertung abzugeben oder haben kürzlich keinen Service genutzt."));
         }
 
         Testimonial newTestimonial = new Testimonial();
-        newTestimonial.setCustomerName(userDetails.getFirstName() + " " + userDetails.getLastName().charAt(0) + "."); // Vornamen + Initial
+        // Name wird nun im Service gesetzt basierend auf dem Customer-Objekt
         newTestimonial.setRating(testimonialRequest.getRating());
         newTestimonial.setComment(testimonialRequest.getComment());
-        // serviceId wird aus dem Request Body genommen, wenn vorhanden
         Long serviceId = testimonialRequest.getServiceId();
 
 
         try {
-            Testimonial savedTestimonial = testimonialService.submitTestimonial(newTestimonial, customerId, serviceId);
+            // customerIdForTestimonial wird jetzt an den Service übergeben
+            Testimonial savedTestimonial = testimonialService.submitTestimonial(newTestimonial, customerIdForTestimonial, serviceId);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedTestimonial);
         } catch (RuntimeException e) {
-            logger.error("Fehler beim Einreichen des Testimonials durch User ID {}: {}", customerId, e.getMessage());
+            logger.error("Fehler beim Einreichen des Testimonials durch User ID {}: {}", userDetails.getId(), e.getMessage()); // Logge ursprüngliche User ID für Kontext
             return ResponseEntity.badRequest().body(new MessageResponse("Fehler beim Einreichen: " + e.getMessage()));
         }
     }

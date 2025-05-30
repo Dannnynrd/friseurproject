@@ -1,40 +1,41 @@
 // friseursalon-frontend/src/components/ServicesSection.js
 import React, { useState, useEffect, useRef } from 'react';
-import api from '../services/api.service'; // Behält vorerst die allgemeine API-Instanz
-// HIER den Import ändern:
+import api from '../services/api.service';
 import styles from './ServicesSection.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendarCheck } from '@fortawesome/free-solid-svg-icons';
 
-// Die BookingPage Komponente wird für das Modal benötigt.
-// Stelle sicher, dass der Pfad korrekt ist und BookingPage für die Modal-Nutzung angepasst ist.
-import BookingPage from '../pages/BookingPage';
-
-function ServicesSection() {
+// Die Prop openBookingModal kommt von App.js (ist dort navigateToBooking)
+// Die Props currentUser, onServiceAdded, refreshServicesList werden hier nicht mehr direkt für die Service-Anzeige benötigt,
+// könnten aber für Admin-Funktionen (Bearbeiten/Löschen von Services direkt in dieser Sektion) relevant sein.
+// Für die reine Anzeige und den Buchungs-Button sind sie nicht zwingend.
+function ServicesSection({ openBookingModal, currentUser, onServiceAdded, refreshServicesList: parentRefreshTrigger }) {
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const sectionRef = useRef(null);
 
-    const [showBookingModal, setShowBookingModal] = useState(false);
-    const [selectedServiceForBooking, setSelectedServiceForBooking] = useState(null);
-
-    console.log("ServicesSection initial render - showBookingModal:", showBookingModal, "selectedServiceForBooking:", selectedServiceForBooking); // DEBUG
+    // Lokales State für showBookingModal und selectedServiceForBooking wird entfernt,
+    // da die Navigation und das Anzeigen der BookingPage von App.js gehandhabt wird.
 
     useEffect(() => {
         const fetchServices = async () => {
+            setLoading(true);
+            setError(null);
             try {
-                const response = await api.get('/api/services'); // Dein Backend-Endpunkt für Services
+                // Der API-Endpunkt in api.service.js ist bereits /api/, daher hier nur 'services'
+                const response = await api.get('services');
                 setServices(response.data || []);
             } catch (err) {
                 console.error("Error fetching services:", err);
                 setError('Dienstleistungen konnten nicht geladen werden.');
+                setServices([]);
             } finally {
                 setLoading(false);
             }
         };
         fetchServices();
-    }, []);
+    }, [parentRefreshTrigger]); // Reagiert auf den von der Elternkomponente übergebenen Trigger
 
     useEffect(() => {
         const observer = new IntersectionObserver((entries) => {
@@ -56,26 +57,8 @@ function ServicesSection() {
         };
     }, []);
 
-    const openBookingModal = (service) => {
-        console.log("ServicesSection: openBookingModal called with service:", service); // DEBUG
-        setSelectedServiceForBooking(service);
-        setShowBookingModal(true);
-        // React State-Updates sind asynchron. Die folgenden Logs zeigen möglicherweise noch nicht den aktualisierten Wert,
-        // aber sie zeigen, dass die Setter aufgerufen wurden.
-        // Der nächste Render-Zyklus wird die aktuellen Werte haben.
-        console.log("ServicesSection: setSelectedServiceForBooking and setShowBookingModal(true) called."); // DEBUG
-        document.body.classList.add('modal-open'); // Verhindert Scrollen des Hintergrunds
-    };
-
-    const closeBookingModal = () => {
-        console.log("ServicesSection: closeBookingModal called"); // DEBUG
-        setShowBookingModal(false);
-        setSelectedServiceForBooking(null);
-        document.body.classList.remove('modal-open');
-    };
-
     const formatDuration = (minutes) => {
-        if (!minutes) return '';
+        if (!minutes || isNaN(minutes)) return ''; // Überprüft auch, ob es eine Zahl ist
         const h = Math.floor(minutes / 60);
         const m = minutes % 60;
         let durationString = '';
@@ -84,14 +67,22 @@ function ServicesSection() {
         return durationString.trim();
     };
 
-    // Dieser Log wird bei jedem Rendern von ServicesSection ausgeführt.
-    console.log("ServicesSection rendering - showBookingModal:", showBookingModal, "selectedServiceForBooking:", selectedServiceForBooking); // DEBUG
+    // Der Handler für den Button-Klick verwendet jetzt die übergebene Prop.
+    // Der Service-Name wird an die Funktion übergeben, die dann navigiert.
+    const handleBookServiceClick = (service) => {
+        if (typeof openBookingModal === 'function') {
+            openBookingModal(service.name); // Übergibt den Service-Namen für die URL-Generierung
+        } else {
+            console.error("ServicesSection: openBookingModal prop is not a function or not provided.");
+        }
+    };
+
 
     return (
         <section
             id="services-dynamic"
             ref={sectionRef}
-            className="py-16 md:py-24 bg-white" // Tailwind: section { padding: 4rem 0; }
+            className="py-16 md:py-24 bg-white"
         >
             <div className="container mx-auto px-6">
                 <div className="section-header text-center max-w-xl mx-auto mb-10 md:mb-16 animate-up">
@@ -123,7 +114,7 @@ function ServicesSection() {
                                 className={`animate-up bg-light-bg border border-border-color-light rounded-lg shadow-sm overflow-hidden flex flex-col ${styles.serviceCard}`}
                                 style={{ transitionDelay: `${index * 0.05}s` }}
                             >
-                                {service.imageUrl && (
+                                {service.imageUrl && ( // Annahme: Services könnten eine imageUrl haben
                                     <div className={styles.serviceImageContainer}>
                                         <img
                                             src={service.imageUrl || 'https://placehold.co/600x400/e2e8f0/94a3b8?text=Service'}
@@ -148,11 +139,11 @@ function ServicesSection() {
                                             {typeof service.price === 'number' ? `ab ${service.price.toFixed(2)} €` : (service.price || 'Preis auf Anfrage')}
                                         </span>
                                         <span className={styles.serviceDuration}>
-                                            {formatDuration(service.duration)}
+                                            {formatDuration(service.durationMinutes)} {/* Korrigiert zu durationMinutes */}
                                         </span>
                                     </div>
                                     <button
-                                        onClick={() => openBookingModal(service)}
+                                        onClick={() => handleBookServiceClick(service)} // Ruft den neuen Handler auf
                                         className={`mt-auto w-full inline-flex items-center justify-center bg-dark-text text-light-bg px-6 py-3 rounded font-medium text-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200 ${styles.bookButton}`}
                                     >
                                         <FontAwesomeIcon icon={faCalendarCheck} className="mr-2" />
@@ -164,27 +155,7 @@ function ServicesSection() {
                     </div>
                 )}
             </div>
-
-            {/* Conditional rendering of BookingPage */}
-            {(() => {
-                // Log a message when React evaluates this conditional rendering block
-                console.log("ServicesSection: Evaluating condition to render BookingPage. showBookingModal:", showBookingModal, "selectedServiceForBooking:", !!selectedServiceForBooking); // DEBUG
-                if (showBookingModal && selectedServiceForBooking) {
-                    console.log("ServicesSection: Rendering BookingPage with isOpen=true"); // DEBUG
-                    return (
-                        <BookingPage
-                            isOpen={showBookingModal} // Sollte hier true sein
-                            onClose={closeBookingModal}
-                            serviceName={selectedServiceForBooking.name}
-                            servicePrice={selectedServiceForBooking.price}
-                            serviceDuration={selectedServiceForBooking.duration}
-                            // weitere Props, die BookingPage benötigt
-                        />
-                    );
-                }
-                console.log("ServicesSection: NOT rendering BookingPage."); // DEBUG
-                return null;
-            })()}
+            {/* Die bedingte Wiedergabe von BookingPage als Modal ist hier entfernt. */}
         </section>
     );
 }

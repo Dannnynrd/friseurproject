@@ -1,83 +1,118 @@
 // friseursalon-frontend/src/pages/BookingPage.js
-import React, { useState, useEffect, useCallback } from 'react';
-import DatePicker from 'react-datepicker';
+import React, { useState, useEffect, useCallback, useRef } from 'react'; // useRef hinzugefügt
+import DatePicker, { registerLocale } from 'react-datepicker'; // registerLocale hinzugefügt
 import 'react-datepicker/dist/react-datepicker.css';
-// useNavigate wird hier nicht mehr primär für die Navigation innerhalb der Buchung verwendet,
-// aber ggf. für andere Aktionen (z.B. nach Login)
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api.service';
 import AuthService from '../services/auth.service';
-import AppointmentForm from '../components/AppointmentForm';
-import styles from './BookingPage.module.css'; // Dein CSS-Modul
+import AppointmentForm from '../components/AppointmentForm'; // Sicherstellen, dass der Pfad korrekt ist
+import styles from './BookingPage.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faSpinner, faExclamationCircle, faCheckCircle, faCalendarAlt, faClock, faUserEdit, faCreditCard, faChevronLeft, faChevronRight, faHouseUser, faCalendarCheck } from '@fortawesome/free-solid-svg-icons';
+import {
+    faTimes, faSpinner, faExclamationCircle, faCheckCircle,
+    faCalendarAlt, faClock, faUserEdit, faCreditCard,
+    faChevronLeft, faChevronRight, faConciergeBell // faConciergeBell für Serviceauswahl hinzugefügt
+} from '@fortawesome/free-solid-svg-icons';
+import { de } from 'date-fns/locale'; // Import für deutsche Lokalisierung
 
-// Props: isOpen, onClose, serviceName, servicePrice, serviceDuration
-function BookingPage({ isOpen, onClose, serviceName, servicePrice, serviceDuration }) {
-    console.log("BookingPage props:", { isOpen, onClose, serviceName, servicePrice, serviceDuration }); // DEBUG
+registerLocale('de', de); // Deutsche Lokalisierung für DatePicker registrieren
 
-    const [currentStep, setCurrentStep] = useState(1); // 1: Date/Time, 2: Details, 3: Confirm/Pay
+function BookingPage({ onAppointmentAdded: onAppointmentAddedProp, currentUser: propCurrentUser, onLoginSuccess }) {
+    const params = useParams();
+    const navigate = useNavigate();
+    const appointmentFormRef = useRef(null); // Ref für AppointmentForm
+
+    const serviceNameFromUrl = params.serviceName ? decodeURIComponent(params.serviceName) : null;
+
+    const [currentStep, setCurrentStep] = useState(1);
+    const [allServices, setAllServices] = useState([]);
+    const [selectedService, setSelectedService] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
     const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
     const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
+    const [isLoadingServices, setIsLoadingServices] = useState(true);
     const [isLoadingSlots, setIsLoadingSlots] = useState(false);
     const [bookingError, setBookingError] = useState('');
     const [bookingSuccess, setBookingSuccess] = useState('');
-    const [customerDetails, setCustomerDetails] = useState(null); // Für die Daten aus AppointmentForm
+    const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
+    const [customerDetails, setCustomerDetails] = useState(null); // <<<< HIER IST DIE DEKLARATION
 
-    const currentUser = AuthService.getCurrentUser();
-    const navigate = useNavigate();
+    const currentUser = propCurrentUser || AuthService.getCurrentUser();
 
     const STEPS_CONFIG_GUEST = [
-        { number: "01", label: "Datum & Zeit" },
+        { number: "01", label: "Service & Zeit" },
         { number: "02", label: "Ihre Daten" },
         { number: "03", label: "Bestätigung" },
     ];
     const STEPS_CONFIG_USER = [
-        { number: "01", label: "Datum & Zeit" },
+        { number: "01", label: "Service & Zeit" },
         { number: "02", label: "Bestätigung" },
     ];
     const steps = currentUser ? STEPS_CONFIG_USER : STEPS_CONFIG_GUEST;
     const MAX_STEPS = steps.length;
 
     const resetBookingState = useCallback(() => {
-        console.log("BookingPage: resetBookingState called"); // DEBUG
         setCurrentStep(1);
         setSelectedDate(null);
         setAvailableTimeSlots([]);
         setSelectedTimeSlot('');
         setBookingError('');
         setBookingSuccess('');
-        setCustomerDetails(null);
+        setCustomerDetails(null); // Auch customerDetails zurücksetzen
     }, []);
 
     useEffect(() => {
-        console.log("BookingPage: isOpen effect triggered. isOpen:", isOpen); // DEBUG
-        if (!isOpen) {
-            setTimeout(resetBookingState, 300); // Reset mit Verzögerung beim Schließen
-        } else {
-            resetBookingState(); // Sofortiger Reset beim Öffnen
-        }
-    }, [isOpen, serviceName, resetBookingState]); // serviceName als Abhängigkeit hinzugefügt, falls sich der Service bei offenem Modal ändert
+        const loadServicesAndSetInitial = async () => {
+            setIsLoadingServices(true);
+            try {
+                const response = await api.get('/api/services');
+                const servicesData = response.data || [];
+                setAllServices(servicesData);
+                if (serviceNameFromUrl) {
+                    const foundService = servicesData.find(s => s.name.toLowerCase() === serviceNameFromUrl.toLowerCase());
+                    if (foundService) {
+                        setSelectedService(foundService);
+                    } else {
+                        setBookingError(`Dienstleistung "${serviceNameFromUrl}" nicht gefunden.`);
+                        setSelectedService(null); // explizit null setzen
+                    }
+                } else {
+                    setSelectedService(null); // Kein Service via URL, also initial null
+                }
+            } catch (err) {
+                console.error("Fehler beim Laden der Services für BookingPage:", err);
+                setBookingError("Dienstleistungen konnten nicht geladen werden.");
+            } finally {
+                setIsLoadingServices(false);
+            }
+        };
+        loadServicesAndSetInitial();
+    }, [serviceNameFromUrl]);
 
-    const fetchAvailableTimeSlots = async (date) => {
-        if (!date || !serviceDuration) {
-            console.log("fetchAvailableTimeSlots: date or serviceDuration missing"); //DEBUG
+    useEffect(() => {
+        resetBookingState();
+    }, [serviceNameFromUrl, resetBookingState]);
+
+
+    const fetchAvailableTimeSlots = async (date, serviceForSlots) => {
+        if (!date || !serviceForSlots || !serviceForSlots.id) {
+            setAvailableTimeSlots([]);
             return;
         }
         setIsLoadingSlots(true);
         setBookingError('');
         try {
             const formattedDate = date.toISOString().split('T')[0];
-            console.log("Fetching slots for date:", formattedDate, "duration:", serviceDuration); // DEBUG
             const response = await api.get('/api/appointments/available-slots', {
-                params: { date: formattedDate, duration: serviceDuration },
+                params: {
+                    serviceId: serviceForSlots.id,
+                    date: formattedDate
+                },
             });
-            console.log("Available slots response:", response.data); // DEBUG
             setAvailableTimeSlots(response.data || []);
         } catch (error) {
             console.error('Error fetching time slots:', error);
-            setBookingError('Fehler beim Laden der Zeiten.');
+            setBookingError('Fehler beim Laden der verfügbaren Zeiten.');
             setAvailableTimeSlots([]);
         } finally {
             setIsLoadingSlots(false);
@@ -89,11 +124,20 @@ function BookingPage({ isOpen, onClose, serviceName, servicePrice, serviceDurati
         setSelectedTimeSlot('');
         setBookingSuccess('');
         setBookingError('');
-        if (date) {
-            fetchAvailableTimeSlots(date);
+        if (date && selectedService) {
+            fetchAvailableTimeSlots(date, selectedService);
         } else {
             setAvailableTimeSlots([]);
         }
+    };
+
+    const handleServiceSelection = (service) => {
+        setSelectedService(service);
+        setSelectedDate(null);
+        setSelectedTimeSlot('');
+        setAvailableTimeSlots([]);
+        setBookingError('');
+        setBookingSuccess('');
     };
 
     const handleTimeSlotSelect = (slot) => {
@@ -103,227 +147,236 @@ function BookingPage({ isOpen, onClose, serviceName, servicePrice, serviceDurati
     };
 
     const handleNextStep = () => {
-        console.log("handleNextStep called. currentStep:", currentStep); // DEBUG
-        if (currentStep === 1 && (!selectedDate || !selectedTimeSlot)) {
-            setBookingError("Bitte wählen Sie zuerst Datum und Uhrzeit aus.");
+        if (currentStep === 1 && (!selectedService || !selectedDate || !selectedTimeSlot)) {
+            setBookingError("Bitte wählen Sie zuerst Dienstleistung, Datum und Uhrzeit aus.");
             return;
         }
+        // Wenn der aktuelle Schritt der ist, wo das AppointmentForm angezeigt wird (für Gäste)
+        if (currentStep === (currentUser ? 1 : 2) && !currentUser) { // Schritt 2 für Gäste ist Detailformular
+            const formData = appointmentFormRef.current?.triggerSubmitAndGetData();
+            if (!formData) {
+                // Fehler wird bereits im AppointmentForm oder durch triggerSubmitAndGetData gesetzt.
+                return;
+            }
+            setCustomerDetails(formData); // Speichere die Formulardaten
+        }
+
         setBookingError('');
         if (currentStep < MAX_STEPS) {
             setCurrentStep(prev => prev + 1);
         }
     };
 
+
     const handlePrevStep = () => {
-        console.log("handlePrevStep called. currentStep:", currentStep); // DEBUG
         setBookingError('');
         if (currentStep > 1) {
             setCurrentStep(prev => prev - 1);
         }
     };
 
-    const handleFormSubmit = (formData) => {
-        console.log("handleFormSubmit called with data:", formData); // DEBUG
-        setCustomerDetails(formData);
-        if (currentUser) {
-            setCurrentStep(MAX_STEPS);
-        } else {
-            handleNextStep();
+    // Diese Funktion wird jetzt vom "Weiter zur Bestätigung" Button im Gast-Detail-Schritt aufgerufen
+    const handleFormSubmitDetails = () => {
+        const formData = appointmentFormRef.current?.triggerSubmitAndGetData();
+        if (formData) {
+            setCustomerDetails(formData);
+            setCurrentStep(prev => prev + 1); // Zum Bestätigungsschritt
         }
     };
 
+
     const handleFinalBooking = async () => {
-        console.log("handleFinalBooking called"); // DEBUG
-        if (!selectedDate || !selectedTimeSlot || !serviceName || (!currentUser && !customerDetails)) {
-            setBookingError('Ein Fehler ist aufgetreten. Bitte überprüfen Sie Ihre Eingaben.');
-            console.error("Final booking validation failed:", {selectedDate, selectedTimeSlot, serviceName, currentUser, customerDetails}); // DEBUG
-            return;
+        if (!selectedService || !selectedDate || !selectedTimeSlot) {
+            setBookingError('Unvollständige Terminauswahl.'); return;
         }
+        if (!currentUser && !customerDetails) { // Überprüfe customerDetails
+            setBookingError('Kundendaten fehlen.'); return;
+        }
+
         setBookingError('');
         setBookingSuccess('');
+        setIsSubmittingBooking(true);
 
         const appointmentDateTime = new Date(selectedDate);
         const [hours, minutes] = selectedTimeSlot.split(':');
         appointmentDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
 
-        const appointmentData = {
-            serviceName: serviceName,
-            appointmentTime: appointmentDateTime.toISOString(),
-            duration: serviceDuration,
-            price: servicePrice,
+        const bookingPayload = {
+            service: { id: selectedService.id },
             customer: currentUser ? {
-                name: currentUser.username,
+                firstName: currentUser.firstName,
+                lastName: currentUser.lastName,
                 email: currentUser.email,
-                phone: currentUser.phone || ''
-            } : customerDetails,
-            userId: currentUser ? currentUser.id : null,
+                phoneNumber: currentUser.phoneNumber || ''
+            } : { // Für Gäste verwenden wir die gesammelten Daten
+                firstName: customerDetails.firstName,
+                lastName: customerDetails.lastName,
+                email: customerDetails.email,
+                phoneNumber: customerDetails.phoneNumber,
+                // Falls Registrierung gewünscht, hier Passwort mitgeben
+                // password: customerDetails.password, // Nur wenn AppointmentForm das Passwortfeld hat und es relevant ist
+            },
+            startTime: appointmentDateTime.toISOString(),
+            notes: currentUser ? (selectedService.notes || '') : (customerDetails?.notes || ''),
         };
-        console.log("Submitting appointment data:", appointmentData); // DEBUG
 
         try {
-            await api.post('/api/appointments/book', appointmentData);
-            setBookingSuccess(`Ihr Termin für ${serviceName} wurde erfolgreich gebucht!`);
+            await api.post('/api/appointments', bookingPayload);
+            setBookingSuccess(`Ihr Termin für ${selectedService.name} wurde erfolgreich gebucht!`);
+            if (onAppointmentAddedProp) onAppointmentAddedProp();
             setCurrentStep(MAX_STEPS + 1);
             setTimeout(() => {
-                onClose();
+                navigate('/');
             }, 4000);
         } catch (error) {
             console.error('Error creating appointment:', error.response?.data || error.message);
             setBookingError(error.response?.data?.message || 'Fehler bei der Terminbuchung.');
+        } finally {
+            setIsSubmittingBooking(false);
         }
     };
 
     const isWeekday = (date) => {
         const day = date.getDay();
-        return day !== 0 && day !== 6; // So & Sa ausschließen
+        return day !== 0 && day !== 6;
     };
 
-    if (!isOpen) {
-        console.log("BookingPage: isOpen is false, returning null."); // DEBUG
-        return null;
-    }
-    console.log("BookingPage rendering modal, isOpen is true. Current step:", currentStep); // DEBUG
-
     const renderStepContent = () => {
-        // Erfolgs-Schritt
-        if (currentStep > MAX_STEPS) {
+        if (currentStep > MAX_STEPS) { // Erfolgs-Schritt
             return (
                 <div className={`text-center p-6 ${styles.bookingConfirmation}`}>
                     <FontAwesomeIcon icon={faCheckCircle} className={`${styles.confirmationIcon} text-green-500`} />
                     <h3 className={styles.bookingStepHeading}>Termin bestätigt!</h3>
                     <p>{bookingSuccess}</p>
                     <p className="text-sm text-gray-600">Sie erhalten in Kürze eine Bestätigungs-E-Mail.</p>
+                    <button onClick={() => navigate('/')} className={`button-link mt-6`}>Zur Startseite</button>
                 </div>
             );
         }
 
-        // Reguläre Schritte
         switch (currentStep) {
-            case 1: // Datum & Zeit
+            case 1: // Service & Zeit
                 return (
                     <>
                         <div className={styles.bookingStepSubheading}>
                             <div className={styles.serviceInfoText}>
-                                <strong>{serviceName}</strong>
-                                <span className={styles.servicePriceDuration}>
-                                    Dauer: {serviceDuration} Min. / Preis: {typeof servicePrice === 'number' ? `${servicePrice.toFixed(2)} €` : servicePrice}
-                                </span>
+                                {selectedService ? (
+                                    <>
+                                        <strong>{selectedService.name}</strong>
+                                        <span className={styles.servicePriceDuration}>
+                                            Dauer: {selectedService.durationMinutes} Min. / Preis: {typeof selectedService.price === 'number' ? `${selectedService.price.toFixed(2)} €` : selectedService.price}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <strong>Bitte wählen Sie eine Dienstleistung</strong>
+                                )}
                             </div>
+                            {selectedService && <button onClick={() => { setSelectedService(null); setSelectedDate(null); setSelectedTimeSlot(''); setAvailableTimeSlots([]); }} className={`${styles.editSelectionButton} ${styles.smallEdit}`}><FontAwesomeIcon icon={faTimes} /> Auswahl ändern</button>}
                         </div>
-                        <div className={styles.datepickerTimeContainer}>
-                            <div className={styles.datepickerWrapperOuter}>
-                                <h3 className={styles.subHeading}>
-                                    <FontAwesomeIcon icon={faCalendarAlt} /> Datum wählen
-                                </h3>
-                                <div className={styles.datepickerWrapper}>
-                                    <DatePicker
-                                        selected={selectedDate}
-                                        onChange={handleDateChange}
-                                        dateFormat="dd.MM.yyyy"
-                                        minDate={new Date()}
-                                        filterDate={isWeekday}
-                                        placeholderText="Datum auswählen"
-                                        inline
-                                    />
-                                </div>
-                            </div>
-                            <div className={styles.timeSlotsWrapperOuter}>
-                                <h3 className={styles.subHeading}>
-                                    <FontAwesomeIcon icon={faClock} /> Uhrzeit wählen
-                                </h3>
-                                <div className={styles.timeSlotsWrapper}>
-                                    {isLoadingSlots && <div className={`${styles.loadingMessage} ${styles.small}`}><FontAwesomeIcon icon={faSpinner} spin /> Zeiten laden...</div>}
-                                    {!isLoadingSlots && !selectedDate && <div className={styles.selectDateMessage}>Bitte zuerst ein Datum wählen.</div>}
-                                    {!isLoadingSlots && selectedDate && availableTimeSlots.length > 0 && (
-                                        <div className={styles.timeSlotsGrid}>
-                                            {availableTimeSlots.map((slot) => (
-                                                <button
-                                                    key={slot}
-                                                    onClick={() => handleTimeSlotSelect(slot)}
-                                                    className={`${styles.timeSlotButton} ${selectedTimeSlot === slot ? styles.selected : ''}`}
-                                                >
-                                                    {slot}
-                                                </button>
-                                            ))}
+
+                        {!selectedService ? (
+                            <div className="mb-6">
+                                <h3 className={styles.subHeading}><FontAwesomeIcon icon={faConciergeBell} /> Dienstleistung wählen</h3>
+                                {isLoadingServices && <p className={styles.loadingMessage}><FontAwesomeIcon icon={faSpinner} spin /> Lade Services...</p>}
+                                <div className={styles.servicesGrid}>
+                                    {allServices.map(service => (
+                                        <div key={service.id} onClick={() => handleServiceSelection(service)} className={`${styles.serviceCard} ${selectedService?.id === service.id ? styles.selected : ''}`}>
+                                            <h4 className={styles.serviceName}>{service.name}</h4>
+                                            <p className={styles.serviceDescription}>{service.description}</p>
+                                            <p className={styles.serviceDetails}>
+                                                {service.durationMinutes} Min. - {typeof service.price === 'number' ? `${service.price.toFixed(2)} €` : service.price}
+                                            </p>
                                         </div>
-                                    )}
-                                    {!isLoadingSlots && selectedDate && availableTimeSlots.length === 0 && (
-                                        <div className={styles.noTimesMessage}>Keine freien Zeiten für diesen Tag.</div>
-                                    )}
+                                    ))}
                                 </div>
                             </div>
-                        </div>
-                        {selectedDate && selectedTimeSlot && (
+                        ) : (
+                            <div className={styles.datepickerTimeContainer}>
+                                <div className={styles.datepickerWrapperOuter}>
+                                    <h3 className={styles.subHeading}><FontAwesomeIcon icon={faCalendarAlt} /> Datum wählen</h3>
+                                    <div className={styles.datepickerWrapper}>
+                                        <DatePicker
+                                            selected={selectedDate}
+                                            onChange={handleDateChange}
+                                            dateFormat="dd.MM.yyyy"
+                                            minDate={new Date()}
+                                            filterDate={isWeekday}
+                                            placeholderText="Datum auswählen"
+                                            inline
+                                            locale="de"
+                                        />
+                                    </div>
+                                </div>
+                                <div className={styles.timeSlotsWrapperOuter}>
+                                    <h3 className={styles.subHeading}><FontAwesomeIcon icon={faClock} /> Uhrzeit wählen</h3>
+                                    <div className={styles.timeSlotsWrapper}>
+                                        {isLoadingSlots && <div className={`${styles.loadingMessage} ${styles.small}`}><FontAwesomeIcon icon={faSpinner} spin /> Zeiten laden...</div>}
+                                        {!isLoadingSlots && !selectedDate && <div className={styles.selectDateMessage}>Bitte zuerst ein Datum wählen.</div>}
+                                        {!isLoadingSlots && selectedDate && availableTimeSlots.length > 0 && (
+                                            <div className={styles.timeSlotsGrid}>
+                                                {availableTimeSlots.map((slot) => (
+                                                    <button
+                                                        key={slot}
+                                                        onClick={() => handleTimeSlotSelect(slot)}
+                                                        className={`${styles.timeSlotButton} ${selectedTimeSlot === slot ? styles.selected : ''}`}
+                                                    >
+                                                        {slot}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {!isLoadingSlots && selectedDate && availableTimeSlots.length === 0 && (
+                                            <div className={styles.noTimesMessage}>Keine freien Zeiten für diesen Tag.</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {selectedDate && selectedTimeSlot && selectedService && (
                             <div className={`${styles.selectedDatetimeInfo} mt-4`}>
-                                Gewählt: <strong>{selectedDate.toLocaleDateString('de-DE')}</strong> um <strong>{selectedTimeSlot} Uhr</strong>
+                                Gewählt: <strong>{selectedService.name}</strong> am <strong>{selectedDate.toLocaleDateString('de-DE')}</strong> um <strong>{selectedTimeSlot} Uhr</strong>
                             </div>
                         )}
                     </>
                 );
-            case 2: // Details (für Gäste) oder Bestätigung (für eingeloggte User)
+            case 2: // Details (Gäste) ODER Bestätigung (User)
                 if (!currentUser) { // Gast: Detailformular
                     return (
                         <>
                             <h3 className={styles.bookingStepHeading}>Ihre Kontaktdaten</h3>
-                            <AppointmentForm
-                                onSubmit={handleFormSubmit}
-                                user={null}
-                                serviceName={serviceName}
-                                selectedDate={selectedDate}
-                                selectedTimeSlot={selectedTimeSlot}
-                                isGuestBooking={true}
-                                submitButtonText="Weiter zur Bestätigung"
-                            />
+                            <AppointmentForm ref={appointmentFormRef} currentUser={null} />
                         </>
                     );
                 }
-            // Eingeloggter User: Direkte Bestätigung - Fallthrough
+            // Eingeloggter User: Direkte Bestätigung - Fallthrough zu case 3 (oder MAX_STEPS, wenn nur 2 Schritte für User)
             case 3: // Bestätigung (für Gäste nach Formular, oder für eingeloggte User als Schritt 2)
-                const finalCustomerDetails = currentUser ? {
-                    name: currentUser.username,
+                const summaryCustomerDetails = currentUser ? {
+                    name: `${currentUser.firstName} ${currentUser.lastName}`,
                     email: currentUser.email,
-                    phone: currentUser.phone || 'Nicht angegeben'
-                } : customerDetails;
+                    phone: currentUser.phoneNumber || 'Nicht angegeben'
+                } : customerDetails; // Verwende die gespeicherten customerDetails für Gäste
 
-                // Sicherstellen, dass customerDetails für Gäste vorhanden ist, bevor gerendert wird
-                if (!currentUser && !customerDetails && currentStep === MAX_STEPS) {
-                    console.log("DEBUG: Guest in confirmation step but no customerDetails yet. currentStep:", currentStep, "MAX_STEPS:", MAX_STEPS);
-                    // Optional: Zeige eine Ladeanzeige oder eine Meldung, oder gehe zurück zum Formular
-                    // Fürs Erste, um einen leeren Render zu vermeiden, wenn das Formular noch nicht gesendet wurde:
-                    if (currentStep === MAX_STEPS && !currentUser) { // Nur für Gäste im letzten Schritt vor der Buchung
-                        return (
-                            <>
-                                <h3 className={styles.bookingStepHeading}>Ihre Kontaktdaten</h3>
-                                <p className="text-sm text-gray-500 mb-4">Bitte füllen Sie Ihre Kontaktdaten aus, um fortzufahren.</p>
-                                <AppointmentForm
-                                    onSubmit={handleFormSubmit}
-                                    user={null}
-                                    serviceName={serviceName}
-                                    selectedDate={selectedDate}
-                                    selectedTimeSlot={selectedTimeSlot}
-                                    isGuestBooking={true}
-                                    submitButtonText="Weiter zur Bestätigung"
-                                />
-                            </>
-                        );
-                    }
+
+                if (!summaryCustomerDetails && !currentUser) {
+                    // Sollte nicht passieren, wenn Logik in handleNextStep greift
+                    return <p>Fehler: Kundendetails nicht verfügbar für Zusammenfassung.</p>;
                 }
-
 
                 return (
                     <div className={styles.appointmentSummaryFinal}>
                         <h3 className={styles.bookingStepHeading}>Terminübersicht</h3>
-                        <p><FontAwesomeIcon icon={faCalendarCheck} /> <strong>Dienstleistung:</strong> {serviceName}</p>
+                        <p><FontAwesomeIcon icon={faConciergeBell} /> <strong>Dienstleistung:</strong> {selectedService?.name}</p>
                         <p><FontAwesomeIcon icon={faCalendarAlt} /> <strong>Datum:</strong> {selectedDate?.toLocaleDateString('de-DE')}</p>
                         <p><FontAwesomeIcon icon={faClock} /> <strong>Uhrzeit:</strong> {selectedTimeSlot} Uhr</p>
-                        <p><FontAwesomeIcon icon={faCreditCard} /> <strong>Preis:</strong> {typeof servicePrice === 'number' ? `${servicePrice.toFixed(2)} €` : servicePrice}</p>
+                        <p><FontAwesomeIcon icon={faCreditCard} /> <strong>Preis:</strong> {typeof selectedService?.price === 'number' ? `${selectedService.price.toFixed(2)} €` : selectedService?.price}</p>
 
-                        {finalCustomerDetails && (
+                        {summaryCustomerDetails && (
                             <>
                                 <h3 className="mt-6">Ihre Daten:</h3>
-                                <p><FontAwesomeIcon icon={faUserEdit} /> <strong>Name:</strong> {finalCustomerDetails.name}</p>
-                                <p><FontAwesomeIcon icon={faHouseUser} /> <strong>E-Mail:</strong> {finalCustomerDetails.email}</p>
-                                {finalCustomerDetails.phone && <p><strong>Telefon:</strong> {finalCustomerDetails.phone}</p>}
+                                <p><FontAwesomeIcon icon={faUserEdit} /> <strong>Name:</strong> {summaryCustomerDetails.name}</p>
+                                <p><FontAwesomeIcon icon={faUserEdit} /> <strong>E-Mail:</strong> {summaryCustomerDetails.email}</p>
+                                {summaryCustomerDetails.phone && <p><strong>Telefon:</strong> {summaryCustomerDetails.phone}</p>}
+                                {summaryCustomerDetails.notes && !currentUser && <p><strong>Notizen:</strong> {summaryCustomerDetails.notes}</p> }
                             </>
                         )}
                         <p className="mt-4 text-sm text-gray-600">Bitte überprüfen Sie Ihre Angaben. Mit Klick auf "Jetzt buchen" wird Ihr Termin verbindlich reserviert.</p>
@@ -334,23 +387,19 @@ function BookingPage({ isOpen, onClose, serviceName, servicePrice, serviceDurati
         }
     };
 
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[1055] p-4 animate-fadeInModalOverlay backdrop-blur-sm">
-            {/* DEBUGGING: Prominente Testüberschrift */}
-            <h1 style={{ position: 'absolute', top: '10px', left: '10px', color: 'red', backgroundColor: 'white', padding: '10px', zIndex: 9999 }}>MODAL TEST RENDER</h1>
 
-            <div className={`bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] flex flex-col animate-slideInModalContent ${styles.bookingFormContainer}`}>
-                <div className="flex justify-between items-center p-5 border-b border-gray-200">
+    return (
+        <div className={styles.bookingPageContainer}>
+            <div className={styles.bookingFormContainer}>
+                <div className="flex justify-between items-center p-5 border-b border-gray-200 relative">
                     <h2 className={`text-xl font-serif font-semibold text-dark-text ${styles.bookingPageMainHeading} mb-0`}>
-                        Termin für: {serviceName}
+                        Termin buchen
                     </h2>
-                    <button onClick={onClose} aria-label="Modal schließen" className="text-gray-400 hover:text-gray-700 transition-colors">
-                        <FontAwesomeIcon icon={faTimes} size="lg" />
-                    </button>
+                    {/* Navigation erfolgt über Browser/Header oder Erfolgs-Button */}
                 </div>
 
                 {currentStep <= MAX_STEPS && (
-                    <ul className={`${styles.bookingStepIndicators} ${steps.length === 3 ? styles.threeSteps : ''} px-5 pt-5`}>
+                    <ul className={`${styles.bookingStepIndicators} ${steps.length === 3 ? styles.threeSteps : (steps.length === 2 ? styles.twoSteps : '')} px-5 pt-5`}>
                         {steps.map((step, index) => (
                             <li key={step.number} className={`
                                 ${styles.bookingStepIndicator}
@@ -359,7 +408,7 @@ function BookingPage({ isOpen, onClose, serviceName, servicePrice, serviceDurati
                             `}>
                                 <div className={styles.stepNumberWrapper}>
                                     {currentStep > (index + 1) || currentStep > MAX_STEPS ? (
-                                        <FontAwesomeIcon icon={faCheckCircle} className={styles.svgInlineFa} />
+                                        <FontAwesomeIcon icon={faCheckCircle} className="svg-inline--fa" />
                                     ) : (
                                         <span className={styles.stepNumber}>{step.number}</span>
                                     )}
@@ -378,25 +427,31 @@ function BookingPage({ isOpen, onClose, serviceName, servicePrice, serviceDurati
                     <div className={`${styles.bookingNavigationButtons} p-5 border-t border-gray-200`}>
                         <button
                             onClick={handlePrevStep}
-                            disabled={currentStep === 1}
+                            disabled={currentStep === 1 || isSubmittingBooking}
                             className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50 flex items-center"
                         >
                             <FontAwesomeIcon icon={faChevronLeft} className="mr-2 h-4 w-4"/> Zurück
                         </button>
+
+                        {/* "Weiter" Button oder "Weiter zur Bestätigung" für Gast-Details */}
                         {currentStep < MAX_STEPS && (
                             <button
-                                onClick={handleNextStep}
-                                className="bg-dark-text hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center"
+                                onClick={currentStep === (currentUser ? 1 : 2) && !currentUser ? handleFormSubmitDetails : handleNextStep}
+                                disabled={isSubmittingBooking || (currentStep === 1 && (!selectedService || !selectedDate || !selectedTimeSlot))}
+                                className="bg-dark-text hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center disabled:opacity-50"
                             >
-                                Weiter <FontAwesomeIcon icon={faChevronRight} className="ml-2 h-4 w-4"/>
+                                {currentStep === (currentUser ? 1 : 2) && !currentUser ? 'Weiter zur Bestätigung' : 'Weiter'}
+                                <FontAwesomeIcon icon={faChevronRight} className="ml-2 h-4 w-4"/>
                             </button>
                         )}
+
                         {currentStep === MAX_STEPS && (
                             <button
                                 onClick={handleFinalBooking}
+                                disabled={isSubmittingBooking}
                                 className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center"
                             >
-                                <FontAwesomeIcon icon={faCheckCircle} className="mr-2 h-4 w-4"/> Jetzt verbindlich buchen
+                                {isSubmittingBooking ? <><FontAwesomeIcon icon={faSpinner} spin className="mr-2 h-4 w-4"/>Wird gebucht...</> : <><FontAwesomeIcon icon={faCheckCircle} className="mr-2 h-4 w-4"/> Jetzt verbindlich buchen</>}
                             </button>
                         )}
                     </div>
@@ -412,4 +467,3 @@ function BookingPage({ isOpen, onClose, serviceName, servicePrice, serviceDurati
 }
 
 export default BookingPage;
-
