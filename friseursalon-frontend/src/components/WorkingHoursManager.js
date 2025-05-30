@@ -1,66 +1,42 @@
-// File: src/components/WorkingHoursManager.js
+// friseursalon-frontend/src/components/WorkingHoursManager.js
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api.service';
+import styles from './WorkingHoursManager.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSave, faSpinner, faExclamationCircle, faCheckCircle, faClock, faCopy, faCalendarWeek } from '@fortawesome/free-solid-svg-icons';
-import './WorkingHoursManager.module.css';
+import { faSave, faTimesCircle, faSpinner, faCheckCircle, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 
-const daysOfWeekMap = [
-    { key: "MONDAY", label: "Montag" },
-    { key: "TUESDAY", label: "Dienstag" },
-    { key: "WEDNESDAY", label: "Mittwoch" },
-    { key: "THURSDAY", label: "Donnerstag" },
-    { key: "FRIDAY", label: "Freitag" },
-    { key: "SATURDAY", label: "Samstag" },
-    { key: "SUNDAY", label: "Sonntag" }
-];
-
-const defaultDayState = () => ({
-    startTime: "09:00",
-    endTime: "18:00",
-    isClosed: false
-});
+const daysOfWeek = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
+const germanDays = {
+    MONDAY: "Montag",
+    TUESDAY: "Dienstag",
+    WEDNESDAY: "Mittwoch",
+    THURSDAY: "Donnerstag",
+    FRIDAY: "Freitag",
+    SATURDAY: "Samstag",
+    SUNDAY: "Sonntag"
+};
 
 function WorkingHoursManager() {
-    const [workingHours, setWorkingHours] = useState(() => {
-        const initialHours = {};
-        daysOfWeekMap.forEach(day => {
-            initialHours[day.key] = { ...defaultDayState(), dayOfWeek: day.key };
-        });
-        return initialHours;
-    });
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [workingHours, setWorkingHours] = useState([]);
+    const [initialWorkingHours, setInitialWorkingHours] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
 
     const fetchWorkingHours = useCallback(async () => {
         setIsLoading(true);
-        setError('');
-        setSuccessMessage('');
+        setError(null);
         try {
-            const response = await api.get('/workinghours');
-            const fetchedHours = {};
-            daysOfWeekMap.forEach(dayMapEntry => {
-                const foundDay = response.data.find(d => d.dayOfWeek === dayMapEntry.key);
-                if (foundDay) {
-                    fetchedHours[dayMapEntry.key] = {
-                        ...foundDay,
-                        startTime: foundDay.startTime || "09:00", // Fallback
-                        endTime: foundDay.endTime || "18:00",   // Fallback
-                    };
-                } else {
-                    fetchedHours[dayMapEntry.key] = { ...defaultDayState(), dayOfWeek: dayMapEntry.key };
-                }
-            });
-            setWorkingHours(fetchedHours);
+            const response = await api.get('/api/workinghours');
+            const data = response.data.sort((a, b) => daysOfWeek.indexOf(a.dayOfWeek) - daysOfWeek.indexOf(b.dayOfWeek));
+            setWorkingHours(data);
+            setInitialWorkingHours(JSON.parse(JSON.stringify(data)));
         } catch (err) {
-            console.error("Fehler beim Laden der Arbeitszeiten:", err);
-            setError(err.response?.data?.message || "Arbeitszeiten konnten nicht geladen werden.");
-            const defaultHours = {};
-            daysOfWeekMap.forEach(day => {
-                defaultHours[day.key] = { ...defaultDayState(), dayOfWeek: day.key };
-            });
-            setWorkingHours(defaultHours);
+            console.error("Error fetching working hours:", err);
+            setError("Arbeitszeiten konnten nicht geladen werden.");
+            setWorkingHours([]);
+            setInitialWorkingHours([]);
         } finally {
             setIsLoading(false);
         }
@@ -70,185 +46,155 @@ function WorkingHoursManager() {
         fetchWorkingHours();
     }, [fetchWorkingHours]);
 
-    const handleTimeChange = (dayKey, field, value) => {
-        setWorkingHours(prev => ({
-            ...prev,
-            [dayKey]: { ...prev[dayKey], [field]: value }
-        }));
-        setError('');
+    const handleInputChange = (index, field, value) => {
+        const updatedHours = [...workingHours];
+        updatedHours[index] = { ...updatedHours[index], [field]: value };
+
+        if (field === 'isClosed' && value === true) {
+            updatedHours[index].startTime = "";
+            updatedHours[index].endTime = "";
+        }
+        setWorkingHours(updatedHours);
+        setIsEditing(true);
         setSuccessMessage('');
     };
 
-    const handleToggleClosed = (dayKey) => {
-        setWorkingHours(prev => ({
-            ...prev,
-            [dayKey]: { ...prev[dayKey], isClosed: !prev[dayKey].isClosed }
-        }));
-        setError('');
-        setSuccessMessage('');
-    };
-
-    const applyMondayTimes = (applyToAllOpen = false) => {
-        const mondayTimes = workingHours["MONDAY"];
-        if (!mondayTimes) return;
-
-        setWorkingHours(prev => {
-            const newHours = { ...prev };
-            const targetDays = applyToAllOpen
-                ? daysOfWeekMap.map(d => d.key) // Alle Tage
-                : ["TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]; // Nur Wochentage (Di-Fr)
-
-            targetDays.forEach(dayKey => {
-                if (dayKey === "MONDAY") return; // Montag nicht sich selbst überschreiben
-
-                // Nur anwenden, wenn der Tag nicht explizit geschlossen ist (außer bei "applyToAllOpen")
-                // oder wenn "applyToAllOpen" aktiv ist, dann auch den isClosed Status übernehmen
-                if (applyToAllOpen) {
-                    newHours[dayKey] = {
-                        ...newHours[dayKey],
-                        startTime: mondayTimes.startTime,
-                        endTime: mondayTimes.endTime,
-                        isClosed: mondayTimes.isClosed // Wichtig: Auch den Schließstatus von Montag übernehmen
-                    };
-                } else if (!newHours[dayKey]?.isClosed) { // Nur für geöffnete Tage, wenn nicht "applyToAllOpen"
-                    newHours[dayKey] = {
-                        ...newHours[dayKey],
-                        startTime: mondayTimes.startTime,
-                        endTime: mondayTimes.endTime,
-                        // isClosed bleibt unberührt, da wir nur Zeiten für geöffnete Tage anpassen
-                    };
-                }
-            });
-            return newHours;
-        });
-        setSuccessMessage("Zeiten von Montag wurden übernommen.");
-        setTimeout(() => setSuccessMessage(''), 3000);
-    };
-
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const handleSaveChanges = async () => {
         setIsLoading(true);
-        setError('');
+        setError(null);
         setSuccessMessage('');
-
-        const payload = Object.values(workingHours).map(day => ({
-            dayOfWeek: day.dayOfWeek,
-            startTime: day.isClosed ? null : day.startTime,
-            endTime: day.isClosed ? null : day.endTime,
-            isClosed: day.isClosed
-        }));
-
         try {
-            await api.put('/workinghours', payload);
-            setSuccessMessage('Arbeitszeiten erfolgreich gespeichert!');
+            await api.put('/api/workinghours/batch', workingHours);
+            setSuccessMessage("Arbeitszeiten erfolgreich gespeichert!");
+            setInitialWorkingHours(JSON.parse(JSON.stringify(workingHours)));
+            setIsEditing(false);
         } catch (err) {
-            console.error("Fehler beim Speichern der Arbeitszeiten:", err);
+            console.error("Error saving working hours:", err);
             setError(err.response?.data?.message || "Fehler beim Speichern der Arbeitszeiten.");
         } finally {
             setIsLoading(false);
-            setTimeout(() => {
-                setSuccessMessage('');
-                setError('');
-            }, 4000);
         }
     };
 
-    if (isLoading && Object.keys(workingHours).every(key => workingHours[key].startTime === "09:00")) {
+    const handleCancelChanges = () => {
+        setWorkingHours(JSON.parse(JSON.stringify(initialWorkingHours)));
+        setIsEditing(false);
+        setError(null);
+        setSuccessMessage('');
+    };
+
+    if (isLoading && workingHours.length === 0) {
         return (
-            <div className="wh-loading-container">
-                <FontAwesomeIcon icon={faSpinner} spin size="2x" />
-                <p>Arbeitszeiten werden geladen...</p>
+            <div className="flex justify-center items-center p-10">
+                <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-indigo-600" />
+                <p className="ml-4 text-lg text-gray-700">Lade Arbeitszeiten...</p>
+            </div>
+        );
+    }
+
+    if (error && workingHours.length === 0) {
+        return (
+            <div className="p-6 bg-red-50 border border-red-200 rounded-md text-red-700">
+                <FontAwesomeIcon icon={faExclamationTriangle} className="mr-2" />
+                {error}
             </div>
         );
     }
 
     return (
-        <div className="working-hours-manager-container">
-            <form onSubmit={handleSubmit}>
-                {error && <p className="wh-message wh-error"><FontAwesomeIcon icon={faExclamationCircle} /> {error}</p>}
-                {successMessage && <p className="wh-message wh-success"><FontAwesomeIcon icon={faCheckCircle} /> {successMessage}</p>}
+        <div className={`p-4 sm:p-6 bg-white rounded-xl shadow-lg ${styles.workingHoursManager}`}>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 border-b pb-3">
+                Öffnungszeiten verwalten
+            </h2>
 
-                <div className="working-hours-grid">
-                    {daysOfWeekMap.map(({ key, label }) => {
-                        const daySetting = workingHours[key] || defaultDayState();
-                        return (
-                            <div key={key} className={`day-settings-card ${daySetting.isClosed ? 'is-closed' : ''}`}>
-                                <div className="day-header">
-                                    <h3 className="day-label">{label}</h3>
-                                    <div className="day-toggle-switch">
-                                        <input
-                                            type="checkbox"
-                                            id={`closed-${key}`}
-                                            checked={daySetting.isClosed}
-                                            onChange={() => handleToggleClosed(key)}
-                                        />
-                                        <label htmlFor={`closed-${key}`} className="slider"></label>
-                                        <span className="toggle-label-text">{daySetting.isClosed ? 'Geschlossen' : 'Geöffnet'}</span>
-                                    </div>
-                                </div>
-                                {!daySetting.isClosed && (
-                                    <div className="time-inputs">
-                                        <div className="form-group-wh">
-                                            <label htmlFor={`startTime-${key}`}> <FontAwesomeIcon icon={faClock} /> Öffnet um</label>
-                                            <input
-                                                type="time"
-                                                id={`startTime-${key}`}
-                                                value={daySetting.startTime}
-                                                onChange={(e) => handleTimeChange(key, 'startTime', e.target.value)}
-                                                className="time-input-wh"
-                                                required={!daySetting.isClosed}
-                                                step="900" // 15-Minuten-Schritte
-                                            />
-                                        </div>
-                                        <div className="form-group-wh">
-                                            <label htmlFor={`endTime-${key}`}> <FontAwesomeIcon icon={faClock} /> Schließt um</label>
-                                            <input
-                                                type="time"
-                                                id={`endTime-${key}`}
-                                                value={daySetting.endTime}
-                                                onChange={(e) => handleTimeChange(key, 'endTime', e.target.value)}
-                                                className="time-input-wh"
-                                                required={!daySetting.isClosed}
-                                                step="900" // 15-Minuten-Schritte
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                                {daySetting.isClosed && (
-                                    <p className="closed-day-text">Ganztägig geschlossen</p>
-                                )}
-                            </div>
-                        );
-                    })}
+            {error && (
+                <div className={`mb-4 p-3 rounded-md bg-red-100 text-red-700 border border-red-300 text-sm flex items-center ${styles.messageContainer}`}>
+                    <FontAwesomeIcon icon={faExclamationTriangle} className="mr-2" /> {error}
                 </div>
+            )}
+            {successMessage && (
+                <div className={`mb-4 p-3 rounded-md bg-green-100 text-green-700 border border-green-300 text-sm flex items-center ${styles.messageContainer}`}>
+                    <FontAwesomeIcon icon={faCheckCircle} className="mr-2" /> {successMessage}
+                </div>
+            )}
 
-                <div className="wh-actions">
-                    <div className="wh-apply-buttons-group">
-                        <button
-                            type="button"
-                            onClick={() => applyMondayTimes(false)}
-                            className="button-link-outline small-button"
-                            title="Zeiten von Montag auf Dienstag bis Freitag (nur geöffnete Tage) anwenden"
-                            disabled={isLoading || workingHours["MONDAY"]?.isClosed}
-                        >
-                            <FontAwesomeIcon icon={faCalendarWeek} /> Mo. auf Wochentage
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => applyMondayTimes(true)}
-                            className="button-link-outline small-button"
-                            title="Zeiten und Schließstatus von Montag auf alle anderen Tage anwenden"
-                            disabled={isLoading}
-                        >
-                            <FontAwesomeIcon icon={faCopy} /> Mo. auf Alle
-                        </button>
+            <div className="space-y-6">
+                {workingHours.map((wh, index) => (
+                    <div key={wh.id || wh.dayOfWeek} className={`p-4 border border-gray-200 rounded-lg shadow-sm bg-gray-50 ${styles.dayConfig} ${wh.isClosed ? styles.dayClosed : ''}`}>
+                        <h3 className="text-lg font-medium text-gray-700 mb-3 capitalize">
+                            {germanDays[wh.dayOfWeek] || wh.dayOfWeek}
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-center">
+                            <div className={styles.formGroup}>
+                                <label htmlFor={`startTime-${wh.dayOfWeek}`} className="block text-sm font-medium text-gray-600 mb-1">
+                                    Öffnet um
+                                </label>
+                                <input
+                                    type="time"
+                                    id={`startTime-${wh.dayOfWeek}`}
+                                    value={wh.startTime || ""}
+                                    onChange={(e) => handleInputChange(index, 'startTime', e.target.value)}
+                                    disabled={wh.isClosed || isLoading}
+                                    className={`w-full p-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${wh.isClosed ? 'bg-gray-200 cursor-not-allowed' : 'border-gray-300 bg-white'}`}
+                                />
+                            </div>
+
+                            <div className={styles.formGroup}>
+                                <label htmlFor={`endTime-${wh.dayOfWeek}`} className="block text-sm font-medium text-gray-600 mb-1">
+                                    Schließt um
+                                </label>
+                                <input
+                                    type="time"
+                                    id={`endTime-${wh.dayOfWeek}`}
+                                    value={wh.endTime || ""}
+                                    onChange={(e) => handleInputChange(index, 'endTime', e.target.value)}
+                                    disabled={wh.isClosed || isLoading}
+                                    className={`w-full p-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${wh.isClosed ? 'bg-gray-200 cursor-not-allowed' : 'border-gray-300 bg-white'}`}
+                                />
+                            </div>
+
+                            <div className={`flex items-center sm:col-span-2 md:col-span-1 md:justify-self-start md:pt-6 ${styles.checkboxGroup}`}>
+                                <input
+                                    type="checkbox"
+                                    id={`isClosed-${wh.dayOfWeek}`}
+                                    checked={wh.isClosed}
+                                    onChange={(e) => handleInputChange(index, 'isClosed', e.target.checked)}
+                                    disabled={isLoading}
+                                    className="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                />
+                                <label htmlFor={`isClosed-${wh.dayOfWeek}`} className="ml-2 text-sm text-gray-700">
+                                    Geschlossen
+                                </label>
+                            </div>
+                        </div>
                     </div>
-                    <button type="submit" className="button-link primary" disabled={isLoading}>
-                        {isLoading ? <><FontAwesomeIcon icon={faSpinner} spin /> Speichern...</> : <><FontAwesomeIcon icon={faSave} /> Arbeitszeiten Speichern</>}
+                ))}
+            </div>
+
+            {isEditing && (
+                <div className="mt-8 pt-6 border-t border-gray-300 flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4">
+                    <button
+                        onClick={handleCancelChanges}
+                        disabled={isLoading}
+                        className={`px-6 py-2.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-150 disabled:opacity-50 ${styles.actionButton} ${styles.cancelButton}`}
+                    >
+                        <FontAwesomeIcon icon={faTimesCircle} className="mr-2" />
+                        Abbrechen
+                    </button>
+                    <button
+                        onClick={handleSaveChanges}
+                        disabled={isLoading}
+                        className={`px-6 py-2.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-150 disabled:opacity-50 ${styles.actionButton} ${styles.saveButton}`}
+                    >
+                        {isLoading ? (
+                            <FontAwesomeIcon icon={faSpinner} spin className="mr-2" />
+                        ) : (
+                            <FontAwesomeIcon icon={faSave} className="mr-2" />
+                        )}
+                        Änderungen speichern
                     </button>
                 </div>
-            </form>
+            )}
         </div>
     );
 }

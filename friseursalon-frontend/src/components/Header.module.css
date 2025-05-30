@@ -1,154 +1,166 @@
-/* src/components/Header.module.css */
-.header {
-    position: fixed; width: 100%; top: 0; left: 0; z-index: 1001;
-    background-color: rgba(255, 255, 255, 0.88);
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    transition: height 0.25s var(--transition-ease), background-color 0.25s var(--transition-ease), box-shadow 0.25s var(--transition-ease);
-    height: var(--header-height-desktop); display: flex; align-items: center;
-    border-bottom: 1px solid transparent;
-}
-.header.scrolled {
-    background-color: rgba(255, 255, 255, 0.97);
-    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
-    border-bottom-color: var(--border-color);
-}
-.header.menu-open-header-state {
-    box-shadow: none;
-    background-color: var(--light-bg);
-    z-index: 1004;
+/* friseursalon-frontend/src/components/Header.module.css */
+
+.siteHeader {
+    /* Die Höhe wird im JS durch h-16 md:h-20 gesetzt */
 }
 
-.navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
+.headerInitial {
+    /* Stile für den Header, wenn er oben auf der Seite ist (transparent) */
+    /* Die Textfarben für diesen Zustand werden im JS dynamisch gesetzt */
 }
+
+.headerScrolled {
+    /* Stile für den Header, wenn gescrollt wurde oder das mobile Menü offen ist */
+    /* Tailwind-Klassen im JS: bg-white/95 shadow-lg backdrop-blur-md */
+    /* --header-height-desktop und --header-height-mobile sind in App.css definiert. */
+    /* height: var(--header-height-desktop); */ /* Feste Höhe, falls gewünscht */
+}
+/* @media (max-width: 767px) {
+  .headerScrolled {
+    height: var(--header-height-mobile);
+  }
+} */
+
 
 .logo {
-    font-family: var(--font-serif), serif;
-    font-size: 1.6rem;
-    font-weight: 600;
-    text-decoration: none;
-    color: var(--dark-text);
-    z-index: 1005;
-}
-/* Fokus-Stil für Logo wird von globaler App.css :focus-visible abgedeckt, falls .logo als Link interpretiert wird */
-
-.nav-links-container {
-    display: flex;
-    align-items: center;
+    /* Tailwind: text-2xl font-bold font-serif transition-colors duration-300 */
+    /* Farbe wird dynamisch im JS gesetzt */
 }
 
-.main-nav-group {
-    display: flex;
-    align-items: center;
-    gap: 0.1rem;
-}
-
-.nav-link-item {
-    text-decoration: none;
-    color: var(--dark-text);
-    font-size: 0.88rem;
-    font-weight: 500;
+/* --- Navigationslinks Desktop --- */
+.navLinkItem {
     position: relative;
-    padding: 0.6rem 0.7rem;
-    margin: 0 0.15rem;
-    white-space: nowrap;
-    transition: color 0.2s var(--transition-ease), background-color 0.2s var(--transition-ease);
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-family: inherit;
-    border-radius: 4px;
-    display: inline-flex;
-    align-items: center;
+    padding-top: 0.5rem; /* Etwas mehr Platz oben */
+    padding-bottom: 0.75rem; /* Mehr Platz unten für die Linie */
+    margin-left: 0.25rem; /* Tailwind: space-x-1 oder space-x-2 im Parent */
+    margin-right: 0.25rem;
 }
-.nav-link-item .svg-inline--fa {
-    margin-right: 0.4rem;
-}
-.nav-link-item:hover {
-    color: var(--dark-text);
-    background-color: var(--light-grey-bg);
-}
-/* Fokus-Stil für .nav-link-item wird von globaler App.css :focus-visible abgedeckt */
 
-
-.nav-auth-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    margin-left: 1.2rem;
+.initialLinkText { /* Für transparente Header-Variante */
+    color: theme('colors.white'); /* Standardmäßig weiß */
 }
-.nav-auth-actions .nav-link-item {
-    padding: 0.6rem 0.7rem;
+.scrolledLinkText { /* Für gescrollte Header-Variante */
+    color: theme('colors.gray.700'); /* Dunkleres Grau */
 }
-.nav-cta {
-    /* Erbt Stile von .button-link aus App.css */
-    padding: 0.5rem 1.1rem !important;
-    font-size: 0.85rem !important;
+.navLinkItem:hover .scrolledLinkText, /* Sicherstellen, dass Hover auch auf gescrolltem Text greift */
+.navLinkItem:hover .initialLinkText {
+    /* Die Hover-Farbe wird durch text-${accentColor} im JS gesetzt */
 }
 
 
-.mobile-menu-toggle {
-    display: none;
-    background: none;
-    border: none;
-    color: var(--dark-text);
-    font-size: 1.5rem;
-    cursor: pointer;
-    z-index: 1005;
-    padding: 0.5rem;
-    line-height: 1;
+/* Unterstrich-Animation für Desktop-Links */
+.navLinkItem::after {
+    content: '';
+    position: absolute;
+    bottom: 4px; /* Position des Unterstrichs anpassen */
+    left: 0.75rem; /* Tailwind: px-3 */
+    right: 0.75rem; /* Tailwind: px-3 */
+    height: 2px;
+    background-color: currentColor; /* Nimmt die Akzentfarbe des Links an (wird im JS gesetzt) */
+    opacity: 0;
+    transform: scaleX(0);
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
 }
-/* Fokus-Stil für .mobile-menu-toggle wird von globaler App.css :focus-visible abgedeckt */
 
-
-@media (max-width: 992px) {
-    .header, .header.scrolled {
-        height: var(--header-height-mobile);
-    }
-    .navbar > .nav-links-container:not(.open) {
-        display: none;
-    }
-
-    .nav-links-container {
-        flex-direction: column;
-        align-items: stretch;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        max-width: 300px;
-        height: 100vh !important;
-        background-color: var(--light-bg);
-        padding: var(--header-height-mobile) 0 2rem;
-        padding-top: calc(var(--header-height-mobile) + 1rem);
-        box-shadow: 2px 0 10px rgba(0,0,0,0.05);
-        overflow-y: auto; transform: translateX(-100%);
-        transition: transform 0.3s var(--transition-ease);
-        z-index: 1003;
-    }
-    .nav-links-container.open { transform: translateX(0%); display: flex !important; }
-
-    .main-nav-group, .nav-auth-actions { width: 100%; display: flex; flex-direction: column; align-items: stretch; }
-    .nav-auth-actions { margin-left: 0; margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid var(--border-color); }
-
-    .nav-links-container .nav-link-item {
-        width: 100%; text-align: left; padding: 0.9rem 1.5rem;
-        font-size: 1.05rem; border-bottom: 1px solid var(--border-color);
-        margin: 0; border-radius: 0;
-    }
-    .nav-links-container .main-nav-group > .nav-link-item:last-child,
-    .nav-links-container .nav-auth-actions > .nav-link-item:last-child { border-bottom: none; }
-    .nav-links-container .nav-link-item:hover,
-    .nav-links-container .nav-link-item:focus-visible {
-        background-color: var(--light-grey-bg);
-    }
-
-    .nav-links-container .nav-cta {
-        display: block; margin: 1.2rem 1.5rem 0;
-        width: auto; text-align: center; padding: 0.9rem 1.5rem !important;
-    }
-    .mobile-menu-toggle { display: flex; align-items: center; justify-content: center; }
+.navLinkItem:hover::after,
+.activeNavLink::after { /* .activeNavLink wird im JS für den aktiven Link gesetzt */
+    opacity: 1;
+    transform: scaleX(1);
 }
+.activeNavLink {
+    /* Die Textfarbe wird im JS durch text-${accentColor} gesetzt */
+}
+
+
+/* --- User Menu Desktop --- */
+.userMenuButton {
+    /* Tailwind: flex items-center text-sm rounded-full ... */
+}
+.userMenuButton svg { /* Icon Farbe */
+    /* Farbe wird dynamisch im JS gesetzt */
+}
+
+.dropdownMenu {
+    z-index: 60;
+    /* Tailwind: absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 origin-top-right ring-1 ring-black ring-opacity-5 */
+    /* Tailwind Animation: opacity-0 invisible group-hover:opacity-100 group-hover:visible ... transform scale-95 group-hover:scale-100 */
+}
+.dropdownItem {
+    /* Tailwind: block px-4 py-2 text-sm ... */
+}
+.dropdownItem svg {
+    opacity: 0.7;
+}
+.dropdownItem:hover svg {
+    opacity: 1;
+}
+
+
+/* --- Auth Link & CTA Desktop --- */
+.initialAuthLink { /* Für transparente Header-Variante */
+    /* Tailwind: border border-white/80 text-white hover:bg-white/10 */
+}
+.scrolledAuthLink { /* Für gescrollte Header-Variante */
+    /* Tailwind: border border-gray-300 text-gray-700 hover:bg-gray-50 */
+}
+
+.initialCta { /* Für transparente Header-Variante */
+    /* Tailwind: text-dark-text bg-white hover:bg-gray-100 */
+}
+.scrolledCta { /* Für gescrollte Header-Variante */
+    /* Tailwind: text-white bg-${accentColor} hover:bg-indigo-700 */
+}
+
+
+/* --- Mobile Menu --- */
+.mobileMenuToggle {
+    /* Farben werden dynamisch im JS gesetzt */
+}
+.mobileMenuToggleInitial svg {
+    /* color: theme('colors.white'); */ /* Falls spezifische Farbe für Icon im initialen Zustand */
+}
+.mobileMenuToggleScrolled svg {
+    /* color: theme('colors.gray.800'); */ /* Falls spezifische Farbe für Icon im gescrollten Zustand */
+}
+
+.mobileMenu {
+    background-color: white; /* Heller Hintergrund für das mobile Menü */
+    max-height: 0;
+    overflow-y: auto; /* Scrollbar, falls Inhalt länger ist */
+    opacity: 0;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1); /* Deutlicherer Schatten */
+    transform: translateY(-20px); /* Startet etwas weiter oben */
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease-in-out,
+    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    padding-bottom: env(safe-area-inset-bottom, 1rem); /* Für iPhone X Notch etc. */
+}
+
+.mobileMenuOpen {
+    max-height: calc(100vh - theme('spacing.16')); /* Höhe des Headers abziehen (h-16) */
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.mobileNavLinkItem {
+    /* Tailwind: block px-3 py-2 rounded-md text-base font-medium ... */
+    /* Farben werden im JS gesetzt */
+}
+.mobileNavLinkItem svg { /* Icons im mobilen Menü */
+    opacity: 0.8;
+}
+
+.mobileNavCta {
+    /* Tailwind: block w-full text-center px-4 py-3 ... */
+}
+
+
+/* Globale Klasse für Body, wenn mobiles Menü offen ist */
+:global(body.mobileMenuActive) {
+    overflow: hidden;
+}
+

@@ -1,81 +1,71 @@
-.login-container {
-    margin: 50px auto;
-    padding: 30px;
-    background-color: #f7f9fc; /* Sehr helles Blau/Grau */
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    font-family: Arial, sans-serif;
-    max-width: 400px;
-    text-align: center;
+/* friseursalon-frontend/src/components/Login.module.css */
+
+/*
+  Die meisten Layout- und Formular-Stile werden durch Tailwind CSS
+  direkt in der JS-Datei gehandhabt.
+  Dieses Modul enthält spezifische Stile für die Login-Seite,
+  falls diese über Standard-Tailwind-Utilities hinausgehen.
+*/
+
+.loginPageContainer {
+    /*
+      Tailwind-Klassen im JS:
+      flex items-center justify-center min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8
+    */
+    /* Hier könnte z.B. ein Hintergrundbild oder -muster für die gesamte Seite hin. */
 }
 
-.login-container h2 {
-    color: #333;
-    margin-bottom: 25px;
-    font-size: 2em;
-    border-bottom: 2px solid #007bff; /* Akzentlinie in Blau */
-    padding-bottom: 10px;
-    display: inline-block;
+.authContainer {
+    /*
+      Tailwind-Klassen im JS:
+      w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-2xl animate-up
+    */
+    /* Spezifische Stile für den Haupt-Login-Container, falls benötigt. */
 }
 
-.login-form .form-group {
-    margin-bottom: 20px;
-    text-align: left;
+.formGroup {
+    /* Dient als semantischer Haken. Das meiste Styling kommt von Tailwind auf den Inputs/Labels. */
+    margin-bottom: 1.25rem; /* Tailwind: mb-5 */
 }
 
-.login-form label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: bold;
-    color: #555;
+.formInput {
+    /*
+      Tailwind-Klassen im JS:
+      mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm
+      placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm
+      Fehlerfall (border-red-500) wird dynamisch im JS gesetzt.
+    */
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
-.login-form input[type="text"],
-.login-form input[type="password"] {
-    width: calc(100% - 24px); /* Anpassen für Padding und Border */
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 1em;
-    box-sizing: border-box;
-    transition: border-color 0.2s ease;
+.authButton {
+    /*
+      Tailwind-Klassen im JS:
+      group relative w-full flex justify-center py-3 px-4 border border-transparent
+      text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700
+      focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50
+    */
 }
 
-.login-form input[type="text"]:focus,
-.login-form input[type="password"]:focus {
-    border-color: #007bff;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+.authButton .svg-inline--fa:not(.fa-spinner) { /* Für das Icon neben dem Text, nicht den Spinner */
+    /* Tailwind-Klassen im JS: mr-2 h-5 w-5 text-indigo-500 group-hover:text-indigo-400 */
+    /* Die Farbe des Icons wird hier über Tailwind gesteuert, daher keine spezifische CSS-Regel nötig,
+       es sei denn, es gibt komplexere Anforderungen. */
 }
 
-.login-button {
-    background-color: #007bff; /* Blauer Button */
-    color: white;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1.1em;
-    font-weight: bold;
-    transition: background-color 0.3s ease;
-    width: 100%;
+
+.formMessage {
+    /*
+      Tailwind-Klassen im JS:
+      mt-4 p-3 rounded-md text-sm flex items-center
+      Spezifische Farben für error/success werden im JS gesetzt (z.B. bg-red-50 text-red-700 border-red-200).
+    */
 }
 
-.login-button:hover:not(:disabled) {
-    background-color: #0056b3;
+.formMessage.error {
+    /* Dient als semantischer Haken, falls spezifische Modul-Stile für Fehlermeldungen benötigt werden. */
 }
 
-.login-button:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-}
 
-.login-message {
-    margin-top: 20px;
-    padding: 10px;
-    border-radius: 5px;
-    font-weight: bold;
-    color: #dc3545; /* Rot für Fehlermeldungen */
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
-}
+/* Die .animate-up Klasse und die Logik mit .visible für die Animation
+   wird als global betrachtet und sollte in App.css oder index.css verbleiben. */

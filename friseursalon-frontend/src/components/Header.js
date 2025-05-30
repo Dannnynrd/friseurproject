@@ -1,65 +1,214 @@
-// Datei: friseursalon-frontend/src/components/Header.js
-import React from 'react';
-import { Link } from 'react-router-dom';
+// friseursalon-frontend/src/components/Header.js
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+import styles from './Header.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUserCircle, faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
-import './Header.module.css';
+import { faBars, faTimes, faUserCircle, faSignOutAlt, faTachometerAlt, faCalendarCheck } from '@fortawesome/free-solid-svg-icons';
+import AuthService from '../services/auth.service';
+import EventBus from '../common/EventBus';
 
-// Die Funktion `navigateToBooking` wird als Prop von App.js erwartet
-function Header({ currentUser, isMobileMenuOpen, toggleMobileMenu, closeMobileMenu, isHeaderScrolled, headerRef, navigateToBooking }) {
+function Header() {
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
+    const [currentUser, setCurrentUser] = useState(undefined);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const headerRef = useRef(null);
+    const location = useLocation();
 
-    // Handler für den Klick auf "Termin buchen"
-    const handleBookAppointmentClick = () => {
-        if (typeof navigateToBooking === 'function') {
-            navigateToBooking(); // Ruft die übergebene Funktion aus App.js auf, die die Navigation durchführt
-        } else {
-            console.error("Header: navigateToBooking ist keine Funktion oder wurde nicht übergeben.");
+    // Definiere eine primäre Akzentfarbe (z.B. ein sanftes Indigo oder eine andere Markenfarbe)
+    // Diese kann auch aus Tailwind-Konfiguration kommen, wenn dort definiert.
+    const accentColor = "indigo-600"; // Beispiel: Tailwind Farbklasse
+    const accentColorHex = "#4f46e5"; // Hex für CSS-Modul, falls nötig
+
+    useEffect(() => {
+        const user = AuthService.getCurrentUser();
+        if (user) {
+            setCurrentUser(user);
+            setIsAdmin(user.roles && user.roles.includes("ROLE_ADMIN"));
         }
-        // closeMobileMenu(); // Wird jetzt zentral in navigateToBooking in App.js gehandhabt
+        EventBus.on("logout", logOut);
+        return () => EventBus.remove("logout");
+    }, []);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 20); // Schwelle etwas niedriger für früheren Effekt
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    useEffect(() => {
+        setIsMobileMenuOpen(false);
+        document.body.classList.remove(styles.mobileMenuActive);
+    }, [location]);
+
+    const logOut = () => {
+        AuthService.logout();
+        setCurrentUser(undefined);
+        setIsAdmin(false);
+        setIsMobileMenuOpen(false);
+        document.body.classList.remove(styles.mobileMenuActive);
     };
+
+    const toggleMobileMenu = () => {
+        const open = !isMobileMenuOpen;
+        setIsMobileMenuOpen(open);
+        if (open) {
+            document.body.classList.add(styles.mobileMenuActive);
+        } else {
+            document.body.classList.remove(styles.mobileMenuActive);
+        }
+    };
+
+    // --- Klassen für Navigationslinks ---
+    // Normale Links (Desktop und Mobile)
+    const baseLinkStyle = "px-3 py-2 rounded-md text-sm font-medium transition-colors duration-150";
+    const scrolledLinkTextColor = styles.scrolledLinkText; // Dunkler Text auf hellem Grund
+    const initialLinkTextColor = styles.initialLinkText; // Heller Text auf transparentem/dunklem Grund (Hero)
+
+    // Desktop Navigationslinks
+    const navLinkClasses = ({ isActive }) => {
+        const textColor = isScrolled ? scrolledLinkTextColor : initialLinkTextColor;
+        return `${baseLinkStyle} ${styles.navLinkItem} ${textColor} ` +
+            (isActive
+                ? `text-${accentColor} ${styles.activeNavLink}` // Akzentfarbe für Text, keine Hintergrundfarbe
+                : `hover:text-${accentColor} ${styles.inactiveNavLink}`);
+    };
+
+    // Mobile Navigationslinks
+    const mobileNavLinkClasses = ({ isActive }) => {
+        return `${baseLinkStyle} block text-base ${styles.mobileNavLinkItem} ` + // `block` und `text-base` für mobile Ansicht
+            (isActive
+                ? `text-${accentColor} bg-indigo-100 ${styles.activeMobileNavLink}` // Leichter Hintergrund für aktiven mobilen Link
+                : `text-gray-700 hover:text-${accentColor} hover:bg-gray-100 ${styles.inactiveMobileNavLink}`);
+    };
+
+    // Auth Link (Login/Register)
+    const authLinkBaseStyle = "text-sm font-medium px-4 py-2 rounded-md transition-colors duration-150";
+    const authLinkInitialStyle = `${authLinkBaseStyle} ${styles.initialAuthLink} border border-white/80 text-white hover:bg-white/10`;
+    const authLinkScrolledStyle = `${authLinkBaseStyle} ${styles.scrolledAuthLink} border border-gray-300 text-gray-700 hover:bg-gray-50`;
+
+    // CTA Button ("Termin buchen")
+    const ctaBaseStyle = "ml-3 inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2";
+    const ctaInitialStyle = `${ctaBaseStyle} ${styles.initialCta} text-dark-text bg-white hover:bg-gray-100 focus:ring-${accentColor}`;
+    const ctaScrolledStyle = `${ctaBaseStyle} ${styles.scrolledCta} text-white bg-${accentColor} hover:bg-indigo-700 focus:ring-${accentColor}`;
+
 
     return (
         <header
-            className={`header ${isHeaderScrolled ? 'scrolled' : ''} ${isMobileMenuOpen ? 'menu-open-header-state' : ''}`}
-            id="header"
             ref={headerRef}
+            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out 
+                        ${isScrolled || isMobileMenuOpen ? `bg-white/95 shadow-lg backdrop-blur-md ${styles.headerScrolled}` : `bg-transparent ${styles.headerInitial}`} 
+                        ${styles.siteHeader}`}
         >
-            <div className="container navbar">
-                <Link to="/" className="logo" onClick={closeMobileMenu}>IMW</Link>
-
-                <button
-                    className="mobile-menu-toggle"
-                    onClick={toggleMobileMenu}
-                    aria-label={isMobileMenuOpen ? "Menü schließen" : "Menü öffnen"}
-                    aria-expanded={isMobileMenuOpen}
-                    aria-controls="main-nav"
-                >
-                    <FontAwesomeIcon icon={isMobileMenuOpen ? faTimes : faBars} />
-                </button>
-
-                <nav className={`nav-links-container ${isMobileMenuOpen ? 'open' : ''}`} id="main-nav">
-                    <div className="main-nav-group">
-                        <a href="/#experience" className="nav-link-item" onClick={closeMobileMenu}>Erfahrung</a>
-                        <a href="/#about-founder" className="nav-link-item" onClick={closeMobileMenu}>Über Mich</a>
-                        <a href="/#services-dynamic" className="nav-link-item" onClick={closeMobileMenu}>Services</a>
-                        <a href="/#gallery-journal" className="nav-link-item" onClick={closeMobileMenu}>Galerie</a>
-                        <a href="/#faq" className="nav-link-item" onClick={closeMobileMenu}>FAQ</a>
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between h-16 md:h-20">
+                    {/* Logo */}
+                    <div className="flex-shrink-0">
+                        <Link to="/" className={`text-2xl font-bold font-serif transition-colors duration-300 ${isScrolled || isMobileMenuOpen ? 'text-dark-text' : 'text-white'} ${styles.logo}`}>
+                            IMW
+                        </Link>
                     </div>
 
-                    <div className="nav-auth-actions">
+                    {/* Desktop Navigation */}
+                    <nav className="hidden md:flex items-center space-x-1 lg:space-x-2"> {/* Reduzierter Space */}
+                        <NavLink to="/" className={navLinkClasses} end>Start</NavLink>
+                        <NavLink to="/#services-dynamic" className={navLinkClasses}>Dienstleistungen</NavLink>
+                        <NavLink to="/#gallery-journal" className={navLinkClasses}>Galerie</NavLink>
+                        {/* Weitere Links hier */}
+                    </nav>
+
+                    {/* Desktop Auth Links / User Menu & CTA */}
+                    <div className="hidden md:flex items-center">
                         {currentUser ? (
-                            <Link to="/my-account" className="nav-link-item account-link" onClick={closeMobileMenu}>
-                                <FontAwesomeIcon icon={faUserCircle} /> Mein Account
-                            </Link>
+                            <div className="relative group">
+                                <button className={`flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-${accentColor} ${styles.userMenuButton}`}>
+                                    <FontAwesomeIcon icon={faUserCircle} className={`h-8 w-8 transition-colors duration-300 ${isScrolled || isMobileMenuOpen ? 'text-dark-text' : 'text-white'}`} />
+                                </button>
+                                <div className={`absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 origin-top-right ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible focus:outline-none transition-all duration-200 ease-in-out transform scale-95 group-hover:scale-100 ${styles.dropdownMenu}`} role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button">
+                                    <div className="px-4 py-3">
+                                        <p className="text-sm text-gray-900">Angemeldet als</p>
+                                        <p className="text-sm font-medium text-gray-900 truncate">{currentUser.username}</p>
+                                    </div>
+                                    <div className="border-t border-gray-100"></div>
+                                    <NavLink to="/account" className={({isActive}) => `block px-4 py-2 text-sm ${isActive ? `bg-gray-100 text-${accentColor}` : 'text-gray-700'} hover:bg-gray-100 hover:text-${accentColor} ${styles.dropdownItem}`} role="menuitem">Mein Konto</NavLink>
+                                    {isAdmin && <NavLink to="/admin/dashboard" className={({isActive}) => `block px-4 py-2 text-sm ${isActive ? `bg-gray-100 text-${accentColor}` : 'text-gray-700'} hover:bg-gray-100 hover:text-${accentColor} ${styles.dropdownItem}`} role="menuitem">Admin Dashboard</NavLink>}
+                                    <div className="border-t border-gray-100"></div>
+                                    <button onClick={logOut} className={`block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-${accentColor} ${styles.dropdownItem}`} role="menuitem">
+                                        <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" /> Ausloggen
+                                    </button>
+                                </div>
+                            </div>
                         ) : (
-                            <Link to="/login" className="nav-link-item login-link" onClick={closeMobileMenu}>Login</Link>
+                            <NavLink to="/login" className={isScrolled || isMobileMenuOpen ? authLinkScrolledStyle : authLinkInitialStyle}>
+                                Login
+                            </NavLink>
                         )}
-                        {/* Der "Termin buchen"-Button ruft jetzt den Handler auf */}
-                        <button onClick={handleBookAppointmentClick} className="button-link nav-cta">
-                            Termin buchen
+                        <NavLink
+                            to="/booking"
+                            className={isScrolled || isMobileMenuOpen ? ctaScrolledStyle : ctaInitialStyle}
+                        >
+                            <FontAwesomeIcon icon={faCalendarCheck} className="mr-2 h-4 w-4" /> Termin buchen
+                        </NavLink>
+                    </div>
+
+                    {/* Mobile Menu Button */}
+                    <div className="md:hidden flex items-center">
+                        <button
+                            onClick={toggleMobileMenu}
+                            aria-controls="mobile-menu"
+                            aria-expanded={isMobileMenuOpen}
+                            className={`inline-flex items-center justify-center p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-inset transition-colors duration-300 ${isScrolled || isMobileMenuOpen ? `text-dark-text hover:bg-gray-100 focus:ring-gray-500 ${styles.mobileMenuToggleScrolled}` : `text-white hover:bg-white/20 focus:ring-white ${styles.mobileMenuToggleInitial}`}`}
+                        >
+                            <span className="sr-only">Hauptmenü öffnen</span>
+                            <FontAwesomeIcon icon={isMobileMenuOpen ? faTimes : faBars} className="h-6 w-6" />
                         </button>
                     </div>
-                </nav>
+                </div>
+            </div>
+
+            {/* Mobile Menu */}
+            <div className={`${isMobileMenuOpen ? `block ${styles.mobileMenuOpen}` : 'hidden'} md:hidden ${styles.mobileMenu}`} id="mobile-menu">
+                <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                    <NavLink to="/" className={mobileNavLinkClasses} end onClick={toggleMobileMenu}>Start</NavLink>
+                    <NavLink to="/#services-dynamic" className={mobileNavLinkClasses} onClick={toggleMobileMenu}>Dienstleistungen</NavLink>
+                    <NavLink to="/#gallery-journal" className={mobileNavLinkClasses} onClick={toggleMobileMenu}>Galerie</NavLink>
+                    {/* Weitere Links hier */}
+                </div>
+                <div className="pt-4 pb-3 border-t border-gray-200"> {/* Hellere Trennlinie */}
+                    {currentUser ? (
+                        <>
+                            <div className="flex items-center px-5">
+                                <FontAwesomeIcon icon={faUserCircle} className="h-10 w-10 text-gray-700" />
+                                <div className="ml-3">
+                                    <div className="text-base font-medium text-gray-800">{currentUser.username}</div>
+                                    <div className="text-sm font-medium text-gray-500">{currentUser.email}</div>
+                                </div>
+                            </div>
+                            <div className="mt-3 px-2 space-y-1">
+                                <NavLink to="/account" className={mobileNavLinkClasses} onClick={toggleMobileMenu}><FontAwesomeIcon icon={faUserCircle} className="mr-2" /> Mein Konto</NavLink>
+                                {isAdmin && <NavLink to="/admin/dashboard" className={mobileNavLinkClasses} onClick={toggleMobileMenu}><FontAwesomeIcon icon={faTachometerAlt} className="mr-2" /> Admin Dashboard</NavLink>}
+                                <button onClick={() => { logOut(); toggleMobileMenu(); }} className={`w-full text-left block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-${accentColor} hover:bg-gray-100 ${styles.mobileNavLinkItem}`}>
+                                    <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" /> Ausloggen
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="px-2 space-y-1">
+                            <NavLink to="/login" className={mobileNavLinkClasses} onClick={toggleMobileMenu}>Login</NavLink>
+                        </div>
+                    )}
+                    <div className="mt-4 px-4"> {/* Mehr Padding für den Button */}
+                        <NavLink
+                            to="/booking"
+                            onClick={toggleMobileMenu}
+                            className={`block w-full text-center px-4 py-3 rounded-md shadow-sm text-base font-medium text-white bg-${accentColor} hover:bg-indigo-700 ${styles.mobileNavCta}`}
+                        >
+                            <FontAwesomeIcon icon={faCalendarCheck} className="mr-2" /> Termin buchen
+                        </NavLink>
+                    </div>
+                </div>
             </div>
         </header>
     );

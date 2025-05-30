@@ -12,7 +12,7 @@
        Layering-Techniken erfordert, die über einfache Tailwind-Klassen hinausgehen.
        Die min-height wird jetzt über Tailwind-Klassen im JS gesetzt.
     */
-    background: url('https://t3.ftcdn.net/jpg/02/18/33/70/360_F_218337017_QPrVHv5dTtoR8kI1k8SZd0gQT3MjkQd0.jpg') no-repeat center center;
+    background: url('https://images.pexels.com/photos/3065171/pexels-photo-3065171.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2') no-repeat center center;
     background-size: cover;
     /* Der Textschatten wird hier belassen, da er spezifisch für den Kontrast zum Hintergrund ist. */
     text-shadow: 0 1px 2px rgba(0,0,0,0.1);

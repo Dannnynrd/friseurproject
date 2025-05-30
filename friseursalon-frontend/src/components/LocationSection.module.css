@@ -1,108 +1,43 @@
-/* src/components/LocationSection.module.css */
-#location {
-    background-color: var(--light-grey-bg);
-}
-#location .section-header { /* Behalte dies, falls du es woanders verwendest */
-    text-align: center; max-width: 600px; margin: 0 auto 2.5rem auto;
-}
-#location .section-header h2 { font-family: var(--font-serif), serif; font-size: 2.2rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--dark-text); }
-#location .section-header .subtitle { color: var(--medium-grey-text); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; font-size: 0.7rem; margin-bottom: 0.3rem; }
-@media (max-width: 768px) { #location .section-header h2 { font-size: 1.8rem; } }
+/* friseursalon-frontend/src/components/LocationSection.module.css */
 
-.location-container {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2.5rem;
-    align-items: flex-start; /* Geändert von center zu flex-start */
-}
-@media (min-width: 992px) {
-    .location-container {
-        grid-template-columns: minmax(auto, 400px) 1fr; /* Adress-Info bekommt max. 400px, Karte den Rest */
-    }
-}
-.address-info h3 {
-    font-family: var(--font-serif), serif;
-    font-size: 1.6rem;
-    margin-bottom: 1rem;
-    color: var(--dark-text);
-}
-.address-info p {
-    font-size: 0.9rem;
-    color: var(--dark-text); /* Geändert von medium-grey-text für bessere Lesbarkeit */
-    margin-bottom: 1rem;
-    line-height: 1.7;
-}
-.address-info p.location-address { /* Spezifischer für die Adresse */
-    margin-bottom: 1.5rem;
+/*
+  Die meisten Basis-Layouts (Grid, Container, Padding, Section Header, Typografie)
+  werden durch Tailwind-Klassen im JS gehandhabt.
+  Dieses Modul enthält spezifische Stile für die Location-Sektion,
+  falls diese über Standard-Tailwind-Utilities hinausgehen.
+*/
+
+.mapContainer {
+    /*
+      Tailwind-Klassen im JS: animate-up
+      Der Iframe selbst wird mit Tailwind-Klassen für Rundung und Schatten gestylt.
+    */
+    /* min-height: 300px; Falls eine Mindesthöhe für den Kartencontainer benötigt wird */
 }
 
-.address-info h4 { /* Für "Öffnungszeiten:" Überschrift */
-    font-family: var(--font-sans), sans-serif;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--dark-text);
-    margin-top: 1.5rem;
-    margin-bottom: 0.75rem;
+.contactInfoContainer {
+    /*
+      Tailwind-Klassen im JS: animate-up md:pt-4
+    */
 }
 
-.opening-hours-list {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 1.5rem 0;
-    font-size: 0.9rem;
+.contactInfoContainer address p,
+.contactInfoContainer address div > span { /* Für mehrzeilige Öffnungszeiten etc. */
+    /*
+      Tailwind-Klassen im JS: text-medium-grey-text (oder text-dark-text für strong)
+      Flexbox für Icon und Text wird im JS verwendet.
+    */
 }
-.opening-hours-list li {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.3rem 0;
-    color: var(--medium-grey-text);
-    border-bottom: 1px dotted var(--border-color);
-}
-.opening-hours-list li:last-child {
-    border-bottom: none;
-}
-.opening-hours-list .day-name {
-    font-weight: 500;
-    color: var(--dark-text);
-    margin-right: 1em;
-}
-.opening-hours-list .time-range.closed {
-    color: var(--light-grey-text);
-    font-style: italic;
+
+.contactIcon {
+    /*
+      Tailwind-Klassen im JS: w-5 h-5 mt-1 mr-4 text-indigo-600
+      Diese Klasse dient als Haken, falls spezifische Anpassungen am Icon nötig sind,
+      die über Tailwind hinausgehen.
+    */
 }
 
 
-.address-info .button-link { /* Nutzt globale Stile */
-    margin-top: 1rem; /* Stellt sicher, dass der Button etwas Abstand hat */
-}
-.address-info a.interactive:not(.button-link) { /* Für normale Links in der Adresse */
-    color: var(--dark-text);
-    text-decoration: underline;
-    background: none !important;
-    border: none !important;
-    padding: 0 !important;
-    display: inline;
-}
-.address-info a.interactive:not(.button-link):hover {
-    color: var(--medium-grey-text);
-}
-.address-info a.interactive:not(.button-link):focus-visible {
-    outline: 2px solid var(--focus-ring-subtle-color);
-    outline-offset: 1px;
-    background-color: var(--light-grey-bg) !important;
-    border-radius: 3px;
-    box-shadow: none !important;
-}
+/* Die .animate-up Klasse und die Logik mit .visible für die Animation
+   wird als global betrachtet und sollte in App.css oder index.css verbleiben. */
 
-
-#map {
-    height: 380px; /* Etwas höher gemacht */
-    min-height: 300px;
-    border-radius: 6px;
-    background-color: #e0e0e0;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-}
-#map > div {
-    border-radius: 6px !important;
-}

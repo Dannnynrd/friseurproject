@@ -7,21 +7,10 @@
   zur besseren Lesbarkeit ausgelagert werden.
 */
 
-/*
-  Die Klasse .section-header und ihre Kindelemente werden jetzt mit
-  Tailwind-Utility-Klassen direkt im JSX gestylt.
-  Beispiel für .section-header: text-center max-w-xl mx-auto mb-10 md:mb-16
-  Beispiel für .section-header h2: font-serif text-3xl md:text-4xl font-medium text-dark-text mb-2
-  Beispiel für .section-header .subtitle: text-xs font-semibold text-medium-grey-text uppercase tracking-wider mb-1
-  Beispiel für .section-header p: text-base text-dark-text
-  Diese müssen in der JS-Datei entsprechend mit Tailwind-Klassen versehen werden.
-  Die globalen Klassen in App.css wurden bereits reduziert.
-*/
-
 .experienceGrid {
     /*
       Tailwind-Klassen im JS:
-      grid md:grid-cols-3 gap-8
+      grid md:grid-cols-3 gap-8 lg:gap-10
       Diese decken das responsive Grid-Layout ab.
     */
 }
@@ -29,45 +18,65 @@
 .experienceStep {
     /*
       Tailwind-Klassen im JS:
-      text-center p-6 bg-light-bg border border-border-color rounded-md shadow-sm hover:shadow-lg transition-shadow duration-300
-      Diese decken das Basis-Styling der Karten ab.
-      Spezifische Hover-Effekte oder komplexe Hintergrund-Layer könnten hierhin.
+      text-center p-6 md:p-8 bg-light-bg border border-gray-200 rounded-xl
+      shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out
+      animate-up hover:-translate-y-2
+      Diese decken das Basis-Styling der Karten und den Hover-Effekt ab.
+      Die border-color wurde zu gray-200 und rounded zu -xl für einen moderneren Look geändert.
+      Der Schatten wurde intensiviert (shadow-lg, hover:shadow-2xl) und der Hover-Effekt (-translate-y-2) verstärkt.
     */
-    /* Beispiel für einen zusätzlichen Effekt, der nicht einfach mit Tailwind geht: */
+    /* Falls ein spezifischer innerer Rahmen oder Effekt gewünscht ist: */
     /*
-    transition: transform 0.3s var(--transition-ease), box-shadow 0.3s var(--transition-ease);
+    position: relative;
+    overflow: hidden;
     */
 }
 
-/* .experienceStep:hover { */
-/* transform: translateY(-5px); */ /* Bereits durch Tailwind 'hover:shadow-lg' und 'transition-shadow' abgedeckt,
-                                        aber 'transform' könnte hier explizit hinzugefügt werden, wenn gewünscht. */
-/* box-shadow: 0 6px 15px rgba(0,0,0,0.1); */
-/* } */
+/* Beispiel für einen subtilen inneren Glanz-Effekt (optional)
+.experienceStep::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
+  transform: rotate(45deg);
+  transition: opacity 0.5s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.experienceStep:hover::before {
+  opacity: 1;
+}
+*/
 
 .stepNumber {
     /*
       Tailwind-Klassen im JS:
-      block text-sm font-semibold text-medium-grey-text mb-3
+      block text-2xl font-bold text-indigo-500 mb-4
+      (Größer, fetter und andere Akzentfarbe für mehr Hervorhebung)
+    */
+    line-height: 1; /* Stellt sicher, dass die Nummer nicht zu viel vertikalen Platz einnimmt */
+}
+
+.stepTitle {
+    /*
+      Tailwind-Klassen im JS:
+      font-serif text-xl md:text-2xl font-semibold text-dark-text mb-3
     */
 }
 
-.stepTitle { /* ehemals .experience-step h3 */
+.stepDescription {
     /*
       Tailwind-Klassen im JS:
-      font-serif text-xl font-medium text-dark-text mb-2
+      text-sm md:text-base text-medium-grey-text leading-relaxed
     */
-}
-
-.stepDescription { /* ehemals .experience-step p */
-    /*
-      Tailwind-Klassen im JS:
-      text-sm text-medium-grey-text leading-relaxed
-    */
+    min-height: 4.5em; /* Hilft, die Kartenhöhe etwas konsistenter zu halten */
 }
 
 /*
   Die .animate-up Klasse und die Logik mit .visible für die Animation
   wird als global betrachtet und sollte in App.css oder index.css verbleiben.
-  Die inline-styles für transition-delay bleiben im JS, da sie dynamisch sind.
 */
