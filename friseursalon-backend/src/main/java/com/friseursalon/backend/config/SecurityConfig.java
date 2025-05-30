@@ -85,8 +85,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/blockedtimeslots/**").hasRole("ADMIN")
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/appointments").permitAll()
-                        // NEUER EINTRAG FÜR STATISTIKEN
                         .requestMatchers("/api/statistics/**").hasRole("ADMIN")
+                        // NEUE REGELN für Benutzerprofil und Passwortänderung
+                        .requestMatchers(HttpMethod.PUT, "/api/users/profile").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/users/change-password").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/users/**").hasRole("ADMIN") // Admin kann andere User-Daten abrufen
+                        .requestMatchers(HttpMethod.PUT, "/api/users/**").hasRole("ADMIN") // Admin kann andere User-Daten ändern
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN") // Admin kann andere User löschen
                         .anyRequest().authenticated()
                 );
 

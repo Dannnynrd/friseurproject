@@ -1,11 +1,9 @@
-// File: friseursalon-frontend/src/components/ProfileEditForm.js
+// src/components/ProfileEditForm.js
 import React, { useState, useEffect } from 'react';
-import AuthService from '../services/auth.service'; // We'll add methods here
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSave, faTimes, faSpinner, faExclamationCircle, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
-import './ProfileEditForm.css';
+import AuthService from '../services/auth.service';
+import './ProfileEditForm.css'; // Stelle sicher, dass die CSS-Datei existiert oder erstelle sie
 
-function ProfileEditForm({ currentUser, onSaveSuccess, onCancel }) {
+const ProfileEditForm = ({ currentUser, onProfileUpdateSuccess, onProfileUpdateError }) => {
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -16,13 +14,10 @@ function ProfileEditForm({ currentUser, onSaveSuccess, onCancel }) {
         newPassword: '',
         confirmNewPassword: '',
     });
-
-    const [infoMessage, setInfoMessage] = useState('');
-    const [infoError, setInfoError] = useState('');
+    const [message, setMessage] = useState('');
     const [passwordMessage, setPasswordMessage] = useState('');
-    const [passwordError, setPasswordError] = useState('');
-    const [isSubmittingInfo, setIsSubmittingInfo] = useState(false);
-    const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [passwordLoading, setPasswordLoading] = useState(false);
 
     useEffect(() => {
         if (currentUser) {
@@ -34,144 +29,203 @@ function ProfileEditForm({ currentUser, onSaveSuccess, onCancel }) {
         }
     }, [currentUser]);
 
-    const handleInfoChange = (e) => {
+    const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData({ ...formData, [name]: value });
     };
 
     const handlePasswordChange = (e) => {
         const { name, value } = e.target;
-        setPasswordData(prev => ({ ...prev, [name]: value }));
+        setPasswordData({ ...passwordData, [name]: value });
     };
 
-    const handleInfoSubmit = async (e) => {
+    const handleSubmitProfile = async (e) => {
         e.preventDefault();
-        setInfoError('');
-        setInfoMessage('');
-        setIsSubmittingInfo(true);
-
-        if (!formData.firstName.trim() || !formData.lastName.trim()) {
-            setInfoError('Vorname und Nachname dürfen nicht leer sein.');
-            setIsSubmittingInfo(false);
-            return;
-        }
+        setMessage('');
+        setLoading(true);
 
         try {
-            // This will call the new method in AuthService
-            const updatedUserPartial = await AuthService.updateProfile(currentUser.id, formData);
-
-            setInfoMessage('Profil erfolgreich aktualisiert!');
-            if (onSaveSuccess) {
-                // Pass the updated data, or trigger a refetch of currentUser in App.js
-                onSaveSuccess(updatedUserPartial);
+            // Die profileData sollten nur die Felder enthalten, die das Backend erwartet
+            const profileToUpdate = {
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                phoneNumber: formData.phoneNumber,
+            };
+            const response = await AuthService.updateProfile(profileToUpdate);
+            setMessage(response.message || 'Profil erfolgreich aktualisiert!');
+            if (onProfileUpdateSuccess) {
+                // Wichtig: Die aktualisierten Daten für den Global State bereitstellen.
+                // AuthService.updateProfile aktualisiert bereits den LocalStorage.
+                // Wir holen den User neu aus dem LocalStorage, um sicherzugehen.
+                onProfileUpdateSuccess(AuthService.getCurrentUser());
             }
-        } catch (err) {
-            const errMsg = err.response?.data?.message || err.message || 'Fehler beim Aktualisieren des Profils.';
-            setInfoError(errMsg);
+        } catch (error) {
+            const resMessage =
+                (error.response &&
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString();
+            setMessage(resMessage);
+            if (onProfileUpdateError) {
+                onProfileUpdateError(resMessage);
+            }
         } finally {
-            setIsSubmittingInfo(false);
+            setLoading(false);
         }
     };
 
-    const handlePasswordSubmit = async (e) => {
+    const handleSubmitPassword = async (e) => {
         e.preventDefault();
-        setPasswordError('');
         setPasswordMessage('');
-        setIsSubmittingPassword(true);
+        setPasswordLoading(true);
 
-        if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmNewPassword) {
-            setPasswordError('Bitte alle Passwortfelder ausfüllen.');
-            setIsSubmittingPassword(false);
+        if (passwordData.newPassword !== passwordData.confirmNewPassword) {
+            setPasswordMessage('Die neuen Passwörter stimmen nicht überein.');
+            setPasswordLoading(false);
             return;
         }
         if (passwordData.newPassword.length < 6) {
-            setPasswordError('Das neue Passwort muss mindestens 6 Zeichen lang sein.');
-            setIsSubmittingPassword(false);
-            return;
-        }
-        if (passwordData.newPassword !== passwordData.confirmNewPassword) {
-            setPasswordError('Die neuen Passwörter stimmen nicht überein.');
-            setIsSubmittingPassword(false);
+            setPasswordMessage('Das neue Passwort muss mindestens 6 Zeichen lang sein.');
+            setPasswordLoading(false);
             return;
         }
 
         try {
-            // This will call the new method in AuthService
-            const response = await AuthService.changePassword(passwordData.currentPassword, passwordData.newPassword);
-
+            const response = await AuthService.changePassword(
+                passwordData.currentPassword,
+                passwordData.newPassword
+            );
             setPasswordMessage(response.message || 'Passwort erfolgreich geändert!');
-            setPasswordData({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
-        } catch (err) {
-            const errMsg = err.response?.data?.message || err.message || 'Fehler beim Ändern des Passworts.';
-            setPasswordError(errMsg);
+            setPasswordData({ currentPassword: '', newPassword: '', confirmNewPassword: '' }); // Formular zurücksetzen
+        } catch (error) {
+            const resMessage =
+                (error.response &&
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString();
+            setPasswordMessage(resMessage);
         } finally {
-            setIsSubmittingPassword(false);
+            setPasswordLoading(false);
         }
     };
 
+    if (!currentUser) {
+        return <p>Bitte einloggen, um das Profil zu bearbeiten.</p>;
+    }
+
     return (
-        <div className="profile-edit-forms-container">
-            <form onSubmit={handleInfoSubmit} className="profile-edit-form section-style">
-                <h3 className="form-section-heading">Persönliche Daten ändern</h3>
-                {infoError && <p className="form-message error small"><FontAwesomeIcon icon={faExclamationCircle} /> {infoError}</p>}
-                {infoMessage && <p className="form-message success small"><FontAwesomeIcon icon={faCheckCircle} /> {infoMessage}</p>}
-
+        <div className="profile-edit-container">
+            <h3>Profil bearbeiten</h3>
+            <form onSubmit={handleSubmitProfile} className="profile-form">
                 <div className="form-group">
-                    <label htmlFor="pef-firstName">Vorname</label>
-                    <input type="text" id="pef-firstName" name="firstName" value={formData.firstName} onChange={handleInfoChange} disabled={isSubmittingInfo} />
+                    <label htmlFor="firstName">Vorname</label>
+                    <input
+                        type="text"
+                        className="form-control"
+                        name="firstName"
+                        id="firstName"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                        required
+                    />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="pef-lastName">Nachname</label>
-                    <input type="text" id="pef-lastName" name="lastName" value={formData.lastName} onChange={handleInfoChange} disabled={isSubmittingInfo} />
+                    <label htmlFor="lastName">Nachname</label>
+                    <input
+                        type="text"
+                        className="form-control"
+                        name="lastName"
+                        id="lastName"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        required
+                    />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="pef-email">E-Mail</label>
-                    <input type="email" id="pef-email" name="email" value={currentUser?.email || ''} disabled readOnly />
-                    <p className="form-hint small-hint">E-Mail-Adresse kann nicht geändert werden.</p>
+                    <label htmlFor="phoneNumber">Telefonnummer</label>
+                    <input
+                        type="tel"
+                        className="form-control"
+                        name="phoneNumber"
+                        id="phoneNumber"
+                        value={formData.phoneNumber}
+                        onChange={handleChange}
+                    />
                 </div>
+                {/* E-Mail kann hier nicht geändert werden, da sie als Benutzername dient */}
+                {message && (
+                    <div className="form-group">
+                        <div className="alert alert-info" role="alert"> {/* Oder alert-danger bei Fehler */}
+                            {message}
+                        </div>
+                    </div>
+                )}
                 <div className="form-group">
-                    <label htmlFor="pef-phoneNumber">Telefonnummer</label>
-                    <input type="tel" id="pef-phoneNumber" name="phoneNumber" value={formData.phoneNumber} onChange={handleInfoChange} disabled={isSubmittingInfo} />
-                </div>
-                <div className="form-actions">
-                    <button type="submit" className="button-link" disabled={isSubmittingInfo}>
-                        {isSubmittingInfo ? <><FontAwesomeIcon icon={faSpinner} spin /> Speichere...</> : <><FontAwesomeIcon icon={faSave} /> Daten speichern</>}
+                    <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+                        {loading ? <span>Wird gespeichert...</span> : 'Profil speichern'}
                     </button>
                 </div>
             </form>
 
-            <hr className="profile-form-divider" />
+            <hr className="my-4" />
 
-            <form onSubmit={handlePasswordSubmit} className="profile-edit-form section-style">
-                <h3 className="form-section-heading">Passwort ändern</h3>
-                {passwordError && <p className="form-message error small"><FontAwesomeIcon icon={faExclamationCircle} /> {passwordError}</p>}
-                {passwordMessage && <p className="form-message success small"><FontAwesomeIcon icon={faCheckCircle} /> {passwordMessage}</p>}
-
+            <h3>Passwort ändern</h3>
+            <form onSubmit={handleSubmitPassword} className="password-form">
                 <div className="form-group">
-                    <label htmlFor="pef-currentPassword">Aktuelles Passwort</label>
-                    <input type="password" id="pef-currentPassword" name="currentPassword" value={passwordData.currentPassword} onChange={handlePasswordChange} disabled={isSubmittingPassword} />
+                    <label htmlFor="currentPassword">Aktuelles Passwort</label>
+                    <input
+                        type="password"
+                        className="form-control"
+                        name="currentPassword"
+                        id="currentPassword"
+                        value={passwordData.currentPassword}
+                        onChange={handlePasswordChange}
+                        required
+                    />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="pef-newPassword">Neues Passwort</label>
-                    <input type="password" id="pef-newPassword" name="newPassword" value={passwordData.newPassword} onChange={handlePasswordChange} disabled={isSubmittingPassword} />
+                    <label htmlFor="newPassword">Neues Passwort</label>
+                    <input
+                        type="password"
+                        className="form-control"
+                        name="newPassword"
+                        id="newPassword"
+                        value={passwordData.newPassword}
+                        onChange={handlePasswordChange}
+                        required
+                        minLength="6"
+                    />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="pef-confirmNewPassword">Neues Passwort bestätigen</label>
-                    <input type="password" id="pef-confirmNewPassword" name="confirmNewPassword" value={passwordData.confirmNewPassword} onChange={handlePasswordChange} disabled={isSubmittingPassword} />
+                    <label htmlFor="confirmNewPassword">Neues Passwort bestätigen</label>
+                    <input
+                        type="password"
+                        className="form-control"
+                        name="confirmNewPassword"
+                        id="confirmNewPassword"
+                        value={passwordData.confirmNewPassword}
+                        onChange={handlePasswordChange}
+                        required
+                        minLength="6"
+                    />
                 </div>
-                <div className="form-actions">
-                    <button type="submit" className="button-link" disabled={isSubmittingPassword}>
-                        {isSubmittingPassword ? <><FontAwesomeIcon icon={faSpinner} spin /> Ändere...</> : <><FontAwesomeIcon icon={faSave} /> Passwort ändern</>}
+                {passwordMessage && (
+                    <div className="form-group">
+                        <div className="alert alert-info" role="alert"> {/* Oder alert-danger bei Fehler */}
+                            {passwordMessage}
+                        </div>
+                    </div>
+                )}
+                <div className="form-group">
+                    <button type="submit" className="btn btn-primary btn-block" disabled={passwordLoading}>
+                        {passwordLoading ? <span>Wird geändert...</span> : 'Passwort ändern'}
                     </button>
                 </div>
             </form>
-            <div className="form-actions overall-cancel">
-                <button type="button" onClick={onCancel} className="button-link-outline">
-                    <FontAwesomeIcon icon={faTimes} /> Zurück zur Übersicht
-                </button>
-            </div>
         </div>
     );
-}
+};
 
 export default ProfileEditForm;

@@ -39,7 +39,7 @@ const ProtectedRoute = ({ children, currentUser, redirectPath = '/login' }) => {
 };
 
 function App() {
-    const [currentUser, setCurrentUser] = useState(undefined);
+    const [currentUser, setCurrentUser] = useState(AuthService.getCurrentUser());
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
     const [refreshServicesList, setRefreshServicesList] = useState(0);
@@ -88,42 +88,43 @@ function App() {
         navigate('/my-account');
     }, [navigate]);
 
-    // NEW: Callback to handle profile update from AccountDashboard
-    const handleProfileUpdateSuccess = useCallback((updatedPartialUser) => {
-        // When profile is updated, AuthService.getCurrentUser() should ideally return the fresh user
-        // if AuthService.updateProfile (which is still a stub) updates localStorage.
-        // For a robust solution, the backend should return the full updated user object,
-        // and that should be used to set the state and update localStorage.
-
-        // Attempt to get the latest from localStorage (assuming AuthService.updateProfile updates it)
-        const freshUserFromStorage = AuthService.getCurrentUser();
-        if (freshUserFromStorage && freshUserFromStorage.id === updatedPartialUser.id) {
-            // If the user in storage matches the one being updated, use it
-            setCurrentUser(freshUserFromStorage);
+    // Diese Funktion wird immer noch als Prop weitergegeben, aber der EventBus ist der primäre Updater
+    const handleProfileUpdateSuccess = useCallback((updatedUserData) => {
+        // Es ist gut, hier den State zu setzen, falls das Event aus irgendeinem Grund nicht ankommt
+        // oder wenn eine sofortige Reaktion in der aufrufenden Komponente gewünscht ist.
+        // Der EventBus sorgt aber für eine robustere Aktualisierung des globalen States.
+        if (updatedUserData && updatedUserData.id === currentUser?.id) {
+            setCurrentUser(updatedUserData);
         } else {
-            // Fallback: merge the partial update with the existing currentUser state
-            // This is less ideal if other parts of currentUser (like roles, token) could change
-            // or if updatedPartialUser doesn't contain all necessary fields.
-            setCurrentUser(prevUser => {
-                if (prevUser && prevUser.id === updatedPartialUser.id) {
-                    return { ...prevUser, ...updatedPartialUser };
-                }
-                return prevUser; // Or handle error/logout if IDs don't match
-            });
+            // Wenn keine UserData übergeben werden oder ID nicht passt, hole den User neu
+            setCurrentUser(AuthService.getCurrentUser());
         }
-        console.log("App.js: currentUser updated after profile save.");
-    }, []);
+        console.log("App.js: handleProfileUpdateSuccess aufgerufen, currentUser potenziell aktualisiert.", updatedUserData);
+    }, [currentUser]); // currentUser als Abhängigkeit hinzugefügt
 
+    const handleProfileUpdateError = useCallback((errorMessage) => {
+        console.error("App.js: Fehler beim Profilupdate:", errorMessage);
+    }, []);
 
     useEffect(() => {
         const user = AuthService.getCurrentUser();
         if (user) {
             setCurrentUser(user);
         }
+
         const handleLogoutEvent = () => logOut();
         EventBus.on("logout", handleLogoutEvent);
+
+        // Event-Listener für Profilaktualisierungen
+        const handleProfileUpdatedEvent = (updatedUserFromEvent) => {
+            console.log("App.js: Event 'profileUpdated' empfangen", updatedUserFromEvent);
+            setCurrentUser(updatedUserFromEvent); // Direkt den User aus dem Event nehmen
+        };
+        EventBus.on("profileUpdated", handleProfileUpdatedEvent);
+
         return () => {
             EventBus.remove("logout", handleLogoutEvent);
+            EventBus.remove("profileUpdated", handleProfileUpdatedEvent); // Listener entfernen
         };
     }, [logOut]);
 
@@ -214,8 +215,8 @@ function App() {
             />
             <Routes>
                 <Route path="/" element={<HomePageLayout />} />
-                <Route path="/buchen" element={<BookingPage onAppointmentAdded={handleAppointmentAdded} currentUser={currentUser} onLoginSuccess={handleLoginSuccess} />} />
-                <Route path="/buchen/:serviceName" element={<BookingPage onAppointmentAdded={handleAppointmentAdded} currentUser={currentUser} onLoginSuccess={handleLoginSuccess} />} />
+                <Route path="/buchen" element={<BookingPage onAppointmentAdded={handleAppointmentAdded} currentUser={currentUser} onLoginSuccess={handleLoginSuccess}/>} />
+                <Route path="/buchen/:serviceName" element={<BookingPage onAppointmentAdded={handleAppointmentAdded} currentUser={currentUser} onLoginSuccess={handleLoginSuccess}/>} />
                 <Route
                     path="/login"
                     element={
@@ -236,7 +237,8 @@ function App() {
                                 refreshAppointmentsList={refreshAppointmentsList}
                                 onServiceAdded={handleServiceAdded}
                                 refreshServicesList={refreshServicesList}
-                                onProfileUpdateSuccess={handleProfileUpdateSuccess} // Pass new prop
+                                onProfileUpdateSuccess={handleProfileUpdateSuccess}
+                                onProfileUpdateError={handleProfileUpdateError}
                             />
                         </ProtectedRoute>
                     }
