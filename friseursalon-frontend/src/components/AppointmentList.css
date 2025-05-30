@@ -1,0 +1,267 @@
+/* File: src/components/AppointmentList.css */
+
+.appointment-list-container {
+    width: 100%;
+}
+
+/* Filter Bar Styling (Admin) */
+.admin-appointment-controls {
+    margin-bottom: 1.5rem; /* Tailwind: mb-6 */
+    padding: 1rem; /* Tailwind: p-4 */
+    background-color: var(--light-grey-bg); /* Tailwind: bg-gray-50 */
+    border: 1px solid var(--border-color-light); /* Tailwind: border border-gray-200 */
+    border-radius: 8px; /* Tailwind: rounded-lg */
+}
+
+.filter-controls-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem; /* Tailwind: mb-4 */
+}
+
+.filter-toggle-button {
+    /* Stile werden von .button-link-outline .small-button geerbt */
+    /* Tailwind-Äquivalente: text-sm py-1 px-3 */
+    display: flex;
+    align-items: center;
+    gap: 0.3rem; /* Tailwind: gap-1 */
+}
+
+.admin-filters-content {
+    /* Wird angezeigt, wenn showFilters true ist */
+    /* Tailwind: space-y-4 oder spezifischere Layouts */
+}
+
+.date-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem; /* Tailwind: gap-4 */
+    margin-bottom: 1rem; /* Tailwind: mb-4 */
+}
+
+.date-filter-grid .form-group label {
+    font-size: 0.8rem; /* Tailwind: text-xs */
+    color: var(--medium-grey-text); /* Tailwind: text-gray-600 */
+    margin-bottom: 0.25rem; /* Tailwind: mb-1 */
+    display: block;
+}
+
+.admin-filter-date-input {
+    width: 100%;
+    padding: 0.6rem 0.75rem; /* Tailwind: py-2 px-3 */
+    border: 1px solid var(--border-color); /* Tailwind: border border-gray-300 */
+    border-radius: 4px; /* Tailwind: rounded-md */
+    font-size: 0.9rem; /* Tailwind: text-sm */
+    background-color: var(--light-bg); /* Tailwind: bg-white */
+}
+.admin-filter-date-input:focus-visible {
+    border-color: var(--focus-ring-color); /* Tailwind: focus:border-blue-500 */
+    box-shadow: 0 0 0 2px var(--focus-ring-subtle-color); /* Tailwind: focus:ring focus:ring-blue-200 focus:ring-opacity-50 */
+    outline: none;
+}
+
+.quick-filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem; /* Tailwind: gap-2 */
+    margin-bottom: 1rem; /* Tailwind: mb-4 */
+}
+
+.quick-filter-buttons .button-link-outline {
+    font-size: 0.8rem; /* Tailwind: text-xs */
+    padding: 0.4rem 0.8rem; /* Tailwind: py-1 px-2 oder py-1.5 px-2.5 */
+    /* Weitere Stile von .button-link-outline */
+}
+.quick-filter-buttons .button-link-outline.active {
+    background-color: var(--dark-text);
+    color: var(--light-bg);
+    border-color: var(--dark-text);
+}
+
+
+.filter-actions {
+    display: flex;
+    gap: 0.75rem; /* Tailwind: gap-3 */
+    justify-content: flex-end;
+    margin-top: 1rem; /* Tailwind: mt-4 */
+    padding-top: 0.75rem; /* Tailwind: pt-3 */
+    border-top: 1px solid var(--border-color-light); /* Tailwind: border-t border-gray-200 */
+}
+.filter-actions .small-button {
+    /* Stile von .button-link .small-button oder .button-link-outline .small-button */
+}
+.filter-actions .small-button .svg-inline--fa {
+    margin-right: 0.4rem; /* Tailwind: mr-1.5 */
+}
+
+/* Appointment Table Styling (Desktop) */
+.appointments-table-wrapper {
+    overflow-x: auto; /* Ermöglicht horizontales Scrollen bei Bedarf */
+}
+
+.app-table.appointments-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem; /* Tailwind: text-sm */
+}
+
+.app-table.appointments-table th,
+.app-table.appointments-table td {
+    padding: 0.75rem 1rem; /* Tailwind: px-4 py-3 */
+    text-align: left;
+    border-bottom: 1px solid var(--border-color-light); /* Tailwind: border-b border-gray-200 */
+    vertical-align: middle; /* Bessere vertikale Ausrichtung */
+}
+
+.app-table.appointments-table th {
+    background-color: var(--light-grey-bg); /* Tailwind: bg-gray-50 */
+    font-weight: 600; /* Tailwind: font-semibold */
+    color: var(--medium-grey-text); /* Tailwind: text-gray-600 */
+    text-transform: uppercase;
+    font-size: 0.75rem; /* Tailwind: text-xs */
+    letter-spacing: 0.05em;
+}
+
+.app-table.appointments-table tbody tr:hover {
+    background-color: #f9fafb; /* Tailwind: hover:bg-gray-50 */
+}
+
+/* Status Badge Styling */
+.status-badge {
+    padding: 0.2em 0.6em; /* Tailwind: px-2 py-0.5 */
+    border-radius: 12px; /* Tailwind: rounded-full */
+    font-size: 0.75rem; /* Tailwind: text-xs */
+    font-weight: 500; /* Tailwind: font-medium */
+    text-transform: capitalize;
+    display: inline-block;
+    line-height: 1.3;
+    white-space: nowrap;
+}
+
+.status-badge.status-upcoming {
+    background-color: #def7ec; /* Tailwind: bg-green-100 */
+    color: #03543f; /* Tailwind: text-green-800 */
+}
+.status-badge.status-past {
+    background-color: #f3f4f6; /* Tailwind: bg-gray-100 */
+    color: #374151; /* Tailwind: text-gray-800 */
+}
+.status-badge.status-cancelled {
+    background-color: #fee2e2; /* Tailwind: bg-red-100 */
+    color: #991b1b; /* Tailwind: text-red-800 */
+}
+.status-badge.status-unknown {
+    background-color: #fef3c7; /* Tailwind: bg-yellow-100 */
+    color: #92400e; /* Tailwind: text-yellow-800 */
+}
+
+/* Action Buttons in Table */
+.action-buttons-table { /* Wiederverwendet von CustomerManagement.css, ggf. anpassen */
+    display: flex;
+    gap: 0.5rem; /* Tailwind: gap-2 */
+    align-items: center;
+}
+.action-buttons-table .button-link-outline.small-button {
+    padding: 0.3rem 0.6rem; /* Tailwind: px-2 py-1 */
+    font-size: 0.8rem; /* Tailwind: text-xs */
+}
+.action-buttons-table .button-link-outline.small-button .svg-inline--fa {
+    margin-right: 0.25rem; /* Tailwind: mr-1 */
+}
+.action-buttons-table .button-link-outline.small-button.danger:hover,
+.action-buttons-table .button-link-outline.small-button.danger:focus-visible {
+    background-color: var(--danger-bg-light);
+    color: var(--danger-color);
+    border-color: var(--danger-bg-light);
+}
+
+/* Appointment Card Styling (Mobile) */
+.appointment-card-mobile {
+    background-color: var(--light-bg); /* Tailwind: bg-white */
+    padding: 1rem; /* Tailwind: p-4 */
+    border-radius: 8px; /* Tailwind: rounded-lg */
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Tailwind: shadow */
+    border: 1px solid var(--border-color-light); /* Tailwind: border border-gray-200 */
+    margin-bottom: 1rem; /* Tailwind: mb-4 */
+    position: relative; /* For status banner */
+}
+.appointment-card-mobile.status-past {
+    background-color: #f9fafb; /* Tailwind: bg-gray-50 */
+    opacity: 0.85;
+}
+.appointment-card-mobile.status-cancelled {
+    background-color: #fee2e2; /* Tailwind: bg-red-50 */
+    opacity: 0.7;
+}
+
+.appointment-card-header-mobile {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem; /* Tailwind: mb-3 */
+}
+.appointment-card-datetime-mobile {
+    font-weight: 600; /* Tailwind: font-semibold */
+    font-size: 1rem; /* Tailwind: text-base */
+    color: var(--dark-text); /* Tailwind: text-gray-900 */
+}
+.appointment-card-mobile .status-badge {
+    margin-top: 0.125rem; /* Align with text */
+}
+
+.appointment-card-details-mobile p {
+    font-size: 0.875rem; /* Tailwind: text-sm */
+    color: var(--medium-grey-text); /* Tailwind: text-gray-600 */
+    margin-bottom: 0.3rem; /* Tailwind: mb-1.5 */
+    line-height: 1.5; /* Tailwind: leading-relaxed */
+}
+.appointment-card-details-mobile p strong {
+    color: var(--dark-text); /* Tailwind: text-gray-800 */
+    font-weight: 500; /* Tailwind: font-medium */
+}
+.appointment-card-notes-mobile {
+    font-style: italic;
+    font-size: 0.8rem;
+    color: var(--light-grey-text);
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--border-color-extralight);
+}
+
+
+.appointment-card-actions-mobile {
+    margin-top: 1rem; /* Tailwind: mt-4 */
+    padding-top: 0.75rem; /* Tailwind: pt-3 */
+    border-top: 1px solid var(--border-color-light); /* Tailwind: border-t border-gray-200 */
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem; /* Tailwind: gap-2 */
+}
+.appointment-card-actions-mobile .button-link-outline {
+    /* Stile von .button-link-outline .small-button */
+    font-size: 0.8rem; /* Tailwind: text-xs */
+    padding: 0.4rem 0.8rem; /* Tailwind: py-1.5 px-2.5 */
+}
+
+/* Loading and Empty States */
+.appointment-list-loading,
+.appointment-list-empty {
+    text-align: center;
+    padding: 2rem 1rem; /* Tailwind: p-8 oder p-4 */
+    color: var(--medium-grey-text); /* Tailwind: text-gray-500 */
+    font-size: 0.9rem; /* Tailwind: text-sm */
+    border: 1px dashed var(--border-color-light); /* Tailwind: border-dashed border-gray-300 */
+    border-radius: 6px; /* Tailwind: rounded-md */
+    background-color: var(--light-grey-bg); /* Tailwind: bg-gray-50 */
+}
+.appointment-list-loading .svg-inline--fa {
+    margin-right: 0.5rem; /* Tailwind: mr-2 */
+    font-size: 1.2em; /* Tailwind: text-lg */
+}
+
+/* Konsistenz für Formular-Nachrichten (Fehler/Erfolg) */
+.appointment-list-container .form-message {
+    /* Stile sind bereits in App.css definiert, hier ggf. Anpassungen */
+    margin-bottom: 1rem; /* Tailwind: mb-4 */
+}
