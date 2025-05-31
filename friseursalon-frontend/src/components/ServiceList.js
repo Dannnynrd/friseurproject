@@ -1,123 +1,192 @@
+// friseursalon-frontend/src/components/ServiceList.js
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api.service';
-import ServiceEditModal from './ServiceEditModal';
-import ConfirmModal from './ConfirmModal'; // NEU: Importieren
+// Erstelle diese Datei, auch wenn sie anfangs leer ist oder nur minimale Stile enthält
+import styles from './ServiceList.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrashAlt, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faEdit, faTrashAlt, faSpinner, faExclamationTriangle, faCheckCircle, faTag, faClock, faEuroSign } from '@fortawesome/free-solid-svg-icons';
 
-function ServiceList({ refreshTrigger, currentUser }) {
+// Annahme: Diese Modale existieren und sind gestylt/werden separat migriert
+import ServiceEditModal from './ServiceEditModal';
+import ConfirmModal from './ConfirmModal';
+// ServiceForm könnte direkt im ServiceEditModal verwendet werden oder als separates Modal zum Erstellen
+// Für dieses Beispiel nehmen wir an, ServiceEditModal kann auch zum Erstellen verwendet werden (wenn serviceToEdit null ist)
+
+function ServiceList({ onServiceAdded, refreshServicesList }) {
     const [services, setServices] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [selectedService, setSelectedService] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [successMessage, setSuccessMessage] = useState('');
 
-    // NEU: State für Bestätigungsmodal
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [serviceToEdit, setServiceToEdit] = useState(null); // Für Bearbeiten und Neuanlage (null bei Neuanlage)
+
     const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
     const [serviceToDelete, setServiceToDelete] = useState(null);
 
     const fetchServices = useCallback(async () => {
-        setIsLoading(true);
+        setLoading(true);
         setError(null);
+        setSuccessMessage('');
         try {
-            const response = await api.get('services');
+            const response = await api.get('/api/services'); // Admin-Endpunkt zum Abrufen aller Services
             setServices(response.data || []);
         } catch (err) {
-            console.error("Fehler beim Abrufen der Dienstleistungen:", err);
-            setError("Dienstleistungen konnten nicht geladen werden. Bitte versuchen Sie es später erneut.");
+            console.error("Error fetching services:", err);
+            setError(err.response?.data?.message || "Dienstleistungen konnten nicht geladen werden.");
             setServices([]);
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     }, []);
 
     useEffect(() => {
         fetchServices();
-    }, [fetchServices, refreshTrigger]);
+    }, [fetchServices, refreshServicesList]); // Refresh, wenn refreshServicesList sich ändert
 
-    // NEU: Handler für Klick auf "Löschen"-Button
-    const handleDeleteClick = (service) => {
-        setServiceToDelete(service);
+    const handleEdit = (service) => {
+        setServiceToEdit(service);
+        setShowEditModal(true);
+    };
+
+    const handleCreateNew = () => {
+        setServiceToEdit(null); // Kein Service zum Bearbeiten, also Neuanlage
+        setShowEditModal(true); // Wir verwenden dasselbe Modal
+    };
+
+    const confirmDelete = (serviceId) => {
+        setServiceToDelete(serviceId);
         setShowConfirmDeleteModal(true);
     };
 
-    // NEU: Handler für Bestätigung im Modal
-    const confirmDeleteService = async () => {
+    const handleDelete = async () => {
         if (!serviceToDelete) return;
-        setIsLoading(true); // Oder einen spezifischen Ladezustand für die Löschaktion
-        setShowConfirmDeleteModal(false);
+        // Hier könnte man den Ladezustand spezifisch für den Löschvorgang setzen
+        // setLoading(true); // Oder einen eigenen Ladezustand für den Button
+        setError(null);
+        setSuccessMessage('');
         try {
-            await api.delete(`services/${serviceToDelete.id}`);
-            setServiceToDelete(null);
-            fetchServices();
+            await api.delete(`/api/services/${serviceToDelete}`); // Admin-Endpunkt zum Löschen
+            setSuccessMessage("Dienstleistung erfolgreich gelöscht.");
+            fetchServices(); // Liste neu laden
+            if (typeof onServiceAdded === 'function') { // Allgemeiner Callback für Änderungen
+                onServiceAdded();
+            }
         } catch (err) {
-            console.error("Fehler beim Löschen der Dienstleistung:", err);
-            setError("Fehler beim Löschen der Dienstleistung.");
-            setIsLoading(false);
+            console.error("Error deleting service:", err);
+            setError(err.response?.data?.message || "Fehler beim Löschen der Dienstleistung.");
+        } finally {
+            // setLoading(false);
+            setShowConfirmDeleteModal(false);
             setServiceToDelete(null);
         }
     };
 
-
-    const handleEditClick = (service) => {
-        setSelectedService(service);
+    const handleModalClose = () => {
+        setShowEditModal(false);
+        setServiceToEdit(null);
     };
 
-    const handleCloseModal = () => {
-        setSelectedService(null);
+    const handleModalSave = () => {
+        handleModalClose();
+        fetchServices(); // Liste neu laden nach Speichern
+        if (typeof onServiceAdded === 'function') {
+            onServiceAdded(); // Elternkomponente benachrichtigen
+        }
+        setSuccessMessage(serviceToEdit ? "Dienstleistung erfolgreich aktualisiert." : "Dienstleistung erfolgreich erstellt.");
     };
 
-    const handleServiceUpdated = () => {
-        handleCloseModal();
-        fetchServices();
+    const formatPrice = (price) => {
+        if (typeof price !== 'number') return 'N/A';
+        return `${price.toFixed(2).replace('.', ',')} €`;
     };
 
-    if (isLoading && services.length === 0) {
-        return <p className="loading-message"><FontAwesomeIcon icon={faSpinner} spin /> Dienstleistungen werden geladen...</p>;
+    const formatDuration = (minutes) => {
+        if (typeof minutes !== 'number' || minutes <= 0) return 'N/A';
+        const h = Math.floor(minutes / 60);
+        const m = minutes % 60;
+        let durationString = '';
+        if (h > 0) durationString += `${h} Std. `;
+        if (m > 0) durationString += `${m} Min.`;
+        return durationString.trim() || 'N/A';
+    };
+
+
+    if (loading && services.length === 0) {
+        return (
+            <div className="flex justify-center items-center p-10 text-gray-600">
+                <FontAwesomeIcon icon={faSpinner} spin size="2x" className="text-indigo-500" />
+                <p className="ml-3 text-md">Lade Dienstleistungen...</p>
+            </div>
+        );
     }
 
     return (
-        <div className="service-list-container">
-            {error && <p className="form-message error mb-3">{error}</p>}
-
-            <div className="list-controls-header">
-                {isLoading && services.length > 0 && <FontAwesomeIcon icon={faSpinner} spin className="ml-auto text-xl" />}
+        <div className={`bg-white p-4 sm:p-6 rounded-xl shadow-lg ${styles.serviceListContainer}`}>
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b border-gray-200">
+                <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 font-serif">
+                    Dienstleistungsverwaltung
+                </h2>
+                <button
+                    onClick={handleCreateNew}
+                    className="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                    <FontAwesomeIcon icon={faPlus} className="mr-2" />
+                    Neue Dienstleistung
+                </button>
             </div>
 
-            {services.length === 0 && !isLoading ? (
-                <p className="text-center text-gray-600 py-4">Keine Dienstleistungen verfügbar. Bitte fügen Sie welche hinzu.</p>
-            ) : (
-                <div className="table-responsive-container mt-2">
-                    <table className="app-table services-table">
-                        <thead>
+            {error && (
+                <div className={`mb-4 p-3 rounded-md bg-red-50 text-red-600 border border-red-200 text-sm flex items-center ${styles.message}`}>
+                    <FontAwesomeIcon icon={faExclamationTriangle} className="mr-2 flex-shrink-0" /> {error}
+                </div>
+            )}
+            {successMessage && (
+                <div className={`mb-4 p-3 rounded-md bg-green-50 text-green-600 border border-green-200 text-sm flex items-center ${styles.message}`}>
+                    <FontAwesomeIcon icon={faCheckCircle} className="mr-2 flex-shrink-0" /> {successMessage}
+                </div>
+            )}
+
+            {services.length === 0 && !loading && !error && (
+                <div className={`text-center py-8 px-6 bg-slate-50 rounded-lg ${styles.noServices}`}>
+                    <FontAwesomeIcon icon={faTag} size="2x" className="text-gray-400 mb-3" />
+                    <p className="text-gray-500 text-md">
+                        Es sind keine Dienstleistungen vorhanden. Fügen Sie eine neue hinzu!
+                    </p>
+                </div>
+            )}
+
+            {services.length > 0 && (
+                <div className={`overflow-x-auto shadow rounded-lg ${styles.tableContainer}`}>
+                    <table className={`min-w-full divide-y divide-gray-200 ${styles.appTable}`}>
+                        <thead className="bg-slate-50">
                         <tr>
-                            <th>Name</th>
-                            <th>Beschreibung</th>
-                            <th>Preis</th>
-                            <th>Dauer (Min)</th>
-                            {currentUser?.roles?.includes("ROLE_ADMIN") && <th>Aktionen</th>}
+                            <th scope="col" className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th scope="col" className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Beschreibung</th>
+                            <th scope="col" className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dauer</th>
+                            <th scope="col" className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preis</th>
+                            <th scope="col" className="relative px-5 py-3">
+                                <span className="sr-only">Aktionen</span>
+                            </th>
                         </tr>
                         </thead>
-                        <tbody>
-                        {services.map(service => (
-                            <tr key={service.id}>
-                                <td data-label="Name:">{service.name}</td>
-                                <td data-label="Beschreibung:">{service.description}</td>
-                                <td data-label="Preis:">{typeof service.price === 'number' ? service.price.toFixed(2) + ' €' : 'N/A'}</td>
-                                <td data-label="Dauer:">{service.durationMinutes}</td>
-                                {currentUser?.roles?.includes("ROLE_ADMIN") && (
-                                    <td data-label="Aktionen:">
-                                        <div className="action-buttons-table">
-                                            <button onClick={() => handleEditClick(service)} className="button-link-outline small-button icon-button" title="Dienstleistung bearbeiten">
-                                                <FontAwesomeIcon icon={faEdit} />
-                                                <span className="button-text-desktop">Bearbeiten</span>
-                                            </button>
-                                            <button onClick={() => handleDeleteClick(service)} className="button-link-outline small-button danger icon-button" title="Dienstleistung löschen">
-                                                <FontAwesomeIcon icon={faTrashAlt} />
-                                                <span className="button-text-desktop">Löschen</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                )}
+                        <tbody className="bg-white divide-y divide-gray-200">
+                        {services.map((service) => (
+                            <tr key={service.id} className={`hover:bg-slate-50 transition-colors duration-150 ${styles.tableRow}`}>
+                                <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-gray-800">{service.name}</td>
+                                <td className="px-5 py-4 text-sm text-gray-600 hidden sm:table-cell">
+                                    <p className="truncate w-64 md:w-96" title={service.description}>{service.description || '-'}</p>
+                                </td>
+                                <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600">{formatDuration(service.duration)}</td>
+                                <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600">{formatPrice(service.price)}</td>
+                                <td className="px-5 py-4 whitespace-nowrap text-right text-sm font-medium space-x-1.5">
+                                    <button onClick={() => handleEdit(service)} className={`text-indigo-600 hover:text-indigo-800 p-1.5 rounded-md hover:bg-indigo-50 transition-colors ${styles.actionButton}`} title="Bearbeiten">
+                                        <FontAwesomeIcon icon={faEdit} />
+                                    </button>
+                                    <button onClick={() => confirmDelete(service.id)} className={`text-red-500 hover:text-red-700 p-1.5 rounded-md hover:bg-red-50 transition-colors ${styles.actionButton}`} title="Löschen">
+                                        <FontAwesomeIcon icon={faTrashAlt} />
+                                    </button>
+                                </td>
                             </tr>
                         ))}
                         </tbody>
@@ -125,24 +194,25 @@ function ServiceList({ refreshTrigger, currentUser }) {
                 </div>
             )}
 
-            {selectedService && (
-                <ServiceEditModal
-                    service={selectedService}
-                    onClose={handleCloseModal}
-                    onServiceUpdated={handleServiceUpdated}
+            {showEditModal && (
+                <ServiceEditModal // Annahme: Dieses Modal kann auch zum Erstellen verwendet werden, wenn serviceToEdit null ist
+                    isOpen={showEditModal}
+                    onClose={handleModalClose}
+                    onSave={handleModalSave}
+                    serviceData={serviceToEdit} // Ist null für "Neu erstellen"
                 />
             )}
-            {/* NEU: Bestätigungsmodal für Löschen einbinden */}
-            <ConfirmModal
-                isOpen={showConfirmDeleteModal}
-                onClose={() => { setShowConfirmDeleteModal(false); setServiceToDelete(null); }}
-                onConfirm={confirmDeleteService}
-                title="Dienstleistung löschen"
-                message={`Möchten Sie die Dienstleistung "${serviceToDelete?.name}" wirklich endgültig löschen? Dieser Schritt kann nicht rückgängig gemacht werden.`}
-                confirmText="Ja, löschen"
-                cancelText="Abbrechen"
-                type="danger"
-            />
+            {showConfirmDeleteModal && (
+                <ConfirmModal
+                    isOpen={showConfirmDeleteModal}
+                    onClose={() => setShowConfirmDeleteModal(false)}
+                    onConfirm={handleDelete}
+                    title="Dienstleistung löschen"
+                    message="Möchten Sie diese Dienstleistung wirklich endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden."
+                    confirmButtonText="Ja, löschen"
+                    // isLoading={loading} // Ein spezifischer Ladezustand für den Lösch-Button wäre besser
+                />
+            )}
         </div>
     );
 }

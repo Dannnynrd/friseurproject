@@ -12,7 +12,7 @@ import Login from './components/Login';
 import AuthService from './services/auth.service';
 import AuthVerify from './common/AuthVerify';
 import EventBus from './common/EventBus';
-import Register from './components/Register'; // Pfad anpassen, falls nötig
+import Register from './components/Register';
 
 // Statische Design-Komponenten (Homepage Sektionen)
 import HeroSection from './components/HeroSection';
@@ -61,14 +61,11 @@ function App() {
         const bodyClass = 'mobile-menu-active';
         if (isMobileMenuOpen) {
             document.body.classList.add(bodyClass);
-            document.documentElement.classList.add(bodyClass);
         } else {
             document.body.classList.remove(bodyClass);
-            document.documentElement.classList.remove(bodyClass);
         }
         return () => {
             document.body.classList.remove(bodyClass);
-            document.documentElement.classList.remove(bodyClass);
         };
     }, [isMobileMenuOpen]);
 
@@ -89,19 +86,14 @@ function App() {
         navigate('/my-account');
     }, [navigate]);
 
-    // Diese Funktion wird immer noch als Prop weitergegeben, aber der EventBus ist der primäre Updater
     const handleProfileUpdateSuccess = useCallback((updatedUserData) => {
-        // Es ist gut, hier den State zu setzen, falls das Event aus irgendeinem Grund nicht ankommt
-        // oder wenn eine sofortige Reaktion in der aufrufenden Komponente gewünscht ist.
-        // Der EventBus sorgt aber für eine robustere Aktualisierung des globalen States.
-        if (updatedUserData && updatedUserData.id === currentUser?.id) {
+        if (updatedUserData && (!currentUser || updatedUserData.id !== currentUser.id || updatedUserData.username !== currentUser.username || updatedUserData.email !== currentUser.email)) {
+            console.log("App.js: handleProfileUpdateSuccess - currentUser wird aktualisiert.", updatedUserData);
             setCurrentUser(updatedUserData);
-        } else {
-            // Wenn keine UserData übergeben werden oder ID nicht passt, hole den User neu
+        } else if (!updatedUserData && currentUser) {
             setCurrentUser(AuthService.getCurrentUser());
         }
-        console.log("App.js: handleProfileUpdateSuccess aufgerufen, currentUser potenziell aktualisiert.", updatedUserData);
-    }, [currentUser]); // currentUser als Abhängigkeit hinzugefügt
+    }, [currentUser]);
 
     const handleProfileUpdateError = useCallback((errorMessage) => {
         console.error("App.js: Fehler beim Profilupdate:", errorMessage);
@@ -109,25 +101,28 @@ function App() {
 
     useEffect(() => {
         const user = AuthService.getCurrentUser();
-        if (user) {
+        if (user && (!currentUser || user.id !== currentUser.id)) {
             setCurrentUser(user);
+        } else if (!user && currentUser) {
+            setCurrentUser(undefined);
         }
 
         const handleLogoutEvent = () => logOut();
         EventBus.on("logout", handleLogoutEvent);
 
-        // Event-Listener für Profilaktualisierungen
         const handleProfileUpdatedEvent = (updatedUserFromEvent) => {
             console.log("App.js: Event 'profileUpdated' empfangen", updatedUserFromEvent);
-            setCurrentUser(updatedUserFromEvent); // Direkt den User aus dem Event nehmen
+            if (updatedUserFromEvent && (!currentUser || updatedUserFromEvent.id !== currentUser.id || updatedUserFromEvent.username !== currentUser.username)) {
+                setCurrentUser(updatedUserFromEvent);
+            }
         };
         EventBus.on("profileUpdated", handleProfileUpdatedEvent);
 
         return () => {
             EventBus.remove("logout", handleLogoutEvent);
-            EventBus.remove("profileUpdated", handleProfileUpdatedEvent); // Listener entfernen
+            EventBus.remove("profileUpdated", handleProfileUpdatedEvent);
         };
-    }, [logOut]);
+    }, [logOut, currentUser]);
 
     useEffect(() => {
         const preloader = preloaderRef.current;
@@ -153,33 +148,46 @@ function App() {
 
     useEffect(() => {
         const updateBodyPadding = () => {
-            if (headerRef.current) {
+            if (headerRef.current && document.body) {
                 const headerHeight = headerRef.current.offsetHeight;
                 document.body.style.paddingTop = `${headerHeight}px`;
             }
         };
+
         updateBodyPadding();
+
         const resizeObserver = new ResizeObserver(updateBodyPadding);
         if (headerRef.current) {
             resizeObserver.observe(headerRef.current);
         }
-        const transitionTimeout = setTimeout(updateBodyPadding, 300);
+
+        const transitionTimeout = setTimeout(updateBodyPadding, 350);
+
         return () => {
             if (headerRef.current) {
                 resizeObserver.unobserve(headerRef.current);
             }
             clearTimeout(transitionTimeout);
-            document.body.style.paddingTop = '0';
+            if(document.body) document.body.style.paddingTop = '0';
         };
     }, [isHeaderScrolled, isMobileMenuOpen, location.pathname]);
 
     const navigateToBooking = useCallback((serviceName = null) => {
-        const path = serviceName ? `/buchen/${encodeURIComponent(serviceName)}` : '/buchen';
-        navigate(path);
+        if (location.pathname === "/") {
+            const servicesSection = document.getElementById('services-dynamic');
+            if (servicesSection) {
+                servicesSection.scrollIntoView({ behavior: 'smooth' });
+            }
+        } else {
+            navigate('/#services-dynamic');
+        }
         closeMobileMenu();
-    }, [navigate, closeMobileMenu]);
+    }, [navigate, closeMobileMenu, location.pathname]);
 
     const toggleMobileMenu = () => setIsMobileMenuOpen(prev => !prev);
+
+    // Ermitteln, ob es sich um eine Dashboard-Seite handelt
+    const isDashboardPage = location.pathname.startsWith('/my-account') || location.pathname.startsWith('/admin');
 
     const HomePageLayout = () => (
         <main>
@@ -188,16 +196,11 @@ function App() {
             <ExperienceSection />
             <TestimonialsSection />
             <AboutFounderSection />
-            <ServicesSection
-                currentUser={currentUser}
-                onServiceAdded={handleServiceAdded}
-                refreshServicesList={refreshServicesList}
-                openBookingModal={navigateToBooking}
-            />
+            <ServicesSection />
             <GalleryJournalSection />
             <EssentialsSection />
             <FAQSection />
-            <LocationSection openBookingModal={navigateToBooking} />
+            <LocationSection />
             <NewsletterSection />
         </main>
     );
@@ -213,11 +216,13 @@ function App() {
                 isHeaderScrolled={isHeaderScrolled}
                 headerRef={headerRef}
                 navigateToBooking={navigateToBooking}
+                logOut={logOut}
+                // Neue Prop, um dem Header mitzuteilen, auf welcher Art von Seite er sich befindet
+                pageType={isDashboardPage ? "dashboard" : "default"}
             />
             <Routes>
                 <Route path="/" element={<HomePageLayout />} />
-                <Route path="/buchen" element={<BookingPage onAppointmentAdded={handleAppointmentAdded} currentUser={currentUser} onLoginSuccess={handleLoginSuccess}/>} />
-                <Route path="/buchen/:serviceName" element={<BookingPage onAppointmentAdded={handleAppointmentAdded} currentUser={currentUser} onLoginSuccess={handleLoginSuccess}/>} />
+
                 <Route
                     path="/login"
                     element={
@@ -227,18 +232,17 @@ function App() {
                             </div>
                     }
                 />
-                {/* HINZUGEFÜGTE ROUTE FÜR REGISTRIERUNG */}
                 <Route
                     path="/register"
                     element={
-                        currentUser ? <Navigate to="/my-account" replace /> : // Wenn bereits eingeloggt, zum Konto weiterleiten
+                        currentUser ? <Navigate to="/my-account" replace /> :
                             <div className="page-center-content">
                                 <Register />
                             </div>
                     }
                 />
                 <Route
-                    path="/my-account"
+                    path="/my-account" // Hauptroute für das Benutzer-Dashboard
                     element={
                         <ProtectedRoute currentUser={currentUser} redirectPath="/login">
                             <AccountDashboard
@@ -254,6 +258,20 @@ function App() {
                         </ProtectedRoute>
                     }
                 />
+                {/* Beispiel für Admin-Routen, falls dein AdminDashboard verschachtelte Routen verwendet */}
+                {/* Wenn AccountDashboard bereits Admin-Routen intern handhabt, ist dies nicht nötig */}
+                {/* <Route path="/admin/*" element={
+                    <ProtectedRoute currentUser={currentUser} roles={["ROLE_ADMIN"]}>
+                        <AdminDashboardLayout> // Deine Admin-Layout-Komponente
+                             <Routes>
+                                <Route path="dashboard" element={<AdminDashboardStats />} />
+                                // Weitere Admin-Unterrouten
+                            </Routes>
+                        </AdminDashboardLayout>
+                    </ProtectedRoute>
+                } />
+                */}
+
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <Footer />

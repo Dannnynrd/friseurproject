@@ -1,392 +1,338 @@
-// File: src/components/DashboardSettings.js
-import React, { useState, useEffect } from 'react';
+// friseursalon-frontend/src/components/DashboardSettings.js
+import React, { useState, useEffect, useRef } from 'react';
+import styles from './DashboardSettings.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-    faSave, faEye, faEyeSlash, faAngleUp, faAngleDown, faCheckCircle,
-    faExclamationCircle, faSpinner, faStore, faBell, faCalendarCheck as faCalendarAlt
-} from '@fortawesome/free-solid-svg-icons';
-import './DashboardSettings.module.css';
+// faBullseye hinzugefügt
+import { faSave, faUndo, faEye, faEyeSlash, faGripVertical, faArrowUp, faArrowDown, faCog, faChartBar, faTags, faBullseye } from '@fortawesome/free-solid-svg-icons';
 
-// Default KPI definitions (could be moved to a config file)
-const KPI_DEFINITIONS_DEFAULT = {
+const KPI_VISIBILITY_STORAGE_KEY = 'friseurDashboardKpiVisibility_v2';
+const KPI_GOALS_STORAGE_KEY = 'friseurDashboardKpiGoals_v1';
+const KPI_GROUP_ORDER_STORAGE_KEY = 'friseurDashboardKpiGroupOrder_v1';
+const TOP_N_SERVICES_STORAGE_KEY = 'friseurDashboardTopNServices_v1';
+
+// Annahme: KPI_DEFINITIONS ist hier verfügbar (importiert oder hier definiert)
+// Vereinfachte Struktur für dieses Beispiel, an deine Definition anpassen.
+const KPI_DEFINITIONS = {
     main: {
         label: "Hauptkennzahlen",
         kpis: [
-            { id: 'termine', label: "Termine", goalKey: 'monthlyAppointmentsGoal' },
-            { id: 'umsatz', label: "Umsatz", goalKey: 'monthlyRevenueGoal', isCurrency: true },
-            { id: 'avgUmsatz', label: "Ø-Umsatz/Termin", isCurrency: true },
-            { id: 'auslastung', label: "Auslastung", isPercentage: true },
+            { id: 'termine', label: "Termine" },
+            { id: 'umsatz', label: "Umsatz" },
+            { id: 'avgUmsatz', label: "Ø-Umsatz/Termin" },
+            { id: 'auslastung', label: "Auslastung" }
         ]
     },
     customerService: {
         label: "Kunden- & Service-Metriken",
         kpis: [
             { id: 'einzigKunden', label: "Einzig. Kunden" },
-            { id: 'kundenWachstum', label: "Kundenwachstum", isPercentage: true },
+            { id: 'kundenWachstum', label: "Kundenwachstum" },
             { id: 'avgBuchungKunde', label: "Ø Buchung/Kunde" },
-            { id: 'neukundenAnteil', label: "Neukundenanteil", isPercentage: true },
+            { id: 'neukundenAnteil', label: "Neukundenanteil" },
             { id: 'avgTermindauer', label: "Ø Termindauer" },
-            { id: 'servicesAngeboten', label: "Services Angeboten" },
+            { id: 'servicesAngeboten', label: "Services Angeboten" }
         ]
     },
     operationalDaily: {
         label: "Operative & Tagesaktuelle Zahlen",
         kpis: [
             { id: 'termineHeute', label: "Termine Heute" },
-            { id: 'umsatzHeute', label: "Umsatz Heute", isCurrency: true },
+            { id: 'umsatzHeute', label: "Umsatz Heute" },
             { id: 'gesBevorstehend', label: "Ges. Bevorstehend" },
-            { id: 'stornoquote', label: "Stornoquote", isPercentage: true },
+            { id: 'stornoquote', label: "Stornoquote" },
             { id: 'avgVorlaufzeit', label: "Ø Vorlaufzeit Buch." },
-            { id: 'prognUmsatz', label: "Progn. Umsatz (30T)", isCurrency: true },
+            { id: 'prognUmsatz', label: "Progn. Umsatz (30T)" }
         ]
     }
 };
 
-// localStorage keys
-const KPI_VISIBILITY_STORAGE_KEY = 'friseurDashboardKpiVisibility_v2';
-const KPI_GOALS_STORAGE_KEY = 'friseurDashboardKpiGoals_v1';
-const KPI_GROUP_ORDER_STORAGE_KEY = 'friseurDashboardKpiGroupOrder_v1';
-const TOP_N_SERVICES_STORAGE_KEY = 'friseurDashboardTopNServices_v1';
-const SALON_SETTINGS_STORAGE_KEY = 'friseurSalonSettings_v1';
 
-
-// Helper to get initial state from localStorage or return default
-const getInitialState = (key, defaultValue) => {
-    // Resolve defaultValue if it's a function
-    const resolvedDefaultValue = typeof defaultValue === 'function' ? defaultValue() : defaultValue;
-    try {
-        const saved = localStorage.getItem(key);
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            // If the default value is an array, ensure the parsed value is also an array.
-            // Otherwise, fall back to the default.
-            if (Array.isArray(resolvedDefaultValue)) {
-                return Array.isArray(parsed) ? parsed : resolvedDefaultValue;
+function DashboardSettings({ showMessage }) {
+    const [kpiVisibility, setKpiVisibility] = useState(() => {
+        try {
+            const saved = localStorage.getItem(KPI_VISIBILITY_STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                const validated = {};
+                Object.keys(KPI_DEFINITIONS).forEach(groupKey => {
+                    validated[groupKey] = {
+                        visible: parsed[groupKey]?.visible ?? true,
+                        kpis: {}
+                    };
+                    KPI_DEFINITIONS[groupKey].kpis.forEach(kpi => {
+                        validated[groupKey].kpis[kpi.id] = parsed[groupKey]?.kpis?.[kpi.id] ?? true;
+                    });
+                });
+                return validated;
             }
-            // If the default value is an object (and not null), merge parsed into it.
-            // This handles cases where new default properties might have been added.
-            if (typeof resolvedDefaultValue === 'object' && resolvedDefaultValue !== null) {
-                return { ...resolvedDefaultValue, ...parsed };
-            }
-            // For primitive types or if types don't match above conditions, return parsed.
-            return parsed;
-        }
-    } catch (e) {
-        console.error(`Fehler beim Lesen von ${key} aus localStorage:`, e);
-    }
-    // If anything fails or nothing is saved, return the resolved default value.
-    return resolvedDefaultValue;
-};
-
-
-function DashboardSettings({ currentUser }) {
-    // KPI_DEFINITIONS is stable, so directly use KPI_DEFINITIONS_DEFAULT
-    // const KPI_DEFINITIONS = KPI_DEFINITIONS_DEFAULT; // Not needed as a separate const if only using default
-
-    const [kpiVisibility, setKpiVisibility] = useState(() => getInitialState(KPI_VISIBILITY_STORAGE_KEY, () => {
-        const defaultVisibility = {};
-        for (const groupKey in KPI_DEFINITIONS_DEFAULT) {
-            defaultVisibility[groupKey] = { visible: true, kpis: {} };
-            KPI_DEFINITIONS_DEFAULT[groupKey].kpis.forEach(kpi => {
-                defaultVisibility[groupKey].kpis[kpi.id] = true;
+        } catch (e) { console.error("Error reading KPI visibility from localStorage", e); }
+        const defaults = {};
+        Object.keys(KPI_DEFINITIONS).forEach(groupKey => {
+            defaults[groupKey] = { visible: true, kpis: {} };
+            KPI_DEFINITIONS[groupKey].kpis.forEach(kpi => {
+                defaults[groupKey].kpis[kpi.id] = true;
             });
-        }
-        return defaultVisibility;
-    }));
-
-    const [kpiGoals, setKpiGoals] = useState(() => getInitialState(KPI_GOALS_STORAGE_KEY, {
-        monthlyRevenueGoal: '',
-        monthlyAppointmentsGoal: '',
-    }));
-
-    // Initialize kpiGroupOrder, ensuring it's an array.
-    // The useEffect below will further sanitize and synchronize it.
-    const [kpiGroupOrder, setKpiGroupOrder] = useState(() =>
-        getInitialState(KPI_GROUP_ORDER_STORAGE_KEY, () => Object.keys(KPI_DEFINITIONS_DEFAULT))
-    );
-
-    const [topNServicesConfig, setTopNServicesConfig] = useState(() => getInitialState(TOP_N_SERVICES_STORAGE_KEY, 5));
-
-    const [salonSettings, setSalonSettings] = useState(() => getInitialState(SALON_SETTINGS_STORAGE_KEY, {
-        salonName: "Mein Friseursalon",
-        minBookingLeadTimeHours: 2,
-        maxBookingHorizonDays: 60,
-        cancellationGracePeriodHours: 24,
-        defaultSlotDurationMinutes: 30,
-        adminNotificationEmail: currentUser?.email || '',
-        autoConfirmBookings: true,
-        salonSlogan: "Ihr Experte für Haar & Stil!",
-    }));
-
-    const [saveMessage, setSaveMessage] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
-
-    // Effect to synchronize kpiGroupOrder with KPI_DEFINITIONS_DEFAULT
-    // This ensures that if definitions change, the order is updated,
-    // and it also guarantees kpiGroupOrder is always a valid array.
-    useEffect(() => {
-        const definitionKeys = Object.keys(KPI_DEFINITIONS_DEFAULT);
-        // Start with the current order if it's an array, otherwise start fresh
-        let currentValidOrder = Array.isArray(kpiGroupOrder) ? kpiGroupOrder.filter(key => definitionKeys.includes(key)) : [];
-
-        let orderChanged = false;
-
-        // Add any new keys from definitions that are not in the current valid order
-        definitionKeys.forEach(key => {
-            if (!currentValidOrder.includes(key)) {
-                currentValidOrder.push(key);
-                orderChanged = true;
-            }
         });
+        return defaults;
+    });
 
-        // Check if the length changed (e.g. old keys were filtered out)
-        if (Array.isArray(kpiGroupOrder) && currentValidOrder.length !== kpiGroupOrder.length) {
-            orderChanged = true;
-        }
+    const [kpiGoals, setKpiGoals] = useState(() => {
+        try {
+            const saved = localStorage.getItem(KPI_GOALS_STORAGE_KEY);
+            return saved ? JSON.parse(saved) : { monthlyRevenueGoal: '', monthlyAppointmentsGoal: '' };
+        } catch (e) { return { monthlyRevenueGoal: '', monthlyAppointmentsGoal: '' }; }
+    });
 
-        // If the order was not an array initially, or if it changed, update the state.
-        if (!Array.isArray(kpiGroupOrder) || orderChanged) {
-            setKpiGroupOrder(currentValidOrder);
-        }
-    }, [kpiGroupOrder]); // Rerun if kpiGroupOrder itself changes (e.g. from localStorage)
+    const [kpiGroupOrder, setKpiGroupOrder] = useState(() => {
+        try {
+            const saved = localStorage.getItem(KPI_GROUP_ORDER_STORAGE_KEY);
+            const parsed = saved ? JSON.parse(saved) : Object.keys(KPI_DEFINITIONS);
+            const currentGroups = Object.keys(KPI_DEFINITIONS);
+            const validOrder = parsed.filter(groupKey => currentGroups.includes(groupKey));
+            currentGroups.forEach(groupKey => {
+                if (!validOrder.includes(groupKey)) validOrder.push(groupKey);
+            });
+            return validOrder;
+        } catch (e) { return Object.keys(KPI_DEFINITIONS); }
+    });
 
+    const [topNServices, setTopNServices] = useState(() => {
+        try {
+            const saved = localStorage.getItem(TOP_N_SERVICES_STORAGE_KEY);
+            return saved ? parseInt(saved, 10) : 5;
+        } catch (e) { return 5; }
+    });
 
-    const showAndClearSaveMessage = (message, type = 'success') => {
-        setSaveMessage({ text: message, type });
-        setTimeout(() => setSaveMessage(''), 3500);
-    };
-
-    const handleSalonSettingChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setSalonSettings(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : (type === 'number' ? parseInt(value, 10) : value)
-        }));
-    };
+    const draggedItem = useRef(null);
+    const draggedOverItem = useRef(null);
 
     const handleSaveSettings = () => {
-        setIsSaving(true);
         try {
             localStorage.setItem(KPI_VISIBILITY_STORAGE_KEY, JSON.stringify(kpiVisibility));
-            localStorage.setItem(KPI_GOALS_STORAGE_KEY, JSON.stringify({
-                monthlyRevenueGoal: kpiGoals.monthlyRevenueGoal === '' ? null : Number(kpiGoals.monthlyRevenueGoal),
-                monthlyAppointmentsGoal: kpiGoals.monthlyAppointmentsGoal === '' ? null : Number(kpiGoals.monthlyAppointmentsGoal),
-            }));
-            // Ensure kpiGroupOrder is an array before saving
-            localStorage.setItem(KPI_GROUP_ORDER_STORAGE_KEY, JSON.stringify(Array.isArray(kpiGroupOrder) ? kpiGroupOrder : Object.keys(KPI_DEFINITIONS_DEFAULT)));
-            localStorage.setItem(TOP_N_SERVICES_STORAGE_KEY, topNServicesConfig.toString());
-            localStorage.setItem(SALON_SETTINGS_STORAGE_KEY, JSON.stringify(salonSettings));
-            showAndClearSaveMessage("Einstellungen erfolgreich gespeichert!");
-        } catch (error) {
-            console.error("Fehler beim Speichern der Dashboard-Einstellungen:", error);
-            showAndClearSaveMessage("Fehler beim Speichern der Einstellungen.", "error");
-        } finally {
-            setIsSaving(false);
+            localStorage.setItem(KPI_GOALS_STORAGE_KEY, JSON.stringify(kpiGoals));
+            localStorage.setItem(KPI_GROUP_ORDER_STORAGE_KEY, JSON.stringify(kpiGroupOrder));
+            localStorage.setItem(TOP_N_SERVICES_STORAGE_KEY, topNServices.toString());
+            if (showMessage) showMessage("Einstellungen erfolgreich gespeichert!", "success");
+        } catch (e) {
+            console.error("Error saving settings to localStorage", e);
+            if (showMessage) showMessage("Fehler beim Speichern der Einstellungen.", "error");
         }
     };
 
-    const handleGoalChange = (goalKey, value) => {
-        setKpiGoals(prev => ({ ...prev, [goalKey]: value }));
+    const handleResetSettings = () => {
+        if (window.confirm("Möchten Sie wirklich alle Dashboard-Einstellungen auf die Standardwerte zurücksetzen?")) {
+            localStorage.removeItem(KPI_VISIBILITY_STORAGE_KEY);
+            localStorage.removeItem(KPI_GOALS_STORAGE_KEY);
+            localStorage.removeItem(KPI_GROUP_ORDER_STORAGE_KEY);
+            localStorage.removeItem(TOP_N_SERVICES_STORAGE_KEY);
+            window.location.reload();
+        }
     };
 
     const toggleKpiGroupVisibility = (groupKey) => {
-        setKpiVisibility(prev => ({ ...prev, [groupKey]: { ...prev[groupKey], visible: !prev[groupKey].visible } }));
+        setKpiVisibility(prev => ({
+            ...prev,
+            [groupKey]: { ...prev[groupKey], visible: !prev[groupKey]?.visible }
+        }));
     };
 
     const toggleIndividualKpiVisibility = (groupKey, kpiId) => {
-        setKpiVisibility(prev => ({ ...prev, [groupKey]: { ...prev[groupKey], kpis: { ...prev[groupKey].kpis, [kpiId]: !prev[groupKey].kpis[kpiId] } } }));
+        setKpiVisibility(prev => ({
+            ...prev,
+            [groupKey]: {
+                ...prev[groupKey],
+                kpis: { ...prev[groupKey]?.kpis, [kpiId]: !prev[groupKey]?.kpis?.[kpiId] }
+            }
+        }));
     };
 
+    const handleGoalChange = (goalKey, value) => {
+        const numValue = value === '' ? '' : Number(value);
+        if (value === '' || (!isNaN(numValue) && numValue >= 0)) {
+            setKpiGoals(prev => ({ ...prev, [goalKey]: numValue === '' ? null : numValue }));
+        }
+    };
+
+    // Definition der moveKpiGroup Funktion im Gültigkeitsbereich der Komponente
     const moveKpiGroup = (groupKey, direction) => {
         setKpiGroupOrder(prevOrder => {
-            // Ensure prevOrder is an array
-            const orderArray = Array.isArray(prevOrder) ? [...prevOrder] : Object.keys(KPI_DEFINITIONS_DEFAULT);
-            const currentIndex = orderArray.indexOf(groupKey);
-
-            if (currentIndex === -1) return orderArray; // Should not happen if synced
-
+            const currentIndex = prevOrder.indexOf(groupKey);
+            if (currentIndex === -1) return prevOrder;
             const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-            if (newIndex < 0 || newIndex >= orderArray.length) return orderArray;
+            if (newIndex < 0 || newIndex >= prevOrder.length) return prevOrder;
 
-            const newOrder = [...orderArray];
-            [newOrder[currentIndex], newOrder[newIndex]] = [newOrder[newIndex], newOrder[currentIndex]];
+            const newOrder = [...prevOrder];
+            // Element an der alten Position entfernen und an der neuen einfügen
+            const [item] = newOrder.splice(currentIndex, 1);
+            newOrder.splice(newIndex, 0, item);
             return newOrder;
         });
+        if (showMessage) showMessage("Reihenfolge der KPI-Gruppen angepasst.", "info");
     };
 
-    if (!currentUser || !currentUser.roles?.includes("ROLE_ADMIN")) {
-        return <p className="form-message error">Zugriff verweigert.</p>;
-    }
+    const handleDragStart = (e, index) => {
+        draggedItem.current = index;
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData('text/html', e.target);
+    };
 
-    // Ensure kpiGroupOrder is an array before mapping
-    const safeKpiGroupOrder = Array.isArray(kpiGroupOrder) ? kpiGroupOrder : [];
+    const handleDragOver = (e, index) => {
+        e.preventDefault();
+        draggedOverItem.current = index;
+    };
 
+    const handleDrop = () => {
+        if (draggedItem.current === null || draggedOverItem.current === null || draggedItem.current === draggedOverItem.current) {
+            return;
+        }
+        const newOrder = [...kpiGroupOrder];
+        const item = newOrder.splice(draggedItem.current, 1)[0];
+        newOrder.splice(draggedOverItem.current, 0, item);
+        setKpiGroupOrder(newOrder);
+        draggedItem.current = null;
+        draggedOverItem.current = null;
+        if (showMessage) showMessage("Reihenfolge der KPI-Gruppen angepasst.", "info");
+    };
 
     return (
-        <div className="dashboard-settings-container">
-            {saveMessage.text && (
-                <p className={`form-message mb-4 ${saveMessage.type === 'success' ? 'success' : 'error'}`}>
-                    <FontAwesomeIcon icon={saveMessage.type === 'success' ? faCheckCircle : faExclamationCircle} /> {saveMessage.text}
-                </p>
-            )}
+        <div className={`bg-white p-4 sm:p-6 rounded-xl shadow-lg ${styles.dashboardSettingsContainer}`}>
+            <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 font-serif mb-6 pb-4 border-b border-gray-200 flex items-center">
+                <FontAwesomeIcon icon={faCog} className="mr-3 text-indigo-600" />
+                Dashboard Einstellungen
+            </h2>
 
-            <section className="settings-section">
-                <h3 className="settings-section-title"><FontAwesomeIcon icon={faStore} /> Salon & Buchung</h3>
-                <div className="settings-grid two-columns">
-                    <div className="form-group settings-form-group">
-                        <label htmlFor="salonName">Salon Name</label>
-                        <input type="text" id="salonName" name="salonName" value={salonSettings.salonName} onChange={handleSalonSettingChange} />
+            <section className="mb-8">
+                <h3 className="text-lg font-medium text-gray-700 mb-4 font-serif flex items-center">
+                    <FontAwesomeIcon icon={faChartBar} className="mr-2 text-gray-500" /> Kennzahlen (KPIs) anpassen
+                </h3>
+                <p className="text-sm text-gray-500 mb-4">
+                    Wählen Sie aus, welche Kennzahlengruppen und einzelne KPIs in Ihrer Dashboard-Übersicht angezeigt werden sollen. Ändern Sie die Reihenfolge der Gruppen per Drag & Drop.
+                </p>
+                <ul className={`space-y-3 ${styles.kpiGroupList}`}>
+                    {kpiGroupOrder.map((groupKey, index) => {
+                        const groupDef = KPI_DEFINITIONS[groupKey];
+                        if (!groupDef) return null;
+                        const groupVisibility = kpiVisibility[groupKey] || { visible: true, kpis: {} };
+
+                        return (
+                            <li
+                                key={groupKey}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, index)}
+                                onDragOver={(e) => handleDragOver(e, index)}
+                                onDrop={handleDrop}
+                                onDragEnd={() => { draggedItem.current = null; draggedOverItem.current = null; }}
+                                className={`p-4 border border-gray-200 rounded-lg bg-slate-50 cursor-move ${styles.kpiGroupItem}`}
+                            >
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center">
+                                        <FontAwesomeIcon icon={faGripVertical} className="mr-3 text-gray-400 cursor-grab" />
+                                        <label htmlFor={`group-toggle-${groupKey}`} className="flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                id={`group-toggle-${groupKey}`}
+                                                checked={groupVisibility.visible}
+                                                onChange={() => toggleKpiGroupVisibility(groupKey)}
+                                                className="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 mr-2"
+                                            />
+                                            <span className="font-medium text-gray-700">{groupDef.label}</span>
+                                        </label>
+                                    </div>
+                                    <div className="space-x-1">
+                                        {/* Hier werden moveKpiGroup aufgerufen */}
+                                        <button onClick={() => moveKpiGroup(groupKey, 'up')} disabled={index === 0} className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"><FontAwesomeIcon icon={faArrowUp} /></button>
+                                        <button onClick={() => moveKpiGroup(groupKey, 'down')} disabled={index === kpiGroupOrder.length - 1} className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"><FontAwesomeIcon icon={faArrowDown} /></button>
+                                    </div>
+                                </div>
+                                {groupVisibility.visible && (
+                                    <ul className="pl-8 mt-2 space-y-1">
+                                        {groupDef.kpis.map(kpi => (
+                                            <li key={kpi.id} className="flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    id={`kpi-toggle-${groupKey}-${kpi.id}`}
+                                                    checked={groupVisibility.kpis?.[kpi.id] ?? true}
+                                                    onChange={() => toggleIndividualKpiVisibility(groupKey, kpi.id)}
+                                                    className="h-4 w-4 text-indigo-500 border-gray-300 rounded focus:ring-indigo-400 mr-2"
+                                                />
+                                                <label htmlFor={`kpi-toggle-${groupKey}-${kpi.id}`} className="text-sm text-gray-600 cursor-pointer">{kpi.label}</label>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </li>
+                        );
+                    })}
+                </ul>
+            </section>
+
+            <section className="mb-8">
+                <h3 className="text-lg font-medium text-gray-700 mb-4 font-serif flex items-center">
+                    {/* Hier wird faBullseye verwendet */}
+                    <FontAwesomeIcon icon={faBullseye} className="mr-2 text-gray-500" /> KPI Ziele definieren
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 p-4 border border-gray-200 rounded-lg bg-slate-50">
+                    <div className={styles.formGroup}>
+                        <label htmlFor="monthlyRevenueGoal" className="block text-sm font-medium text-gray-600">Monatsumsatzziel (€)</label>
+                        <input
+                            type="number"
+                            id="monthlyRevenueGoal"
+                            value={kpiGoals.monthlyRevenueGoal || ''}
+                            onChange={(e) => handleGoalChange('monthlyRevenueGoal', e.target.value)}
+                            placeholder="z.B. 5000"
+                            className={`mt-1 w-full p-2.5 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`}
+                        />
                     </div>
-                    <div className="form-group settings-form-group">
-                        <label htmlFor="salonSlogan">Salon Slogan/Kurzbeschreibung</label>
-                        <input type="text" id="salonSlogan" name="salonSlogan" value={salonSettings.salonSlogan} onChange={handleSalonSettingChange} />
+                    <div className={styles.formGroup}>
+                        <label htmlFor="monthlyAppointmentsGoal" className="block text-sm font-medium text-gray-600">Monatliches Terminziel (Anzahl)</label>
+                        <input
+                            type="number"
+                            id="monthlyAppointmentsGoal"
+                            value={kpiGoals.monthlyAppointmentsGoal || ''}
+                            onChange={(e) => handleGoalChange('monthlyAppointmentsGoal', e.target.value)}
+                            placeholder="z.B. 100"
+                            className={`mt-1 w-full p-2.5 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`}
+                        />
                     </div>
-                    <div className="form-group settings-form-group">
-                        <label htmlFor="minBookingLeadTimeHours">Min. Vorlaufzeit Buchung (Std.)</label>
-                        <input type="number" id="minBookingLeadTimeHours" name="minBookingLeadTimeHours" value={salonSettings.minBookingLeadTimeHours} onChange={handleSalonSettingChange} min="0" />
-                    </div>
-                    <div className="form-group settings-form-group">
-                        <label htmlFor="maxBookingHorizonDays">Max. Buchungshorizont (Tage)</label>
-                        <input type="number" id="maxBookingHorizonDays" name="maxBookingHorizonDays" value={salonSettings.maxBookingHorizonDays} onChange={handleSalonSettingChange} min="1" />
-                    </div>
-                    <div className="form-group settings-form-group">
-                        <label htmlFor="cancellationGracePeriodHours">Stornierungsfrist (Std. vorher)</label>
-                        <input type="number" id="cancellationGracePeriodHours" name="cancellationGracePeriodHours" value={salonSettings.cancellationGracePeriodHours} onChange={handleSalonSettingChange} min="0" />
-                    </div>
-                    <div className="form-group settings-form-group">
-                        <label htmlFor="defaultSlotDurationMinutes">Standard Terminslot (Min.)</label>
-                        <select id="defaultSlotDurationMinutes" name="defaultSlotDurationMinutes" value={salonSettings.defaultSlotDurationMinutes} onChange={handleSalonSettingChange}>
-                            <option value="15">15 Minuten</option>
-                            <option value="30">30 Minuten</option>
-                            <option value="45">45 Minuten</option>
-                            <option value="60">60 Minuten</option>
+                </div>
+            </section>
+
+            <section className="mb-8">
+                <h3 className="text-lg font-medium text-gray-700 mb-4 font-serif flex items-center">
+                    <FontAwesomeIcon icon={faTags} className="mr-2 text-gray-500" /> Diagramm-Einstellungen
+                </h3>
+                <div className="p-4 border border-gray-200 rounded-lg bg-slate-50">
+                    <div className={styles.formGroup}>
+                        <label htmlFor="topNServices" className="block text-sm font-medium text-gray-600">Anzahl Top Dienstleistungen im Diagramm</label>
+                        <select
+                            id="topNServices"
+                            value={topNServices}
+                            onChange={(e) => setTopNServices(parseInt(e.target.value, 10))}
+                            className={`mt-1 block w-full sm:w-auto p-2.5 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`}
+                        >
+                            <option value="3">Top 3</option>
+                            <option value="5">Top 5</option>
+                            <option value="7">Top 7</option>
+                            <option value="10">Top 10</option>
                         </select>
                     </div>
                 </div>
             </section>
 
-            <section className="settings-section">
-                <h3 className="settings-section-title"><FontAwesomeIcon icon={faBell} /> Benachrichtigungen</h3>
-                <div className="settings-grid two-columns">
-                    <div className="form-group settings-form-group">
-                        <label htmlFor="adminNotificationEmail">Admin E-Mail für Benachrichtigungen</label>
-                        <input type="email" id="adminNotificationEmail" name="adminNotificationEmail" value={salonSettings.adminNotificationEmail} onChange={handleSalonSettingChange} />
-                    </div>
-                    <div className="form-group settings-form-group toggle-setting">
-                        <label htmlFor="autoConfirmBookings">Automatische Buchungsbestätigung an Kunden</label>
-                        <div className="settings-toggle-switch">
-                            <input type="checkbox" id="autoConfirmBookings" name="autoConfirmBookings" checked={salonSettings.autoConfirmBookings} onChange={handleSalonSettingChange} />
-                            <label htmlFor="autoConfirmBookings" className="slider"></label>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section className="settings-section">
-                <h3 className="settings-section-title"><FontAwesomeIcon icon={faCalendarAlt} /> Dashboard Ansicht & KPIs</h3>
-                <p className="settings-section-description">
-                    Passen Sie an, welche Kennzahlengruppen und einzelne KPIs in Ihrer Dashboard-Übersicht angezeigt werden und in welcher Reihenfolge die Gruppen erscheinen.
-                </p>
-                {safeKpiGroupOrder.map((groupKey, index) => { {/* MODIFIED: Use safeKpiGroupOrder */}
-                    const groupDef = KPI_DEFINITIONS_DEFAULT[groupKey];
-                    if (!groupDef) return null;
-                    // Ensure kpiVisibility structure for the groupKey exists
-                    const groupVisibility = kpiVisibility[groupKey] || { visible: true, kpis: {} };
-                    const isGroupVisible = groupVisibility.visible;
-
-                    return (
-                        <fieldset key={groupKey} className="kpi-visibility-group">
-                            <legend className="kpi-group-legend">
-                                <div className="kpi-group-toggle">
-                                    <input
-                                        type="checkbox"
-                                        id={`toggle-group-${groupKey}`}
-                                        checked={isGroupVisible}
-                                        onChange={() => toggleKpiGroupVisibility(groupKey)}
-                                    />
-                                    <label htmlFor={`toggle-group-${groupKey}`}>{groupDef.label}</label>
-                                    <FontAwesomeIcon icon={isGroupVisible ? faEye : faEyeSlash} className="visibility-icon" />
-                                </div>
-                                <div className="kpi-group-order-buttons">
-                                    <button type="button" onClick={() => moveKpiGroup(groupKey, 'up')} disabled={index === 0} aria-label="Gruppe nach oben verschieben">
-                                        <FontAwesomeIcon icon={faAngleUp} />
-                                    </button>
-                                    <button type="button" onClick={() => moveKpiGroup(groupKey, 'down')} disabled={index === safeKpiGroupOrder.length - 1} aria-label="Gruppe nach unten verschieben">
-                                        <FontAwesomeIcon icon={faAngleDown} />
-                                    </button>
-                                </div>
-                            </legend>
-                            {isGroupVisible && (
-                                <div className="individual-kpi-toggles">
-                                    {groupDef.kpis.map(kpi => (
-                                        <div key={kpi.id} className="kpi-visibility-toggle individual">
-                                            <input
-                                                type="checkbox"
-                                                id={`toggle-kpi-${kpi.id}`}
-                                                checked={groupVisibility.kpis[kpi.id] ?? true} // Default to true if kpi.id is new
-                                                onChange={() => toggleIndividualKpiVisibility(groupKey, kpi.id)}
-                                            />
-                                            <label htmlFor={`toggle-kpi-${kpi.id}`}>{kpi.label}</label>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </fieldset>
-                    );
-                })}
-            </section>
-
-            <section className="settings-section">
-                <h3 className="settings-section-title">Monatsziele Festlegen</h3>
-                <p className="settings-section-description">
-                    Definieren Sie Ihre monatlichen Ziele für Umsatz und Terminanzahl. Diese werden in der KPI-Übersicht visualisiert.
-                </p>
-                <div className="kpi-goal-inputs settings-grid two-columns">
-                    <div className="form-group settings-form-group">
-                        <label htmlFor="monthlyRevenueGoal">Umsatzziel (€):</label>
-                        <input
-                            type="number"
-                            id="monthlyRevenueGoal"
-                            value={kpiGoals.monthlyRevenueGoal ?? ''}
-                            onChange={(e) => handleGoalChange('monthlyRevenueGoal', e.target.value)}
-                            placeholder="z.B. 5000"
-                            min="0"
-                        />
-                    </div>
-                    <div className="form-group settings-form-group">
-                        <label htmlFor="monthlyAppointmentsGoal">Terminanzahl-Ziel:</label>
-                        <input
-                            type="number"
-                            id="monthlyAppointmentsGoal"
-                            value={kpiGoals.monthlyAppointmentsGoal ?? ''}
-                            onChange={(e) => handleGoalChange('monthlyAppointmentsGoal', e.target.value)}
-                            placeholder="z.B. 100"
-                            min="0"
-                        />
-                    </div>
-                </div>
-            </section>
-
-            <section className="settings-section">
-                <h3 className="settings-section-title">Diagramm-Einstellungen</h3>
-                <p className="settings-section-description">
-                    Konfigurieren Sie die Darstellung Ihrer Diagramme.
-                </p>
-                <div className="form-group settings-form-group">
-                    <label htmlFor="topNServices">Anzahl Top Dienstleistungen (Diagramm):</label>
-                    <select
-                        id="topNServices"
-                        value={topNServicesConfig}
-                        onChange={(e) => setTopNServicesConfig(parseInt(e.target.value, 10))}
-                    >
-                        {[3, 5, 7, 10].map(n => <option key={n} value={n}>Top {n}</option>)}
-                    </select>
-                </div>
-            </section>
-
-            <div className="settings-save-action">
-                <button type="button" onClick={handleSaveSettings} className="button-link primary" disabled={isSaving}>
-                    {isSaving ? <><FontAwesomeIcon icon={faSpinner} spin /> Speichern...</> : <><FontAwesomeIcon icon={faSave} /> Alle Einstellungen Speichern</>}
+            <div className="mt-8 pt-6 border-t border-gray-300 flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4">
+                <button
+                    onClick={handleResetSettings}
+                    className={`px-6 py-2.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-150 ${styles.actionButton} ${styles.resetButton}`}
+                >
+                    <FontAwesomeIcon icon={faUndo} className="mr-2" />
+                    Zurücksetzen
+                </button>
+                <button
+                    onClick={handleSaveSettings}
+                    className={`inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-150 ${styles.actionButton} ${styles.saveButton}`}
+                >
+                    <FontAwesomeIcon icon={faSave} className="mr-2" />
+                    Einstellungen speichern
                 </button>
             </div>
         </div>

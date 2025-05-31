@@ -1,0 +1,54 @@
+/* friseursalon-frontend/src/components/ServiceEditModal.module.css */
+
+/*
+  Die meisten Stile für das Modal-Overlay, den Content-Container und die Formularelemente
+  werden durch Tailwind CSS direkt in der JS-Datei gehandhabt.
+  Dieses Modul enthält spezifische Stile oder Verfeinerungen.
+*/
+
+.modalContent {
+    /* Tailwind im JS: bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col */
+    /* Hier könnten z.B. spezifische Animationen für das Erscheinen des Inhalts hin,
+       wenn die globalen .animate-slideInModalContent nicht ausreichen. */
+}
+
+.formGroup {
+    /* Tailwind im JS: space-y-5 im Formular-Tag, oder spezifische mb-X auf den Gruppen */
+    /* Dient als semantischer Haken. */
+}
+
+.formInput {
+    /* Tailwind im JS: w-full px-3 py-2.5 border border-gray-300 rounded-md shadow-sm ... */
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.formTextarea { /* Spezifisch für Textarea, falls nötig */
+    min-height: 80px; /* Stellt sicher, dass die Textarea eine vernünftige Mindesthöhe hat */
+}
+
+.actionButton {
+    /* Tailwind im JS: px-5 py-2.5 border rounded-md text-sm font-medium ... */
+}
+
+.saveButton {
+    /* Tailwind im JS: bg-indigo-600 hover:bg-indigo-700 text-white ... */
+}
+
+.cancelButton {
+    /* Tailwind im JS: border-gray-300 text-gray-700 hover:bg-gray-100 ... */
+}
+
+.formMessage {
+    /* Tailwind im JS: p-3 rounded-md border text-sm flex items-center ... */
+    /* Farben werden dynamisch im JS gesetzt. */
+}
+
+.formMessage.error {
+    /* Semantischer Haken */
+}
+.formMessage.success {
+    /* Semantischer Haken */
+}
+
+/* Globale Animationsklassen (animate-fadeInModalOverlay, animate-slideInModalContent)
+   sollten in App.css oder einer ähnlichen globalen Datei definiert sein. */

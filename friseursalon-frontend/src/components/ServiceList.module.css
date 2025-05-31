@@ -1,25 +1,29 @@
-/* friseursalon-frontend/src/components/CustomerManagement.module.css */
+/* friseursalon-frontend/src/components/ServiceList.module.css */
 
 /*
-  Da die CustomerManagement-Komponente primär mit Tailwind CSS gestylt wird,
+  Da die ServiceList primär mit Tailwind CSS gestylt wird,
   enthält dieses Modul möglicherweise nur sehr spezifische Stile oder bleibt leer.
   Es dient als Platzhalter für zukünftige, komplexere Anpassungen.
 */
 
-.customerManagementContainer {
+.serviceListContainer {
     /* Tailwind im JS: bg-white p-4 sm:p-6 rounded-xl shadow-lg */
+    /* Hier könnten z.B. globale Einstellungen für die Schriftart innerhalb dieser Komponente hin,
+       wenn sie von den Dashboard-Standards abweichen soll. */
 }
 
 .message {
     /* Tailwind im JS: mb-4 p-3 rounded-md border text-sm flex items-center */
+    /* Farben etc. werden direkt im JS via Tailwind gesetzt. */
 }
 
-.noCustomers {
+.noServices {
     /* Tailwind im JS: text-center py-8 px-6 bg-slate-50 rounded-lg */
 }
 
 .tableContainer {
     /* Tailwind im JS: overflow-x-auto shadow rounded-lg */
+    /* Stellt sicher, dass die Tabelle auf kleinen Bildschirmen scrollbar ist. */
 }
 
 .appTable {
@@ -28,6 +32,7 @@
 
 .appTable th {
     /* Tailwind im JS: px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider */
+    /* (aus der thead mit bg-slate-50) */
 }
 
 .tableRow:hover {
@@ -40,4 +45,5 @@
 
 .actionButton {
     /* Tailwind im JS: p-1.5 rounded-md transition-colors */
+    /* Farben werden direkt im JS via Tailwind gesetzt (z.B. text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50) */
 }

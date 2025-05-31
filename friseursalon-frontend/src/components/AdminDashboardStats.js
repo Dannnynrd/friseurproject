@@ -1,7 +1,8 @@
 // Datei: friseursalon-frontend/src/components/AdminDashboardStats.js
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import api from '../services/api.service';
-import './AdminDashboardStats.module.css'; // CSS-Import
+// Korrekter Import für CSS-Module
+import styles from './AdminDashboardStats.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faChartLine, faCalendarCheck, faSpinner, faUsers,
@@ -33,13 +34,17 @@ import RevenueOverTimeRechart from './charts/RevenueOverTimeRechart';
 import AppointmentsByHourRechart from './charts/AppointmentsByHourRechart';
 
 const AppointmentsByEmployeeRechart = ({ title }) => (
-    <>
-        <h4 className="chart-title"><FontAwesomeIcon icon={faUsersGear} /> {title || 'Termine / Mitarbeiter'}</h4>
-        <p className="chart-no-data-message">
+    // Tailwind für Karten-Styling hier anwenden
+    <div className="p-4 bg-white rounded-lg shadow">
+        <h4 className={`text-md font-semibold text-gray-700 mb-2 flex items-center ${styles.chartTitle || 'chart-title'}`}> {/* Fallback für CSS-Modul */}
+            <FontAwesomeIcon icon={faUsersGear} className="mr-2 text-gray-500" />
+            {title || 'Termine / Mitarbeiter'}
+        </h4>
+        <p className={`text-sm text-gray-500 ${styles.chartNoDataMessage || 'chart-no-data-message'}`}>
             Dieses Diagramm wird relevant, sobald mehrere Mitarbeiter verwaltet werden.
             <br/><small>(Benötigt zukünftige Backend-Anpassung)</small>
         </p>
-    </>
+    </div>
 );
 
 registerLocale('de', deLocale);
@@ -62,8 +67,6 @@ const KPI_GOALS_STORAGE_KEY = 'friseurDashboardKpiGoals_v1';
 const KPI_GROUP_ORDER_STORAGE_KEY = 'friseurDashboardKpiGroupOrder_v1';
 const TOP_N_SERVICES_STORAGE_KEY = 'friseurDashboardTopNServices_v1';
 
-// Stellen Sie sicher, dass hier für jeden KPI ein 'tooltip'-Text definiert ist,
-// wenn ein Fragezeichen-Icon dafür angezeigt werden soll.
 const KPI_DEFINITIONS = {
     main: {
         label: "Hauptkennzahlen",
@@ -144,13 +147,17 @@ const CustomDateRangeModal = ({ isOpen, onClose, startDate, endDate, onStartDate
     if (!isOpen) return null;
 
     return (
-        <div className="custom-date-pickers-modal-overlay" onClick={onClose}>
-            <div className="custom-date-pickers-modal-content" onClick={(e) => e.stopPropagation()}>
-                <button className="modal-close-button top-right" onClick={onClose} aria-label="Schließen">
-                    <FontAwesomeIcon icon={faTimes} />
+        <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1070] p-4 ${styles.customDatePickersModalOverlay || 'custom-date-pickers-modal-overlay'}`} onClick={onClose}>
+            <div className={`bg-white p-6 rounded-lg shadow-xl w-auto min-w-[300px] max-w-2xl relative ${styles.customDatePickersModalContent || 'custom-date-pickers-modal-content'}`} onClick={(e) => e.stopPropagation()}>
+                <button
+                    className={`absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-1 rounded-full ${styles.modalCloseButton || 'modal-close-button'}`}
+                    onClick={onClose}
+                    aria-label="Schließen"
+                >
+                    <FontAwesomeIcon icon={faTimes} size="lg"/>
                 </button>
-                <h4>Benutzerdefinierten Zeitraum wählen</h4>
-                <div className="custom-date-pickers-inline">
+                <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center pb-2 border-b border-gray-200">Benutzerdefinierten Zeitraum wählen</h4>
+                <div className={`flex flex-col sm:flex-row gap-4 justify-center ${styles.customDatePickersInline || 'custom-date-pickers-inline'}`}>
                     <DatePicker
                         selected={startDate}
                         onChange={onStartDateChange}
@@ -160,7 +167,7 @@ const CustomDateRangeModal = ({ isOpen, onClose, startDate, endDate, onStartDate
                         dateFormat="dd.MM.yyyy"
                         locale="de"
                         placeholderText="Startdatum"
-                        className="date-picker-input"
+                        className={`w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 ${styles.datePickerInput || 'date-picker-input'}`}
                         maxDate={addMonths(new Date(), 12)}
                         inline
                     />
@@ -175,13 +182,25 @@ const CustomDateRangeModal = ({ isOpen, onClose, startDate, endDate, onStartDate
                         dateFormat="dd.MM.yyyy"
                         locale="de"
                         placeholderText="Enddatum"
-                        className="date-picker-input"
+                        className={`w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 ${styles.datePickerInput || 'date-picker-input'}`}
                         inline
                     />
                 </div>
-                <div className="custom-date-modal-actions">
-                    <button onClick={onClose} className="button-link-outline small-button" disabled={isLoading}>Abbrechen</button>
-                    <button onClick={onApply} className="button-link small-button" disabled={isLoading || !startDate || !endDate}>Anwenden</button>
+                <div className={`flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 ${styles.customDateModalActions || 'custom-date-modal-actions'}`}>
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                        disabled={isLoading}
+                    >
+                        Abbrechen
+                    </button>
+                    <button
+                        onClick={onApply}
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
+                        disabled={isLoading || !startDate || !endDate}
+                    >
+                        Anwenden
+                    </button>
                 </div>
             </div>
         </div>
@@ -286,50 +305,16 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         setTimeout(() => setCustomizationMessage(''), 3000);
     };
 
-    useEffect(() => { localStorage.setItem(KPI_VISIBILITY_STORAGE_KEY, JSON.stringify(kpiVisibility)); /*showAndClearCustomizationMessage("KPI Sichtbarkeit aktualisiert.");*/ }, [kpiVisibility]);
-    useEffect(() => { localStorage.setItem(KPI_GOALS_STORAGE_KEY, JSON.stringify(kpiGoals)); /*showAndClearCustomizationMessage("KPI Ziele aktualisiert.");*/ }, [kpiGoals]);
-    useEffect(() => { localStorage.setItem(KPI_GROUP_ORDER_STORAGE_KEY, JSON.stringify(kpiGroupOrder)); /*showAndClearCustomizationMessage("KPI Reihenfolge aktualisiert.");*/ }, [kpiGroupOrder]);
-    // Die folgende Zeile wurde angepasst, um die Nachricht nur anzuzeigen, wenn sich der Wert tatsächlich ändert und nicht beim initialen Laden.
+    useEffect(() => { localStorage.setItem(KPI_VISIBILITY_STORAGE_KEY, JSON.stringify(kpiVisibility)); }, [kpiVisibility]);
+    useEffect(() => { localStorage.setItem(KPI_GOALS_STORAGE_KEY, JSON.stringify(kpiGoals)); }, [kpiGoals]);
+    useEffect(() => { localStorage.setItem(KPI_GROUP_ORDER_STORAGE_KEY, JSON.stringify(kpiGroupOrder)); }, [kpiGroupOrder]);
+
     const firstUpdateTopNServices = useRef(true);
-    useEffect(() => {
-        if (firstUpdateTopNServices.current) {
-            firstUpdateTopNServices.current = false;
-            return;
-        }
-        localStorage.setItem(TOP_N_SERVICES_STORAGE_KEY, topNServicesConfig.toString());
-        showAndClearCustomizationMessage("Top N Services aktualisiert.");
-        fetchMainStatsAndCharts(currentFilterStartDate, currentFilterEndDate);
-    }, [topNServicesConfig, currentFilterStartDate, currentFilterEndDate]); // fetchMainStatsAndCharts als Abhängigkeit entfernt, um Endlosschleife zu vermeiden
 
-    const handleGoalChange = (goalKey, value) => {
-        const numericValue = value === '' ? null : Number(value);
-        if (value === '' || (!isNaN(numericValue) && numericValue >= 0)) {
-            setKpiGoals(prev => ({ ...prev, [goalKey]: numericValue }));
-            showAndClearCustomizationMessage("KPI Ziel angepasst.");
-        }
-    };
-    const toggleKpiGroupVisibility = (groupKey) => {
-        setKpiVisibility(prev => ({ ...prev, [groupKey]: { ...prev[groupKey], visible: !prev[groupKey].visible } }));
-        showAndClearCustomizationMessage("KPI Gruppe Sichtbarkeit geändert.");
-    };
-    const toggleIndividualKpiVisibility = (groupKey, kpiId) => {
-        setKpiVisibility(prev => ({ ...prev, [groupKey]: { ...prev[groupKey], kpis: { ...prev[groupKey].kpis, [kpiId]: !prev[groupKey].kpis[kpiId] } } }));
-        showAndClearCustomizationMessage("KPI Sichtbarkeit geändert.");
-    };
-
-    const moveKpiGroup = (groupKey, direction) => {
-        setKpiGroupOrder(prevOrder => {
-            const currentIndex = prevOrder.indexOf(groupKey); if (currentIndex === -1) return prevOrder;
-            const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-            if (newIndex < 0 || newIndex >= prevOrder.length) return prevOrder;
-            const newOrder = [...prevOrder]; [newOrder[currentIndex], newOrder[newIndex]] = [newOrder[newIndex], newOrder[currentIndex]];
-            return newOrder;
-        });
-        showAndClearCustomizationMessage("KPI Gruppenreihenfolge geändert.");
-    };
-
-
-    const fetchMainStatsAndCharts = useCallback(async (startDate, endDate) => {
+    // fetchMainStatsAndCharts als useCallback definieren
+    // Der Name wurde zu fetchMainStatsAndCharts_Memoized geändert, um Konflikte zu vermeiden,
+    // falls die ursprüngliche Funktion noch irgendwo referenziert wird (obwohl sie jetzt durch diese ersetzt werden sollte).
+    const fetchMainStatsAndCharts_Memoized = useCallback(async (startDate, endDate) => {
         setIsLoadingStats(true);
         let currentError = '';
         try {
@@ -357,7 +342,6 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             } else {
                 backendStats.capacityUtilizationPercentage = null;
             }
-
 
             if (dayRes instanceof Error) { currentError += `Termine/Tag: ${dayRes.response?.data?.message || dayRes.message}; `; setAppointmentsByDayData({labels: [], data: []}); }
             else setAppointmentsByDayData({ labels: dayRes.data.map(d => d.dayName ? d.dayName.substring(0, 2) : "Unb."), data: dayRes.data.map(d => d.appointmentCount || 0) });
@@ -426,7 +410,18 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             setError(currentError.trim());
             setIsLoadingStats(false);
         }
-    }, [selectedPeriod, topNServicesConfig, showCustomDatePickersModal]);
+    }, [selectedPeriod, topNServicesConfig, showCustomDatePickersModal]); // Abhängigkeiten von fetchMainStatsAndCharts_Memoized
+
+    useEffect(() => {
+        if (firstUpdateTopNServices.current) {
+            firstUpdateTopNServices.current = false;
+            return;
+        }
+        localStorage.setItem(TOP_N_SERVICES_STORAGE_KEY, topNServicesConfig.toString());
+        showAndClearCustomizationMessage("Top N Services aktualisiert.");
+        // Rufe die memoized Version auf
+        fetchMainStatsAndCharts_Memoized(currentFilterStartDate, currentFilterEndDate);
+    }, [topNServicesConfig, currentFilterStartDate, currentFilterEndDate, fetchMainStatsAndCharts_Memoized]); // fetchMainStatsAndCharts_Memoized als Abhängigkeit
 
 
     const fetchActivityAndUpcoming = useCallback(async () => {
@@ -445,7 +440,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         }
     }, []);
 
-    useEffect(() => { fetchMainStatsAndCharts(currentFilterStartDate, currentFilterEndDate); }, [currentFilterStartDate, currentFilterEndDate, fetchMainStatsAndCharts]);
+    useEffect(() => { fetchMainStatsAndCharts_Memoized(currentFilterStartDate, currentFilterEndDate); }, [currentFilterStartDate, currentFilterEndDate, fetchMainStatsAndCharts_Memoized]);
     useEffect(() => { fetchActivityAndUpcoming(); }, [onAppointmentAction, fetchActivityAndUpcoming]);
 
     const handlePeriodChange = (period) => {
@@ -519,7 +514,6 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         return <span className={`comparison-data ${colorClass}`}><FontAwesomeIcon icon={icon} /> {changeText}</span>;
     };
 
-    // KpiCard Komponente hier (oder global, wenn in mehreren Dateien verwendet)
     const KpiCard = ({ label, value, icon, iconClass, comparison, tooltipText, isMain = false, goalValue, isCurrency = false, isPercentage = false }) => {
         let progressPercent = null; let goalText = null;
         if (goalValue != null && value != null && value !== 'N/A') {
@@ -532,22 +526,24 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         const cardTitleTooltip = tooltipText || label;
 
         return (
-            <div className={`stat-card ${isMain ? 'main-kpi' : 'small-kpi'}`} title={cardTitleTooltip}>
-                <div className="stat-card-header">
-                    <FontAwesomeIcon icon={icon} className={`stat-icon ${iconClass || ''}`} />
-                    <span className="stat-label">{label}</span>
+            <div className={`bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow duration-200 ${styles.statCard} ${isMain ? styles.mainKpi : styles.smallKpi}`} title={cardTitleTooltip}>
+                <div className={`flex items-center text-gray-500 mb-1 ${styles.statCardHeader}`}>
+                    <FontAwesomeIcon icon={icon} className={`w-4 h-4 mr-2 ${styles.statIcon} ${iconClass ? styles[iconClass] : ''}`} />
+                    <span className={`text-xs font-medium uppercase tracking-wider ${styles.statLabel}`}>{label}</span>
                     {tooltipText && (
-                        <span className="kpi-tooltip-wrapper" data-tooltip={tooltipText}>
-                            <FontAwesomeIcon icon={faQuestionCircle} className="stat-tooltip-icon" />
+                        <span className={`ml-auto relative ${styles.kpiTooltipWrapper}`} data-tooltip={tooltipText}>
+                            <FontAwesomeIcon icon={faQuestionCircle} className={`w-3.5 h-3.5 text-gray-400 hover:text-gray-600 cursor-help ${styles.statTooltipIcon}`} />
                         </span>
                     )}
                 </div>
-                <div className={`stat-value ${isMain ? 'large' : ''}`}>{value == null || value === undefined ? 'N/A' : value}</div>
-                {comparison && <div className="stat-comparison">{comparison}</div>}
+                <div className={`font-bold ${isMain ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'} text-gray-800 ${styles.statValue}`}>{value == null || value === undefined ? 'N/A' : value}</div>
+                {comparison && <div className={`text-xs mt-1 ${styles.statComparison}`}>{comparison}</div>}
                 {progressPercent !== null && (
-                    <div className="kpi-goal-progress" title={`Ziel: ${isCurrency ? formatCurrency(goalValue) : (isPercentage ? formatPercentage(goalValue) : goalValue)}`}>
-                        <div className="progress-bar-container"><div className="progress-bar" style={{ width: `${progressPercent}%` }}></div></div>
-                        <span className="goal-text">{goalText}</span>
+                    <div className={`mt-2 ${styles.kpiGoalProgress}`} title={`Ziel: ${isCurrency ? formatCurrency(goalValue) : (isPercentage ? formatPercentage(goalValue) : goalValue)}`}>
+                        <div className={`w-full bg-gray-200 rounded-full h-1.5 ${styles.progressBarContainer}`}>
+                            <div className={`bg-green-500 h-1.5 rounded-full ${styles.progressBar}`} style={{ width: `${progressPercent}%` }}></div>
+                        </div>
+                        <span className={`text-xs text-gray-500 mt-0.5 block text-right ${styles.goalText}`}>{goalText}</span>
                     </div>
                 )}
             </div>
@@ -556,18 +552,18 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
 
     const renderStatCards = () => {
         if (isLoadingStats && !detailedStats) {
-            return (<div className="stats-overview-cards kpi-group">
+            return (<div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ${styles.statsOverviewCards} ${styles.kpiGroup}`}>
                 {Array(4).fill(0).map((_, i) => (
-                    <div key={`skel-main-${i}`} className="stat-card main-kpi is-loading-skeleton">
-                        <div className="stat-card-header-skeleton"></div> <div className="stat-value-skeleton large"></div> <div className="stat-comparison-skeleton"></div>
+                    <div key={`skel-main-${i}`} className={`bg-white p-4 rounded-lg shadow animate-pulse ${styles.statCard} ${styles.mainKpi}`}>
+                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div> <div className="h-8 bg-gray-300 rounded w-1/2 mb-1"></div> <div className="h-3 bg-gray-200 rounded w-1/2"></div>
                     </div>))}
                 {Array(6).fill(0).map((_, i) => (
-                    <div key={`skel-small-${i}`} className="stat-card small-kpi is-loading-skeleton">
-                        <div className="stat-card-header-skeleton"></div> <div className="stat-value-skeleton"></div>
+                    <div key={`skel-small-${i}`} className={`bg-white p-4 rounded-lg shadow animate-pulse ${styles.statCard} ${styles.smallKpi}`}>
+                        <div className="h-3 bg-gray-200 rounded w-2/3 mb-2"></div> <div className="h-6 bg-gray-300 rounded w-1/3"></div>
                     </div>))}
             </div>);
         }
-        if (!detailedStats) return <p className="stat-card-no-data">Keine Kennzahlen verfügbar.</p>;
+        if (!detailedStats) return <p className={`p-4 text-center text-gray-500 ${styles.statCardNoData}`}>Keine Kennzahlen verfügbar.</p>;
 
         const kpiData = {
             totalAppointmentsInPeriod: detailedStats.totalAppointmentsInPeriod ?? '0',
@@ -592,9 +588,9 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             if (!kpiVisibility[groupKey]?.visible) return null;
             const groupDef = KPI_DEFINITIONS[groupKey]; if (!groupDef) return null;
             return (<React.Fragment key={groupKey}>
-                {groupKey !== kpiGroupOrder[0] && <hr className="kpi-divider" />}
-                <h4 className="stats-section-subtitle">{groupDef.label}</h4>
-                <div className="stats-overview-cards kpi-group">
+                {groupKey !== kpiGroupOrder[0] && <hr className={`my-6 border-gray-200 ${styles.kpiDivider}`} />}
+                <h4 className={`text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 ${styles.statsSectionSubtitle}`}>{groupDef.label}</h4>
+                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ${styles.statsOverviewCards} ${styles.kpiGroup}`}>
                     {groupDef.kpis.filter(kpiDef => kpiVisibility[groupKey]?.kpis[kpiDef.id] ?? true).map(kpiDef => {
                         let comparisonValue = null;
                         if (kpiDef.comparisonKey && detailedStats[kpiDef.comparisonKey] != null && detailedStats[kpiDef.previousPeriodKey] !== undefined) {
@@ -612,19 +608,20 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
     };
 
     const renderKeyChanges = () => {
-        if (isLoadingStats || isLoadingActivity) return <p className="no-data-small"><FontAwesomeIcon icon={faSpinner} spin /> Lade Highlights...</p>;
+        if (isLoadingStats || isLoadingActivity) return <p className={`text-xs text-gray-500 text-center py-2 ${styles.noDataSmall}`}><FontAwesomeIcon icon={faSpinner} spin className="mr-1" /> Lade Highlights...</p>;
 
         const { positive, negative, neutral } = keyChanges;
         const allSortedChanges = [...positive, ...negative, ...neutral];
 
-        if (allSortedChanges.length === 0) return <p className="no-data-small">Keine signifikanten Veränderungen zur Vorperiode.</p>;
+        if (allSortedChanges.length === 0) return <p className={`text-xs text-gray-500 text-center py-2 ${styles.noDataSmall}`}>Keine signifikanten Veränderungen zur Vorperiode.</p>;
 
         return (
-            <ul className="key-changes-list">
+            <ul className={`space-y-1 ${styles.keyChangesList}`}>
                 {allSortedChanges.slice(0, 3).map(change => (
-                    <li key={change.label} className={`key-change-item ${change.value === 0 ? 'neutral' : (change.isGood ? 'positive' : 'negative')}`}>
-                        <FontAwesomeIcon icon={change.value === 0 ? faEquals : (change.value > 0 ? faArrowUp : faArrowDown)} />
-                        <span>{change.label}: {change.value > 0 ? '+' : ''}{Number(change.value).toFixed(1)}%</span>
+                    <li key={change.label} className={`flex items-center text-xs ${styles.keyChangeItem} ${change.value === 0 ? 'text-gray-600' : (change.isGood ? 'text-green-600' : 'text-red-600')}`}>
+                        <FontAwesomeIcon icon={change.value === 0 ? faEquals : (change.value > 0 ? faArrowUp : faArrowDown)} className="w-3 h-3 mr-1.5" />
+                        <span className="flex-grow truncate" title={change.label}>{change.label}:</span>
+                        <span className="font-medium ml-1">{change.value > 0 ? '+' : ''}{Number(change.value).toFixed(1)}%</span>
                     </li>
                 ))}
             </ul>
@@ -633,10 +630,13 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
 
 
     const renderDashboardAlerts = () => {
-        if (isLoadingStats || isLoadingActivity) return <p className="no-data-small"><FontAwesomeIcon icon={faSpinner} spin /> Lade Hinweise...</p>;
-        if (dashboardAlerts.length === 0) return <p className="no-data-small">Keine aktuellen Hinweise.</p>;
-        return (<ul className="dashboard-alerts-list">
-            {dashboardAlerts.map((a, i) => (<li key={i} className={`dashboard-alert-item alert-${a.type}`}><FontAwesomeIcon icon={a.type === 'warning' ? faExclamationCircle : faInfoCircle} /><span>{a.message}</span></li>))}
+        if (isLoadingStats || isLoadingActivity) return <p className={`text-xs text-gray-500 text-center py-2 ${styles.noDataSmall}`}><FontAwesomeIcon icon={faSpinner} spin className="mr-1" /> Lade Hinweise...</p>;
+        if (dashboardAlerts.length === 0) return <p className={`text-xs text-gray-500 text-center py-2 ${styles.noDataSmall}`}>Keine aktuellen Hinweise.</p>;
+        return (<ul className={`space-y-1.5 ${styles.dashboardAlertsList}`}>
+            {dashboardAlerts.map((a, i) => (<li key={i} className={`flex items-start text-xs p-2 rounded-md ${styles.dashboardAlertItem} ${a.type === 'warning' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
+                <FontAwesomeIcon icon={a.type === 'warning' ? faExclamationCircle : faInfoCircle} className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                <span>{a.message}</span>
+            </li>))}
         </ul>);
     };
 
@@ -663,31 +663,56 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
 
 
     return (
-        <div className="admin-dashboard-stats">
-            <div className="stats-period-filter-bar">
-                <div className="period-buttons-main">
+        <div className={`p-4 sm:p-6 lg:p-8 bg-slate-50 min-h-full ${styles.adminDashboardStats}`}>
+            <div className={`flex flex-wrap items-center gap-2 sm:gap-3 mb-6 p-3 bg-white rounded-lg shadow ${styles.statsPeriodFilterBar}`}>
+                <div className={`flex flex-wrap gap-1.5 ${styles.periodButtonsMain}`}>
                     {MAIN_PERIOD_OPTIONS.map(key => (
-                        <button key={key} onClick={() => handlePeriodChange(key)} className={`${selectedPeriod === key && !showCustomDatePickersModal ? 'active' : ''}`} aria-pressed={selectedPeriod === key && !showCustomDatePickersModal}>
+                        <button
+                            key={key}
+                            onClick={() => handlePeriodChange(key)}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors
+                                        ${selectedPeriod === key && !showCustomDatePickersModal
+                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50 hover:border-gray-400'}`}
+                            aria-pressed={selectedPeriod === key && !showCustomDatePickersModal}
+                        >
                             {PERIOD_LABELS[key]}
                         </button>
                     ))}
                 </div>
-                <div className="period-buttons-more" ref={morePeriodsDropdownRef}>
-                    <button onClick={() => setShowMorePeriodsDropdown(prev => !prev)} className="more-periods-btn" aria-expanded={showMorePeriodsDropdown}>
-                        Mehr <FontAwesomeIcon icon={showMorePeriodsDropdown ? faAngleUp : faAngleDown} />
+                <div className={`relative ${styles.periodButtonsMore}`} ref={morePeriodsDropdownRef}>
+                    <button
+                        onClick={() => setShowMorePeriodsDropdown(prev => !prev)}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md border bg-white text-gray-600 border-gray-300 hover:bg-gray-50 hover:border-gray-400 flex items-center ${styles.morePeriodsBtn}`}
+                        aria-expanded={showMorePeriodsDropdown}
+                    >
+                        Mehr <FontAwesomeIcon icon={showMorePeriodsDropdown ? faAngleUp : faAngleDown} className="ml-1.5 h-3 w-3" />
                     </button>
                     {showMorePeriodsDropdown && (
-                        <div className="more-periods-dropdown">
+                        <div className={`absolute top-full left-0 mt-1.5 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50 p-1.5 space-y-1 ${styles.morePeriodsDropdown}`}>
                             {MORE_PERIOD_OPTIONS.map(key => (
-                                <button key={key} onClick={() => handlePeriodChange(key)} className={`${selectedPeriod === key ? 'active' : ''}`} aria-pressed={selectedPeriod === key}>
+                                <button
+                                    key={key}
+                                    onClick={() => handlePeriodChange(key)}
+                                    className={`w-full text-left px-3 py-1.5 text-xs font-medium rounded hover:bg-gray-100 ${selectedPeriod === key ? 'text-indigo-600 font-semibold' : 'text-gray-700'}`}
+                                    aria-pressed={selectedPeriod === key}
+                                >
                                     {PERIOD_LABELS[key]}
                                 </button>
                             ))}
                         </div>
                     )}
                 </div>
-                <button onClick={() => handlePeriodChange(PERIOD_OPTIONS.CUSTOM)} className={`custom-period-btn ${selectedPeriod === PERIOD_OPTIONS.CUSTOM ? 'active' : ''}`} aria-pressed={selectedPeriod === PERIOD_OPTIONS.CUSTOM}>
-                    <FontAwesomeIcon icon={faFilter} /> {activeDateRangeLabel.startsWith("Custom:") ? activeDateRangeLabel.replace("Custom: ", "") : PERIOD_LABELS[PERIOD_OPTIONS.CUSTOM]}
+                <button
+                    onClick={() => handlePeriodChange(PERIOD_OPTIONS.CUSTOM)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md border flex items-center transition-colors
+                                ${selectedPeriod === PERIOD_OPTIONS.CUSTOM
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                        : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50 hover:border-gray-400'} ${styles.customPeriodBtn}`}
+                    aria-pressed={selectedPeriod === PERIOD_OPTIONS.CUSTOM}
+                >
+                    <FontAwesomeIcon icon={faFilter} className="mr-1.5 h-3.5 w-3.5" />
+                    {activeDateRangeLabel.startsWith("Custom:") || activeDateRangeLabel.startsWith("Zeitraum:") ? activeDateRangeLabel.replace(/Custom:|Zeitraum:/g, "").trim() : PERIOD_LABELS[PERIOD_OPTIONS.CUSTOM]}
                 </button>
             </div>
 
@@ -702,84 +727,116 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                 isLoading={isLoadingStats}
             />
 
-            {lastUpdated && <div className="last-updated-timestamp"><FontAwesomeIcon icon={faSyncAlt} />Datenstand: {formatDateFns(lastUpdated, 'dd.MM.yyyy HH:mm:ss')}</div>}
-            {(isLoadingStats || isLoadingDaily || isLoadingActivity) && !lastUpdated && <div className="loading-indicator-top"><FontAwesomeIcon icon={faSpinner} spin /> Daten werden geladen...</div>}
-            {error && <p className="form-message error mb-4"><FontAwesomeIcon icon={faExclamationCircle} /> Fehler: {error.replace(/;/g, '; ')}</p>}
+            {lastUpdated && <div className={`text-xs text-gray-500 text-right mb-4 -mt-2 flex items-center justify-end ${styles.lastUpdatedTimestamp}`}><FontAwesomeIcon icon={faSyncAlt} className="mr-1.5" />Datenstand: {formatDateFns(lastUpdated, 'dd.MM.yyyy HH:mm:ss')}</div>}
+            {(isLoadingStats || isLoadingDaily || isLoadingActivity) && !lastUpdated &&
+                <div className={`text-sm text-gray-500 text-center py-2 px-3 bg-blue-50 border border-blue-200 rounded-md mb-4 flex items-center justify-center ${styles.loadingIndicatorTop}`}>
+                    <FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> Daten werden geladen...
+                </div>
+            }
+            {error && <p className={`p-3 mb-4 text-sm rounded-md flex items-center bg-red-50 text-red-700 border border-red-200 ${styles.formMessage} ${styles.error}`}><FontAwesomeIcon icon={faExclamationCircle} className="mr-2 flex-shrink-0" /> Fehler: {error.replace(/;/g, '; ')}</p>}
+            {customizationMessage &&
+                <div className={`p-2 mb-3 text-xs rounded-md flex items-center justify-center bg-green-50 text-green-700 border border-green-200 ${styles.customizationFeedback} ${styles.success}`}>
+                    <FontAwesomeIcon icon={faCheckCircle} className="mr-1.5" /> {customizationMessage}
+                </div>
+            }
 
-            <div className="dashboard-grid-layout">
-                <div className="main-stats-column">
-                    <div className="stats-overview-cards-wrapper stats-section-box">
-                        <h3 className="stats-section-title">
-                            <span><FontAwesomeIcon icon={faChartLine} /> Kennzahlen</span>
-                            <span className="stats-period-display">({activeDateRangeLabel.startsWith("Custom:") ? activeDateRangeLabel.replace("Custom: ", "") : activeDateRangeLabel})</span>
+            <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 ${styles.dashboardGridLayout}`}>
+                <div className={`lg:col-span-2 space-y-6 ${styles.mainStatsColumn}`}>
+                    <div className={`bg-white p-5 rounded-xl shadow-lg ${styles.statsOverviewCardsWrapper} ${styles.statsSectionBox}`}>
+                        <h3 className={`text-lg font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200 flex items-center justify-between ${styles.statsSectionTitle}`}>
+                            <span><FontAwesomeIcon icon={faChartLine} className="mr-2 text-indigo-500" /> Kennzahlen</span>
+                            <span className={`text-xs font-normal text-gray-500 ${styles.statsPeriodDisplay}`}>({activeDateRangeLabel.startsWith("Custom:") || activeDateRangeLabel.startsWith("Zeitraum:") ? activeDateRangeLabel.replace(/Custom:|Zeitraum:/g, "").trim() : activeDateRangeLabel})</span>
                         </h3>
                         {renderStatCards()}
                     </div>
-                    <div className="charts-section-wrapper stats-section-box">
-                        <div className="section-header-with-export">
-                            <h3 className="stats-section-title"><span><FontAwesomeIcon icon={faChartPie} /> Visuelle Analysen</span><span className="stats-period-display">({activeDateRangeLabel.startsWith("Custom:") ? activeDateRangeLabel.replace("Custom: ", "") : activeDateRangeLabel})</span></h3>
+                    <div className={`bg-white p-5 rounded-xl shadow-lg ${styles.chartsSectionWrapper} ${styles.statsSectionBox}`}>
+                        <div className={`flex justify-between items-center mb-4 pb-2 border-b border-gray-200 ${styles.sectionHeaderWithExport}`}>
+                            <h3 className={`text-lg font-semibold text-gray-700 flex items-center ${styles.statsSectionTitle}`}>
+                                <FontAwesomeIcon icon={faChartPie} className="mr-2 text-indigo-500" /> Visuelle Analysen
+                                <span className={`text-xs font-normal text-gray-500 ml-2 ${styles.statsPeriodDisplay}`}>({activeDateRangeLabel.startsWith("Custom:") || activeDateRangeLabel.startsWith("Zeitraum:") ? activeDateRangeLabel.replace(/Custom:|Zeitraum:/g, "").trim() : activeDateRangeLabel})</span>
+                            </h3>
                         </div>
-                        <div className="charts-grid">
-                            <div className="chart-card revenue-chart-card">
-                                <RevenueOverTimeRechart chartData={revenueOverTimeData} title="Umsatzentwicklung" periodLabel={activeDateRangeLabel.startsWith("Custom:") ? activeDateRangeLabel.replace("Custom: ", "") : activeDateRangeLabel} />
-                                <button onClick={() => exportToCsv(`umsatz_${currentFilterStartDate}_${currentFilterEndDate}.csv`, revenueOverTimeData, ["Datum", "Umsatz"])} className="button-link-outline export-chart-btn" title="Umsatzdaten exportieren"><FontAwesomeIcon icon={faDownload} /></button>
+                        <div className={`grid grid-cols-1 md:grid-cols-2 gap-5 ${styles.chartsGrid}`}>
+                            <div className={`relative ${styles.chartCard} ${styles.revenueChartCard}`}>
+                                <RevenueOverTimeRechart chartData={revenueOverTimeData} title="Umsatzentwicklung" periodLabel={activeDateRangeLabel.startsWith("Custom:") || activeDateRangeLabel.startsWith("Zeitraum:") ? activeDateRangeLabel.replace(/Custom:|Zeitraum:/g, "").trim() : activeDateRangeLabel} />
+                                <button onClick={() => exportToCsv(`umsatz_${currentFilterStartDate}_${currentFilterEndDate}.csv`, revenueOverTimeData, ["Datum", "Umsatz"])} className={`absolute top-2 right-2 p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 text-xs ${styles.exportChartBtn}`} title="Umsatzdaten exportieren"><FontAwesomeIcon icon={faDownload} /></button>
                             </div>
-                            <div className="chart-card"><AppointmentsByDayRechart chartData={appointmentsByDayData} title="Termine / Wochentag" /><button onClick={() => exportToCsv(`termine_tag_${currentFilterStartDate}_${currentFilterEndDate}.csv`, appointmentsByDayData.labels.map((l,i) => ({Wochentag: l, Termine: appointmentsByDayData.data[i]})), ["Wochentag", "Termine"])} className="button-link-outline export-chart-btn" title="Termine/Tag Daten exportieren"><FontAwesomeIcon icon={faDownload} /></button></div>
-                            <div className="chart-card"><AppointmentsByServiceRechart chartData={appointmentsByServiceData} title={`Top ${topNServicesConfig} Dienstleistungen`} /><button onClick={() => exportToCsv(`termine_service_${currentFilterStartDate}_${currentFilterEndDate}.csv`, appointmentsByServiceData.labels.map((l,i) => ({Dienstleistung: l, Termine: appointmentsByServiceData.data[i]})), ["Dienstleistung", "Termine"])} className="button-link-outline export-chart-btn" title="Termine/Service Daten exportieren"><FontAwesomeIcon icon={faDownload} /></button></div>
-                            <div className="chart-card">
+                            <div className={`relative ${styles.chartCard}`}>
+                                <AppointmentsByDayRechart chartData={appointmentsByDayData} title="Termine / Wochentag" />
+                                <button onClick={() => exportToCsv(`termine_tag_${currentFilterStartDate}_${currentFilterEndDate}.csv`, appointmentsByDayData.labels.map((l,i) => ({Wochentag: l, Termine: appointmentsByDayData.data[i]})), ["Wochentag", "Termine"])} className={`absolute top-2 right-2 p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 text-xs ${styles.exportChartBtn}`} title="Termine/Tag Daten exportieren"><FontAwesomeIcon icon={faDownload} /></button>
+                            </div>
+                            <div className={`relative ${styles.chartCard}`}>
+                                <AppointmentsByServiceRechart chartData={appointmentsByServiceData} title={`Top ${topNServicesConfig} Dienstleistungen`} />
+                                <button onClick={() => exportToCsv(`termine_service_${currentFilterStartDate}_${currentFilterEndDate}.csv`, appointmentsByServiceData.labels.map((l,i) => ({Dienstleistung: l, Termine: appointmentsByServiceData.data[i]})), ["Dienstleistung", "Termine"])} className={`absolute top-2 right-2 p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 text-xs ${styles.exportChartBtn}`} title="Termine/Service Daten exportieren"><FontAwesomeIcon icon={faDownload} /></button>
+                            </div>
+                            <div className={`relative ${styles.chartCard}`}>
                                 <AppointmentsByHourRechart chartData={appointmentsByHourData} title="Terminauslastung / Stunde" />
-                                <button onClick={() => exportToCsv(`termine_stunde_${currentFilterStartDate}_${currentFilterEndDate}.csv`, appointmentsByHourData.map(item => ({Stunde: `${String(item.hour).padStart(2, '0')}:00`, Termine: item.appointmentCount})), ["Stunde", "Termine"])} className="button-link-outline export-chart-btn" title="Termine/Stunde Daten exportieren"><FontAwesomeIcon icon={faDownload} /></button>
+                                <button onClick={() => exportToCsv(`termine_stunde_${currentFilterStartDate}_${currentFilterEndDate}.csv`, appointmentsByHourData.map(item => ({Stunde: `${String(item.hour).padStart(2, '0')}:00`, Termine: item.appointmentCount})), ["Stunde", "Termine"])} className={`absolute top-2 right-2 p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 text-xs ${styles.exportChartBtn}`} title="Termine/Stunde Daten exportieren"><FontAwesomeIcon icon={faDownload} /></button>
                             </div>
-                            <div className="chart-card placeholder-chart-card"><AppointmentsByEmployeeRechart title="Termine / Mitarbeiter (Zukunft)" /></div>
+                            <div className={`${styles.chartCard} ${styles.placeholderChartCard}`}><AppointmentsByEmployeeRechart title="Termine / Mitarbeiter (Zukunft)" /></div>
                         </div>
                     </div>
                 </div>
 
-                <div className="sidebar-stats-column">
-                    <div className="quick-access-section stats-section-box">
-                        <h3 className="stats-section-title small-title"><span><FontAwesomeIcon icon={faBolt} /> Schnellzugriff & Aktivität</span></h3>
-                        <div className="quick-access-content">
-                            <button onClick={handleOpenCreateModal} className="button-link quick-create-button"><FontAwesomeIcon icon={faPlusCircle} /> Termin anlegen</button>
-                            <div className="booking-activity-widget">
-                                <h4>Neue Buchungen</h4>
-                                {isLoadingActivity || isLoadingStats ? <p className="no-data-small"><FontAwesomeIcon icon={faSpinner} spin /> Lade...</p> : (<>
-                                    <p>Heute: <span>{detailedStats?.newBookingsToday ?? 'N/A'}</span></p>
-                                    <p>Gestern: <span>{detailedStats?.newBookingsYesterday ?? 'N/A'}</span></p>
+                <div className={`space-y-6 ${styles.sidebarStatsColumn}`}>
+                    <div className={`bg-white p-5 rounded-xl shadow-lg ${styles.quickAccessSection} ${styles.statsSectionBox}`}>
+                        <h3 className={`text-base font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200 flex items-center ${styles.statsSectionTitle} ${styles.smallTitle}`}>
+                            <FontAwesomeIcon icon={faBolt} className="mr-2 text-indigo-500" /> Schnellzugriff & Aktivität
+                        </h3>
+                        <div className={`space-y-3 ${styles.quickAccessContent}`}>
+                            <button onClick={handleOpenCreateModal} className={`w-full inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 ${styles.quickCreateButton}`}>
+                                <FontAwesomeIcon icon={faPlusCircle} className="mr-2" /> Termin anlegen
+                            </button>
+                            <div className={`p-3 bg-slate-50 rounded-md border border-slate-200 ${styles.bookingActivityWidget}`}>
+                                <h4 className="text-xs font-semibold text-gray-600 mb-1 pb-1 border-b border-slate-200">Neue Buchungen</h4>
+                                {isLoadingActivity || isLoadingStats ? <p className={`text-xs text-gray-500 ${styles.noDataSmall}`}><FontAwesomeIcon icon={faSpinner} spin className="mr-1" /> Lade...</p> : (<>
+                                    <p className="text-xs text-gray-500">Heute: <span className="font-medium text-gray-700">{detailedStats?.newBookingsToday ?? 'N/A'}</span></p>
+                                    <p className="text-xs text-gray-500">Gestern: <span className="font-medium text-gray-700">{detailedStats?.newBookingsYesterday ?? 'N/A'}</span></p>
                                 </>)}
                             </div>
                         </div>
                     </div>
-                    <div className="salon-highlights-section stats-section-box">
-                        <h3 className="stats-section-title small-title"><span><FontAwesomeIcon icon={faBullseye} /> Wichtige Veränderungen</span><span className="stats-period-display">(vs. Vorperiode)</span></h3>
+                    <div className={`bg-white p-5 rounded-xl shadow-lg ${styles.salonHighlightsSection} ${styles.statsSectionBox}`}>
+                        <h3 className={`text-base font-semibold text-gray-700 mb-2 pb-2 border-b border-gray-200 flex items-center justify-between ${styles.statsSectionTitle} ${styles.smallTitle}`}>
+                            <span><FontAwesomeIcon icon={faBullseye} className="mr-2 text-indigo-500" /> Wichtige Veränderungen</span>
+                            <span className={`text-xs font-normal text-gray-500 ${styles.statsPeriodDisplay}`}>(vs. Vorp.)</span>
+                        </h3>
                         {renderKeyChanges()}
-                        <hr className="kpi-divider"/>
-                        <h3 className="stats-section-title small-title" style={{marginTop: '0.5rem'}}><span><FontAwesomeIcon icon={faBell} /> Hinweise & Alerts</span></h3>
+                        <hr className={`my-3 border-gray-200 ${styles.kpiDivider}`}/>
+                        <h3 className={`text-base font-semibold text-gray-700 mb-2 pb-2 border-b border-gray-200 flex items-center ${styles.statsSectionTitle} ${styles.smallTitle}`}>
+                            <FontAwesomeIcon icon={faBell} className="mr-2 text-indigo-500" /> Hinweise & Alerts
+                        </h3>
                         {renderDashboardAlerts()}
                     </div>
-                    <div className="daily-appointments-section stats-section-box">
-                        <div className="section-header-with-export">
-                            <h3 className="daily-appointments-heading"><FontAwesomeIcon icon={faListAlt} /> Heutige & Nächste Termine</h3>
-                            <button onClick={() => exportToCsv(`tagesliste.csv`, dailyAppointments.map(apt => ({Datum: apt.appointmentDate, Zeit: apt.startTime, Service: apt.serviceName, Kunde: `${apt.customerFirstName} ${apt.customerLastName}`, Status: apt.status})), ["Datum", "Zeit", "Service", "Kunde", "Status"])} className="button-link-outline export-list-btn" title="Terminliste exportieren"><FontAwesomeIcon icon={faDownload} /></button>
+                    <div className={`bg-white p-5 rounded-xl shadow-lg ${styles.dailyAppointmentsSection} ${styles.statsSectionBox}`}>
+                        <div className={`flex justify-between items-center mb-3 pb-2 border-b border-gray-200 ${styles.sectionHeaderWithExport}`}>
+                            <h3 className={`text-base font-semibold text-gray-700 flex items-center ${styles.dailyAppointmentsHeading}`}>
+                                <FontAwesomeIcon icon={faListAlt} className="mr-2 text-indigo-500" /> Heutige & Nächste Termine
+                            </h3>
+                            <button onClick={() => exportToCsv(`tagesliste.csv`, dailyAppointments.map(apt => ({Datum: apt.appointmentDate, Zeit: apt.startTime, Service: apt.serviceName, Kunde: `${apt.customerFirstName} ${apt.customerLastName}`, Status: apt.status})), ["Datum", "Zeit", "Service", "Kunde", "Status"])} className={`p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 text-xs ${styles.exportListBtn}`} title="Terminliste exportieren"><FontAwesomeIcon icon={faDownload} /></button>
                         </div>
-                        {isLoadingDaily ? <div className="loading-message-stats small-list-loader"><FontAwesomeIcon icon={faSpinner} spin /> Lade Termine...</div> : dailyAppointments.length > 0 ? (
-                            <ul className="daily-appointments-list">
+                        {isLoadingDaily ? <div className={`text-center py-4 text-sm text-gray-500 ${styles.loadingMessageStats} ${styles.smallListLoader}`}><FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> Lade Termine...</div> : dailyAppointments.length > 0 ? (
+                            <ul className={`space-y-1.5 ${styles.dailyAppointmentsList}`}>
                                 {dailyAppointments.map(apt => {
                                     const appointmentDateTime = apt.appointmentDate && apt.startTime ? parseISO(`${formatDateFns(apt.appointmentDate, 'yyyy-MM-dd')}T${typeof apt.startTime === 'string' ? apt.startTime.substring(0,5) : `${String(apt.startTime.hour).padStart(2,'0')}:${String(apt.startTime.minute).padStart(2,'0')}`}:00`) : null;
-                                    let statusClass = `status-${apt.status?.toLowerCase().replace(/\./g, '').replace(/ /g, '-') || 'unbekannt'}`;
-                                    if (apt.status && apt.status !== "Heute" && apt.status !== "Morgen") statusClass = "status-datum";
-                                    return (<li key={apt.appointmentId} className="daily-appointment-item" onClick={() => handleViewDetails(apt)} role="button" tabIndex={0} onKeyPress={(e) => e.key === 'Enter' && handleViewDetails(apt)} aria-label={`Termin ansehen`}>
-                                        {isLoadingModalAppointment && selectedAppointmentForEdit?.id === apt.appointmentId && <FontAwesomeIcon icon={faSpinner} spin className="item-loader-icon" />}
-                                        <span className="appointment-time">{appointmentDateTime ? formatDateFns(appointmentDateTime, 'HH:mm') : 'N/A'}</span>
-                                        <div className="appointment-info-group"><span className="appointment-service">{apt.serviceName}</span><span className="appointment-customer">{apt.customerFirstName} {apt.customerLastName}</span></div>
-                                        <span className={`appointment-status-tag ${statusClass}`}>{apt.status || 'Unbekannt'}</span>
+                                    let statusClass = `${styles.statusTag} ${styles['status-' + (apt.status?.toLowerCase().replace(/\./g, '').replace(/ /g, '-') || 'unbekannt')]}`;
+                                    if (apt.status && apt.status !== "Heute" && apt.status !== "Morgen") statusClass = `${styles.statusTag} ${styles.statusDatum}`;
+                                    return (<li key={apt.appointmentId} className={`flex items-center justify-between p-2.5 rounded-md hover:bg-slate-50 cursor-pointer transition-colors ${styles.dailyAppointmentItem}`} onClick={() => handleViewDetails(apt)} role="button" tabIndex={0} onKeyPress={(e) => e.key === 'Enter' && handleViewDetails(apt)} aria-label={`Termin ansehen`}>
+                                        {isLoadingModalAppointment && selectedAppointmentForEdit?.id === apt.appointmentId && <FontAwesomeIcon icon={faSpinner} spin className={`text-gray-400 ${styles.itemLoaderIcon}`} />}
+                                        <span className={`text-xs font-semibold text-gray-700 ${styles.appointmentTime}`}>{appointmentDateTime ? formatDateFns(appointmentDateTime, 'HH:mm') : 'N/A'}</span>
+                                        <div className={`flex-grow mx-2 text-xs ${styles.appointmentInfoGroup}`}>
+                                            <span className={`block font-medium text-gray-800 truncate ${styles.appointmentService}`}>{apt.serviceName}</span>
+                                            <span className={`block text-gray-500 truncate ${styles.appointmentCustomer}`}>{apt.customerFirstName} {apt.customerLastName}</span>
+                                        </div>
+                                        <span className={`px-2 py-0.5 text-[0.65rem] font-semibold rounded-full leading-tight ${statusClass}`}>{apt.status || 'Unbekannt'}</span>
                                     </li>);})}</ul>
-                        ) : (!isLoadingDaily && !error && <p className="no-upcoming-appointments">Keine anstehenden Termine.</p>)}
+                        ) : (!isLoadingDaily && !error && <p className={`text-sm text-gray-500 text-center py-4 ${styles.noUpcomingAppointments}`}>Keine anstehenden Termine.</p>)}
                     </div>
 
                 </div>
             </div>
 
-            {selectedAppointmentForEdit && currentUser?.roles?.includes("ROLE_ADMIN") && (<AppointmentEditModal appointment={selectedAppointmentForEdit} onClose={handleCloseEditModal} onAppointmentUpdated={handleAppointmentUpdatedFromModal} />)}
+            {selectedAppointmentForEdit && currentUser?.roles?.includes("ROLE_ADMIN") && (<AppointmentEditModal isOpen={!!selectedAppointmentForEdit} appointment={selectedAppointmentForEdit} onClose={handleCloseEditModal} onAppointmentUpdated={handleAppointmentUpdatedFromModal} />)}
             {showCreateModal && (<AppointmentCreateModal isOpen={showCreateModal} onClose={handleCloseCreateModal} onAppointmentCreated={handleAppointmentCreated} currentUser={currentUser} selectedSlot={selectedSlotForCreate} />)}
         </div>
     );

@@ -1,150 +1,44 @@
-/* src/components/AdminTestimonialManagement.module.css */
-.admin-testimonial-management {
-    padding: 1rem 0;
+/* friseursalon-frontend/src/components/AdminTestimonialManagement.module.css */
+
+/*
+  Da die AdminTestimonialManagement-Komponente primär mit Tailwind CSS gestylt wird,
+  enthält dieses Modul möglicherweise nur sehr spezifische Stile oder bleibt leer.
+*/
+
+.testimonialManagementContainer {
+    /* Tailwind im JS: bg-white p-4 sm:p-6 rounded-xl shadow-lg */
 }
 
-.testimonials-admin-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 1.25rem;
+.message {
+    /* Tailwind im JS: mb-4 p-3 rounded-md border text-sm flex items-center */
 }
 
-.testimonial-admin-card {
-    background-color: var(--light-bg);
-    border: 1px solid var(--border-color-light);
-    border-radius: 8px;
-    padding: 1.25rem;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem; /* Abstand zwischen Elementen in der Karte */
+.noTestimonials {
+    /* Tailwind im JS: text-center py-8 px-6 bg-slate-50 rounded-lg */
 }
 
-.testimonial-admin-card.pending {
-    border-left: 4px solid var(--warning-color, #ffc107); /* Orange für ausstehend */
+.testimonialCard {
+    /* Tailwind im JS: p-5 rounded-lg shadow-md border ...
+       Dynamische Farben für border und Hintergrund je nach 'approved'-Status.
+    */
+    transition: box-shadow 0.2s ease-in-out;
 }
-.testimonial-admin-card.approved {
-    border-left: 4px solid var(--success-color);
-}
-
-.testimonial-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 0.5rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px dashed var(--border-color-extralight);
+.testimonialCard:hover {
+    box-shadow: theme('boxShadow.lg'); /* Tailwind: shadow-lg */
 }
 
-.testimonial-customer-info {
-    font-size: 0.9rem;
-    color: var(--dark-text);
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    flex-wrap: wrap;
-}
-.testimonial-customer-info .icon {
-    color: var(--medium-grey-text);
-    font-size: 0.9em;
-}
-.testimonial-customer-info strong {
-    font-weight: 600;
-}
-.testimonial-service-tag {
-    font-size: 0.75rem;
-    color: var(--light-grey-text);
-    background-color: var(--light-grey-bg);
-    padding: 0.1rem 0.4rem;
-    border-radius: 3px;
+.testimonialComment {
+    /* Tailwind im JS: text-gray-700 text-sm italic mb-4 leading-relaxed */
+    /* 'word-break: break-word;' ist oft nützlich für längere Kommentare ohne Leerzeichen,
+       aber Tailwind's `break-words` utility kann das auch.
+       Beispiel: className="break-words ..."
+    */
+    white-space: pre-wrap; /* Erhält Zeilenumbrüche aus dem Kommentar */
 }
 
 
-.testimonial-rating-stars {
-    display: flex;
-    gap: 0.15rem;
-    font-size: 0.9rem; /* Sterne etwas kleiner */
-}
-.testimonial-rating-stars .star-filled {
-    color: #ffc107; /* Goldgelb */
-}
-.testimonial-rating-stars .star-empty {
-    color: var(--border-color); /* Hellgrau für leere Sterne */
+.actionButton {
+    /* Tailwind im JS: inline-flex items-center px-3 py-1.5 border text-xs font-medium rounded-md ... */
+    /* Farben und spezifische Hover-Effekte werden direkt im JS mit Tailwind gesetzt. */
 }
 
-.testimonial-comment-text {
-    font-size: 0.88rem;
-    color: var(--medium-grey-text);
-    line-height: 1.6;
-    padding: 0.5rem 0;
-    font-style: italic;
-    display: flex;
-    gap: 0.5rem;
-}
-.testimonial-comment-text .icon {
-    color: var(--light-grey-text);
-    font-size: 0.9em;
-    margin-top: 0.15em;
-}
-
-.testimonial-meta-info {
-    font-size: 0.75rem;
-    color: var(--light-grey-text);
-    display: flex;
-    flex-direction: column; /* Untereinander */
-    gap: 0.25rem;
-    margin-top: auto; /* Schiebt Meta-Infos nach unten, wenn Platz ist */
-    padding-top: 0.75rem;
-    border-top: 1px dashed var(--border-color-extralight);
-}
-.testimonial-meta-info span {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-}
-.testimonial-meta-info .icon {
-    font-size: 0.9em;
-}
-.testimonial-meta-info .approved-icon {
-    color: var(--success-color);
-}
-.testimonial-meta-info .status-badge.status-pending {
-    font-size: 0.65rem;
-    padding: 0.15rem 0.4rem;
-    background-color: var(--warning-bg-light, #fff3cd);
-    color: var(--warning-color-dark, #856404);
-    border: 1px solid var(--warning-bg, #ffeeba);
-    border-radius: 4px;
-    display: inline-block;
-    margin-top: 0.2rem;
-}
-
-
-.testimonial-admin-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.6rem;
-    margin-top: 0.5rem; /* Weniger Abstand, da Meta-Infos schon Abstand haben */
-}
-
-.testimonial-admin-actions .button-link-outline.small-button {
-    font-size: 0.75rem;
-    padding: 0.35rem 0.7rem;
-}
-.testimonial-admin-actions .button-link-outline.small-button .svg-inline--fa {
-    margin-right: 0.3rem;
-}
-.testimonial-admin-actions .button-link-outline.small-button.success {
-    color: var(--success-color);
-    border-color: var(--success-color);
-}
-.testimonial-admin-actions .button-link-outline.small-button.success:hover {
-    background-color: var(--success-bg-light);
-}
-.testimonial-admin-actions .button-link-outline.small-button.warning {
-    color: var(--warning-color-dark, #856404);
-    border-color: var(--warning-bg, #ffeeba);
-}
-.testimonial-admin-actions .button-link-outline.small-button.warning:hover {
-    background-color: var(--warning-bg-light, #fff3cd);
-}

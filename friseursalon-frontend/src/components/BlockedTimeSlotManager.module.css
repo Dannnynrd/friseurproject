@@ -1,84 +1,66 @@
-/* src/components/BlockedTimeSlotManager.module.css */
+/* friseursalon-frontend/src/components/BlockedTimeSlotManager.module.css */
 
-.blocked-time-slot-manager .dashboard-section-header-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
+/*
+  Da die BlockedTimeSlotManager-Komponente primär mit Tailwind CSS gestylt wird,
+  enthält dieses Modul möglicherweise nur sehr spezifische Stile oder bleibt leer.
+*/
+
+.blockedTimeSlotManagerContainer {
+    /* Tailwind im JS: bg-white p-4 sm:p-6 rounded-xl shadow-lg */
 }
 
-.blocked-time-slot-manager .form-section-heading-compact {
-    font-size: 1.25rem; /* Konsistent mit ServiceForm */
-    font-family: var(--font-serif), serif;
-    color: var(--dark-text);
+.addSlotForm {
+    /* Tailwind im JS: mb-8 p-6 bg-slate-50 rounded-lg shadow */
 }
 
-.blocked-slot-form.card-style {
-    padding: 1.5rem;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    margin-bottom: 1.5rem;
-    background-color: var(--light-grey-bg);
-    animation: fadeInForm 0.3s ease-out; /* Wiederverwendung der Animation von AccountDashboard.module.css */
+.formGroup {
+    /* Dient als semantischer Haken. Styling über Tailwind im JS. */
 }
 
-.blocked-slot-form .form-grid-halved {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+.formErrorMessage {
+    /* Tailwind im JS: mt-2 text-xs text-red-600 flex items-center */
 }
 
-.blocked-slot-form .form-group,
-.blocked-slot-form .form-group-checkbox {
-    margin-bottom: 1rem; /* Standardabstand für Formulargruppen */
-}
-.blocked-slot-form .form-group:last-child,
-.blocked-slot-form .form-group-checkbox:last-child {
-    margin-bottom: 0;
+.message {
+    /* Tailwind im JS: mb-4 p-3 rounded-md border text-sm flex items-center */
 }
 
-
-.blocked-slot-form .form-group-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+.noSlots {
+    /* Tailwind im JS: text-center py-8 px-6 bg-slate-50 rounded-lg */
 }
 
-.blocked-slot-form .form-group-checkbox input[type="checkbox"] {
-    width: auto; /* Standardgröße für Checkboxen */
-    height: auto;
-    margin-right: 0.3rem;
-    accent-color: var(--dark-text);
-}
-.blocked-slot-form .form-group-checkbox label {
-    margin-bottom: 0; /* Label direkt neben Checkbox */
-    font-weight: normal;
-    color: var(--dark-text);
+.tableContainer {
+    /* Tailwind im JS: overflow-x-auto shadow rounded-lg */
 }
 
-
-.blocked-slot-form .form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border-color);
+.appTable {
+    /* Tailwind im JS: min-w-full divide-y divide-gray-200 */
 }
 
-.blocked-slots-table th,
-.blocked-slots-table td {
-    /* Ggf. spezifische Tabellenstile, falls von app-table abweichend */
+.tableRow:hover {
+    /* Tailwind im JS: hover:bg-slate-50 transition-colors duration-150 */
 }
 
-/* Responsive Anpassungen für das Formular, falls nötig */
-@media (max-width: 576px) {
-    .blocked-slot-form .form-grid-halved {
-        grid-template-columns: 1fr; /* Untereinander auf kleinen Bildschirmen */
-    }
-    .blocked-time-slot-manager .dashboard-section-header-controls {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-    }
+.actionButton {
+    /* Tailwind im JS: p-1.5 rounded-md transition-colors */
+}
+
+/* Anpassung für react-datepicker, falls globale Stile nicht ausreichen
+   oder spezifisch für diese Komponente sein sollen.
+   Oft sind globale Anpassungen in App.css oder index.css besser.
+*/
+:global(.react-datepicker-wrapper),
+:global(.react-datepicker__input-container) {
+    width: 100%; /* Stellt sicher, dass der DatePicker die volle Breite des Containers einnimmt */
+}
+
+:global(.react-datepicker__input-container input) {
+    /* Tailwind-Klassen werden im JS direkt auf das Input-Element des DatePickers angewendet,
+       aber falls das nicht möglich ist, können hier Basis-Stile definiert werden.
+       Beispiel:
+       width: 100%;
+       padding: 0.625rem 0.75rem; // Tailwind: p-2.5
+       border-radius: 0.375rem; // Tailwind: rounded-md
+       border: 1px solid #D1D5DB; // Tailwind: border-gray-300
+    */
 }

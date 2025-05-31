@@ -1,79 +1,41 @@
-.confirm-modal-overlay {
-    z-index: 1060;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(0, 0, 0, 0.65); /* Etwas dunkler für besseren Fokus */
+/* friseursalon-frontend/src/components/ConfirmModal.module.css */
+
+/*
+  Die meisten Stile für das Modal-Overlay, den Content-Container und die Buttons
+  werden durch Tailwind CSS direkt in der JS-Datei gehandhabt.
+  Dieses Modul enthält spezifische Stile oder Verfeinerungen.
+*/
+
+.modalContent {
+    /* Tailwind im JS: bg-white rounded-lg shadow-xl w-full max-w-md */
+    /* Hier könnten z.B. spezifische Animationen für das Erscheinen des Inhalts hin,
+       wenn die globalen .animate-slideInModalContent nicht ausreichen. */
+    display: flex; /* Stellt sicher, dass der Footer korrekt am unteren Rand ist, wenn der Inhalt nicht scrollt */
+    flex-direction: column;
 }
 
-.confirm-modal-content {
-    background-color: var(--light-bg);
-    border-radius: 8px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    width: 100%;
-    max-width: 400px; /* Etwas schmaler für einen cleaneren Look */
-    padding: 1.8rem; /* Mehr Padding */
-    text-align: center;
-    animation: fadeInModalContent 0.2s ease-out; /* Schnellere Animation */
+.modalTitle {
+    /* Tailwind im JS: text-lg font-semibold text-gray-800 flex items-center */
+    /* Die Icon-Farbe wird dynamisch über iconColorClass im JS gesetzt. */
 }
 
-.confirm-modal-icon-container {
-    margin-bottom: 1rem;
+.modalContent > div:nth-child(2) { /* Der Modal-Body (p-6) */
+    flex-grow: 1; /* Erlaubt dem Body zu wachsen und den Footer nach unten zu schieben */
+    /* overflow-y: auto; Falls der Inhalt des Bodys scrollbar sein soll, aber meist ist er kurz */
 }
 
-.confirm-icon {
-    font-size: 2.8rem; /* Größeres Icon */
+
+.actionButton {
+    /* Tailwind im JS: px-4 py-2.5 border rounded-md text-sm font-medium ... */
 }
 
-.icon-warning { color: #ffc107; }
-.icon-danger { color: var(--danger-color); }
-.icon-success { color: var(--success-color); }
-.icon-info { color: var(--info-color); }
-
-
-.confirm-modal-title {
-    font-family: var(--font-serif);
-    font-size: 1.4rem; /* Etwas größer */
-    color: var(--dark-text);
-    margin-top: 0;
-    margin-bottom: 0.75rem;
-    font-weight: 600;
+.confirmButton {
+    /* Tailwind im JS: Farben werden dynamisch gesetzt (bg-red-600 oder bg-indigo-600) */
 }
 
-.confirm-modal-message {
-    font-size: 0.95rem;
-    line-height: 1.6;
-    color: var(--medium-grey-text);
-    margin-bottom: 1.8rem; /* Mehr Abstand zu den Buttons */
+.cancelButton {
+    /* Tailwind im JS: border-gray-300 text-gray-700 bg-white hover:bg-gray-50 ... */
 }
 
-.confirm-modal-actions {
-    display: flex;
-    justify-content: center; /* Buttons zentrieren */
-    gap: 0.75rem; /* Abstand zwischen Buttons */
-    padding-top: 0; /* Kein oberes Padding mehr, da Abstand durch message margin-bottom */
-    border-top: none; /* Keine Linie mehr */
-    background-color: transparent; /* Kein extra Hintergrund */
-}
-
-.confirm-modal-actions button {
-    padding: 0.6rem 1.2rem; /* Konsistente Button-Größe */
-    font-size: 0.9rem;
-    min-width: 100px;
-}
-.confirm-modal-actions .button-link.danger {
-    background-color: var(--danger-color);
-    border-color: var(--danger-color);
-}
-.confirm-modal-actions .button-link.danger:hover {
-    background-color: var(--danger-hover-bg);
-    border-color: var(--danger-hover-bg);
-}
-.confirm-modal-actions .cancel-action { /* Spezifischer für den Abbrechen Button */
-    color: var(--medium-grey-text);
-    border-color: var(--border-color);
-}
-.confirm-modal-actions .cancel-action:hover {
-    background-color: var(--light-grey-bg);
-    color: var(--dark-text);
-}
+/* Globale Animationsklassen (animate-fadeInModalOverlay, animate-slideInModalContent)
+   sollten in App.css oder einer ähnlichen globalen Datei definiert sein. */

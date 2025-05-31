@@ -7,10 +7,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faCalendarAlt, faUserEdit, faCog, faChartBar, faListAlt,
     faUsers, faCut, faClock, faGift, faSignOutAlt, faBars, faTimes,
-    faThLarge, faBuilding // Salon-Icon
+    faThLarge, faBuilding
 } from '@fortawesome/free-solid-svg-icons';
 
-// Import der Unterkomponenten (Pfade ggf. anpassen)
 import AppointmentList from '../components/AppointmentList';
 import ProfileEditForm from '../components/ProfileEditForm';
 import AdminDashboardStats from '../components/AdminDashboardStats';
@@ -49,14 +48,14 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
     const toggleMobileNav = () => setIsMobileNavOpen(!isMobileNavOpen);
 
     const userTabs = [
-        { name: 'appointments', label: 'Meine Termine', icon: faCalendarAlt, component: <AppointmentList key={`user-${refreshAppointmentsList}`} /> },
+        { name: 'appointments', label: 'Meine Termine', icon: faCalendarAlt, component: <AppointmentList key={`user-${refreshAppointmentsList}`} currentUser={currentUser} /> },
         { name: 'profile', label: 'Profil bearbeiten', icon: faUserEdit, component: <ProfileEditForm user={currentUser} onProfileUpdateSuccess={onProfileUpdateSuccess} onProfileUpdateError={onProfileUpdateError} /> },
     ];
 
     const adminTabs = [
         { name: 'admin-dashboard', label: 'Übersicht', icon: faThLarge, component: <AdminDashboardStats /> },
         { name: 'admin-calendar', label: 'Kalender', icon: faCalendarAlt, component: <AdminCalendarView /> },
-        { name: 'admin-appointments', label: 'Terminverwaltung', icon: faListAlt, component: <AppointmentList key={`admin-${refreshAppointmentsList}`} adminView={true} /> },
+        { name: 'admin-appointments', label: 'Terminverwaltung', icon: faListAlt, component: <AppointmentList key={`admin-${refreshAppointmentsList}`} adminView={true} currentUser={currentUser} /> },
         { name: 'admin-customers', label: 'Kundenverwaltung', icon: faUsers, component: <CustomerManagement /> },
         { name: 'admin-services', label: 'Dienstleistungen', icon: faCut, component: <ServiceList onServiceAdded={onServiceAdded} refreshServicesList={refreshServicesList} /> },
         { name: 'admin-working-hours', label: 'Öffnungszeiten', icon: faClock, component: <WorkingHoursManager /> },
@@ -70,9 +69,25 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
         const currentTabConfig = allTabs.find(tab => tab.name === activeTab);
         if (!currentTabConfig) {
             if (isAdmin) return <AdminDashboardStats />;
-            return <AppointmentList key={`user-fallback-${refreshAppointmentsList}`} />;
+            return <AppointmentList key={`user-fallback-${refreshAppointmentsList}`} currentUser={currentUser} />;
         }
-        return React.cloneElement(currentTabConfig.component, { key: activeTab });
+        const componentProps = { key: activeTab };
+        if (currentTabConfig.name.includes('appointments')) {
+            componentProps.currentUser = currentUser;
+            componentProps.refreshAppointmentsList = refreshAppointmentsList;
+            if (currentTabConfig.name.includes('admin')) {
+                componentProps.adminView = true;
+            }
+        } else if (currentTabConfig.name === 'profile') {
+            componentProps.user = currentUser;
+            componentProps.onProfileUpdateSuccess = onProfileUpdateSuccess;
+            componentProps.onProfileUpdateError = onProfileUpdateError;
+        } else if (currentTabConfig.name === 'admin-services') {
+            componentProps.onServiceAdded = onServiceAdded;
+            componentProps.refreshServicesList = refreshServicesList;
+        }
+
+        return React.cloneElement(currentTabConfig.component, componentProps);
     };
 
     const renderNavLinks = (tabs, isMobile = false) => {
@@ -80,9 +95,9 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
             <button
                 key={tab.name}
                 onClick={() => handleTabChange(tab.name)}
-                className={`w-full flex items-center px-4 py-2.5 text-sm rounded-md transition-all duration-200 ease-in-out group
+                className={`w-full flex items-center px-4 py-2.5 text-sm rounded-lg transition-all duration-200 ease-in-out group
                     ${activeTab === tab.name
-                    ? `bg-slate-100 text-indigo-700 font-medium ${styles.navItemActive}` // Heller Hintergrund, Akzentfarbe Text
+                    ? `bg-slate-100 text-indigo-700 font-medium ${styles.navItemActive}`
                     : `text-gray-700 hover:bg-slate-50 hover:text-indigo-700 ${styles.navItem}`}
                     ${isMobile ? 'text-left' : 'justify-start'}`}
                 aria-current={activeTab === tab.name ? 'page' : undefined}
@@ -103,7 +118,6 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
 
     return (
         <div className={`min-h-screen bg-slate-100 ${styles.accountDashboardContainer}`}>
-            {/* Mobile Navigations-Toggle Bar */}
             <div className="md:hidden bg-white shadow-sm fixed top-0 left-0 right-0 z-40 pt-safe-top">
                 <div className="container mx-auto px-4 h-16 flex justify-between items-center">
                     <span className="text-lg font-semibold text-gray-800">
@@ -122,7 +136,6 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
             </div>
 
             <div className="flex flex-col md:flex-row">
-                {/* Seitenleiste (Desktop) */}
                 <aside className={`hidden md:flex md:flex-col md:w-64 lg:w-72 bg-white fixed md:sticky top-0 left-0 md:!h-screen shadow-lg md:shadow-none md:border-r border-gray-200 z-30 ${styles.dashboardSidebar}`}>
                     <div className="flex items-center justify-center h-16 md:h-20 border-b border-gray-200 px-4">
                         <Link to="/" className="flex items-center space-x-2 group">
@@ -130,7 +143,7 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                             <span className="text-xl font-bold text-gray-800 font-serif group-hover:text-indigo-700 transition-colors">Salon Dashboard</span>
                         </Link>
                     </div>
-                    <nav className="flex-grow p-3 space-y-1 overflow-y-auto"> {/* Kleineres Padding und Space */}
+                    <nav className="flex-grow p-3 space-y-1 overflow-y-auto">
                         <span className="px-3 pt-2 pb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">Konto</span>
                         {renderNavLinks(userTabs)}
 
@@ -139,12 +152,12 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                                 <div className="pt-3 mt-2">
                                     <span className="px-3 pt-2 pb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">Admin Bereich</span>
                                 </div>
-                                <div className="mt-1 space-y-1"> {/* Kleineres Padding und Space */}
+                                <div className="mt-1 space-y-1">
                                     {renderNavLinks(adminTabs)}
                                 </div>
                             </>
                         )}
-                        <div className="mt-auto pt-3 pb-2 px-1"> {/* Logout-Button am Ende der Sidebar, mit weniger Padding */}
+                        <div className="mt-auto pt-3 pb-2 px-1">
                             <button
                                 onClick={logOut}
                                 className={`w-full flex items-center px-4 py-2.5 text-sm rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 group ${styles.navItem} ${styles.logoutButton}`}
@@ -156,7 +169,6 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                     </nav>
                 </aside>
 
-                {/* Mobile Navigation (Overlay) */}
                 {isMobileNavOpen && (
                     <div
                         className={`fixed inset-0 z-40 bg-black bg-opacity-40 backdrop-blur-sm md:hidden ${styles.mobileNavOverlay}`}
@@ -196,10 +208,11 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                     </nav>
                 </aside>
 
-
-                {/* Inhaltsbereich */}
-                <main className={`flex-1 p-6 md:p-8 lg:p-10 mt-16 md:mt-0 md:ml-64 lg:ml-72 ${styles.dashboardContent}`}>
-                    {getTabContent()}
+                <main className={`flex-1 mt-16 md:mt-0 ${styles.dashboardContent}`}>
+                    {/* HINZUGEFÜGT: flex flex-col items-center, um den Inhalt zu zentrieren */}
+                    <div className="p-6 md:p-8 lg:p-10 w-full flex flex-col items-center">
+                        {getTabContent()}
+                    </div>
                 </main>
             </div>
         </div>

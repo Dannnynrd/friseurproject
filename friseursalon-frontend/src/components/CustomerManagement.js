@@ -1,204 +1,218 @@
-// src/components/CustomerManagement.js
+// friseursalon-frontend/src/components/CustomerManagement.js
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api.service';
-import CustomerEditModal from './CustomerEditModal';
-import ConfirmModal from './ConfirmModal';
+// HIER den Import ändern:
+import styles from './CustomerManagement.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrashAlt, faSpinner, faExclamationCircle, faSearch, faUsers, faCheckCircle } from '@fortawesome/free-solid-svg-icons'; // faCheckCircle HINZUGEFÜGT
-import './CustomerManagement.module.css'; // Eigene CSS-Datei importieren
+import { faUsers, faUserEdit, faTrashAlt, faSpinner, faExclamationTriangle, faCheckCircle, faSearch, faTimes, faPlus, faEnvelope, faPhone, faUserSlash } from '@fortawesome/free-solid-svg-icons';
 
-function CustomerManagement({ currentUser, refreshTrigger: parentRefreshTrigger }) {
+// Annahme: Diese Modale existieren und sind gestylt/werden separat migriert
+import CustomerEditModal from './CustomerEditModal'; // Für Bearbeiten und Neuanlage
+import ConfirmModal from './ConfirmModal';
+
+function CustomerManagement() {
     const [customers, setCustomers] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [allCustomers, setAllCustomers] = useState([]); // Für Filterung
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [successMessage, setSuccessMessage] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
 
-    const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [customerToEdit, setCustomerToEdit] = useState(null);
 
-    const [customerToDelete, setCustomerToDelete] = useState(null);
     const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
-    const [deleteMessage, setDeleteMessage] = useState({ type: '', text: '' });
-
-
-    // Interner Refresh-Trigger für diese Komponente, falls benötigt, oder direkt parentRefreshTrigger nutzen
-    const [internalRefreshTrigger, setInternalRefreshTrigger] = useState(0);
+    const [customerToDelete, setCustomerToDelete] = useState(null);
 
     const fetchCustomers = useCallback(async () => {
-        if (!currentUser || !currentUser.roles?.includes("ROLE_ADMIN")) {
-            setError("Zugriff verweigert. Nur Administratoren können Kundendaten einsehen.");
-            setIsLoading(false);
-            setCustomers([]);
-            return;
-        }
-
-        setIsLoading(true);
+        setLoading(true);
         setError(null);
-        setDeleteMessage({ type: '', text: ''}); // Lösch-Nachrichten zurücksetzen
+        setSuccessMessage('');
         try {
-            const response = await api.get('/customers');
-            setCustomers(Array.isArray(response.data) ? response.data : []);
-            if (!Array.isArray(response.data)) {
-                console.warn('[CustomerManagement] Backend hat kein Array zurückgegeben für /customers:', response.data);
-                setError("Unerwartetes Datenformat vom Server erhalten.");
-            }
+            // Annahme: Admin-Endpunkt zum Abrufen aller Kunden (nicht nur User, sondern alle erfassten Kunden)
+            const response = await api.get('/api/customers');
+            const sortedCustomers = (response.data || []).sort((a, b) => (a.lastName || '').localeCompare(b.lastName || ''));
+            setCustomers(sortedCustomers);
+            setAllCustomers(sortedCustomers); // Kopie für Filterung
         } catch (err) {
-            console.error("[CustomerManagement] Fehler beim Abrufen der Kunden:", err.response || err);
-            setError(`Kunden konnten nicht geladen werden: ${err.response?.data?.message || err.message || 'Unbekannter Fehler'}`);
+            console.error("Error fetching customers:", err);
+            setError(err.response?.data?.message || "Kunden konnten nicht geladen werden.");
             setCustomers([]);
+            setAllCustomers([]);
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
-    }, [currentUser]); // Abhängigkeit von currentUser
+    }, []);
 
     useEffect(() => {
         fetchCustomers();
-    }, [fetchCustomers, internalRefreshTrigger, parentRefreshTrigger]); // Auf beide Trigger reagieren
+    }, [fetchCustomers]);
 
-    const handleEditClick = (customer) => {
-        setSelectedCustomer(customer);
+    useEffect(() => {
+        if (searchTerm === '') {
+            setCustomers(allCustomers);
+        } else {
+            const filtered = allCustomers.filter(customer =>
+                (customer.firstName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                (customer.lastName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                (customer.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                (customer.phone?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+            );
+            setCustomers(filtered);
+        }
+    }, [searchTerm, allCustomers]);
+
+    const handleEdit = (customer) => {
+        setCustomerToEdit(customer);
         setShowEditModal(true);
     };
 
-    const handleCloseEditModal = () => {
-        setShowEditModal(false);
-        setSelectedCustomer(null);
+    const handleCreateNew = () => {
+        setCustomerToEdit(null); // Für Neuanlage
+        setShowEditModal(true);
     };
 
-    const handleCustomerUpdated = () => {
-        handleCloseEditModal();
-        setInternalRefreshTrigger(prev => prev + 1); // Löst Neuladen der Kundenliste aus
-        setDeleteMessage({ type: 'success', text: 'Kundendaten erfolgreich aktualisiert.' });
-        setTimeout(() => setDeleteMessage({ type: '', text: '' }), 3000);
-    };
-
-    const handleDeleteClick = (customer) => {
-        setCustomerToDelete(customer);
+    const confirmDelete = (customerId) => {
+        setCustomerToDelete(customerId);
         setShowConfirmDeleteModal(true);
     };
 
-    const confirmDeleteCustomer = async () => {
+    const handleDelete = async () => {
         if (!customerToDelete) return;
-        setIsLoading(true); // Zeigt generellen Ladezustand während des Löschens
-        setShowConfirmDeleteModal(false);
+        setError(null);
+        setSuccessMessage('');
         try {
-            await api.delete(`/customers/${customerToDelete.id}`);
-            setDeleteMessage({ type: 'success', text: `Kunde "${customerToDelete.firstName} ${customerToDelete.lastName}" erfolgreich gelöscht.` });
-            setCustomerToDelete(null);
-            setInternalRefreshTrigger(prev => prev + 1); // Löst Neuladen der Kundenliste aus
+            // Annahme: Admin-Endpunkt zum Löschen eines Kunden
+            await api.delete(`/api/customers/${customerToDelete}`);
+            setSuccessMessage("Kunde erfolgreich gelöscht.");
+            fetchCustomers(); // Liste neu laden
         } catch (err) {
-            console.error("Fehler beim Löschen des Kunden:", err);
-            setDeleteMessage({ type: 'error', text: `Fehler beim Löschen: ${err.response?.data?.message || err.message}` });
-            setCustomerToDelete(null); // Wichtig, um Modal-State zu bereinigen
+            console.error("Error deleting customer:", err);
+            setError(err.response?.data?.message || "Fehler beim Löschen des Kunden.");
         } finally {
-            setIsLoading(false);
-            setTimeout(() => setDeleteMessage({ type: '', text: '' }), 5000); // Nachricht nach 5s ausblenden
+            setShowConfirmDeleteModal(false);
+            setCustomerToDelete(null);
         }
     };
 
-    const filteredCustomers = customers.filter(customer =>
-        `${customer.firstName || ''} ${customer.lastName || ''} ${customer.email || ''} ${customer.phoneNumber || ''}`
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase())
-    );
+    const handleModalClose = () => {
+        setShowEditModal(false);
+        setCustomerToEdit(null);
+    };
 
+    const handleModalSave = () => {
+        handleModalClose();
+        fetchCustomers(); // Liste neu laden nach Speichern
+        setSuccessMessage(customerToEdit ? "Kundendaten erfolgreich aktualisiert." : "Kunde erfolgreich erstellt.");
+    };
 
-    if (isLoading && customers.length === 0 && !error) { // Zeige Loader nur, wenn initial geladen wird und noch keine Daten da sind
+    if (loading && customers.length === 0) {
         return (
-            <div className="loading-message" style={{ textAlign: 'center', padding: '2rem' }}>
-                <FontAwesomeIcon icon={faSpinner} spin size="2x" />
-                <p style={{ marginTop: '0.5rem' }}>Lade Kundendaten...</p>
+            <div className="flex justify-center items-center p-10 text-gray-600">
+                <FontAwesomeIcon icon={faSpinner} spin size="2x" className="text-indigo-500" />
+                <p className="ml-3 text-md">Lade Kundendaten...</p>
             </div>
         );
     }
+
     return (
-        <div className="customer-management-container">
-            <h2 className="dashboard-section-heading">
-                <FontAwesomeIcon icon={faUsers} /> Kundenverwaltung
-            </h2>
+        <div className={`bg-white p-4 sm:p-6 rounded-xl shadow-lg ${styles.customerManagementContainer}`}>
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b border-gray-200">
+                <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 font-serif">
+                    Kundenverwaltung
+                </h2>
+                <button
+                    onClick={handleCreateNew}
+                    className="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                    <FontAwesomeIcon icon={faPlus} className="mr-2" />
+                    Neuen Kunden anlegen
+                </button>
+            </div>
 
-            {error && ( // Fehler wird prominent angezeigt, wenn er auftritt
-                <p className="form-message error mb-4" style={{ marginBottom: '1rem' }}>
-                    <FontAwesomeIcon icon={faExclamationCircle} style={{ marginRight: '0.5rem' }} /> {error}
-                </p>
-            )}
-            {deleteMessage.text && (
-                <p className={`form-message ${deleteMessage.type} small mb-3`}>
-                    <FontAwesomeIcon icon={deleteMessage.type === 'success' ? faCheckCircle : faExclamationCircle} /> {deleteMessage.text}
-                </p>
-            )}
-
-            <div className="list-controls-header">
-                <div className="search-input-container">
-                    <FontAwesomeIcon icon={faSearch} />
+            {/* Suchfeld */}
+            <div className="mb-6">
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FontAwesomeIcon icon={faSearch} className="text-gray-400" />
+                    </div>
                     <input
                         type="text"
                         placeholder="Kunden suchen (Name, E-Mail, Telefon)..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="form-control" // Annahme: eine globale CSS-Klasse für Formular-Inputs
+                        className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     />
+                    {searchTerm && (
+                        <button
+                            onClick={() => setSearchTerm('')}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                            aria-label="Suche zurücksetzen"
+                        >
+                            <FontAwesomeIcon icon={faTimes} />
+                        </button>
+                    )}
                 </div>
-                {/* Optional: Button für "Neuen Kunden hinzufügen" könnte hier platziert werden */}
             </div>
 
-            {isLoading && customers.length > 0 && ( // Zeige Ladeindikator diskret, wenn bereits Daten da sind
-                <div style={{ textAlign: 'right', marginBottom: '0.5rem', color: 'var(--medium-grey-text)', fontSize: '0.9rem' }}>
-                    <FontAwesomeIcon icon={faSpinner} spin style={{ marginRight: '0.5rem' }}/> Liste wird aktualisiert...
+            {error && (
+                <div className={`mb-4 p-3 rounded-md bg-red-50 text-red-600 border border-red-200 text-sm flex items-center ${styles.message}`}>
+                    <FontAwesomeIcon icon={faExclamationTriangle} className="mr-2 flex-shrink-0" /> {error}
+                </div>
+            )}
+            {successMessage && (
+                <div className={`mb-4 p-3 rounded-md bg-green-50 text-green-600 border border-green-200 text-sm flex items-center ${styles.message}`}>
+                    <FontAwesomeIcon icon={faCheckCircle} className="mr-2 flex-shrink-0" /> {successMessage}
                 </div>
             )}
 
-            {!isLoading && filteredCustomers.length === 0 && !error && (
-                <p className="text-center py-4" style={{color: 'var(--medium-grey-text)', padding: '2rem 0' }}>
-                    {searchTerm ? 'Keine Kunden für Ihre Suche gefunden.' : 'Es sind keine Kunden vorhanden.'}
-                </p>
+            {customers.length === 0 && !loading && !error && (
+                <div className={`text-center py-8 px-6 bg-slate-50 rounded-lg ${styles.noCustomers}`}>
+                    <FontAwesomeIcon icon={faUsers} size="2x" className="text-gray-400 mb-3" />
+                    <p className="text-gray-500 text-md">
+                        {searchTerm ? "Keine Kunden entsprechen Ihrer Suche." : "Es sind keine Kunden vorhanden."}
+                    </p>
+                </div>
             )}
 
-            {!isLoading && filteredCustomers.length > 0 && (
-                <div className="table-responsive-container"> {/* Für besseres Scrollen auf Mobile */}
-                    <table className="app-table customers-table">
-                        <thead>
+            {customers.length > 0 && (
+                <div className={`overflow-x-auto shadow rounded-lg ${styles.tableContainer}`}>
+                    <table className={`min-w-full divide-y divide-gray-200 ${styles.appTable}`}>
+                        <thead className="bg-slate-50">
                         <tr>
-                            <th>Name</th>
-                            <th>E-Mail</th>
-                            <th>Telefon</th>
-                            <th>Notizen (Admin)</th>
-                            <th>Aktionen</th>
+                            <th scope="col" className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th scope="col" className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">E-Mail</th>
+                            <th scope="col" className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Telefon</th>
+                            <th scope="col" className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Registriert am</th>
+                            <th scope="col" className="relative px-5 py-3">
+                                <span className="sr-only">Aktionen</span>
+                            </th>
                         </tr>
                         </thead>
-                        <tbody>
-                        {filteredCustomers.map(customer => (
-                            <tr key={customer.id}>
-                                <td data-label="Name:">{customer.firstName} {customer.lastName}</td>
-                                <td data-label="E-Mail:">{customer.email}</td>
-                                <td data-label="Telefon:">{customer.phoneNumber || '-'}</td>
-                                <td data-label="Notizen:" className="notes-cell">
-                                    {/* Tooltip für längere Notizen ist gut, kann via title-Attribut realisiert werden */}
-                                    {customer.notes ? (
-                                        <div title={customer.notes}>
-                                            {customer.notes.substring(0, 50)}{customer.notes.length > 50 ? '...' : ''}
-                                        </div>
-                                    ) : '-'}
+                        <tbody className="bg-white divide-y divide-gray-200">
+                        {customers.map((customer) => (
+                            <tr key={customer.id} className={`hover:bg-slate-50 transition-colors duration-150 ${styles.tableRow}`}>
+                                <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
+                                    {customer.firstName || ''} {customer.lastName || ''}
+                                    {!customer.firstName && !customer.lastName && (customer.user ? customer.user.username : 'N/A')}
                                 </td>
-                                <td data-label="Aktionen:">
-                                    <div className="action-buttons-table"> {/* Klasse für konsistente Button-Abstände */}
-                                        <button
-                                            onClick={() => handleEditClick(customer)}
-                                            className="button-link-outline small-button icon-button"
-                                            title="Kunde bearbeiten"
-                                        >
-                                            <FontAwesomeIcon icon={faEdit} />
-                                            <span className="button-text-desktop">Bearbeiten</span>
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteClick(customer)}
-                                            className="button-link-outline small-button danger icon-button"
-                                            title="Kunde löschen"
-                                        >
-                                            <FontAwesomeIcon icon={faTrashAlt} />
-                                            <span className="button-text-desktop">Löschen</span>
-                                        </button>
-                                    </div>
+                                <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600 hidden md:table-cell">
+                                    {customer.email || (customer.user ? customer.user.email : '-')}
+                                </td>
+                                <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600 hidden sm:table-cell">
+                                    {customer.phone || '-'}
+                                </td>
+                                <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600 hidden lg:table-cell">
+                                    {customer.user?.createdAt ? new Date(customer.user.createdAt).toLocaleDateString('de-DE') : '-'}
+                                </td>
+                                <td className="px-5 py-4 whitespace-nowrap text-right text-sm font-medium space-x-1.5">
+                                    <button onClick={() => handleEdit(customer)} className={`text-indigo-600 hover:text-indigo-800 p-1.5 rounded-md hover:bg-indigo-50 transition-colors ${styles.actionButton}`} title="Bearbeiten">
+                                        <FontAwesomeIcon icon={faUserEdit} />
+                                    </button>
+                                    {/* Deaktivieren-Button statt Löschen, falls Soft-Delete gewünscht */}
+                                    <button onClick={() => confirmDelete(customer.id)} className={`text-red-500 hover:text-red-700 p-1.5 rounded-md hover:bg-red-50 transition-colors ${styles.actionButton}`} title="Kunden löschen">
+                                        <FontAwesomeIcon icon={faTrashAlt} />
+                                    </button>
                                 </td>
                             </tr>
                         ))}
@@ -207,24 +221,25 @@ function CustomerManagement({ currentUser, refreshTrigger: parentRefreshTrigger 
                 </div>
             )}
 
-            {showEditModal && selectedCustomer && (
-                <CustomerEditModal
-                    customer={selectedCustomer}
-                    onClose={handleCloseEditModal}
-                    onCustomerUpdated={handleCustomerUpdated}
+            {showEditModal && (
+                <CustomerEditModal // Annahme: Dieses Modal existiert
+                    isOpen={showEditModal}
+                    onClose={handleModalClose}
+                    onSave={handleModalSave}
+                    customerData={customerToEdit} // Ist null für "Neu erstellen"
                 />
             )}
-
-            <ConfirmModal
-                isOpen={showConfirmDeleteModal}
-                onClose={() => { setShowConfirmDeleteModal(false); setCustomerToDelete(null); }}
-                onConfirm={confirmDeleteCustomer}
-                title="Kunde löschen"
-                message={`Möchten Sie den Kunden "${customerToDelete?.firstName} ${customerToDelete?.lastName}" wirklich endgültig löschen? Dieser Schritt kann nicht rückgängig gemacht werden. Zugehörige Termine verlieren ihre Kundenzuordnung.`}
-                confirmText="Ja, löschen"
-                cancelText="Abbrechen"
-                type="danger"
-            />
+            {showConfirmDeleteModal && (
+                <ConfirmModal
+                    isOpen={showConfirmDeleteModal}
+                    onClose={() => setShowConfirmDeleteModal(false)}
+                    onConfirm={handleDelete}
+                    title="Kunden löschen"
+                    message="Möchten Sie diesen Kunden wirklich endgültig löschen? Alle zugehörigen Daten (inkl. Termine) könnten ebenfalls betroffen sein. Diese Aktion kann nicht rückgängig gemacht werden."
+                    confirmButtonText="Ja, löschen"
+                    // isLoading={loading} // Ein spezifischer Ladezustand für den Lösch-Button wäre besser
+                />
+            )}
         </div>
     );
 }

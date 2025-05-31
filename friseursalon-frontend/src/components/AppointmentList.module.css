@@ -1,396 +1,60 @@
-/* File: src/components/AppointmentList.module.css */
+/* friseursalon-frontend/src/components/AppointmentList.module.css */
 
-.appointment-list-container {
-    width: 100%;
-}
-
-/* Filter Bar Styling (Admin) */
-.admin-appointment-controls {
-    margin-bottom: 1.5rem;
-    padding: 1.25rem;
-    background-color: var(--light-bg);
-    border: 1px solid var(--border-color-light);
-    border-radius: 8px;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
+.appointmentListContainer {
+    /* Tailwind im JS: bg-white p-6 rounded-xl shadow-lg */
 }
 
-.filter-section.search-and-quick-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    align-items: center;
-    margin-bottom: 1rem;
+.message {
+    /* Tailwind im JS: mb-4 p-3 rounded-md border text-sm flex items-center */
+    /* Farben etc. werden direkt im JS via Tailwind gesetzt. */
 }
 
-.search-input-container.admin-search {
-    position: relative;
-    flex-grow: 1;
-    min-width: 250px;
+.noAppointments {
+    /* Tailwind im JS: text-center py-10 px-6 bg-gray-50 rounded-lg */
 }
 
-.admin-search-input {
-    width: 100%;
-    padding: 0.65rem 0.75rem 0.65rem 2.5rem;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    font-size: 0.9rem;
-    background-color: var(--light-bg);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-.admin-search-input:focus-visible {
-    border-color: var(--focus-ring-color);
-    box-shadow: 0 0 0 3px var(--focus-ring-subtle-color);
-    outline: none;
-}
-.search-input-container.admin-search .search-icon {
-    position: absolute;
-    left: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--medium-grey-text);
-    font-size: 0.9rem;
+.tableContainer {
+    /* Tailwind im JS: overflow-x-auto */
+    /* Stellt sicher, dass die Tabelle auf kleinen Bildschirmen scrollbar ist,
+       ohne das Seitenlayout zu zerstören. */
 }
 
-.quick-filter-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+.appTable {
+    /* Tailwind im JS: min-w-full divide-y divide-gray-200 */
+    /* Die Basis-Tabellenstile (wie .app-table aus App.css) werden hier durch Tailwind ersetzt. */
 }
 
-.quick-filter-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.8rem;
-    font-weight: 500;
-    border-radius: 6px;
-    background-color: var(--light-bg);
-    border: 1px solid var(--border-color);
-    color: var(--medium-grey-text);
-    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    cursor: pointer;
-}
-.quick-filter-btn:hover {
-    background-color: var(--light-grey-bg);
-    border-color: var(--medium-grey-text);
-    color: var(--dark-text);
-}
-.quick-filter-btn.active {
-    background-color: var(--dark-text);
-    color: var(--light-bg);
-    border-color: var(--dark-text);
-}
-.quick-filter-btn .svg-inline--fa {
-    font-size: 0.9em;
+.appTable th {
+    /* Tailwind im JS: px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider */
+    /* (aus der thead mit bg-gray-50) */
 }
 
-
-.filter-controls-header {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    margin-top: 0.5rem;
+.tableRow:hover {
+    /* Tailwind im JS: hover:bg-gray-50 */
 }
 
-.filter-toggle-button {
-    font-size: 0.8rem;
-    padding: 0.4rem 0.8rem;
-    color: var(--medium-grey-text);
-    background-color: transparent;
-    border: 1px solid transparent;
-    border-radius: 5px;
-    cursor: pointer;
-}
-.filter-toggle-button:hover {
-    color: var(--dark-text);
-    background-color: var(--light-grey-bg);
-    border-color: var(--border-color-light);
+.appTable td {
+    /* Tailwind im JS: px-6 py-4 whitespace-nowrap text-sm text-gray-700 */
+    /* (aus tbody mit bg-white divide-y divide-gray-200) */
 }
 
-
-.admin-filters-content {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px dashed var(--border-color-light);
-    animation: fadeInForm 0.3s ease-out;
+.statusBadge {
+    /* Tailwind im JS: px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full */
+    /* Farben werden dynamisch durch getStatusClass() im JS gesetzt. */
 }
 
-@keyframes fadeInForm {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+.actionButton {
+    /* Tailwind im JS: p-1 rounded-md transition-colors */
+    /* Spezifische Farben für Edit (text-indigo-600 hover:text-indigo-900 hover:bg-indigo-100)
+       und Delete (text-red-600 hover:text-red-900 hover:bg-red-100) werden direkt im JS gesetzt. */
 }
 
+/*
+  Responsive Kartenansicht (md:hidden im JS)
+  Die Logik für eine alternative Kartenansicht auf Mobile wurde entfernt,
+  da die Tabelle mit overflow-x-auto auf Mobile horizontal scrollbar ist,
+  was oft eine akzeptable Lösung für komplexe Tabellen darstellt.
+  Wenn eine dedizierte Kartenansicht benötigt wird, müsste diese separat
+  implementiert und hier gestylt werden.
+*/
 
-.date-filter-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-.date-filter-grid .form-group {
-    display: flex; /* Stellt sicher, dass der Datepicker-Wrapper die volle Breite nimmt */
-    flex-direction: column;
-}
-.date-filter-grid .form-group label {
-    font-size: 0.8rem;
-    color: var(--medium-grey-text);
-    margin-bottom: 0.25rem;
-    display: block;
-    font-weight: 500;
-}
-/* Styling für react-datepicker Inputs in AppointmentList Filtern */
-.custom-datepicker-input-filter {
-    width: 100%;
-    padding: 0.65rem 0.75rem; /* Konsistent mit anderen Inputs */
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    font-size: 0.9rem;
-    background-color: var(--light-bg);
-    color: var(--dark-text);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    line-height: 1.5;
-    box-sizing: border-box;
-    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 24 24%22 fill%3D%22%236B7280%22 width%3D%2224px%22 height%3D%2224px%22%3E%3Cpath d%3D%22M0 0h24v24H0V0z%22 fill%3D%22none%22/%3E%3Cpath d%3D%22M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z%22/%3E%3C%2Fsvg%3E');
-    background-repeat: no-repeat;
-    background-position: right 0.75rem center;
-    background-size: 1em auto;
-    padding-right: 2.5rem; /* Platz für das Icon */
-}
-.custom-datepicker-input-filter:focus-visible {
-    border-color: var(--focus-ring-color);
-    box-shadow: 0 0 0 3px var(--focus-ring-subtle-color);
-    outline: none;
-}
-.custom-datepicker-input-filter::placeholder {
-    color: var(--light-grey-text);
-    font-size: 0.9rem;
-}
-.datepicker-wrapper { /* Stellt sicher, dass der Wrapper von react-datepicker volle Breite nimmt */
-    width: 100%;
-}
-
-
-.filter-actions {
-    display: flex;
-    gap: 0.75rem;
-    justify-content: flex-end;
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border-color-extralight);
-}
-.filter-actions .button-link-outline.small-button,
-.filter-actions .button-link.small-button {
-    font-size: 0.8rem;
-    padding: 0.5rem 1rem;
-    border-radius: 5px;
-    font-weight: 500;
-    cursor: pointer;
-}
-.filter-actions .button-link-outline.small-button {
-    border-width: 1px;
-}
-
-.filter-actions .small-button .svg-inline--fa {
-    margin-right: 0.4rem;
-}
-
-.appointments-table-wrapper {
-    overflow-x: auto;
-    border: 1px solid var(--border-color-light);
-    border-radius: 8px;
-    box-shadow: 0 1px 2px 0 rgba(0,0,0,0.03);
-    background-color: var(--light-bg);
-}
-
-.app-table.appointments-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.875rem;
-}
-.app-table.appointments-table th,
-.app-table.appointments-table td {
-    padding: 0.85rem 1rem;
-    text-align: left;
-    border-bottom: 1px solid var(--border-color-light);
-    vertical-align: middle;
-}
-.app-table.appointments-table tr:last-child td {
-    border-bottom: none;
-}
-
-.app-table.appointments-table th {
-    background-color: #f9fafb;
-    font-weight: 500;
-    color: #6b7280;
-    text-transform: uppercase;
-    font-size: 0.7rem;
-    letter-spacing: 0.05em;
-    border-bottom-width: 2px;
-    border-bottom-color: var(--border-color);
-}
-.app-table.appointments-table tbody tr:hover {
-    background-color: #f0f9ff;
-}
-.app-table.appointments-table .notes-cell {
-    max-width: 180px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    cursor: help;
-}
-
-.status-badge {
-    padding: 0.25em 0.75em;
-    border-radius: 16px;
-    font-size: 0.7rem;
-    font-weight: 500;
-    text-transform: capitalize;
-    display: inline-flex;
-    align-items: center;
-    line-height: 1.3;
-    white-space: nowrap;
-}
-.status-badge .svg-inline--fa {
-    margin-right: 0.35rem;
-    font-size: 0.9em;
-}
-.status-badge.status-upcoming {
-    background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0;
-}
-.status-badge.status-past {
-    background-color: #e5e7eb; color: #374151; border: 1px solid #d1d5db;
-}
-.status-badge.status-cancelled {
-    background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca;
-}
-.status-badge.status-unknown {
-    background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a;
-}
-.status-badge.status-completed {
-    background-color: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe;
-}
-
-.action-buttons-table {
-    display: flex;
-    gap: 0.6rem;
-    align-items: center;
-}
-.action-buttons-table .button-link-outline.small-button {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    border-radius: 5px;
-    border: 1px solid var(--border-color-medium, #cbd5e1);
-    color: var(--medium-grey-text, #4b5563);
-    background-color: var(--light-bg, #ffffff);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
-    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
-    cursor: pointer;
-    line-height: 1.2;
-}
-.action-buttons-table .button-link-outline.small-button:hover {
-    border-color: var(--dark-text, #374151);
-    background-color: var(--light-grey-bg, #f9fafb);
-    color: var(--dark-text, #1f2937);
-    transform: translateY(-1px);
-}
-.action-buttons-table .button-link-outline.small-button:focus-visible {
-    outline: 2px solid var(--focus-ring-subtle-color, #bfdbfe);
-    outline-offset: 1px;
-    border-color: var(--focus-ring-color, #3b82f6);
-}
-.action-buttons-table .button-link-outline.small-button.danger {
-    color: var(--danger-color, #dc2626);
-    border-color: var(--danger-bg, #fee2e2);
-}
-.action-buttons-table .button-link-outline.small-button.danger:hover {
-    background-color: var(--danger-bg-light, #fef2f2);
-    border-color: var(--danger-color, #dc2626);
-    color: var(--danger-color-dark, #b91c1c);
-}
-.action-buttons-table .button-link-outline.small-button .svg-inline--fa {
-    font-size: 0.9em;
-}
-.action-buttons-table .button-link-outline.small-button:disabled,
-.action-buttons-table .button-link-outline.small-button.danger:disabled {
-    opacity: 0.5; cursor: not-allowed; transform: none;
-    background-color: var(--disabled-bg); border-color: var(--border-color-light); color: var(--light-grey-text);
-}
-
-.action-buttons-table .action-button-text { /* Standardmäßig sichtbar */ }
-@media (max-width: 1100px) and (min-width: 769px) {
-    .action-buttons-table .action-button-text { display: none; }
-    .action-buttons-table .button-link-outline.small-button .svg-inline--fa { margin-right: 0; }
-    .action-buttons-table .button-link-outline.small-button { padding: 0.5rem 0.6rem; }
-}
-@media (max-width: 768px) {
-    .action-buttons-table .action-button-text { display: inline; }
-    .action-buttons-table .button-link-outline.small-button .svg-inline--fa { margin-right: 0.25rem; }
-}
-
-.appointment-cards-grid { display: grid; gap: 1rem; }
-.appointment-card-mobile {
-    background-color: var(--light-bg); padding: 1rem; border-radius: 8px;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
-    border: 1px solid var(--border-color-light); position: relative;
-    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
-}
-.appointment-card-mobile:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
-}
-.appointment-card-mobile.status-past { background-color: #f9fafb; opacity: 0.85; }
-.appointment-card-mobile.status-cancelled { background-color: #fee2e2; opacity: 0.7; }
-
-.appointment-card-header-mobile {
-    display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;
-}
-.appointment-card-datetime-mobile {
-    font-weight: 600; font-size: 0.95rem; color: var(--dark-text);
-}
-.appointment-card-mobile .status-badge {
-    margin-top: 0; font-size: 0.65rem; padding: 0.2em 0.5em;
-}
-.appointment-card-mobile .status-badge .svg-inline--fa { margin-right: 0.25rem; }
-
-.appointment-card-details-mobile p {
-    font-size: 0.8rem; color: var(--medium-grey-text); margin-bottom: 0.3rem; line-height: 1.5;
-}
-.appointment-card-details-mobile p strong { color: var(--dark-text); font-weight: 500; }
-.appointment-card-notes-mobile {
-    font-style: italic; font-size: 0.75rem; color: var(--light-grey-text); margin-top: 0.5rem;
-    padding-top: 0.5rem; border-top: 1px dashed var(--border-color-extralight); word-break: break-word;
-}
-
-.appointment-card-actions-mobile {
-    margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color-light);
-    display: flex; justify-content: flex-end; gap: 0.5rem;
-}
-.appointment-card-actions-mobile .button-link-outline {
-    padding: 0.4rem 0.8rem; font-size: 0.75rem;
-}
-.appointment-card-actions-mobile .button-link-outline.small-button { /* Erbt Stile */ }
-
-.appointment-list-loading,
-.appointment-list-empty {
-    text-align: center; padding: 2rem 1rem; color: var(--medium-grey-text); font-size: 0.9rem;
-    border: 1px dashed var(--border-color-light); border-radius: 6px; background-color: #fdfdfe; margin-top: 1rem;
-}
-.appointment-list-loading .svg-inline--fa { margin-right: 0.5rem; font-size: 1.2em; }
-
-.appointment-list-container .form-message { margin-bottom: 1rem; }
-
-.sr-only {
-    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;
-}
-@media (min-width: 768px) {
-    .md\:not-sr-only {
-        position: static; width: auto; height: auto; padding: 0; margin: 0;
-        overflow: visible; clip: auto; white-space: normal;
-    }
-}
