@@ -1,25 +1,29 @@
 // friseursalon-frontend/src/components/AppointmentCreateModal.js
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api.service';
-import AuthService from '../services/auth.service';
-import DatePicker from 'react-datepicker';
+// AuthService wird hier nicht direkt für den aktuellen User benötigt,
+// da dieser als Prop übergeben wird, aber ggf. für andere Zwecke.
+// import AuthService from '../services/auth.service';
+import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { de } from 'date-fns/locale'; // Deutsche Lokalisierung für DatePicker
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import styles from './AppointmentCreateModal.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faTimes, faCalendarPlus, faSpinner, faExclamationCircle, faCheckCircle,
-    faUser, faCut, faClock, faEuroSign, faStickyNote, faCalendarAlt // faCalendarAlt hinzugefügt
+    faUser, faCut, faClock, faEuroSign, faStickyNote, faCalendarAlt
 } from '@fortawesome/free-solid-svg-icons';
-// parseISO, format as formatDateFns und isValidDateFns importieren
-import { parseISO, format as formatDateFns, isValid as isValidDateFns } from 'date-fns';
+import { parseISO, format as formatDateFns, isValid as isValidDateFns, addMinutes } from 'date-fns';
+
+registerLocale('de', de); // Registriere deutsche Lokalisierung
 
 const AppointmentSchema = Yup.object().shape({
     serviceId: Yup.string().required('Dienstleistung ist erforderlich.'),
     customerId: Yup.string().when('isNewCustomer', {
-        is: (val) => !val,
-        then: (schema) => schema.required('Bestandskunde ist erforderlich, wenn kein Neukunde.'),
+        is: (val) => !val, // Gilt, wenn isNewCustomer false ist
+        then: (schema) => schema.required('Bestandskunde ist erforderlich, wenn kein Neukunde ausgewählt ist.'),
         otherwise: (schema) => schema.notRequired(),
     }),
     customerName: Yup.string().when('isNewCustomer', {
@@ -32,13 +36,13 @@ const AppointmentSchema = Yup.object().shape({
         then: (schema) => schema.required('E-Mail ist erforderlich für Neukunden.'),
         otherwise: (schema) => schema.notRequired(),
     }),
-    customerPhone: Yup.string().notRequired(),
-    appointmentDate: Yup.date().required('Datum ist erforderlich.').nullable(),
+    customerPhone: Yup.string().matches(/^[0-9+\-\s()]*$/, "Ungültige Telefonnummer.").notRequired(),
+    appointmentDate: Yup.date().required('Datum ist erforderlich.').nullable().min(new Date(new Date().setDate(new Date().getDate() -1)), "Datum darf nicht in der Vergangenheit liegen."),
     appointmentTime: Yup.string().required('Uhrzeit ist erforderlich.'),
-    notes: Yup.string().notRequired(),
+    notes: Yup.string().max(500, 'Notizen dürfen maximal 500 Zeichen lang sein.').notRequired(),
 });
 
-// Hilfsfunktionen für Formatierung (ähnlich wie in ServiceList.js)
+// Hilfsfunktionen für Formatierung
 const formatPrice = (price) => {
     if (typeof price !== 'number') return 'N/A';
     return `${price.toFixed(2).replace('.', ',')} €`;
@@ -59,22 +63,22 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
     const [customers, setCustomers] = useState([]);
     const [loadingServices, setLoadingServices] = useState(true);
     const [loadingCustomers, setLoadingCustomers] = useState(true);
-    // isNewCustomer wird jetzt von Formik verwaltet, aber wir behalten einen lokalen State für die Checkbox-Steuerung
-    const [isNewCustomerChecked, setIsNewCustomerChecked] = useState(false);
     const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
     const [loadingTimeSlots, setLoadingTimeSlots] = useState(false);
 
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [loading, setLoading] = useState(false); // Fehlender allgemeiner Ladezustand für Submit
+    const [isSubmittingForm, setIsSubmittingForm] = useState(false);
 
-    const initialDate = selectedSlot?.start && isValidDateFns(selectedSlot.start) ? selectedSlot.start : new Date();
+    const initialDate = selectedSlot?.start && isValidDateFns(selectedSlot.start) ? selectedSlot.start : null;
     const initialTime = selectedSlot?.start && isValidDateFns(selectedSlot.start) ? formatDateFns(selectedSlot.start, 'HH:mm') : '';
+
+    const formikRef = useRef(); // Ref für Formik-Instanz
 
     const initialValues = {
         serviceId: '',
         customerId: '',
-        isNewCustomer: false, // Wird durch Checkbox gesteuert
+        isNewCustomer: false,
         customerName: '',
         customerEmail: '',
         customerPhone: '',
@@ -86,16 +90,17 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
     const fetchServicesAndCustomers = useCallback(async () => {
         setLoadingServices(true);
         setLoadingCustomers(true);
+        setError('');
         try {
             const [servicesRes, customersRes] = await Promise.all([
-                api.get('/api/services'),
-                api.get('/api/customers')
+                api.get('/api/services').catch(e => { console.error("Error fetching services", e); return { data: [] }; }),
+                api.get('/api/customers').catch(e => { console.error("Error fetching customers", e); return { data: [] }; })
             ]);
             setServices(servicesRes.data || []);
             setCustomers(customersRes.data || []);
         } catch (err) {
-            console.error("Error fetching services/customers:", err);
-            setError("Fehler beim Laden von Dienstleistungen oder Kunden.");
+            console.error("Error fetching initial modal data:", err);
+            setError("Fehler beim Laden der Basisdaten für das Formular.");
         } finally {
             setLoadingServices(false);
             setLoadingCustomers(false);
@@ -107,25 +112,35 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
             fetchServicesAndCustomers();
             setError('');
             setSuccess('');
-            setIsNewCustomerChecked(false); // Reset Checkbox beim Öffnen
+            if (formikRef.current) {
+                formikRef.current.resetForm({ values: {
+                        ...initialValues,
+                        appointmentDate: selectedSlot?.start && isValidDateFns(selectedSlot.start) ? selectedSlot.start : null,
+                        appointmentTime: selectedSlot?.start && isValidDateFns(selectedSlot.start) ? formatDateFns(selectedSlot.start, 'HH:mm') : '',
+                        isNewCustomer: false, // Standardmäßig nicht Neukunde
+                    }});
+            }
         }
-    }, [isOpen, fetchServicesAndCustomers]);
+    }, [isOpen, fetchServicesAndCustomers, selectedSlot]); // initialValues hier nicht nötig, da resetForm verwendet wird
 
-    const fetchAvailableTimeSlots = useCallback(async (date, duration, setFieldValue) => {
-        if (!date || !duration || !isValidDateFns(date)) {
+    const fetchAvailableTimeSlotsInternal = useCallback(async (date, duration, serviceId, setFieldValue) => {
+        if (!date || !duration || !serviceId || !isValidDateFns(date)) {
             setAvailableTimeSlots([]);
+            if (date && duration && serviceId) setFieldValue('appointmentTime', ''); // Zeit zurücksetzen, wenn Bedingungen nicht erfüllt
             return;
         }
         setLoadingTimeSlots(true);
+        setFieldValue('appointmentTime', ''); // Zeit zurücksetzen, bevor neue geladen werden
         try {
             const formattedDate = formatDateFns(date, 'yyyy-MM-dd');
             const response = await api.get('/api/appointments/available-slots', {
-                params: { date: formattedDate, duration: parseInt(duration, 10) },
+                params: { date: formattedDate, duration: parseInt(duration, 10), serviceId: parseInt(serviceId, 10) },
             });
             setAvailableTimeSlots(response.data || []);
         } catch (error) {
             console.error('Error fetching time slots:', error);
             setAvailableTimeSlots([]);
+            setError("Zeiten konnten nicht geladen werden.");
         } finally {
             setLoadingTimeSlots(false);
         }
@@ -133,14 +148,14 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
 
 
     const handleSubmit = async (values, { setSubmitting, resetForm }) => {
-        setLoading(true);
+        setIsSubmittingForm(true);
         setError('');
         setSuccess('');
 
         const selectedService = services.find(s => s.id.toString() === values.serviceId.toString());
         if (!selectedService) {
             setError("Ausgewählte Dienstleistung nicht gefunden.");
-            setLoading(false);
+            setIsSubmittingForm(false);
             setSubmitting(false);
             return;
         }
@@ -156,9 +171,10 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
             price: selectedService.price,
             duration: selectedService.duration,
             status: 'CONFIRMED',
-            userId: values.isNewCustomer ? null : (values.customerId ? parseInt(values.customerId, 10) : null),
-            customer: values.isNewCustomer ? {
-                name: values.customerName,
+            userId: values.isNewCustomer || !values.customerId ? null : parseInt(values.customerId, 10),
+            customerData: values.isNewCustomer ? {
+                firstName: values.customerName.split(' ')[0] || '', // Einfache Annahme für Vorname
+                lastName: values.customerName.split(' ').slice(1).join(' ') || values.customerName, // Rest als Nachname
                 email: values.customerEmail,
                 phone: values.customerPhone,
             } : null,
@@ -166,12 +182,13 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
 
         if (!values.isNewCustomer && values.customerId) {
             const existingCustomer = customers.find(c => c.id.toString() === values.customerId.toString());
-            if (existingCustomer && existingCustomer.user && existingCustomer.user.id) {
+            if (existingCustomer?.user?.id) {
                 payload.registeredUserId = existingCustomer.user.id;
             }
         }
 
         try {
+            // Admin-Endpunkt zum Erstellen verwenden, da dies im Admin-Dashboard ist
             await api.post('/api/appointments/admin/create', payload);
             setSuccess('Termin erfolgreich erstellt!');
             if (typeof onSave === 'function') {
@@ -179,12 +196,12 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
             }
             setTimeout(() => {
                 onClose();
-            }, 1500);
+            }, 2000);
         } catch (err) {
             console.error("Error creating appointment:", err.response?.data || err.message);
             setError(err.response?.data?.message || 'Fehler beim Erstellen des Termins.');
         } finally {
-            setLoading(false);
+            setIsSubmittingForm(false);
             setSubmitting(false);
         }
     };
@@ -205,20 +222,27 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
                         onClick={onClose}
                         aria-label="Modal schließen"
                         className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
-                        disabled={loading}
+                        disabled={isSubmittingForm}
                     >
                         <FontAwesomeIcon icon={faTimes} size="lg" />
                     </button>
                 </div>
 
                 <Formik
+                    innerRef={formikRef}
                     initialValues={initialValues}
                     validationSchema={AppointmentSchema}
                     onSubmit={handleSubmit}
                     enableReinitialize
                 >
                     {({ errors, touched, isSubmitting, values, setFieldValue, dirty }) => (
-                        <Form className="p-6 space-y-5 overflow-y-auto flex-grow">
+                        <Form className="p-6 space-y-4 overflow-y-auto flex-grow">
+                            {(loadingServices || loadingCustomers) && (
+                                <div className="flex justify-center items-center p-4 text-gray-500">
+                                    <FontAwesomeIcon icon={faSpinner} spin className="mr-2"/> Daten laden...
+                                </div>
+                            )}
+
                             <div className={styles.formGroup}>
                                 <label htmlFor="serviceId" className="block text-sm font-medium text-gray-700 mb-1">
                                     <FontAwesomeIcon icon={faCut} className="mr-2 text-gray-400"/>Dienstleistung*
@@ -229,10 +253,11 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
                                     id="serviceId"
                                     className={`w-full px-3 py-2.5 border ${errors.serviceId && touched.serviceId ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`}
                                     onChange={(e) => {
-                                        setFieldValue('serviceId', e.target.value);
-                                        const selectedService = services.find(s => s.id.toString() === e.target.value);
-                                        if (selectedService && values.appointmentDate && isValidDateFns(values.appointmentDate)) { // Check ob Datum gültig
-                                            fetchAvailableTimeSlots(values.appointmentDate, selectedService.duration, setFieldValue);
+                                        const newServiceId = e.target.value;
+                                        setFieldValue('serviceId', newServiceId);
+                                        const selectedService = services.find(s => s.id.toString() === newServiceId);
+                                        if (selectedService && values.appointmentDate && isValidDateFns(values.appointmentDate)) {
+                                            fetchAvailableTimeSlotsInternal(values.appointmentDate, selectedService.duration, newServiceId, setFieldValue);
                                         } else {
                                             setAvailableTimeSlots([]);
                                         }
@@ -251,13 +276,23 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
                                     <FontAwesomeIcon icon={faUser} className="mr-2 text-gray-400"/>
                                     <label className="block text-sm font-medium text-gray-700">Kunde*</label>
                                     <div className="ml-auto">
-                                        <label htmlFor="isNewCustomer" className="flex items-center text-sm text-gray-600 cursor-pointer">
-                                            <Field type="checkbox" name="isNewCustomer" id="isNewCustomer" className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 mr-1.5"
-                                                   onChange={(e) => {
-                                                       // setIsNewCustomerChecked(e.target.checked); // Lokalen State für Checkbox setzen
-                                                       setFieldValue('isNewCustomer', e.target.checked);
-                                                       setFieldValue('customerId', '');
-                                                   }}
+                                        <label htmlFor="isNewCustomerToggle" className="flex items-center text-sm text-gray-600 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                name="isNewCustomer"
+                                                id="isNewCustomerToggle"
+                                                checked={values.isNewCustomer}
+                                                onChange={(e) => {
+                                                    setFieldValue('isNewCustomer', e.target.checked);
+                                                    if (!e.target.checked) { // Wenn zu Bestandskunde gewechselt wird
+                                                        setFieldValue('customerName', '');
+                                                        setFieldValue('customerEmail', '');
+                                                        setFieldValue('customerPhone', '');
+                                                    } else { // Wenn zu Neukunde gewechselt wird
+                                                        setFieldValue('customerId', '');
+                                                    }
+                                                }}
+                                                className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 mr-1.5"
                                             />
                                             Neukunde?
                                         </label>
@@ -314,8 +349,8 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
                                         onChange={(date) => {
                                             setFieldValue('appointmentDate', date);
                                             const selectedService = services.find(s => s.id.toString() === values.serviceId.toString());
-                                            if (selectedService && date && isValidDateFns(date)) { // Check ob Datum gültig
-                                                fetchAvailableTimeSlots(date, selectedService.duration, setFieldValue);
+                                            if (selectedService && date && isValidDateFns(date)) {
+                                                fetchAvailableTimeSlotsInternal(date, selectedService.duration, values.serviceId, setFieldValue);
                                             } else {
                                                 setAvailableTimeSlots([]);
                                             }
@@ -325,6 +360,7 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
                                         id="appointmentDate"
                                         className={`w-full px-3 py-2.5 border ${errors.appointmentDate && touched.appointmentDate ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`}
                                         placeholderText="Datum wählen"
+                                        autoComplete="off"
                                     />
                                     <ErrorMessage name="appointmentDate" component="div" className="mt-1 text-xs text-red-600" />
                                 </div>
@@ -336,8 +372,8 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
                                         as="select"
                                         name="appointmentTime"
                                         id="appointmentTime"
-                                        disabled={loadingTimeSlots || availableTimeSlots.length === 0}
-                                        className={`w-full px-3 py-2.5 border ${errors.appointmentTime && touched.appointmentTime ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput} ${loadingTimeSlots || availableTimeSlots.length === 0 ? 'bg-gray-100' : ''}`}
+                                        disabled={loadingTimeSlots || availableTimeSlots.length === 0 || !values.serviceId || !values.appointmentDate}
+                                        className={`w-full px-3 py-2.5 border ${errors.appointmentTime && touched.appointmentTime ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput} ${loadingTimeSlots || availableTimeSlots.length === 0 ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                     >
                                         <option value="">{loadingTimeSlots ? "Lade Zeiten..." : (availableTimeSlots.length === 0 && values.appointmentDate && values.serviceId ? "Keine Zeiten verfügbar" : "Uhrzeit wählen...")}</option>
                                         {availableTimeSlots.map(slot => (
@@ -360,6 +396,7 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
                                     placeholder="Zusätzliche Informationen oder Wünsche..."
                                     className={`w-full px-3 py-2.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput} ${styles.formTextarea}`}
                                 />
+                                <ErrorMessage name="notes" component="div" className="mt-1 text-xs text-red-600" />
                             </div>
 
                             {error && (
@@ -377,17 +414,17 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    disabled={loading || isSubmitting}
+                                    disabled={isSubmittingForm || isSubmitting}
                                     className={`px-5 py-2.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-150 disabled:opacity-60 ${styles.actionButton} ${styles.cancelButton}`}
                                 >
                                     Abbrechen
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={loading || isSubmitting || !dirty}
+                                    disabled={isSubmittingForm || isSubmitting || !dirty}
                                     className={`inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-60 ${styles.actionButton} ${styles.saveButton}`}
                                 >
-                                    {loading ? <FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> : <FontAwesomeIcon icon={faCalendarPlus} className="mr-2" />}
+                                    {isSubmittingForm ? <FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> : <FontAwesomeIcon icon={faCalendarPlus} className="mr-2" />}
                                     Termin erstellen
                                 </button>
                             </div>

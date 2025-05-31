@@ -6,7 +6,13 @@
 
 .formGroup {
     /* Tailwind im JS: space-y-5 im Formular-Tag, oder spezifische mb-X auf den Gruppen */
+    /* Wird hier als semantischer Haken für Konsistenz beibehalten, falls spezifische Abstände nötig sind */
+    margin-bottom: 1rem; /* Tailwind: mb-4 */
 }
+.formGroup:last-child {
+    margin-bottom: 0;
+}
+
 
 .formInput {
     /* Tailwind im JS: w-full px-3 py-2.5 border border-gray-300 rounded-md shadow-sm ... */
@@ -14,7 +20,7 @@
 }
 
 .formTextarea {
-    min-height: 70px; /* Mindesthöhe für Textarea */
+    min-height: 70px;
 }
 
 .actionButton {
@@ -36,15 +42,12 @@
 .formMessage.error { /* Semantischer Haken */ }
 .formMessage.success { /* Semantischer Haken */ }
 
-/* Anpassung für react-datepicker, falls globale Stile nicht ausreichen
-   oder spezifisch für diese Komponente sein sollen.
-   Oft sind globale Anpassungen in App.css oder index.css besser.
-*/
+/* Globale Anpassungen für react-datepicker im Modal */
 :global(.react-datepicker-wrapper),
 :global(.react-datepicker__input-container),
-:global(.react-datepicker__input-container input) { /* Ziel das Input-Feld spezifischer */
-    display: block; /* Stellt sicher, dass der DatePicker die volle Breite einnimmt */
+:global(.react-datepicker__input-container input) {
+    display: block;
     width: 100%;
 }
-/* Die Tailwind-Klassen auf dem DatePicker-Input im JS sollten das meiste Styling übernehmen. */
+/* Das meiste Styling des DatePicker-Inputs erfolgt über Tailwind-Klassen im JS. */
 

@@ -1,261 +1,443 @@
-// File: src/components/AppointmentEditModal.js
-import React, { useState, useEffect } from 'react';
+// friseursalon-frontend/src/components/AppointmentEditModal.js
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api.service';
-import AuthService from '../services/auth.service';
 import DatePicker, { registerLocale } from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { de } from 'date-fns/locale';
-import "react-datepicker/dist/react-datepicker.css";
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
+// HIER den Import ändern:
+import styles from './AppointmentEditModal.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faTimes, faSave, faSpinner, faUser, faClock,
-  faConciergeBell, faStickyNote, faPhone, faEnvelope,
-  faCalendarAlt, faExclamationCircle, faCheckCircle,
-  faEdit, faCalendarDay, faInfoCircle, faTag, faEuroSign,
-  faAlignLeft
-} from '@fortawesome/free-solid-svg-icons';
-import { format, parseISO, isValid } from 'date-fns';
-import './AppointmentEditModal.module.css';
+import { faTimes, faSave, faSpinner, faExclamationCircle, faCheckCircle, faUser, faCut, faClock, faEuroSign, faStickyNote, faCalendarAlt, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
+import { parseISO, format as formatDateFns, isValid as isValidDateFns } from 'date-fns';
+import ConfirmModal from './ConfirmModal'; // Für Stornierungsbestätigung
 
 registerLocale('de', de);
 
-function AppointmentEditModal({ appointment, onClose, onAppointmentUpdated }) {
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [formData, setFormData] = useState({
-    serviceId: '',
-    notes: '',
-  });
+const EditAppointmentSchema = Yup.object().shape({
+  serviceId: Yup.string().required('Dienstleistung ist erforderlich.'),
+  // customerId ist nicht direkt im Formular, da der Kunde meist feststeht
+  appointmentDate: Yup.date().required('Datum ist erforderlich.').nullable().min(new Date(new Date().setDate(new Date().getDate() -1)), "Datum darf nicht in der Vergangenheit liegen."),
+  appointmentTime: Yup.string().required('Uhrzeit ist erforderlich.'),
+  notes: Yup.string().max(500, "Notizen dürfen maximal 500 Zeichen lang sein.").notRequired(),
+  status: Yup.string().required("Status ist erforderlich."), // Admin kann Status ändern
+  // Preis und Dauer werden von der Dienstleistung übernommen, aber könnten hier editierbar sein
+  price: Yup.number().typeError("Preis muss eine Zahl sein.").positive("Preis muss positiv sein.").required("Preis ist erforderlich."),
+  duration: Yup.number().typeError("Dauer muss eine Zahl sein.").integer("Dauer muss eine ganze Zahl sein.").min(5, "Dauer muss mind. 5 Min. sein.").required("Dauer ist erforderlich.")
+});
+
+// Hilfsfunktionen für Formatierung
+const formatPrice = (price) => {
+  if (typeof price !== 'number') return ''; // Für Formular-Input leer lassen
+  return price.toFixed(2);
+};
+
+const formatDuration = (minutes) => {
+  if (typeof minutes !== 'number' || minutes < 0) return ''; // Für Formular-Input leer lassen
+  return minutes.toString();
+};
+
+function AppointmentEditModal({ isOpen, onClose, onSave, appointmentData, adminView = false }) {
   const [services, setServices] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingServices, setLoadingServices] = useState(true);
+  const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
+  const [loadingTimeSlots, setLoadingTimeSlots] = useState(false);
+
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isSubmittingForm, setIsSubmittingForm] = useState(false);
 
-  const currentUser = AuthService.getCurrentUser();
-  const isAdmin = currentUser?.roles?.includes("ROLE_ADMIN");
+  const [showConfirmCancelModal, setShowConfirmCancelModal] = useState(false);
 
-  useEffect(() => {
-    if (appointment && appointment.startTime) {
-      const startTimeDate = parseISO(appointment.startTime);
-      if (isValid(startTimeDate)) {
-        setSelectedDate(startTimeDate);
-      } else {
-        // Fallback if startTime is invalid, try to parse just the date part if time is the issue
-        const dateOnly = appointment.startTime.split('T')[0];
-        const parsedDateOnly = parseISO(dateOnly);
-        if(isValid(parsedDateOnly)) {
-          setSelectedDate(parsedDateOnly); // Set to midnight if time was invalid
-        } else {
-          setSelectedDate(new Date()); // Absolute fallback
-        }
-        console.error("Invalid startTime received, used fallback:", appointment.startTime);
-      }
-      setFormData({
-        serviceId: appointment.service?.id?.toString() || '', // Ensure serviceId is a string for select value
-        notes: appointment.notes || '',
-      });
-    } else if (appointment) {
-      setSelectedDate(new Date());
-      setFormData({
-        serviceId: appointment.service?.id?.toString() || '',
-        notes: appointment.notes || '',
-      });
+
+  const initialValues = {
+    serviceId: appointmentData?.serviceId?.toString() || appointmentData?.service?.id?.toString() || '',
+    appointmentDate: appointmentData?.appointmentTime ? parseISO(appointmentData.appointmentTime) : null,
+    appointmentTime: appointmentData?.appointmentTime ? formatDateFns(parseISO(appointmentData.appointmentTime), 'HH:mm') : '',
+    notes: appointmentData?.notes || '',
+    status: appointmentData?.status || 'PENDING',
+    price: formatPrice(appointmentData?.price), // Format für Input type="number"
+    duration: formatDuration(appointmentData?.duration), // Format für Input type="number"
+    // Kundeninfo (nicht editierbar im Termin-Edit, aber zur Anzeige)
+    customerName: appointmentData?.customerName || `${appointmentData?.customer?.firstName || ''} ${appointmentData?.customer?.lastName || ''}`.trim() || (appointmentData?.user?.username || 'Unbekannt'),
+    customerEmail: appointmentData?.customer?.email || appointmentData?.user?.email || '',
+  };
+
+  const fetchServices = useCallback(async () => {
+    if (!isOpen) return;
+    setLoadingServices(true);
+    try {
+      const response = await api.get('/api/services');
+      setServices(response.data || []);
+    } catch (err) {
+      console.error("Error fetching services for edit modal:", err);
+      setError("Dienstleistungen konnten nicht geladen werden.");
+    } finally {
+      setLoadingServices(false);
     }
-  }, [appointment]);
+  }, [isOpen]);
 
   useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const serviceResponse = await api.get('/services');
-        setServices(serviceResponse.data || []);
-      } catch (err) {
-        console.error("Fehler beim Laden der Services:", err);
-      }
-    };
     fetchServices();
+  }, [fetchServices]);
+
+  // Fetch time slots when date or service (duration) changes
+  const fetchAvailableTimeSlotsInternal = useCallback(async (date, duration, serviceId, currentAppointmentId, setFieldValue) => {
+    if (!date || !duration || !serviceId || !isValidDateFns(date)) {
+      setAvailableTimeSlots([]);
+      return;
+    }
+    setLoadingTimeSlots(true);
+    // setFieldValue('appointmentTime', ''); // Zeit zurücksetzen, bevor neue geladen werden
+    try {
+      const formattedDate = formatDateFns(date, 'yyyy-MM-dd');
+      const response = await api.get('/api/appointments/available-slots', {
+        params: {
+          date: formattedDate,
+          duration: parseInt(duration, 10),
+          serviceId: parseInt(serviceId, 10),
+          excludeAppointmentId: currentAppointmentId // Eigenen Termin bei Verfügbarkeit nicht ausschließen
+        },
+      });
+      setAvailableTimeSlots(response.data || []);
+    } catch (error) {
+      console.error('Error fetching time slots:', error);
+      setAvailableTimeSlots([]);
+      setError("Zeiten konnten nicht geladen werden.");
+    } finally {
+      setLoadingTimeSlots(false);
+    }
   }, []);
 
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
+  const handleSubmit = async (values, { setSubmitting }) => {
+    setIsSubmittingForm(true);
     setError('');
-    setSuccessMessage('');
-  };
+    setSuccess('');
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    setError('');
-    setSuccessMessage('');
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-    setSuccessMessage('');
-
-    if (!selectedDate) {
-      setError("Datum und Uhrzeit sind Pflichtfelder.");
-      setIsLoading(false);
-      return;
-    }
-    if (!formData.serviceId) {
-      setError("Dienstleistung ist ein Pflichtfeld. Bitte wählen Sie eine Dienstleistung aus.");
-      setIsLoading(false);
-      return;
-    }
-
-    const formattedStartTime = format(selectedDate, "yyyy-MM-dd'T'HH:mm:ss");
+    const appointmentDateTime = new Date(values.appointmentDate);
+    const [hours, minutes] = values.appointmentTime.split(':');
+    appointmentDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
 
     const payload = {
-      startTime: formattedStartTime,
-      serviceId: formData.serviceId, // serviceId is already a string from the select
-      notes: formData.notes,
+      serviceId: parseInt(values.serviceId, 10),
+      appointmentTime: appointmentDateTime.toISOString(),
+      notes: values.notes,
+      status: values.status,
+      price: parseFloat(values.price),
+      duration: parseInt(values.duration, 10),
+      // customerId und userId werden für ein Update typischerweise nicht geändert,
+      // es sei denn, das Backend erlaubt eine Neuzuordnung.
+      // Hier gehen wir davon aus, dass der Kunde des Termins feststeht.
     };
 
     try {
-      await api.put(`/appointments/${appointment.id}`, payload);
-      setSuccessMessage('Termin erfolgreich aktualisiert!');
-      setIsLoading(false);
-      if (onAppointmentUpdated) {
-        onAppointmentUpdated();
+      await api.put(`/api/appointments/admin/${appointmentData.id}`, payload); // Admin-Endpunkt zum Aktualisieren
+      setSuccess('Termin erfolgreich aktualisiert!');
+      if (typeof onSave === 'function') {
+        onSave();
       }
-      // Optional: Modal nach kurzer Verzögerung schließen
       setTimeout(() => {
-        if (!error) { // Nur schließen, wenn kein neuer Fehler während des Speicherns aufgetreten ist
-          onClose();
-        }
-      }, 1800);
+        onClose();
+      }, 1500);
     } catch (err) {
-      console.error("Fehler beim Aktualisieren des Termins:", err);
-      const errMsg = err.response?.data?.message || "Fehler beim Aktualisieren des Termins.";
-      if (errMsg.toLowerCase().includes("service id") || errMsg.toLowerCase().includes("dienstleistungs-id")) {
-        setError("Dienstleistungs-ID für Update fehlt oder ist ungültig. Bitte wählen Sie eine Dienstleistung.");
-      } else {
-        setError(errMsg);
-      }
-      setIsLoading(false);
+      console.error("Error updating appointment:", err.response?.data || err.message);
+      setError(err.response?.data?.message || 'Fehler beim Aktualisieren des Termins.');
+    } finally {
+      setIsSubmittingForm(false);
+      setSubmitting(false);
     }
   };
 
-  const selectedServiceFull = services.find(s => s.id === parseInt(formData.serviceId));
+  const handleCancelAppointment = async () => {
+    setShowConfirmCancelModal(false); // Schließe Bestätigungsmodal zuerst
+    setIsSubmittingForm(true); // Zeige Ladezustand für die Aktion
+    setError('');
+    setSuccess('');
+    try {
+      // Admin kann jeden Termin stornieren, Benutzer nur eigene (Backend prüft Berechtigung)
+      await api.put(`/api/appointments/${appointmentData.id}/cancel`);
+      setSuccess('Termin erfolgreich storniert!');
+      if (typeof onSave === 'function') { // onSave wird hier für Refresh genutzt
+        onSave();
+      }
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } catch (err) {
+      console.error("Error cancelling appointment:", err);
+      setError(err.response?.data?.message || 'Fehler beim Stornieren des Termins.');
+    } finally {
+      setIsSubmittingForm(false);
+    }
+  };
 
-  if (!appointment) return null;
+  useEffect(() => {
+    if (isOpen) {
+      setError('');
+      setSuccess('');
+      // Wenn sich serviceId oder appointmentDate in Formik ändert, lade neue Zeiten
+      if (formikRef.current) {
+        const { serviceId, appointmentDate, duration } = formikRef.current.values;
+        const selectedService = services.find(s => s.id.toString() === serviceId?.toString());
+        const currentDuration = duration || selectedService?.duration;
 
-  const DetailItem = ({ icon, label, value, className = '' }) => (
-      <div className={`detail-item ${className}`}>
-        <FontAwesomeIcon icon={icon} className="detail-item-icon" />
-        <span className="detail-item-label">{label}:</span>
-        <span className="detail-item-value">{value || 'N/A'}</span>
-      </div>
-  );
+        if (appointmentDate && currentDuration && serviceId && isValidDateFns(appointmentDate)) {
+          fetchAvailableTimeSlotsInternal(appointmentDate, currentDuration, serviceId, appointmentData?.id, formikRef.current.setFieldValue);
+        } else {
+          setAvailableTimeSlots([]);
+        }
+      }
+    }
+  }, [isOpen, services, fetchAvailableTimeSlotsInternal, appointmentData?.id]); // Abhängigkeit von formik.values.serviceId und formik.values.appointmentDate wird indirekt über isOpen gehandhabt
+
+  const formikRef = useRef(); // Ref für Formik-Instanz
+
+  if (!isOpen || !appointmentData) {
+    return null;
+  }
 
   return (
-      <div className="modal-overlay-modern" onClick={onClose}>
-        <div className="modal-content-modern appointment-edit-modal-modern" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-header-modern">
-            <h2 className="modal-title-modern">
-              <FontAwesomeIcon icon={faCalendarAlt} /> Terminübersicht
-            </h2>
-            <button onClick={onClose} className="modal-close-button-modern" aria-label="Schließen">
-              <FontAwesomeIcon icon={faTimes} />
-            </button>
-          </div>
+      <>
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[1051] p-4 animate-fadeInModalOverlay backdrop-blur-sm">
+          <div className={`bg-white rounded-xl shadow-2xl w-full max-w-xl max-h-[95vh] flex flex-col animate-slideInModalContent ${styles.modalContent}`}>
+            <div className="flex justify-between items-center p-5 border-b border-gray-200">
+              <h3 className="text-xl font-semibold text-gray-800 font-serif flex items-center">
+                <FontAwesomeIcon icon={faEdit} className="mr-3 text-indigo-600" />
+                Termin bearbeiten
+              </h3>
+              <button
+                  onClick={onClose}
+                  aria-label="Modal schließen"
+                  className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+                  disabled={isSubmittingForm}
+              >
+                <FontAwesomeIcon icon={faTimes} size="lg" />
+              </button>
+            </div>
 
-          {error && <p className="form-message error modal-form-message-modern"><FontAwesomeIcon icon={faExclamationCircle} /> {error}</p>}
-          {successMessage && <p className="form-message success modal-form-message-modern"><FontAwesomeIcon icon={faCheckCircle} /> {successMessage}</p>}
+            <Formik
+                innerRef={formikRef}
+                initialValues={initialValues}
+                validationSchema={EditAppointmentSchema}
+                onSubmit={handleSubmit}
+                enableReinitialize // Wichtig, damit das Formular aktualisiert wird, wenn sich 'appointmentData' ändert
+            >
+              {({ errors, touched, isSubmitting, values, setFieldValue, dirty }) => {
+                // Effekt zum Laden der Zeitschlitze, wenn sich Datum oder Service ändert
+                useEffect(() => {
+                  const selectedService = services.find(s => s.id.toString() === values.serviceId?.toString());
+                  const durationToUse = values.duration || selectedService?.duration;
+                  if (values.appointmentDate && durationToUse && values.serviceId && isValidDateFns(values.appointmentDate)) {
+                    fetchAvailableTimeSlotsInternal(values.appointmentDate, durationToUse, values.serviceId, appointmentData.id, setFieldValue);
+                  } else if (values.appointmentDate && !values.serviceId) { // Wenn Datum da, aber kein Service, leere Slots
+                    setAvailableTimeSlots([]);
+                    setFieldValue('appointmentTime', '');
+                  }
+                }, [values.appointmentDate, values.serviceId, values.duration, services, setFieldValue]);
 
-          <div className="modal-body-modern">
-            <div className="modal-sections-container">
-              <section className="modal-section customer-info-section">
-                <h3 className="modal-section-title"><FontAwesomeIcon icon={faUser} /> Kundendetails</h3>
-                <div className="customer-details-content">
-                  <DetailItem icon={faUser} label="Name" value={`${appointment.customer?.firstName} ${appointment.customer?.lastName}`} />
-                  <DetailItem icon={faEnvelope} label="E-Mail" value={appointment.customer?.email} />
-                  <DetailItem icon={faPhone} label="Telefon" value={appointment.customer?.phoneNumber} />
-                </div>
-              </section>
 
-              <section className="modal-section appointment-form-section-modern">
-                <h3 className="modal-section-title"><FontAwesomeIcon icon={faEdit} /> Termin anpassen</h3>
-                <form onSubmit={handleSubmit} className="appointment-edit-form-fields">
-                  <div className="form-group-modern datepicker-group">
-                    <label htmlFor="appointmentDateTime"><FontAwesomeIcon icon={faCalendarDay} /> Datum & Uhrzeit</label>
-                    <DatePicker
-                        selected={selectedDate}
-                        onChange={handleDateChange}
-                        locale="de"
-                        showTimeSelect
-                        timeFormat="HH:mm"
-                        timeIntervals={15}
-                        dateFormat="dd.MM.yyyy HH:mm"
-                        className="custom-datepicker-input"
-                        wrapperClassName="datepicker-wrapper"
-                        id="appointmentDateTime"
-                        disabled={!isAdmin}
-                        minDate={isAdmin ? null : new Date()} // Admins can select past dates
-                        placeholderText="Datum und Uhrzeit wählen"
-                        autoComplete="off"
-                        popperPlacement="top-end" // Versucht, das Popup besser zu positionieren
-                    />
-                  </div>
-
-                  <div className="form-group-modern">
-                    <label htmlFor="serviceId"><FontAwesomeIcon icon={faConciergeBell} /> Dienstleistung</label>
-                    <select
-                        id="serviceId"
-                        name="serviceId"
-                        value={formData.serviceId}
-                        onChange={handleChange}
-                        required
-                        disabled={!isAdmin}
-                        className="custom-select-input"
-                    >
-                      <option value="" disabled>Bitte Dienstleistung wählen...</option>
-                      {services.map(service => (
-                          <option key={service.id} value={service.id.toString()}> {/* Ensure value is string */}
-                            {service.name}
-                          </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {selectedServiceFull && (
-                      <div className="service-details-preview">
-                        <DetailItem icon={faInfoCircle} label="Ausgewählt" value={selectedServiceFull.name} />
-                        <DetailItem icon={faClock} label="Dauer" value={`${selectedServiceFull.duration} Min.`} />
-                        <DetailItem icon={faEuroSign} label="Preis" value={`${selectedServiceFull.price}€`} />
+                return (
+                    <Form className="p-6 space-y-4 overflow-y-auto flex-grow">
+                      {/* Kundeninformationen (nicht editierbar) */}
+                      <div className={`p-3 bg-slate-50 rounded-md border border-slate-200 ${styles.customerInfoBox}`}>
+                        <p className="text-sm font-medium text-gray-700 flex items-center">
+                          <FontAwesomeIcon icon={faUser} className="mr-2 text-gray-400" />
+                          Kunde: <span className="ml-1 font-normal text-gray-600">{values.customerName}</span>
+                        </p>
+                        {values.customerEmail &&
+                            <p className="text-xs text-gray-500 flex items-center mt-1">
+                              <FontAwesomeIcon icon={faEnvelope} className="mr-2 text-gray-400" /> {values.customerEmail}
+                            </p>
+                        }
                       </div>
-                  )}
 
-                  <div className="form-group-modern">
-                    <label htmlFor="notes"><FontAwesomeIcon icon={faAlignLeft} /> Notizen (optional)</label>
-                    <textarea
-                        id="notes"
-                        name="notes"
-                        value={formData.notes}
-                        onChange={handleChange}
-                        rows="3"
-                        placeholder="Zusätzliche Informationen zum Termin..."
-                        disabled={!isAdmin}
-                        className="custom-textarea-input"
-                    ></textarea>
-                  </div>
+                      <div className={styles.formGroup}>
+                        <label htmlFor="editServiceId" className="block text-sm font-medium text-gray-700 mb-1">
+                          <FontAwesomeIcon icon={faCut} className="mr-2 text-gray-400"/>Dienstleistung*
+                        </label>
+                        <Field
+                            as="select"
+                            name="serviceId"
+                            id="editServiceId"
+                            className={`w-full px-3 py-2.5 border ${errors.serviceId && touched.serviceId ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`}
+                            onChange={(e) => {
+                              const newServiceId = e.target.value;
+                              setFieldValue('serviceId', newServiceId);
+                              const selectedService = services.find(s => s.id.toString() === newServiceId);
+                              if (selectedService) {
+                                setFieldValue('price', formatPrice(selectedService.price));
+                                setFieldValue('duration', formatDuration(selectedService.duration));
+                                if (values.appointmentDate && isValidDateFns(values.appointmentDate)) {
+                                  fetchAvailableTimeSlotsInternal(values.appointmentDate, selectedService.duration, newServiceId, appointmentData.id, setFieldValue);
+                                }
+                              } else {
+                                setFieldValue('price', '');
+                                setFieldValue('duration', '');
+                                setAvailableTimeSlots([]);
+                              }
+                            }}
+                        >
+                          <option value="">Dienstleistung wählen...</option>
+                          {services.map(service => (
+                              <option key={service.id} value={service.id}>{service.name}</option>
+                          ))}
+                        </Field>
+                        <ErrorMessage name="serviceId" component="div" className="mt-1 text-xs text-red-600" />
+                      </div>
 
-                  {isAdmin && (
-                      <div className="modal-actions-modern">
-                        <button type="button" onClick={onClose} className="button-link-outline modal-button-modern">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                        <div className={styles.formGroup}>
+                          <label htmlFor="editDuration" className="block text-sm font-medium text-gray-700 mb-1">Dauer (Min.)*</label>
+                          <Field name="duration" type="number" id="editDuration" className={`w-full px-3 py-2.5 border ${errors.duration && touched.duration ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`} />
+                          <ErrorMessage name="duration" component="div" className="mt-1 text-xs text-red-600" />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label htmlFor="editPrice" className="block text-sm font-medium text-gray-700 mb-1">Preis (€)*</label>
+                          <Field name="price" type="number" step="0.01" id="editPrice" className={`w-full px-3 py-2.5 border ${errors.price && touched.price ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`} />
+                          <ErrorMessage name="price" component="div" className="mt-1 text-xs text-red-600" />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                        <div className={styles.formGroup}>
+                          <label htmlFor="editAppointmentDate" className="block text-sm font-medium text-gray-700 mb-1">
+                            <FontAwesomeIcon icon={faCalendarAlt} className="mr-2 text-gray-400"/>Datum*
+                          </label>
+                          <DatePicker
+                              selected={values.appointmentDate}
+                              onChange={(date) => {
+                                setFieldValue('appointmentDate', date);
+                                const selectedService = services.find(s => s.id.toString() === values.serviceId?.toString());
+                                const durationToUse = values.duration || selectedService?.duration;
+                                if (date && isValidDateFns(date) && durationToUse && values.serviceId) {
+                                  fetchAvailableTimeSlotsInternal(date, durationToUse, values.serviceId, appointmentData.id, setFieldValue);
+                                } else {
+                                  setAvailableTimeSlots([]);
+                                }
+                              }}
+                              dateFormat="dd.MM.yyyy"
+                              minDate={new Date()}
+                              id="editAppointmentDate"
+                              className={`w-full px-3 py-2.5 border ${errors.appointmentDate && touched.appointmentDate ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`}
+                              placeholderText="Datum wählen"
+                              autoComplete="off"
+                          />
+                          <ErrorMessage name="appointmentDate" component="div" className="mt-1 text-xs text-red-600" />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label htmlFor="editAppointmentTime" className="block text-sm font-medium text-gray-700 mb-1">
+                            <FontAwesomeIcon icon={faClock} className="mr-2 text-gray-400"/>Uhrzeit*
+                          </label>
+                          <Field
+                              as="select"
+                              name="appointmentTime"
+                              id="editAppointmentTime"
+                              disabled={loadingTimeSlots || availableTimeSlots.length === 0 || !values.serviceId || !values.appointmentDate}
+                              className={`w-full px-3 py-2.5 border ${errors.appointmentTime && touched.appointmentTime ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput} ${loadingTimeSlots || availableTimeSlots.length === 0 ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                          >
+                            <option value="">{loadingTimeSlots ? "Lade Zeiten..." : (availableTimeSlots.length === 0 && values.appointmentDate && values.serviceId ? "Keine Zeiten verfügbar" : "Uhrzeit wählen...")}</option>
+                            {/* Füge die aktuell ausgewählte Zeit hinzu, falls sie nicht in den Slots ist (für den Fall, dass sie noch gültig ist) */}
+                            {initialValues.appointmentTime && !availableTimeSlots.includes(initialValues.appointmentTime) &&
+                                <option key={initialValues.appointmentTime} value={initialValues.appointmentTime}>{initialValues.appointmentTime} (Aktuell)</option>
+                            }
+                            {availableTimeSlots.map(slot => (
+                                <option key={slot} value={slot}>{slot}</option>
+                            ))}
+                          </Field>
+                          <ErrorMessage name="appointmentTime" component="div" className="mt-1 text-xs text-red-600" />
+                        </div>
+                      </div>
+
+                      {adminView && (
+                          <div className={styles.formGroup}>
+                            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status*</label>
+                            <Field as="select" name="status" id="status" className={`w-full px-3 py-2.5 border ${errors.status && touched.status ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`}>
+                              <option value="PENDING">Ausstehend</option>
+                              <option value="CONFIRMED">Bestätigt</option>
+                              <option value="COMPLETED">Abgeschlossen</option>
+                              <option value="CANCELLED">Storniert</option>
+                            </Field>
+                            <ErrorMessage name="status" component="div" className="mt-1 text-xs text-red-600" />
+                          </div>
+                      )}
+
+                      <div className={styles.formGroup}>
+                        <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                          <FontAwesomeIcon icon={faStickyNote} className="mr-2 text-gray-400"/> Notizen (optional)
+                        </label>
+                        <Field
+                            as="textarea"
+                            name="notes"
+                            id="notes"
+                            rows="2"
+                            placeholder="Zusätzliche Informationen..."
+                            className={`w-full px-3 py-2.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput} ${styles.formTextarea}`}
+                        />
+                        <ErrorMessage name="notes" component="div" className="mt-1 text-xs text-red-600" />
+                      </div>
+
+                      {error && (
+                          <div className={`p-3 rounded-md bg-red-50 text-red-700 border border-red-200 text-sm flex items-center ${styles.formMessage} ${styles.error}`}>
+                            <FontAwesomeIcon icon={faExclamationCircle} className="mr-2 flex-shrink-0" /> {error}
+                          </div>
+                      )}
+                      {success && (
+                          <div className={`p-3 rounded-md bg-green-50 text-green-600 border border-green-200 text-sm flex items-center ${styles.formMessage} ${styles.success}`}>
+                            <FontAwesomeIcon icon={faCheckCircle} className="mr-2 flex-shrink-0" /> {success}
+                          </div>
+                      )}
+
+                      <div className="pt-5 flex flex-col sm:flex-row justify-end sm:space-x-3 space-y-2 sm:space-y-0">
+                        {adminView && appointmentData.status !== 'CANCELLED' && ( // Stornieren-Button nur für Admins und wenn nicht schon storniert
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmCancelModal(true)}
+                                disabled={isSubmittingForm || isSubmitting}
+                                className={`w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 border border-red-500 text-sm font-medium rounded-md text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-60 ${styles.actionButton} ${styles.cancelAppointmentButton}`}
+                            >
+                              <FontAwesomeIcon icon={faTimesCircle} className="mr-2" />
+                              Termin stornieren
+                            </button>
+                        )}
+                        <div className="flex-grow sm:flex-grow-0"></div> {/* Spacer */}
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={isSubmittingForm || isSubmitting}
+                            className={`w-full sm:w-auto px-5 py-2.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-150 disabled:opacity-60 ${styles.actionButton} ${styles.cancelButton}`}
+                        >
                           Abbrechen
                         </button>
-                        <button type="submit" className="button-link modal-button-modern primary" disabled={isLoading}>
-                          {isLoading ? <><FontAwesomeIcon icon={faSpinner} spin /> Speichern...</> : <><FontAwesomeIcon icon={faSave} /> Änderungen Speichern</>}
+                        <button
+                            type="submit"
+                            disabled={isSubmittingForm || isSubmitting || !dirty}
+                            className={`w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-60 ${styles.actionButton} ${styles.saveButton}`}
+                        >
+                          {isSubmittingForm ? <FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> : <FontAwesomeIcon icon={faSave} className="mr-2" />}
+                          Änderungen speichern
                         </button>
                       </div>
-                  )}
-                </form>
-              </section>
-            </div>
+                    </Form>
+                );
+              }}
+            </Formik>
           </div>
         </div>
-      </div>
+        {showConfirmCancelModal && (
+            <ConfirmModal
+                isOpen={showConfirmCancelModal}
+                onClose={() => setShowConfirmCancelModal(false)}
+                onConfirm={handleCancelAppointment}
+                title="Termin stornieren"
+                message="Möchten Sie diesen Termin wirklich stornieren? Diese Aktion kann nicht rückgängig gemacht werden."
+                confirmButtonText="Ja, stornieren"
+                icon={faTrashAlt}
+                iconColorClass="text-red-500"
+                isLoading={isSubmittingForm}
+            />
+        )}
+      </>
   );
 }
 
