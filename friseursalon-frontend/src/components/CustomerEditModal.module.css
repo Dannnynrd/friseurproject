@@ -1,0 +1,100 @@
+/* friseursalon-frontend/src/components/CustomerEditModal.module.css */
+
+.modalContent {
+    /* Maximale Höhe wird bereits durch Tailwind im JSX gesteuert (max-h-[90vh]) */
+    /* Animationen werden bereits durch Tailwind im JSX gesteuert (animate-fadeInModalOverlay, animate-slideInModalContent) */
+    /* Übergänge für ein sanfteres Einblenden, falls Tailwind-Animationen nicht ausreichen oder für spezifische Elemente */
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+.formGroup {
+    margin-bottom: 1.25rem; /* Entspricht Tailwind's mb-5 */
+}
+
+.formInput,
+.formTextarea {
+    /* Basis-Styling wird durch Tailwind im JSX übernommen (border, rounded-md, shadow-sm, focus-Ringe) */
+    /* Hier können spezifische Anpassungen vorgenommen werden, falls Tailwind nicht ausreicht */
+    padding-top: 0.625rem; /* Tailwind py-2.5 entspricht 10px */
+    padding-bottom: 0.625rem;
+    font-size: 0.875rem; /* Tailwind sm:text-sm */
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.formInput:focus,
+.formTextarea:focus {
+    /* Tailwind focus:ring-indigo-500 focus:border-indigo-500 übernimmt dies */
+    border-color: var(--indigo-500, #6366f1); /* Fallback, falls CSS-Variable nicht verfügbar */
+    box-shadow: 0 0 0 2px var(--indigo-200, #c7d2fe); /* Leichter Außenschatten für Fokus */
+}
+
+.formTextarea {
+    min-height: 80px; /* Mindesthöhe für Textareas */
+    resize: vertical; /* Erlaubt nur vertikales Vergrößern/Verkleinern */
+}
+
+.formMessage {
+    /* Basis-Styling (Padding, Rounded, Border, Textgröße) wird durch Tailwind im JSX übernommen */
+    display: flex;
+    align-items: center;
+    font-weight: 500; /* Medium */
+}
+
+.formMessage.error {
+    /* Tailwind: bg-red-50 text-red-700 border-red-200 */
+    background-color: #fef2f2; /* bg-red-50 */
+    color: #b91c1c; /* text-red-700 */
+    border-color: #fecaca; /* border-red-200 */
+}
+
+.formMessage.success {
+    /* Tailwind: bg-green-50 text-green-600 border-green-200 */
+    background-color: #f0fdf4; /* bg-green-50 */
+    color: #166534; /* text-green-700, Tailwind ist text-green-600 (#16a34a) */
+    border-color: #bbf7d0; /* border-green-200 */
+}
+
+.actionButton {
+    /* Basis-Styling (Padding, Rounded, Textgröße, Schriftart) wird durch Tailwind im JSX übernommen */
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, opacity 0.2s ease-in-out;
+    min-width: 100px; /* Mindestbreite für Konsistenz */
+    text-align: center;
+    justify-content: center;
+}
+
+.actionButton:disabled {
+    /* Tailwind: disabled:opacity-60 */
+    cursor: not-allowed;
+}
+
+.cancelButton {
+    /* Tailwind: border-gray-300 text-gray-700 bg-white hover:bg-gray-50 */
+}
+
+.saveButton {
+    /* Tailwind: bg-indigo-600 hover:bg-indigo-700 text-white */
+}
+
+/* Animationen für das Modal, falls Tailwind-Animationen nicht ausreichen oder spezifischer sein sollen */
+/* Diese sind Beispiele und können durch Tailwind-Klassen ersetzt oder ergänzt werden */
+@keyframes fadeInOverlay {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideInContent {
+    from { opacity: 0; transform: translateY(-20px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Die im JSX verwendeten Tailwind-Animationsklassen sind:
+   - animate-fadeInModalOverlay (benutzerdefiniert, muss in tailwind.config.js definiert sein oder global)
+   - animate-slideInModalContent (benutzerdefiniert)
+   Wenn diese nicht in der Tailwind-Konfiguration definiert sind, hier ein Fallback:
+*/
+.animate-fadeInModalOverlay {
+    animation: fadeInOverlay 0.3s ease-out forwards;
+}
+.animate-slideInModalContent {
+    animation: slideInContent 0.3s ease-out forwards;
+}

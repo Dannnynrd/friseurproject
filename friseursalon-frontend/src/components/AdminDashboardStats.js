@@ -313,13 +313,14 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         setIsLoadingStats(true);
         let currentError = '';
         try {
+            // KORREKTUR: Relative Pfade für Statistik-Endpunkte
             const apiRequests = [
-                api.get('/statistics/detailed-counts', { params: { startDate, endDate } }),
-                api.get('/statistics/by-day-of-week', { params: { startDate, endDate } }),
-                api.get('/statistics/by-service', { params: { startDate, endDate, topN: topNServicesConfig } }),
-                api.get('/statistics/revenue-over-time', { params: { startDate, endDate } }),
-                api.get('/statistics/capacity-utilization', { params: { startDate, endDate } }),
-                api.get('/statistics/by-hour-of-day', { params: { startDate, endDate } })
+                api.get('statistics/detailed-counts', { params: { startDate, endDate } }),
+                api.get('statistics/by-day-of-week', { params: { startDate, endDate } }),
+                api.get('statistics/by-service', { params: { startDate, endDate, topN: topNServicesConfig } }),
+                api.get('statistics/revenue-over-time', { params: { startDate, endDate } }),
+                api.get('statistics/capacity-utilization', { params: { startDate, endDate } }),
+                api.get('statistics/by-hour-of-day', { params: { startDate, endDate } })
             ];
             const [statsRes, dayRes, serviceRes, revenueTimeRes, capacityRes, hourRes] = await Promise.all(apiRequests.map(p => p.catch(e => e)));
 
@@ -405,7 +406,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             setError(currentError.trim());
             setIsLoadingStats(false);
         }
-    }, [selectedPeriod, topNServicesConfig, showCustomDatePickersModal, currentFilterStartDate, currentFilterEndDate]); // Hinzugefügt: currentFilterStartDate, currentFilterEndDate
+    }, [selectedPeriod, topNServicesConfig, showCustomDatePickersModal, currentFilterStartDate, currentFilterEndDate]);
 
 
     useEffect(() => {
@@ -416,7 +417,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         localStorage.setItem(TOP_N_SERVICES_STORAGE_KEY, topNServicesConfig.toString());
         showAndClearCustomizationMessage("Top N Services aktualisiert.");
         fetchMainStatsAndCharts_Memoized(currentFilterStartDate, currentFilterEndDate);
-    }, [topNServicesConfig, currentFilterStartDate, currentFilterEndDate, fetchMainStatsAndCharts_Memoized]); // Korrigiert und fetchMainStatsAndCharts_Memoized hinzugefügt
+    }, [topNServicesConfig, currentFilterStartDate, currentFilterEndDate, fetchMainStatsAndCharts_Memoized]);
 
     const handleGoalChange = (goalKey, value) => {
         const numericValue = value === '' ? null : Number(value);
@@ -450,7 +451,8 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         setIsLoadingActivity(true); setIsLoadingDaily(true);
         let currentError = '';
         try {
-            const dailyRes = await api.get('/statistics/today-upcoming-appointments');
+            // KORREKTUR: Relativer Pfad für Statistik-Endpunkt
+            const dailyRes = await api.get('statistics/today-upcoming-appointments');
             setDailyAppointments(dailyRes.data || []);
         } catch (err) {
             console.error("Fehler beim Laden von Terminliste:", err.response?.data || err.message);
@@ -497,7 +499,8 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         if (!appointmentDTO || !appointmentDTO.appointmentId) { setError("Details konnten nicht geladen werden (ID fehlt)."); return; }
         setIsLoadingModalAppointment(true);
         try {
-            const response = await api.get(`/appointments/${appointmentDTO.appointmentId}`);
+            // Dieser Pfad ist korrekt, da er `appointments/...` an `.../api/` anhängt
+            const response = await api.get(`appointments/${appointmentDTO.appointmentId}`);
             setSelectedAppointmentForEdit(response.data || null);
         } catch (err) { setError(`Details für Termin ${appointmentDTO.appointmentId} konnten nicht geladen werden.`); setSelectedAppointmentForEdit(null);
         } finally { setIsLoadingModalAppointment(false); }
@@ -520,7 +523,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
     const renderComparison = (changePercentageInput, previousValue, isGrowthGood = true) => {
         const hasPreviousData = previousValue !== null && previousValue !== undefined && !isNaN(parseFloat(previousValue));
         let changeText = 'vs. Vorp.: N/A'; let icon = faEquals;
-        let colorClass = styles.neutral; // Standard CSS-Modul Klasse
+        let colorClass = styles.neutral;
         const changePercentage = Number(changePercentageInput);
 
         if (hasPreviousData && parseFloat(previousValue) !== 0) {
@@ -686,8 +689,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
 
 
     return (
-        <div className={`p-4 sm:p-6 lg:p-8 bg-slate-50 min-h-full ${styles.adminDashboardStats}`}> {/* Hauptcontainer mit Tailwind */}
-            {/* Filterleiste mit Tailwind */}
+        <div className={`p-4 sm:p-6 lg:p-8 bg-slate-50 min-h-full ${styles.adminDashboardStats}`}>
             <div className={`flex flex-wrap items-center gap-2 sm:gap-3 mb-6 p-3 bg-white rounded-lg shadow ${styles.statsPeriodFilterBar}`}>
                 <div className={`flex flex-wrap gap-1.5 ${styles.periodButtonsMain}`}>
                     {MAIN_PERIOD_OPTIONS.map(key => (
@@ -764,11 +766,8 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                 </div>
             }
 
-            {/* Haupt-Grid-Layout mit Tailwind */}
             <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 ${styles.dashboardGridLayout}`}>
-                {/* Hauptspalte für KPIs und Diagramme */}
                 <div className={`lg:col-span-2 space-y-6 ${styles.mainStatsColumn}`}>
-                    {/* KPI Karten Sektion mit Tailwind */}
                     <div className={`bg-white p-5 rounded-xl shadow-lg ${styles.statsSectionBox} ${styles.statsOverviewCardsWrapper}`}>
                         <h3 className={`text-lg font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200 flex items-center justify-between ${styles.statsSectionTitle}`}>
                             <span><FontAwesomeIcon icon={faChartLine} className="mr-2 text-indigo-500" /> Kennzahlen</span>
@@ -776,7 +775,6 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                         </h3>
                         {renderStatCards()}
                     </div>
-                    {/* Diagramm Sektion mit Tailwind */}
                     <div className={`bg-white p-5 rounded-xl shadow-lg ${styles.statsSectionBox} ${styles.chartsSectionWrapper}`}>
                         <div className={`flex justify-between items-center mb-4 pb-2 border-b border-gray-200 ${styles.sectionHeaderWithExport}`}>
                             <h3 className={`text-lg font-semibold text-gray-700 flex items-center ${styles.statsSectionTitle}`}>
@@ -806,7 +804,6 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                     </div>
                 </div>
 
-                {/* Sidebar-Spalte mit Tailwind */}
                 <div className={`space-y-6 ${styles.sidebarStatsColumn}`}>
                     <div className={`bg-white p-5 rounded-xl shadow-lg ${styles.statsSectionBox} ${styles.quickAccessSection}`}>
                         <h3 className={`text-base font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200 flex items-center ${styles.statsSectionTitle} ${styles.smallTitle}`}>
@@ -865,8 +862,27 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                 </div>
             </div>
 
-            {selectedAppointmentForEdit && currentUser?.roles?.includes("ROLE_ADMIN") && (<AppointmentEditModal isOpen={!!selectedAppointmentForEdit} appointment={selectedAppointmentForEdit} onClose={handleCloseEditModal} onAppointmentUpdated={handleAppointmentUpdatedFromModal} />)}
-            {showCreateModal && (<AppointmentCreateModal isOpen={showCreateModal} onClose={handleCloseCreateModal} onAppointmentCreated={handleAppointmentCreated} currentUser={currentUser} selectedSlot={selectedSlotForCreate} />)}
+            {selectedAppointmentForEdit && currentUser?.roles?.includes("ROLE_ADMIN") && (
+                <AppointmentEditModal
+                    isOpen={!!selectedAppointmentForEdit}
+                    // KORREKTUR: `appointment` prop zu `appointmentData` ändern, um Konsistenz mit AppointmentEditModal zu wahren
+                    appointmentData={selectedAppointmentForEdit}
+                    onClose={handleCloseEditModal}
+                    // KORREKTUR: `onAppointmentUpdated` zu `onSave` ändern, um Konsistenz zu wahren
+                    onSave={handleAppointmentUpdatedFromModal}
+                    adminView={true} // Explizit setzen, da es sich um Admin-Dashboard handelt
+                />
+            )}
+            {showCreateModal && (
+                <AppointmentCreateModal
+                    isOpen={showCreateModal}
+                    onClose={handleCloseCreateModal}
+                    // KORREKTUR `onAppointmentCreated` zu `onSave`
+                    onSave={handleAppointmentCreated}
+                    currentUser={currentUser}
+                    selectedSlot={selectedSlotForCreate}
+                />
+            )}
         </div>
     );
 }
