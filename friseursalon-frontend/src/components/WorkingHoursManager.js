@@ -1,5 +1,5 @@
 // friseursalon-frontend/src/components/WorkingHoursManager.js
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../services/api.service';
 import styles from './WorkingHoursManager.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -11,9 +11,12 @@ const DAY_LABELS = {
     FRIDAY: "Freitag", SATURDAY: "Samstag", SUNDAY: "Sonntag"
 };
 
+const DEFAULT_OPEN_START_TIME = "09:00";
+const DEFAULT_OPEN_END_TIME = "17:00";
+
 function WorkingHoursManager({ refreshTrigger }) {
     const [workingHours, setWorkingHours] = useState([]);
-    const [initialWorkingHours, setInitialWorkingHours] = useState([]); // Für "dirty" Check
+    const [initialWorkingHours, setInitialWorkingHours] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
@@ -24,22 +27,47 @@ function WorkingHoursManager({ refreshTrigger }) {
         setError('');
         setSuccessMessage('');
         try {
-            // KORREKTUR: Relativer Pfad
             const response = await api.get('workinghours');
             const fetchedHours = response.data || [];
-            // Sicherstellen, dass für jeden Tag ein Eintrag existiert, auch wenn vom Backend nicht geliefert
+
+            console.log("[FETCH] Fetched working hours from backend:", JSON.stringify(fetchedHours, null, 2));
+
             const completeHours = DAYS_OF_WEEK.map(day => {
                 const existing = fetchedHours.find(h => h.dayOfWeek === day);
-                return existing || { dayOfWeek: day, startTime: "09:00", endTime: "17:00", isClosed: true };
+                if (existing) {
+                    // Backend sendet 'closed' (boolean) und 'startTime'/'endTime' (String "HH:mm" oder null)
+                    // Wir standardisieren auf 'isClosed' im Frontend.
+                    const isDayActuallyClosed = existing.closed !== undefined ? !!existing.closed : !!existing.isClosed;
+
+                    return {
+                        id: existing.id,
+                        dayOfWeek: existing.dayOfWeek,
+                        startTime: isDayActuallyClosed ? "00:00" : (existing.startTime || DEFAULT_OPEN_START_TIME),
+                        endTime: isDayActuallyClosed ? "00:00" : (existing.endTime || DEFAULT_OPEN_END_TIME),
+                        isClosed: isDayActuallyClosed, // Verwende den korrekten Wert vom Backend
+                    };
+                }
+                console.warn(`[FETCH] No data for ${day} from backend, using client-side default.`);
+                return {
+                    dayOfWeek: day,
+                    id: null,
+                    startTime: day === "SUNDAY" ? "00:00" : DEFAULT_OPEN_START_TIME,
+                    endTime: day === "SUNDAY" ? "00:00" : DEFAULT_OPEN_END_TIME,
+                    isClosed: day === "SUNDAY"
+                };
             });
+            console.log("[FETCH] Processed completeHours for frontend state:", JSON.stringify(completeHours, null, 2));
             setWorkingHours(completeHours);
-            setInitialWorkingHours(JSON.parse(JSON.stringify(completeHours))); // Tiefe Kopie für Vergleich
+            setInitialWorkingHours(JSON.parse(JSON.stringify(completeHours)));
         } catch (err) {
             console.error("Error fetching working hours:", err);
             setError(err.response?.data?.message || "Öffnungszeiten konnten nicht geladen werden.");
-            // Fallback auf Standard-Öffnungszeiten, falls Laden fehlschlägt
             const defaultHours = DAYS_OF_WEEK.map(day => ({
-                dayOfWeek: day, startTime: "09:00", endTime: "17:00", isClosed: day === "SUNDAY"
+                dayOfWeek: day,
+                id: null,
+                startTime: day === "SUNDAY" ? "00:00" : DEFAULT_OPEN_START_TIME,
+                endTime: day === "SUNDAY" ? "00:00" : DEFAULT_OPEN_END_TIME,
+                isClosed: day === "SUNDAY"
             }));
             setWorkingHours(defaultHours);
             setInitialWorkingHours(JSON.parse(JSON.stringify(defaultHours)));
@@ -53,21 +81,36 @@ function WorkingHoursManager({ refreshTrigger }) {
     }, [fetchWorkingHours, refreshTrigger]);
 
     const handleInputChange = (day, field, value) => {
+        console.log(`[INPUT CHANGE] Day: ${day}, Field: ${field}, Value: ${value}`);
         setWorkingHours(prevHours =>
             prevHours.map(hour =>
                 hour.dayOfWeek === day ? { ...hour, [field]: value } : hour
             )
         );
-        setSuccessMessage(''); // Nachrichten zurücksetzen bei Änderung
+        setSuccessMessage('');
         setError('');
     };
 
-    const handleToggleClosed = (day) => {
-        setWorkingHours(prevHours =>
-            prevHours.map(hour =>
-                hour.dayOfWeek === day ? { ...hour, isClosed: !hour.isClosed } : hour
-            )
-        );
+    const handleToggleClosed = (dayToToggle) => {
+        console.log(`[TOGGLE CLOSED] Attempting to toggle 'isClosed' for day: ${dayToToggle}`);
+        setWorkingHours(prevHours => {
+            const newHours = prevHours.map(hour => {
+                if (hour.dayOfWeek === dayToToggle) {
+                    const isNowClosed = !hour.isClosed; // Der neue Zustand von isClosed
+                    console.log(`[TOGGLE CLOSED] Day: ${hour.dayOfWeek}, Previous isClosed: ${hour.isClosed}, New isClosed: ${isNowClosed}`);
+                    return {
+                        ...hour, // Behalte andere Properties wie id, dayOfWeek
+                        isClosed: isNowClosed, // Setze den neuen isClosed Status
+                        // Setze Zeiten basierend auf dem neuen isClosed Status
+                        startTime: isNowClosed ? "00:00" : (hour.startTime && hour.startTime !== "00:00" ? hour.startTime : DEFAULT_OPEN_START_TIME),
+                        endTime: isNowClosed ? "00:00" : (hour.endTime && hour.endTime !== "00:00" ? hour.endTime : DEFAULT_OPEN_END_TIME),
+                    };
+                }
+                return hour;
+            });
+            console.log("[TOGGLE CLOSED] New workingHours state after toggle:", JSON.stringify(newHours, null, 2));
+            return newHours;
+        });
         setSuccessMessage('');
         setError('');
     };
@@ -78,9 +121,26 @@ function WorkingHoursManager({ refreshTrigger }) {
         setError('');
         setSuccessMessage('');
 
-        // Validierung der Zeiten (Endzeit muss nach Startzeit liegen, wenn nicht geschlossen)
-        for (const wh of workingHours) {
-            if (!wh.isClosed && wh.endTime <= wh.startTime) {
+        console.log("[SUBMIT] Current workingHours state before creating payload:", JSON.stringify(workingHours, null, 2));
+
+        const payload = workingHours.map(wh => {
+            // Erstelle ein sauberes Objekt für den Payload
+            const itemToSend = {
+                id: wh.id,
+                dayOfWeek: wh.dayOfWeek,
+                isClosed: wh.isClosed, // Sende IMMER den aktuellen isClosed Status
+                startTime: wh.isClosed ? null : wh.startTime,
+                endTime: wh.isClosed ? null : wh.endTime,
+            };
+            // Die 'closed' Property (falls sie vom Backend kam und noch im wh-Objekt ist)
+            // wird hier nicht explizit mitgesendet, da wir uns auf 'isClosed' verlassen.
+            return itemToSend;
+        });
+
+        console.log("[SUBMIT] Payload to be sent to backend:", JSON.stringify(payload, null, 2));
+
+        for (const wh of payload) {
+            if (!wh.isClosed && wh.endTime && wh.startTime && wh.endTime <= wh.startTime) {
                 setError(`Für ${DAY_LABELS[wh.dayOfWeek]}: Endzeit muss nach der Startzeit liegen.`);
                 setIsSaving(false);
                 return;
@@ -88,10 +148,9 @@ function WorkingHoursManager({ refreshTrigger }) {
         }
 
         try {
-            // KORREKTUR: Relativer Pfad
-            await api.put('workinghours', workingHours);
+            await api.put('workinghours', payload);
             setSuccessMessage('Öffnungszeiten erfolgreich gespeichert.');
-            setInitialWorkingHours(JSON.parse(JSON.stringify(workingHours))); // Update initial state
+            fetchWorkingHours();
         } catch (err) {
             console.error("Error saving working hours:", err);
             setError(err.response?.data?.message || 'Fehler beim Speichern der Öffnungszeiten.');
@@ -103,7 +162,7 @@ function WorkingHoursManager({ refreshTrigger }) {
     const generateTimeOptions = () => {
         const options = [];
         for (let h = 0; h < 24; h++) {
-            for (let m = 0; m < 60; m += 15) { // 15-Minuten-Intervalle
+            for (let m = 0; m < 60; m += 15) {
                 options.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
             }
         }
@@ -111,7 +170,22 @@ function WorkingHoursManager({ refreshTrigger }) {
     };
     const timeOptions = generateTimeOptions();
 
-    const isDirty = JSON.stringify(workingHours) !== JSON.stringify(initialWorkingHours);
+    const isDirty = useMemo(() => {
+        if (!initialWorkingHours || workingHours.length !== initialWorkingHours.length) {
+            if (workingHours.length > 0) return true;
+            return false;
+        }
+        for (let i = 0; i < workingHours.length; i++) {
+            const current = workingHours[i];
+            const initial = initialWorkingHours[i];
+            if (current.isClosed !== initial.isClosed) return true;
+            if (!current.isClosed && (current.startTime !== initial.startTime || current.endTime !== initial.endTime)) {
+                return true;
+            }
+        }
+        return false;
+    }, [workingHours, initialWorkingHours]);
+
 
     if (loading) {
         return (
@@ -165,7 +239,7 @@ function WorkingHoursManager({ refreshTrigger }) {
                                     <label htmlFor={`startTime-${wh.dayOfWeek}`} className="block text-xs font-medium text-gray-500 mb-1">Öffnet um</label>
                                     <select
                                         id={`startTime-${wh.dayOfWeek}`}
-                                        value={wh.startTime}
+                                        value={wh.startTime || DEFAULT_OPEN_START_TIME}
                                         onChange={(e) => handleInputChange(wh.dayOfWeek, 'startTime', e.target.value)}
                                         className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.timeSelect}`}
                                         disabled={wh.isClosed}
@@ -177,7 +251,7 @@ function WorkingHoursManager({ refreshTrigger }) {
                                     <label htmlFor={`endTime-${wh.dayOfWeek}`} className="block text-xs font-medium text-gray-500 mb-1">Schließt um</label>
                                     <select
                                         id={`endTime-${wh.dayOfWeek}`}
-                                        value={wh.endTime}
+                                        value={wh.endTime || DEFAULT_OPEN_END_TIME}
                                         onChange={(e) => handleInputChange(wh.dayOfWeek, 'endTime', e.target.value)}
                                         className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.timeSelect}`}
                                         disabled={wh.isClosed}
