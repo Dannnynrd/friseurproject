@@ -1,46 +1,52 @@
 // friseursalon-frontend/src/services/testimonial.service.js
 import api from './api.service'; // Importiert die konfigurierte Axios-Instanz
 
-const API_URL = '/api/testimonials';
+// API_URL sollte der Basispfad für Testimonials *nach* /api/ sein.
+const API_PATH = 'testimonials'; // Geändert von API_URL und ohne /api/
 
 class TestimonialService {
     // Für die TestimonialsSection auf der Homepage
     getApprovedTestimonials() {
-        return api.get(`${API_URL}/approved`);
+        // Ruft GET http://localhost:8080/api/testimonials/approved auf
+        return api.get(`${API_PATH}/approved`);
     }
 
     // Für das TestimonialSubmitForm (eingeloggte Benutzer)
-    // Die Daten sollten { customerName: string, comment: string, rating: number, (optional) userId: number } enthalten
     submitTestimonial(data) {
-        return api.post(`${API_URL}/submit`, data);
+        // Ruft POST http://localhost:8080/api/testimonials/submit auf
+        return api.post(`${API_PATH}/submit`, data);
     }
 
     // Für das TestimonialSubmitForm (Gäste)
-    // Die Daten sollten { customerName: string, email: string, comment: string, rating: number } enthalten
     submitGuestTestimonial(data) {
-        return api.post(`${API_URL}/submit-guest`, data);
+        // Ruft POST http://localhost:8080/api/testimonials/submit-guest auf
+        return api.post(`${API_PATH}/submit-guest`, data);
     }
 
     // --- Methoden für Admin-Bereich ---
 
     // Alle Testimonials für das Admin-Dashboard abrufen
     getAllTestimonials() {
-        return api.get(API_URL);
+        // Ruft GET http://localhost:8080/api/testimonials/admin/all auf
+        return api.get(`${API_PATH}/admin/all`);
     }
 
     // Ein Testimonial genehmigen (Admin)
     approveTestimonial(testimonialId) {
-        return api.put(`${API_URL}/${testimonialId}/approve`);
+        // Ruft PUT http://localhost:8080/api/testimonials/admin/approve/{testimonialId} auf
+        return api.put(`<span class="math-inline">\{API\_PATH\}/admin/approve/</span>{testimonialId}`);
     }
 
     // Genehmigung eines Testimonials zurückziehen (Admin)
     unapproveTestimonial(testimonialId) {
-        return api.put(`${API_URL}/${testimonialId}/unapprove`);
+        // Ruft PUT http://localhost:8080/api/testimonials/admin/unapprove/{testimonialId} auf
+        return api.put(`<span class="math-inline">\{API\_PATH\}/admin/unapprove/</span>{testimonialId}`);
     }
 
     // Ein Testimonial löschen (Admin)
     deleteTestimonial(testimonialId) {
-        return api.delete(`${API_URL}/${testimonialId}`);
+        // Ruft DELETE http://localhost:8080/api/testimonials/admin/{testimonialId} auf
+        return api.delete(`<span class="math-inline">\{API\_PATH\}/admin/</span>{testimonialId}`);
     }
 }
 
