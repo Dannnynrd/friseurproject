@@ -92,10 +92,12 @@ function App() {
     }, [navigate]);
 
     const handleProfileUpdateSuccess = useCallback((updatedUserData) => {
-        // Get the full user object from localStorage as updateProfile in auth.service now updates it.
+        // AuthService.updateProfile now updates localStorage and dispatches an event.
+        // This handler will be called by the EventBus listener.
+        // We can simply re-fetch the user from AuthService to ensure consistency.
         const refreshedUser = AuthService.getCurrentUser();
         if (refreshedUser) {
-            console.log("App.js: handleProfileUpdateSuccess - currentUser wird aktualisiert mit:", refreshedUser);
+            console.log("App.js: handleProfileUpdateSuccess (via EventBus) - currentUser wird aktualisiert mit:", refreshedUser);
             setCurrentUser(refreshedUser);
         }
     }, []);
@@ -109,10 +111,11 @@ function App() {
     useEffect(() => {
         const user = AuthService.getCurrentUser();
         if (user) {
-            if (!currentUser || user.id !== currentUser.id || user.token !== currentUser.token) {
+            // More robust check to prevent unnecessary updates if user object is identical
+            if (!currentUser || JSON.stringify(user) !== JSON.stringify(currentUser)) {
                 setCurrentUser(user);
             }
-        } else if (currentUser) {
+        } else if (currentUser) { // If no user in localStorage but currentUser state exists, clear it
             setCurrentUser(undefined);
         }
 
@@ -128,8 +131,8 @@ function App() {
                     updatedUserFromEvent.email !== currentUser.email || // Use email
                     updatedUserFromEvent.firstName !== currentUser.firstName ||
                     updatedUserFromEvent.lastName !== currentUser.lastName ||
-                    updatedUserFromEvent.phoneNumber !== currentUser.phoneNumber
-                    // Add other relevant fields if necessary
+                    updatedUserFromEvent.phoneNumber !== currentUser.phoneNumber ||
+                    JSON.stringify(updatedUserFromEvent.roles) !== JSON.stringify(currentUser.roles) // Also check roles
                 )) {
                 setCurrentUser(updatedUserFromEvent);
             }
@@ -140,7 +143,7 @@ function App() {
             EventBus.remove("logout", handleLogoutEvent);
             EventBus.remove("profileUpdated", handleProfileUpdatedEvent);
         };
-    }, [logOut, currentUser]);
+    }, [logOut, currentUser]); // currentUser is a dependency to re-evaluate if it changes externally
 
     useEffect(() => {
         const preloader = preloaderRef.current;
@@ -174,24 +177,23 @@ function App() {
 
         updateBodyPadding(); // Initial call
 
-        // Observe header size changes
         const resizeObserver = new ResizeObserver(updateBodyPadding);
         if (headerRef.current) {
             resizeObserver.observe(headerRef.current);
         }
 
-        // Update padding after transitions (e.g., mobile menu opening/closing)
-        const transitionTimeout = setTimeout(updateBodyPadding, 350); // Adjust timeout as needed
+        const transitionTimeout = setTimeout(updateBodyPadding, 350);
 
         return () => {
             if (headerRef.current) {
                 resizeObserver.unobserve(headerRef.current);
             }
             clearTimeout(transitionTimeout);
-            if(document.body) document.body.style.paddingTop = '0'; // Reset padding on unmount
+            if(document.body) document.body.style.paddingTop = '0';
         };
-    }, [isHeaderScrolled, isMobileMenuOpen, location.pathname]); // Re-run on these changes
+    }, [isHeaderScrolled, isMobileMenuOpen, location.pathname]);
 
+    // Modified navigateToBooking
     const navigateToBooking = useCallback((serviceName = null) => {
         if (serviceName) {
             navigate(`/buchen/${encodeURIComponent(serviceName)}`);
@@ -204,7 +206,6 @@ function App() {
 
     const toggleMobileMenu = () => setIsMobileMenuOpen(prev => !prev);
 
-    // Ermitteln, ob es sich um eine Dashboard-Seite handelt
     const isDashboardPage = location.pathname.startsWith('/my-account');
 
     const HomePageLayout = () => (
@@ -214,7 +215,8 @@ function App() {
             <ExperienceSection />
             <TestimonialsSection />
             <AboutFounderSection />
-            <ServicesSection openBookingModal={navigateToBooking} /> {/* navigateToBooking weitergeben */}
+            {/* Pass navigateToBooking to ServicesSection */}
+            <ServicesSection openBookingModal={navigateToBooking} />
             <GalleryJournalSection />
             <EssentialsSection />
             <FAQSection />
@@ -239,6 +241,7 @@ function App() {
             />
             <Routes>
                 <Route path="/" element={<HomePageLayout />} />
+                {/* Added routes for BookingPage */}
                 <Route path="/buchen" element={<BookingPage onAppointmentAdded={handleAppointmentAdded} currentUser={currentUser} onLoginSuccess={handleLoginSuccess} />} />
                 <Route path="/buchen/:serviceName" element={<BookingPage onAppointmentAdded={handleAppointmentAdded} currentUser={currentUser} onLoginSuccess={handleLoginSuccess}/>} />
 
@@ -257,7 +260,7 @@ function App() {
                     element={
                         currentUser ? <Navigate to="/my-account" replace /> :
                             <div className="page-center-content">
-                                <Register />
+                                <Register /> {/* Assuming Register component does not need onLoginSuccess */}
                             </div>
                     }
                 />
@@ -268,16 +271,17 @@ function App() {
                             <AccountDashboard
                                 currentUser={currentUser}
                                 logOut={logOut}
-                                onAppointmentAdded={handleAppointmentAdded} // Prop für Terminaktualisierungen
-                                refreshAppointmentsList={refreshAppointmentsList} // Prop für expliziten Refresh
+                                onAppointmentAdded={handleAppointmentAdded}
+                                refreshAppointmentsList={refreshAppointmentsList}
                                 onServiceAdded={handleServiceAdded}
                                 refreshServicesList={refreshServicesList}
-                                onProfileUpdateSuccess={handleProfileUpdateSuccess} // Prop für Profilaktualisierungen
-                                onProfileUpdateError={handleProfileUpdateError} // Prop für Profilaktualisierungsfehler
+                                onProfileUpdateSuccess={handleProfileUpdateSuccess}
+                                onProfileUpdateError={handleProfileUpdateError}
                             />
                         </ProtectedRoute>
                     }
                 />
+                {/* Fallback route */}
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <Footer />

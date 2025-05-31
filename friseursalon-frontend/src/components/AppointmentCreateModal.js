@@ -19,27 +19,28 @@ registerLocale('de', de);
 
 const AppointmentSchema = Yup.object().shape({
     serviceId: Yup.string().required('Dienstleistung ist erforderlich.'),
-    // customerId: Wird nicht mehr direkt verwendet, wenn wir immer ein customer-Objekt bauen
     isNewCustomer: Yup.boolean(),
     customerName: Yup.string().when('isNewCustomer', {
         is: true,
-        then: Yup.string().required('Kundenname (Vor- und Nachname) ist erforderlich für Neukunden.')
-            .matches(/^(\S+\s+\S+.*)$/, 'Bitte Vor- und Nachnamen angeben.'),
-        otherwise: Yup.string().notRequired(),
+        // Validierung für Vor- und Nachname, mindestens zwei Wörter
+        then: () => Yup.string()
+            .required('Kundenname (Vor- und Nachname) ist erforderlich für Neukunden.')
+            .matches(/^(\S+\s+\S+.*)$/, 'Bitte Vor- und Nachnamen angeben (mind. 2 Wörter).'),
+        otherwise: () => Yup.string().notRequired(),
     }),
     customerEmail: Yup.string().email('Ungültige E-Mail.').when('isNewCustomer', {
         is: true,
-        then: Yup.string().required('E-Mail ist erforderlich für Neukunden.'),
-        otherwise: Yup.string().notRequired(),
+        then: () => Yup.string().required('E-Mail ist erforderlich für Neukunden.'),
+        otherwise: () => Yup.string().notRequired(),
     }),
     customerPhone: Yup.string().matches(/^[0-9+\-\s()]*$/, "Ungültige Telefonnummer.").notRequired(),
     appointmentDate: Yup.date().required('Datum ist erforderlich.').nullable().min(new Date(new Date().setDate(new Date().getDate() -1)), "Datum darf nicht in der Vergangenheit liegen."),
     appointmentTime: Yup.string().required('Uhrzeit ist erforderlich.'),
     notes: Yup.string().max(500, 'Notizen dürfen maximal 500 Zeichen lang sein.').notRequired(),
-    selectedExistingCustomer: Yup.string().when('isNewCustomer', { // Für die Auswahl aus dem Dropdown
-        is: false,
-        then: Yup.string().required('Bitte wählen Sie einen Bestandskunden oder markieren Sie "Neukunde".'),
-        otherwise: Yup.string().notRequired(),
+    selectedExistingCustomer: Yup.string().when(['isNewCustomer', 'adminView'], {
+        is: (isNewCustomer, adminView) => !isNewCustomer && adminView, // Nur für Admin relevant, wenn kein Neukunde
+        then: () => Yup.string().required('Bitte wählen Sie einen Bestandskunden oder markieren Sie "Neukunde".'),
+        otherwise: () => Yup.string().notRequired(),
     }),
 });
 
@@ -60,7 +61,7 @@ const formatDuration = (minutes) => {
 
 function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, currentUser }) {
     const [services, setServices] = useState([]);
-    const [customers, setCustomers] = useState([]); // Für die Auswahl existierender Kunden
+    const [customers, setCustomers] = useState([]);
     const [loadingServices, setLoadingServices] = useState(true);
     const [loadingCustomers, setLoadingCustomers] = useState(true);
     const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
@@ -72,32 +73,34 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
 
     const initialDate = selectedSlot?.start && isValidDateFns(selectedSlot.start) ? selectedSlot.start : null;
     const initialTime = selectedSlot?.start && isValidDateFns(selectedSlot.start) ? formatDateFns(selectedSlot.start, 'HH:mm') : '';
+    const adminView = currentUser?.roles?.includes('ROLE_ADMIN');
 
     const formikRef = useRef();
 
-    // InitialValues angepasst
-    const initialValues = {
+    const getInitialValues = useCallback(() => ({
         serviceId: '',
-        isNewCustomer: false,
-        selectedExistingCustomer: '', // ID des ausgewählten Bestandskunden
-        customerName: '', // Für Neukunden: "Vorname Nachname"
-        customerEmail: '', // Für Neukunden
-        customerPhone: '', // Für Neukunden
+        isNewCustomer: !currentUser || adminView, // Standard für Gäste oder wenn Admin erstellt
+        selectedExistingCustomer: '',
+        customerName: '',
+        customerEmail: '',
+        customerPhone: '',
         appointmentDate: initialDate,
         appointmentTime: initialTime,
         notes: '',
-    };
+        adminView: adminView // Um Yup Schema dynamisch zu machen
+    }), [currentUser, adminView, initialDate, initialTime]);
+
 
     const fetchServicesAndCustomers = useCallback(async () => {
         setLoadingServices(true);
         setLoadingCustomers(true);
         setError('');
         try {
-            const [servicesRes, customersRes] = await Promise.all([
-                api.get('/api/services').catch(e => { console.error("Error fetching services", e); return { data: [] }; }),
-                // Nur Admins können Kundenliste sehen/auswählen
-                currentUser?.roles?.includes('ROLE_ADMIN') ? api.get('/api/customers').catch(e => { console.error("Error fetching customers", e); return { data: [] }; }) : Promise.resolve({data: []})
-            ]);
+            const servicesResPromise = api.get('/api/services').catch(e => { console.error("Error fetching services", e); return { data: [] }; });
+            const customersResPromise = adminView ? api.get('/api/customers').catch(e => { console.error("Error fetching customers", e); return { data: [] }; }) : Promise.resolve({ data: [] });
+
+            const [servicesRes, customersRes] = await Promise.all([servicesResPromise, customersResPromise]);
+
             setServices(servicesRes.data || []);
             setCustomers(customersRes.data || []);
         } catch (err) {
@@ -107,7 +110,7 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
             setLoadingServices(false);
             setLoadingCustomers(false);
         }
-    }, [currentUser]); // currentUser als Abhängigkeit
+    }, [adminView]);
 
     useEffect(() => {
         if (isOpen) {
@@ -115,29 +118,20 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
             setError('');
             setSuccess('');
             if (formikRef.current) {
-                formikRef.current.resetForm({
-                    values: {
-                        ...initialValues,
-                        appointmentDate: selectedSlot?.start && isValidDateFns(selectedSlot.start) ? selectedSlot.start : null,
-                        appointmentTime: selectedSlot?.start && isValidDateFns(selectedSlot.start) ? formatDateFns(selectedSlot.start, 'HH:mm') : '',
-                        isNewCustomer: !currentUser, // Standardmäßig Neukunde, wenn kein User eingeloggt ist
-                        // Wenn Admin und User eingeloggt, aber Modal für neuen Termin, ist Neukunde auch eine Option.
-                    }
-                });
+                formikRef.current.resetForm({ values: getInitialValues() });
             }
         }
-    }, [isOpen, fetchServicesAndCustomers, selectedSlot, currentUser, initialValues]);
-
+    }, [isOpen, fetchServicesAndCustomers, getInitialValues]);
 
     const fetchAvailableTimeSlotsInternal = useCallback(async (date, serviceIdForSlots, setFieldValue) => {
         const service = services.find(s => s.id.toString() === serviceIdForSlots);
         if (!date || !service || !service.id || !isValidDateFns(date)) {
             setAvailableTimeSlots([]);
-            if (date && serviceIdForSlots) setFieldValue('appointmentTime', '');
+            if (date && serviceIdForSlots && setFieldValue) setFieldValue('appointmentTime', '');
             return;
         }
         setLoadingTimeSlots(true);
-        setFieldValue('appointmentTime', ''); // Zeit zurücksetzen
+        if (setFieldValue) setFieldValue('appointmentTime', '');
         try {
             const formattedDate = formatDateFns(date, 'yyyy-MM-dd');
             const response = await api.get('/api/appointments/available-slots', {
@@ -173,14 +167,14 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
 
         let customerPayload = {};
         if (values.isNewCustomer) {
-            const nameParts = values.customerName.split(' ');
+            const nameParts = values.customerName.trim().split(/\s+/); // Teilt bei einem oder mehreren Leerzeichen
             customerPayload = {
                 firstName: nameParts[0] || '',
-                lastName: nameParts.slice(1).join(' ') || nameParts[0], // Fallback falls nur ein Wort
-                email: values.customerEmail,
-                phoneNumber: values.customerPhone || null, // Stelle sicher, dass es null ist, wenn leer
+                lastName: nameParts.slice(1).join(' ') || (nameParts.length > 1 ? '' : nameParts[0]), // Fallback, falls nur ein Wort
+                email: values.customerEmail.trim(),
+                phoneNumber: values.customerPhone.trim() || null,
             };
-        } else if (currentUser && !adminView) { // Eingeloggter User bucht für sich
+        } else if (currentUser && !adminView) { // Eingeloggter User bucht für sich selbst
             customerPayload = {
                 firstName: currentUser.firstName,
                 lastName: currentUser.lastName,
@@ -201,21 +195,20 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
                 setIsSubmittingForm(false); setSubmitting(false); return;
             }
         } else {
-            setError("Kundeninformationen unvollständig.");
+            setError("Kundeninformationen sind unvollständig oder ungültig.");
             setIsSubmittingForm(false); setSubmitting(false); return;
         }
 
 
         const payload = {
-            service: { id: parseInt(values.serviceId, 10) },
-            customer: customerPayload,
+            service: { id: parseInt(values.serviceId, 10) }, // Korrekt: Service Objekt mit ID
+            customer: customerPayload, // Korrekt: Genestetes Kundenobjekt
             startTime: appointmentDateTime.toISOString(),
             notes: values.notes,
-            // Status wird vom Backend gesetzt (z.B. auf CONFIRMED oder PENDING)
         };
 
         try {
-            // Der Endpunkt ist jetzt /api/appointments
+            // Korrigierter API Endpunkt
             await api.post('/api/appointments', payload);
             setSuccess('Termin erfolgreich erstellt!');
             if (typeof onSave === 'function') {
@@ -223,7 +216,7 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
             }
             setTimeout(() => {
                 onClose();
-                resetForm({values: initialValues}); // Formular zurücksetzen, wenn Modal geschlossen wird
+                // resetForm({ values: getInitialValues() }); // Formular beim Schließen zurücksetzen
             }, 2000);
         } catch (err) {
             console.error("Error creating appointment:", err.response?.data || err.message);
@@ -237,9 +230,6 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
     if (!isOpen) {
         return null;
     }
-    // Admin-Ansicht: Wenn Admin einen Termin erstellt, kann er entweder einen existierenden Kunden wählen oder einen neuen anlegen.
-    const adminView = currentUser?.roles?.includes('ROLE_ADMIN');
-
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[1055] p-4 animate-fadeInModalOverlay backdrop-blur-sm">
@@ -261,7 +251,7 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
 
                 <Formik
                     innerRef={formikRef}
-                    initialValues={initialValues}
+                    initialValues={getInitialValues()}
                     validationSchema={AppointmentSchema}
                     onSubmit={handleSubmit}
                     enableReinitialize

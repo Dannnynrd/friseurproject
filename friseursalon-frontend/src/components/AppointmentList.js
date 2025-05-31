@@ -1,7 +1,6 @@
 // friseursalon-frontend/src/components/AppointmentList.js
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api.service';
-// AuthService nicht mehr direkt hier benötigt, currentUser kommt als Prop
 import { Link } from 'react-router-dom';
 import styles from './AppointmentList.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -22,7 +21,6 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
     const [selectedAppointment, setSelectedAppointment] = useState(null);
     const [appointmentToDelete, setAppointmentToDelete] = useState(null);
 
-
     const fetchAppointments = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -36,30 +34,34 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
                 // Benutzer holt seine Termine über /api/appointments/my-appointments
                 response = await api.get('/api/appointments/my-appointments');
             } else {
-                setError("Benutzer nicht angemeldet oder ID fehlt.");
+                setError("Benutzer nicht angemeldet oder ID fehlt, um Termine abzurufen.");
                 setAppointments([]);
                 setLoading(false);
                 return;
             }
-            // Sortiere Termine nach Startzeit, neueste zuerst für Admin, älteste zuerst für User (oder umgekehrt)
+            // Sortiere Termine: Für Admin neueste zuerst, für User nächste zuerst (oder chronologisch)
             const sortedAppointments = (response.data || []).sort((a, b) =>
-                adminView ? new Date(b.startTime) - new Date(a.startTime) : new Date(a.startTime) - new Date(b.startTime)
+                adminView
+                    ? new Date(b.startTime) - new Date(a.startTime) // Admin: neueste zuerst
+                    : new Date(a.startTime) - new Date(b.startTime)  // User: nächste zuerst
             );
             setAppointments(sortedAppointments);
         } catch (err) {
             console.error("Error fetching appointments:", err);
-            setError(err.response?.data?.message || "Termine konnten nicht geladen werden.");
+            const errMsg = err.response?.data?.message || "Termine konnten nicht geladen werden.";
+            setError(errMsg);
             setAppointments([]);
         } finally {
             setLoading(false);
         }
-    }, [adminView, currentUser]); // currentUser statt currentUser?.id, damit es bei Login/Logout neu getriggert wird
+    }, [adminView, currentUser]); // currentUser als Abhängigkeit, um bei Login/Logout neu zu laden
 
     useEffect(() => {
         if (adminView || (currentUser && currentUser.id)) {
             fetchAppointments();
         } else if (!adminView && !currentUser) {
-            setError("Bitte melden Sie sich an, um Ihre Termine zu sehen.");
+            // Verhindert unnötiges Setzen von Error, wenn Komponente nur kurz gerendert wird, bevor Redirect greift
+            // setError("Bitte melden Sie sich an, um Ihre Termine zu sehen.");
             setLoading(false);
             setAppointments([]);
         }
@@ -82,24 +84,28 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
 
     const handleDelete = async () => {
         if (!appointmentToDelete) return;
-        setLoading(true); // Allgemeinen Ladezustand für die Liste setzen
+        // Ladezustand spezifisch für diese Aktion
+        const originalAppointments = [...appointments];
+        setAppointments(prev => prev.filter(apt => apt.id !== appointmentToDelete)); // Optimistic update
         setError(null);
         setSuccessMessage('');
         try {
-            // Der Endpunkt ist für Admin und User gleich, das Backend regelt die Berechtigung
+            // Der Endpunkt /api/appointments/{id} mit DELETE wird für User und Admin verwendet.
+            // Das Backend prüft die Berechtigung.
             await api.delete(`/api/appointments/${appointmentToDelete}`);
             setSuccessMessage("Termin erfolgreich storniert/gelöscht.");
-            fetchAppointments(); // Liste neu laden
-            if (typeof onAppointmentAdded === 'function') { // Generischer Callback für Aktualisierungen
-                onAppointmentAdded();
+            // fetchAppointments(); // Erneut fetchen ist gut, aber das optimistische Update hilft der UI
+            if (typeof onAppointmentAdded === 'function') {
+                onAppointmentAdded(); // Signalisiert Parent, dass sich etwas geändert hat
             }
         } catch (err) {
             console.error("Error deleting appointment:", err);
-            setError(err.response?.data?.message || "Fehler beim Löschen des Termins.");
+            setError(err.response?.data?.message || "Fehler beim Löschen/Stornieren des Termins.");
+            setAppointments(originalAppointments); // Rollback bei Fehler
         } finally {
-            setLoading(false);
             setShowConfirmDeleteModal(false);
             setAppointmentToDelete(null);
+            // setLoading(false); // Nicht den globalen Ladezustand hier ändern, falls Aktion spezifisch war
         }
     };
 
@@ -111,7 +117,7 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
 
     const handleModalSave = () => {
         handleModalClose();
-        fetchAppointments();
+        fetchAppointments(); // Wichtig, um die Liste nach Änderungen neu zu laden
         if (typeof onAppointmentAdded === 'function') {
             onAppointmentAdded();
         }
@@ -120,7 +126,11 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
         const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
-        return new Date(dateString).toLocaleString('de-DE', options);
+        try {
+            return new Date(dateString).toLocaleString('de-DE', options);
+        } catch (e) {
+            return 'Ungültiges Datum';
+        }
     };
 
     const getStatusClass = (status) => {
@@ -132,7 +142,6 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
             default: return 'bg-gray-100 text-gray-700';
         }
     };
-
 
     if (loading && appointments.length === 0) {
         return (
@@ -222,8 +231,7 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
                                     <button onClick={() => handleEdit(appointment)} className={`text-indigo-600 hover:text-indigo-800 p-1.5 rounded-md hover:bg-indigo-50 transition-colors ${styles.actionButton}`} title="Bearbeiten">
                                         <FontAwesomeIcon icon={faEdit} />
                                     </button>
-                                    {/* Stornieren ist auch für User erlaubt, wenn Termin nicht bereits CANCELLED ist */}
-                                    {appointment.status !== 'CANCELLED' && (
+                                    {appointment.status !== 'CANCELLED' && appointment.status !== 'COMPLETED' && (
                                         <button onClick={() => confirmDelete(appointment.id)} className={`text-red-500 hover:text-red-700 p-1.5 rounded-md hover:bg-red-50 transition-colors ${styles.actionButton}`} title={adminView ? "Löschen" : "Stornieren"}>
                                             <FontAwesomeIcon icon={faTrashAlt} />
                                         </button>
@@ -240,7 +248,7 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
                 <AppointmentEditModal
                     isOpen={showEditModal}
                     onClose={handleModalClose}
-                    onSave={handleModalSave} // Dieser Callback sollte reichen, um die Liste neu zu laden via refreshAppointmentsList
+                    onSave={handleModalSave}
                     appointmentData={selectedAppointment}
                     adminView={adminView}
                 />
@@ -249,9 +257,9 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
                 <AppointmentCreateModal
                     isOpen={showCreateModal}
                     onClose={handleModalClose}
-                    onSave={handleModalSave} // onSave statt onAppointmentCreated für Konsistenz
-                    currentUser={currentUser} // currentUser für das Modal
-                    // selectedSlot wird hier nicht benötigt, da Admins von überall erstellen können
+                    onSave={handleModalSave}
+                    currentUser={currentUser} // Wichtig für Admin-Erstellung
+                    // selectedSlot ist optional, wenn Admin direkt erstellt
                 />
             )}
             {showConfirmDeleteModal && (
@@ -262,7 +270,7 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
                     title="Termin löschen/stornieren"
                     message={`Möchten Sie diesen Termin wirklich ${adminView ? 'löschen' : 'stornieren'}? Diese Aktion kann nicht rückgängig gemacht werden.`}
                     confirmButtonText={adminView ? "Ja, löschen" : "Ja, stornieren"}
-                    isLoading={loading} // Allgemeinen Ladezustand verwenden oder einen spezifischen für die Aktion
+                    isLoading={loading}
                 />
             )}
         </div>

@@ -15,7 +15,7 @@ import AppointmentCreateModal from './AppointmentCreateModal';
 const localizer = dateFnsLocalizer({
     format,
     parse,
-    startOfWeek: (date) => startOfWeek(date, { weekStartsOn: 1, locale: deLocale }),
+    startOfWeek: (date) => startOfWeek(date, { weekStartsOn: 1, locale: deLocale }), // Montag als Wochenstart
     getDay,
     locales: { 'de': deLocale },
 });
@@ -31,14 +31,13 @@ const messages = {
     agenda: 'Agenda',
     date: 'Datum',
     time: 'Zeit',
-    event: 'Termin',
+    event: 'Termin', // Backend sendet 'Ereignis', aber Kalender verwendet 'Termin'
     noEventsInRange: 'Keine Termine in diesem Bereich.',
     showMore: total => `+ ${total} weitere`,
 };
 
-// currentUser als Prop hinzugefügt
 function AdminCalendarView({ onAppointmentAction, currentUser }) {
-    const [appointments, setAppointments] = useState([]);
+    // Removed 'appointments' state as 'events' already holds the transformed data for the calendar
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -54,21 +53,23 @@ function AdminCalendarView({ onAppointmentAction, currentUser }) {
         setLoading(true);
         setError(null);
         try {
-            // Geändert: /api/appointments statt /api/appointments/admin/all
+            // Corrected API endpoint
             const response = await api.get('/api/appointments');
             const fetchedAppointments = response.data || [];
-            setAppointments(fetchedAppointments);
+            // setAppointments(fetchedAppointments); // Not strictly needed if events are derived directly
 
             const calendarEvents = fetchedAppointments.map(apt => {
-                const start = parseISO(apt.startTime); // Verwende startTime vom Backend
-                const end = addMinutes(start, apt.service?.durationMinutes || 60); // Verwende durationMinutes vom Service
+                const start = parseISO(apt.startTime);
+                // Use service.durationMinutes from the nested service object
+                const end = addMinutes(start, apt.service?.durationMinutes || 60); // Default to 60min if no duration
                 return {
                     id: apt.id,
-                    title: `${apt.service?.name || 'Unbekannter Service'} - ${apt.customer?.firstName || 'Unbekannt'} ${apt.customer?.lastName || ''}`,
+                    // Access nested properties for title
+                    title: `${apt.service?.name || 'Service'} - ${apt.customer?.firstName || ''} ${apt.customer?.lastName || 'Kunde'}`,
                     start,
                     end,
                     allDay: false,
-                    resource: apt, // Das komplette Appointment-Objekt für das Modal
+                    resource: apt, // Store the original appointment object
                     status: apt.status
                 };
             });
@@ -87,7 +88,7 @@ function AdminCalendarView({ onAppointmentAction, currentUser }) {
     }, [fetchAppointments, onAppointmentAction]);
 
     const handleSelectEvent = (event) => {
-        setSelectedEventForEdit(event.resource); // Ganze Appointment-Ressource übergeben
+        setSelectedEventForEdit(event.resource); // event.resource contains the full appointment object
         setShowEditModal(true);
     };
 
@@ -112,30 +113,29 @@ function AdminCalendarView({ onAppointmentAction, currentUser }) {
 
     const handleModalSave = () => {
         handleModalClose();
-        fetchAppointments(); // Kalender neu laden
+        fetchAppointments(); // Reload appointments after save
         if (typeof onAppointmentAction === 'function') {
-            onAppointmentAction(); // Benachrichtige die Elternkomponente (z.B. Dashboard)
+            onAppointmentAction();
         }
     };
 
     const eventStyleGetter = (event, start, end, isSelected) => {
-        let backgroundColor = '#3174ad'; // Default
+        let backgroundColor = '#3174ad'; // Default blue
         let borderColor = '#25567b';
-        // Status aus dem 'resource' (dem originalen Appointment-Objekt)
-        const status = event.resource?.status;
+        const status = event.resource?.status; // Status from the original appointment object
 
         if (status === 'CONFIRMED') {
-            backgroundColor = '#28a745'; // Grün
-            borderColor = '#1e7e34';
+            backgroundColor = 'var(--success-color, #28a745)';
+            borderColor = 'var(--success-color-dark, #1e7e34)';
         } else if (status === 'PENDING') {
-            backgroundColor = '#ffc107'; // Gelb
-            borderColor = '#d39e00';
+            backgroundColor = 'var(--warning-color, #ffc107)';
+            borderColor = 'var(--warning-color-dark, #d39e00)';
         } else if (status === 'CANCELLED') {
-            backgroundColor = '#dc3545'; // Rot
-            borderColor = '#b02a37';
+            backgroundColor = 'var(--danger-color, #dc3545)';
+            borderColor = 'var(--danger-color-dark, #b02a37)';
         } else if (status === 'COMPLETED') {
-            backgroundColor = '#6c757d'; // Grau
-            borderColor = '#5a6268';
+            backgroundColor = 'var(--medium-grey-text, #6c757d)';
+            borderColor = 'var(--dark-text, #5a6268)';
         }
 
         const style = {
@@ -235,7 +235,7 @@ function AdminCalendarView({ onAppointmentAction, currentUser }) {
                     isOpen={showEditModal}
                     onClose={handleModalClose}
                     onSave={handleModalSave}
-                    appointmentData={selectedEventForEdit} // Hier das ganze Appointment Objekt übergeben
+                    appointmentData={selectedEventForEdit}
                     adminView={true}
                 />
             )}

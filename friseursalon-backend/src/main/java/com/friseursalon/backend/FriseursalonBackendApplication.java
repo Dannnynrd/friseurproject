@@ -65,4 +65,3 @@ public class FriseursalonBackendApplication {
     // Die Methode testPasswordEncoder wurde entfernt, falls sie nicht mehr benötigt wird.
     // Falls doch, kann sie hier wieder eingefügt werden.
 } // Diese schließende Klammer beendet die Klasse FriseursalonBackendApplication
-// Die doppelte Klammer hier wurde entfernt.
