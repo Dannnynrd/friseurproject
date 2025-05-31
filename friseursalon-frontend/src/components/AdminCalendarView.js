@@ -54,20 +54,21 @@ function AdminCalendarView({ onAppointmentAction, currentUser }) {
         setLoading(true);
         setError(null);
         try {
-            const response = await api.get('/api/appointments/admin/all');
+            // Geändert: /api/appointments statt /api/appointments/admin/all
+            const response = await api.get('/api/appointments');
             const fetchedAppointments = response.data || [];
             setAppointments(fetchedAppointments);
 
             const calendarEvents = fetchedAppointments.map(apt => {
-                const start = parseISO(apt.appointmentTime);
-                const end = addMinutes(start, apt.duration || 60);
+                const start = parseISO(apt.startTime); // Verwende startTime vom Backend
+                const end = addMinutes(start, apt.service?.durationMinutes || 60); // Verwende durationMinutes vom Service
                 return {
                     id: apt.id,
-                    title: `${apt.serviceName} - ${apt.customerName || (apt.customer ? apt.customer.name : 'Unbekannt')}`,
+                    title: `${apt.service?.name || 'Unbekannter Service'} - ${apt.customer?.firstName || 'Unbekannt'} ${apt.customer?.lastName || ''}`,
                     start,
                     end,
                     allDay: false,
-                    resource: apt,
+                    resource: apt, // Das komplette Appointment-Objekt für das Modal
                     status: apt.status
                 };
             });
@@ -86,7 +87,7 @@ function AdminCalendarView({ onAppointmentAction, currentUser }) {
     }, [fetchAppointments, onAppointmentAction]);
 
     const handleSelectEvent = (event) => {
-        setSelectedEventForEdit(event.resource);
+        setSelectedEventForEdit(event.resource); // Ganze Appointment-Ressource übergeben
         setShowEditModal(true);
     };
 
@@ -111,26 +112,29 @@ function AdminCalendarView({ onAppointmentAction, currentUser }) {
 
     const handleModalSave = () => {
         handleModalClose();
-        fetchAppointments();
+        fetchAppointments(); // Kalender neu laden
         if (typeof onAppointmentAction === 'function') {
-            onAppointmentAction();
+            onAppointmentAction(); // Benachrichtige die Elternkomponente (z.B. Dashboard)
         }
     };
 
     const eventStyleGetter = (event, start, end, isSelected) => {
-        let backgroundColor = '#3174ad';
+        let backgroundColor = '#3174ad'; // Default
         let borderColor = '#25567b';
-        if (event.resource?.status === 'CONFIRMED') {
-            backgroundColor = '#28a745';
+        // Status aus dem 'resource' (dem originalen Appointment-Objekt)
+        const status = event.resource?.status;
+
+        if (status === 'CONFIRMED') {
+            backgroundColor = '#28a745'; // Grün
             borderColor = '#1e7e34';
-        } else if (event.resource?.status === 'PENDING') {
-            backgroundColor = '#ffc107';
+        } else if (status === 'PENDING') {
+            backgroundColor = '#ffc107'; // Gelb
             borderColor = '#d39e00';
-        } else if (event.resource?.status === 'CANCELLED') {
-            backgroundColor = '#dc3545';
+        } else if (status === 'CANCELLED') {
+            backgroundColor = '#dc3545'; // Rot
             borderColor = '#b02a37';
-        } else if (event.resource?.status === 'COMPLETED') {
-            backgroundColor = '#6c757d';
+        } else if (status === 'COMPLETED') {
+            backgroundColor = '#6c757d'; // Grau
             borderColor = '#5a6268';
         }
 
@@ -231,7 +235,7 @@ function AdminCalendarView({ onAppointmentAction, currentUser }) {
                     isOpen={showEditModal}
                     onClose={handleModalClose}
                     onSave={handleModalSave}
-                    appointmentData={selectedEventForEdit}
+                    appointmentData={selectedEventForEdit} // Hier das ganze Appointment Objekt übergeben
                     adminView={true}
                 />
             )}
@@ -241,7 +245,7 @@ function AdminCalendarView({ onAppointmentAction, currentUser }) {
                     onClose={handleModalClose}
                     onSave={handleModalSave}
                     selectedSlot={selectedSlotForCreate}
-                    currentUser={currentUser} // currentUser wird jetzt hier übergeben
+                    currentUser={currentUser}
                 />
             )}
         </div>

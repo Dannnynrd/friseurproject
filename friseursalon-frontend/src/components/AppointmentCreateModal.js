@@ -1,7 +1,7 @@
 // friseursalon-frontend/src/components/AppointmentCreateModal.js
-import React, { useState, useEffect, useCallback, useRef } from 'react'; // useRef hinzugefügt
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../services/api.service';
-import AuthService from '../services/auth.service';
+// AuthService nicht mehr direkt hier, currentUser kommt als Prop
 import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { de } from 'date-fns/locale';
@@ -11,7 +11,7 @@ import styles from './AppointmentCreateModal.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faTimes, faCalendarPlus, faSpinner, faExclamationCircle, faCheckCircle,
-    faUser, faCut, faClock, faEuroSign, faStickyNote, faCalendarAlt
+    faUser, faCut, faClock, faEnvelope, faPhone, faStickyNote, faCalendarAlt
 } from '@fortawesome/free-solid-svg-icons';
 import { parseISO, format as formatDateFns, isValid as isValidDateFns, addMinutes } from 'date-fns';
 
@@ -19,25 +19,28 @@ registerLocale('de', de);
 
 const AppointmentSchema = Yup.object().shape({
     serviceId: Yup.string().required('Dienstleistung ist erforderlich.'),
-    customerId: Yup.string().when('isNewCustomer', {
-        is: (val) => !val,
-        then: (schema) => schema.required('Bestandskunde ist erforderlich, wenn kein Neukunde ausgewählt ist.'),
-        otherwise: (schema) => schema.notRequired(),
-    }),
+    // customerId: Wird nicht mehr direkt verwendet, wenn wir immer ein customer-Objekt bauen
+    isNewCustomer: Yup.boolean(),
     customerName: Yup.string().when('isNewCustomer', {
         is: true,
-        then: (schema) => schema.required('Kundenname ist erforderlich für Neukunden.'),
-        otherwise: (schema) => schema.notRequired(),
+        then: Yup.string().required('Kundenname (Vor- und Nachname) ist erforderlich für Neukunden.')
+            .matches(/^(\S+\s+\S+.*)$/, 'Bitte Vor- und Nachnamen angeben.'),
+        otherwise: Yup.string().notRequired(),
     }),
     customerEmail: Yup.string().email('Ungültige E-Mail.').when('isNewCustomer', {
         is: true,
-        then: (schema) => schema.required('E-Mail ist erforderlich für Neukunden.'),
-        otherwise: (schema) => schema.notRequired(),
+        then: Yup.string().required('E-Mail ist erforderlich für Neukunden.'),
+        otherwise: Yup.string().notRequired(),
     }),
     customerPhone: Yup.string().matches(/^[0-9+\-\s()]*$/, "Ungültige Telefonnummer.").notRequired(),
     appointmentDate: Yup.date().required('Datum ist erforderlich.').nullable().min(new Date(new Date().setDate(new Date().getDate() -1)), "Datum darf nicht in der Vergangenheit liegen."),
     appointmentTime: Yup.string().required('Uhrzeit ist erforderlich.'),
     notes: Yup.string().max(500, 'Notizen dürfen maximal 500 Zeichen lang sein.').notRequired(),
+    selectedExistingCustomer: Yup.string().when('isNewCustomer', { // Für die Auswahl aus dem Dropdown
+        is: false,
+        then: Yup.string().required('Bitte wählen Sie einen Bestandskunden oder markieren Sie "Neukunde".'),
+        otherwise: Yup.string().notRequired(),
+    }),
 });
 
 const formatPrice = (price) => {
@@ -57,7 +60,7 @@ const formatDuration = (minutes) => {
 
 function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, currentUser }) {
     const [services, setServices] = useState([]);
-    const [customers, setCustomers] = useState([]);
+    const [customers, setCustomers] = useState([]); // Für die Auswahl existierender Kunden
     const [loadingServices, setLoadingServices] = useState(true);
     const [loadingCustomers, setLoadingCustomers] = useState(true);
     const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
@@ -72,13 +75,14 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
 
     const formikRef = useRef();
 
+    // InitialValues angepasst
     const initialValues = {
         serviceId: '',
-        customerId: '',
         isNewCustomer: false,
-        customerName: '',
-        customerEmail: '',
-        customerPhone: '',
+        selectedExistingCustomer: '', // ID des ausgewählten Bestandskunden
+        customerName: '', // Für Neukunden: "Vorname Nachname"
+        customerEmail: '', // Für Neukunden
+        customerPhone: '', // Für Neukunden
         appointmentDate: initialDate,
         appointmentTime: initialTime,
         notes: '',
@@ -91,7 +95,8 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
         try {
             const [servicesRes, customersRes] = await Promise.all([
                 api.get('/api/services').catch(e => { console.error("Error fetching services", e); return { data: [] }; }),
-                api.get('/api/customers').catch(e => { console.error("Error fetching customers", e); return { data: [] }; })
+                // Nur Admins können Kundenliste sehen/auswählen
+                currentUser?.roles?.includes('ROLE_ADMIN') ? api.get('/api/customers').catch(e => { console.error("Error fetching customers", e); return { data: [] }; }) : Promise.resolve({data: []})
             ]);
             setServices(servicesRes.data || []);
             setCustomers(customersRes.data || []);
@@ -102,7 +107,7 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
             setLoadingServices(false);
             setLoadingCustomers(false);
         }
-    }, []);
+    }, [currentUser]); // currentUser als Abhängigkeit
 
     useEffect(() => {
         if (isOpen) {
@@ -110,28 +115,33 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
             setError('');
             setSuccess('');
             if (formikRef.current) {
-                formikRef.current.resetForm({ values: {
+                formikRef.current.resetForm({
+                    values: {
                         ...initialValues,
                         appointmentDate: selectedSlot?.start && isValidDateFns(selectedSlot.start) ? selectedSlot.start : null,
                         appointmentTime: selectedSlot?.start && isValidDateFns(selectedSlot.start) ? formatDateFns(selectedSlot.start, 'HH:mm') : '',
-                        isNewCustomer: false,
-                    }});
+                        isNewCustomer: !currentUser, // Standardmäßig Neukunde, wenn kein User eingeloggt ist
+                        // Wenn Admin und User eingeloggt, aber Modal für neuen Termin, ist Neukunde auch eine Option.
+                    }
+                });
             }
         }
-    }, [isOpen, fetchServicesAndCustomers, selectedSlot]);
+    }, [isOpen, fetchServicesAndCustomers, selectedSlot, currentUser, initialValues]);
 
-    const fetchAvailableTimeSlotsInternal = useCallback(async (date, duration, serviceId, setFieldValue) => {
-        if (!date || !duration || !serviceId || !isValidDateFns(date)) {
+
+    const fetchAvailableTimeSlotsInternal = useCallback(async (date, serviceIdForSlots, setFieldValue) => {
+        const service = services.find(s => s.id.toString() === serviceIdForSlots);
+        if (!date || !service || !service.id || !isValidDateFns(date)) {
             setAvailableTimeSlots([]);
-            if (date && duration && serviceId) setFieldValue('appointmentTime', '');
+            if (date && serviceIdForSlots) setFieldValue('appointmentTime', '');
             return;
         }
         setLoadingTimeSlots(true);
-        setFieldValue('appointmentTime', '');
+        setFieldValue('appointmentTime', ''); // Zeit zurücksetzen
         try {
             const formattedDate = formatDateFns(date, 'yyyy-MM-dd');
             const response = await api.get('/api/appointments/available-slots', {
-                params: { date: formattedDate, duration: parseInt(duration, 10), serviceId: parseInt(serviceId, 10) },
+                params: { serviceId: service.id, date: formattedDate },
             });
             setAvailableTimeSlots(response.data || []);
         } catch (error) {
@@ -141,7 +151,7 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
         } finally {
             setLoadingTimeSlots(false);
         }
-    }, []);
+    }, [services]);
 
 
     const handleSubmit = async (values, { setSubmitting, resetForm }) => {
@@ -161,37 +171,59 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
         const [hours, minutes] = values.appointmentTime.split(':');
         appointmentDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
 
-        const payload = {
-            serviceId: parseInt(values.serviceId, 10),
-            appointmentTime: appointmentDateTime.toISOString(),
-            notes: values.notes,
-            price: selectedService.price,
-            duration: selectedService.duration,
-            status: 'CONFIRMED',
-            userId: values.isNewCustomer || !values.customerId ? null : parseInt(values.customerId, 10),
-            customerData: values.isNewCustomer ? {
-                firstName: values.customerName.split(' ')[0] || '',
-                lastName: values.customerName.split(' ').slice(1).join(' ') || values.customerName,
+        let customerPayload = {};
+        if (values.isNewCustomer) {
+            const nameParts = values.customerName.split(' ');
+            customerPayload = {
+                firstName: nameParts[0] || '',
+                lastName: nameParts.slice(1).join(' ') || nameParts[0], // Fallback falls nur ein Wort
                 email: values.customerEmail,
-                phone: values.customerPhone,
-            } : null,
-        };
-
-        if (!values.isNewCustomer && values.customerId) {
-            const existingCustomer = customers.find(c => c.id.toString() === values.customerId.toString());
-            if (existingCustomer?.user?.id) {
-                payload.registeredUserId = existingCustomer.user.id;
+                phoneNumber: values.customerPhone || null, // Stelle sicher, dass es null ist, wenn leer
+            };
+        } else if (currentUser && !adminView) { // Eingeloggter User bucht für sich
+            customerPayload = {
+                firstName: currentUser.firstName,
+                lastName: currentUser.lastName,
+                email: currentUser.email,
+                phoneNumber: currentUser.phoneNumber || null,
+            };
+        } else if (adminView && values.selectedExistingCustomer) { // Admin wählt existierenden Kunden
+            const existingCustomer = customers.find(c => c.id.toString() === values.selectedExistingCustomer);
+            if (existingCustomer) {
+                customerPayload = {
+                    firstName: existingCustomer.firstName,
+                    lastName: existingCustomer.lastName,
+                    email: existingCustomer.email,
+                    phoneNumber: existingCustomer.phoneNumber || null,
+                };
+            } else {
+                setError("Ausgewählter Bestandskunde nicht gefunden.");
+                setIsSubmittingForm(false); setSubmitting(false); return;
             }
+        } else {
+            setError("Kundeninformationen unvollständig.");
+            setIsSubmittingForm(false); setSubmitting(false); return;
         }
 
+
+        const payload = {
+            service: { id: parseInt(values.serviceId, 10) },
+            customer: customerPayload,
+            startTime: appointmentDateTime.toISOString(),
+            notes: values.notes,
+            // Status wird vom Backend gesetzt (z.B. auf CONFIRMED oder PENDING)
+        };
+
         try {
-            await api.post('/api/appointments/admin/create', payload);
+            // Der Endpunkt ist jetzt /api/appointments
+            await api.post('/api/appointments', payload);
             setSuccess('Termin erfolgreich erstellt!');
             if (typeof onSave === 'function') {
                 onSave();
             }
             setTimeout(() => {
                 onClose();
+                resetForm({values: initialValues}); // Formular zurücksetzen, wenn Modal geschlossen wird
             }, 2000);
         } catch (err) {
             console.error("Error creating appointment:", err.response?.data || err.message);
@@ -205,6 +237,9 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
     if (!isOpen) {
         return null;
     }
+    // Admin-Ansicht: Wenn Admin einen Termin erstellt, kann er entweder einen existierenden Kunden wählen oder einen neuen anlegen.
+    const adminView = currentUser?.roles?.includes('ROLE_ADMIN');
+
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[1055] p-4 animate-fadeInModalOverlay backdrop-blur-sm">
@@ -232,8 +267,8 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
                     enableReinitialize
                 >
                     {({ errors, touched, isSubmitting, values, setFieldValue, dirty }) => (
-                        <Form className="p-6 space-y-4 overflow-y-auto flex-grow"> {/* space-y-4 statt 5 */}
-                            {(loadingServices || loadingCustomers) && (
+                        <Form className="p-6 space-y-4 overflow-y-auto flex-grow">
+                            {(loadingServices || (adminView && loadingCustomers)) && (
                                 <div className="flex justify-center items-center p-4 text-gray-500">
                                     <FontAwesomeIcon icon={faSpinner} spin className="mr-2"/> Daten laden...
                                 </div>
@@ -251,9 +286,8 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
                                     onChange={(e) => {
                                         const newServiceId = e.target.value;
                                         setFieldValue('serviceId', newServiceId);
-                                        const selectedService = services.find(s => s.id.toString() === newServiceId);
-                                        if (selectedService && values.appointmentDate && isValidDateFns(values.appointmentDate)) {
-                                            fetchAvailableTimeSlotsInternal(values.appointmentDate, selectedService.duration, newServiceId, setFieldValue);
+                                        if (values.appointmentDate && isValidDateFns(values.appointmentDate) && newServiceId) {
+                                            fetchAvailableTimeSlotsInternal(values.appointmentDate, newServiceId, setFieldValue);
                                         } else {
                                             setAvailableTimeSlots([]);
                                         }
@@ -261,81 +295,77 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
                                 >
                                     <option value="">Dienstleistung wählen...</option>
                                     {services.map(service => (
-                                        <option key={service.id} value={service.id}>{service.name} ({formatDuration(service.duration)}, {formatPrice(service.price)})</option>
+                                        <option key={service.id} value={service.id}>{service.name} ({formatDuration(service.durationMinutes)}, {formatPrice(service.price)})</option>
                                     ))}
                                 </Field>
                                 <ErrorMessage name="serviceId" component="div" className="mt-1 text-xs text-red-600" />
                             </div>
 
-                            <div className="p-4 border border-gray-200 rounded-md bg-slate-50">
-                                <div className="flex items-center mb-3">
-                                    <FontAwesomeIcon icon={faUser} className="mr-2 text-gray-400"/>
-                                    <label className="block text-sm font-medium text-gray-700">Kunde*</label>
-                                    <div className="ml-auto">
-                                        <label htmlFor="isNewCustomerToggle" className="flex items-center text-sm text-gray-600 cursor-pointer">
+                            {adminView && (
+                                <div className={`p-4 border border-gray-200 rounded-md bg-slate-50 ${styles.customerSelectionAdmin}`}>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <label className="block text-sm font-medium text-gray-700 flex items-center">
+                                            <FontAwesomeIcon icon={faUser} className="mr-2 text-gray-400"/> Kunde*
+                                        </label>
+                                        <label htmlFor="isNewCustomerToggleAdmin" className="flex items-center text-sm text-gray-600 cursor-pointer">
                                             <input
                                                 type="checkbox"
                                                 name="isNewCustomer"
-                                                id="isNewCustomerToggle"
+                                                id="isNewCustomerToggleAdmin"
                                                 checked={values.isNewCustomer}
                                                 onChange={(e) => {
                                                     setFieldValue('isNewCustomer', e.target.checked);
-                                                    if (!e.target.checked) {
-                                                        setFieldValue('customerName', '');
-                                                        setFieldValue('customerEmail', '');
-                                                        setFieldValue('customerPhone', '');
-                                                    } else {
-                                                        setFieldValue('customerId', '');
-                                                    }
+                                                    if (e.target.checked) setFieldValue('selectedExistingCustomer', ''); else {setFieldValue('customerName', ''); setFieldValue('customerEmail',''); setFieldValue('customerPhone','');}
                                                 }}
                                                 className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 mr-1.5"
                                             />
-                                            Neukunde?
+                                            Neukunde anlegen?
                                         </label>
                                     </div>
-                                </div>
 
-                                {!values.isNewCustomer ? (
-                                    <div className={styles.formGroup}>
-                                        <Field
-                                            as="select"
-                                            name="customerId"
-                                            id="customerId"
-                                            className={`w-full px-3 py-2.5 border ${errors.customerId && touched.customerId ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`}
-                                        >
-                                            <option value="">Bestandskunden wählen...</option>
-                                            {customers.map(customer => (
-                                                <option key={customer.id} value={customer.id}>
-                                                    {customer.firstName || ''} {customer.lastName || ''} ({customer.email || (customer.user ? customer.user.username : 'Keine E-Mail')})
-                                                </option>
-                                            ))}
-                                        </Field>
-                                        <ErrorMessage name="customerId" component="div" className="mt-1 text-xs text-red-600" />
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
+                                    {!values.isNewCustomer ? (
                                         <div className={styles.formGroup}>
-                                            <label htmlFor="customerName" className="block text-xs font-medium text-gray-600">Name (Vor- und Nachname)*</label>
-                                            <Field name="customerName" type="text" id="customerName" placeholder="Max Mustermann" className={`w-full px-3 py-2 border ${errors.customerName && touched.customerName ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm text-sm ${styles.formInput}`} />
-                                            <ErrorMessage name="customerName" component="div" className="mt-1 text-xs text-red-600" />
+                                            <Field
+                                                as="select"
+                                                name="selectedExistingCustomer"
+                                                id="selectedExistingCustomer"
+                                                className={`w-full px-3 py-2.5 border ${errors.selectedExistingCustomer && touched.selectedExistingCustomer ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`}
+                                            >
+                                                <option value="">Bestandskunden wählen...</option>
+                                                {customers.map(customer => (
+                                                    <option key={customer.id} value={customer.id}>
+                                                        {customer.firstName || ''} {customer.lastName || ''} ({customer.email || 'Keine E-Mail'})
+                                                    </option>
+                                                ))}
+                                            </Field>
+                                            <ErrorMessage name="selectedExistingCustomer" component="div" className="mt-1 text-xs text-red-600" />
                                         </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    ) : (
+                                        <div className="space-y-3">
                                             <div className={styles.formGroup}>
-                                                <label htmlFor="customerEmail" className="block text-xs font-medium text-gray-600">E-Mail*</label>
-                                                <Field name="customerEmail" type="email" id="customerEmail" placeholder="max.mustermann@mail.de" className={`w-full px-3 py-2 border ${errors.customerEmail && touched.customerEmail ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm text-sm ${styles.formInput}`} />
-                                                <ErrorMessage name="customerEmail" component="div" className="mt-1 text-xs text-red-600" />
+                                                <label htmlFor="customerName" className="block text-xs font-medium text-gray-600">Vollständiger Name*</label>
+                                                <Field name="customerName" type="text" id="customerName" placeholder="Max Mustermann" className={`w-full px-3 py-2 border ${errors.customerName && touched.customerName ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm text-sm ${styles.formInput}`} />
+                                                <ErrorMessage name="customerName" component="div" className="mt-1 text-xs text-red-600" />
                                             </div>
-                                            <div className={styles.formGroup}>
-                                                <label htmlFor="customerPhone" className="block text-xs font-medium text-gray-600">Telefon (optional)</label>
-                                                <Field name="customerPhone" type="tel" id="customerPhone" placeholder="0123 456789" className={`w-full px-3 py-2 border ${errors.customerPhone && touched.customerPhone ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm text-sm ${styles.formInput}`} />
-                                                <ErrorMessage name="customerPhone" component="div" className="mt-1 text-xs text-red-600" />
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                <div className={styles.formGroup}>
+                                                    <label htmlFor="customerEmail" className="block text-xs font-medium text-gray-600">E-Mail*</label>
+                                                    <Field name="customerEmail" type="email" id="customerEmail" placeholder="max.mustermann@mail.de" className={`w-full px-3 py-2 border ${errors.customerEmail && touched.customerEmail ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm text-sm ${styles.formInput}`} />
+                                                    <ErrorMessage name="customerEmail" component="div" className="mt-1 text-xs text-red-600" />
+                                                </div>
+                                                <div className={styles.formGroup}>
+                                                    <label htmlFor="customerPhone" className="block text-xs font-medium text-gray-600">Telefon</label>
+                                                    <Field name="customerPhone" type="tel" id="customerPhone" placeholder="Optional" className={`w-full px-3 py-2 border ${errors.customerPhone && touched.customerPhone ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm text-sm ${styles.formInput}`} />
+                                                    <ErrorMessage name="customerPhone" component="div" className="mt-1 text-xs text-red-600" />
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                )}
-                            </div>
+                                    )}
+                                </div>
+                            )}
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4"> {/* gap-y-4 statt 5 */}
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                                 <div className={styles.formGroup}>
                                     <label htmlFor="appointmentDate" className="block text-sm font-medium text-gray-700 mb-1">
                                         <FontAwesomeIcon icon={faCalendarAlt} className="mr-2 text-gray-400"/>Datum*
@@ -344,9 +374,8 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
                                         selected={values.appointmentDate}
                                         onChange={(date) => {
                                             setFieldValue('appointmentDate', date);
-                                            const selectedService = services.find(s => s.id.toString() === values.serviceId.toString());
-                                            if (selectedService && date && isValidDateFns(date)) {
-                                                fetchAvailableTimeSlotsInternal(date, selectedService.duration, values.serviceId, setFieldValue);
+                                            if (values.serviceId && date && isValidDateFns(date)) {
+                                                fetchAvailableTimeSlotsInternal(date, values.serviceId, setFieldValue);
                                             } else {
                                                 setAvailableTimeSlots([]);
                                             }
@@ -357,6 +386,7 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
                                         className={`w-full px-3 py-2.5 border ${errors.appointmentDate && touched.appointmentDate ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`}
                                         placeholderText="Datum wählen"
                                         autoComplete="off"
+                                        locale="de"
                                     />
                                     <ErrorMessage name="appointmentDate" component="div" className="mt-1 text-xs text-red-600" />
                                 </div>
@@ -369,7 +399,7 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
                                         name="appointmentTime"
                                         id="appointmentTime"
                                         disabled={loadingTimeSlots || availableTimeSlots.length === 0 || !values.serviceId || !values.appointmentDate}
-                                        className={`w-full px-3 py-2.5 border ${errors.appointmentTime && touched.appointmentTime ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput} ${loadingTimeSlots || availableTimeSlots.length === 0 ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                        className={`w-full px-3 py-2.5 border ${errors.appointmentTime && touched.appointmentTime ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput} ${loadingTimeSlots || (availableTimeSlots.length === 0 && values.appointmentDate && values.serviceId) ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                     >
                                         <option value="">{loadingTimeSlots ? "Lade Zeiten..." : (availableTimeSlots.length === 0 && values.appointmentDate && values.serviceId ? "Keine Zeiten verfügbar" : "Uhrzeit wählen...")}</option>
                                         {availableTimeSlots.map(slot => (

@@ -1,7 +1,7 @@
 // friseursalon-frontend/src/components/AppointmentList.js
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api.service';
-import AuthService from '../services/auth.service';
+// AuthService nicht mehr direkt hier benötigt, currentUser kommt als Prop
 import { Link } from 'react-router-dom';
 import styles from './AppointmentList.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -10,7 +10,7 @@ import AppointmentEditModal from './AppointmentEditModal';
 import AppointmentCreateModal from './AppointmentCreateModal';
 import ConfirmModal from './ConfirmModal';
 
-function AppointmentList({ adminView = false, refreshAppointmentsList, onAppointmentAdded, currentUser }) { // currentUser als Prop hinzugefügt
+function AppointmentList({ adminView = false, refreshAppointmentsList, onAppointmentAdded, currentUser }) {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -22,28 +22,30 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
     const [selectedAppointment, setSelectedAppointment] = useState(null);
     const [appointmentToDelete, setAppointmentToDelete] = useState(null);
 
-    // const localCurrentUser = AuthService.getCurrentUser(); // Besser currentUser als Prop verwenden
-    console.log(`AppointmentList rendered. adminView: ${adminView}, currentUser ID: ${currentUser?.id}`);
-
 
     const fetchAppointments = useCallback(async () => {
-        console.log(`fetchAppointments called. adminView: ${adminView}, currentUser ID: ${currentUser?.id}`); // DEBUG
         setLoading(true);
         setError(null);
         setSuccessMessage('');
         try {
             let response;
             if (adminView) {
-                response = await api.get('/api/appointments/admin/all');
-            } else if (currentUser && currentUser.id) { // Sicherstellen, dass currentUser und ID existieren
-                response = await api.get(`/api/appointments/user/${currentUser.id}`);
+                // Admin holt alle Termine über /api/appointments
+                response = await api.get('/api/appointments');
+            } else if (currentUser && currentUser.id) {
+                // Benutzer holt seine Termine über /api/appointments/my-appointments
+                response = await api.get('/api/appointments/my-appointments');
             } else {
                 setError("Benutzer nicht angemeldet oder ID fehlt.");
                 setAppointments([]);
                 setLoading(false);
                 return;
             }
-            setAppointments(response.data || []);
+            // Sortiere Termine nach Startzeit, neueste zuerst für Admin, älteste zuerst für User (oder umgekehrt)
+            const sortedAppointments = (response.data || []).sort((a, b) =>
+                adminView ? new Date(b.startTime) - new Date(a.startTime) : new Date(a.startTime) - new Date(b.startTime)
+            );
+            setAppointments(sortedAppointments);
         } catch (err) {
             console.error("Error fetching appointments:", err);
             setError(err.response?.data?.message || "Termine konnten nicht geladen werden.");
@@ -51,19 +53,17 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
         } finally {
             setLoading(false);
         }
-        // Abhängigkeit von currentUser.id statt dem ganzen Objekt
-    }, [adminView, currentUser?.id]);
+    }, [adminView, currentUser]); // currentUser statt currentUser?.id, damit es bei Login/Logout neu getriggert wird
 
     useEffect(() => {
-        console.log("AppointmentList useEffect for fetchAppointments triggered."); // DEBUG
-        if (adminView || (currentUser && currentUser.id)) { // Nur fetchen, wenn User vorhanden ist (für User-Ansicht)
+        if (adminView || (currentUser && currentUser.id)) {
             fetchAppointments();
         } else if (!adminView && !currentUser) {
             setError("Bitte melden Sie sich an, um Ihre Termine zu sehen.");
             setLoading(false);
             setAppointments([]);
         }
-    }, [fetchAppointments, refreshAppointmentsList, adminView, currentUser?.id]); // currentUser.id auch hier
+    }, [fetchAppointments, refreshAppointmentsList, adminView, currentUser]);
 
     const handleEdit = (appointment) => {
         setSelectedAppointment(appointment);
@@ -71,7 +71,7 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
     };
 
     const handleCreate = () => {
-        setSelectedAppointment(null);
+        setSelectedAppointment(null); // Für Neuanlage
         setShowCreateModal(true);
     };
 
@@ -82,14 +82,15 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
 
     const handleDelete = async () => {
         if (!appointmentToDelete) return;
-        setLoading(true);
+        setLoading(true); // Allgemeinen Ladezustand für die Liste setzen
         setError(null);
         setSuccessMessage('');
         try {
+            // Der Endpunkt ist für Admin und User gleich, das Backend regelt die Berechtigung
             await api.delete(`/api/appointments/${appointmentToDelete}`);
             setSuccessMessage("Termin erfolgreich storniert/gelöscht.");
-            fetchAppointments();
-            if (typeof onAppointmentAdded === 'function') {
+            fetchAppointments(); // Liste neu laden
+            if (typeof onAppointmentAdded === 'function') { // Generischer Callback für Aktualisierungen
                 onAppointmentAdded();
             }
         } catch (err) {
@@ -124,7 +125,7 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
 
     const getStatusClass = (status) => {
         switch (status) {
-            case 'CONFIRMED': return 'bg-green-100 text-green-700'; // Dunklerer Text für besseren Kontrast
+            case 'CONFIRMED': return 'bg-green-100 text-green-700';
             case 'PENDING': return 'bg-yellow-100 text-yellow-700';
             case 'CANCELLED': return 'bg-red-100 text-red-700';
             case 'COMPLETED': return 'bg-blue-100 text-blue-700';
@@ -145,7 +146,7 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
     return (
         <div className={`w-full bg-white p-4 sm:p-6 rounded-lg shadow-md ${styles.appointmentListContainer}`}>
             <div className="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b border-gray-200">
-                <h3 className="text-xl font-semibold text-gray-700 font-serif"> {/* Kleinere Überschrift für Konsistenz im Dashboard */}
+                <h3 className="text-xl font-semibold text-gray-700 font-serif">
                     {adminView ? "Terminübersicht (Admin)" : "Meine Termine"}
                 </h3>
                 {adminView && (
@@ -178,7 +179,7 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
                     </p>
                     {!adminView && (
                         <Link
-                            to="/#services-dynamic"
+                            to="/buchen" // Direkt zur Buchungsseite
                             className="mt-5 inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                         >
                             <FontAwesomeIcon icon={faCalendarPlus} className="-ml-1 mr-2 h-4 w-4" />
@@ -191,7 +192,7 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
             {appointments.length > 0 && (
                 <div className={`overflow-x-auto shadow rounded-lg ${styles.tableContainer}`}>
                     <table className={`min-w-full divide-y divide-gray-200 ${styles.appTable}`}>
-                        <thead className="bg-slate-50"> {/* Hellerer Tabellenkopf */}
+                        <thead className="bg-slate-50">
                         <tr>
                             <th scope="col" className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Datum & Zeit</th>
                             <th scope="col" className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dienstleistung</th>
@@ -206,11 +207,11 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
                         <tbody className="bg-white divide-y divide-gray-200">
                         {appointments.map((appointment) => (
                             <tr key={appointment.id} className={`hover:bg-slate-50 transition-colors duration-150 ${styles.tableRow}`}>
-                                <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600">{formatDate(appointment.appointmentTime)}</td>
-                                <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600">{appointment.serviceName}</td>
-                                {adminView && <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600">{appointment.customerName || (appointment.customer ? appointment.customer.name : 'N/A')}</td>}
+                                <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600">{formatDate(appointment.startTime)}</td>
+                                <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600">{appointment.service?.name || 'N/A'}</td>
+                                {adminView && <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600">{`${appointment.customer?.firstName || ''} ${appointment.customer?.lastName || ''}`.trim() || 'N/A'}</td>}
                                 <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600">
-                                    {typeof appointment.price === 'number' ? `${appointment.price.toFixed(2)} €` : 'N/A'}
+                                    {typeof appointment.service?.price === 'number' ? `${appointment.service.price.toFixed(2)} €` : 'N/A'}
                                 </td>
                                 <td className="px-5 py-4 whitespace-nowrap">
                                         <span className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(appointment.status)} ${styles.statusBadge}`}>
@@ -221,7 +222,8 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
                                     <button onClick={() => handleEdit(appointment)} className={`text-indigo-600 hover:text-indigo-800 p-1.5 rounded-md hover:bg-indigo-50 transition-colors ${styles.actionButton}`} title="Bearbeiten">
                                         <FontAwesomeIcon icon={faEdit} />
                                     </button>
-                                    {(adminView || appointment.status !== 'CANCELLED') && (
+                                    {/* Stornieren ist auch für User erlaubt, wenn Termin nicht bereits CANCELLED ist */}
+                                    {appointment.status !== 'CANCELLED' && (
                                         <button onClick={() => confirmDelete(appointment.id)} className={`text-red-500 hover:text-red-700 p-1.5 rounded-md hover:bg-red-50 transition-colors ${styles.actionButton}`} title={adminView ? "Löschen" : "Stornieren"}>
                                             <FontAwesomeIcon icon={faTrashAlt} />
                                         </button>
@@ -238,7 +240,7 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
                 <AppointmentEditModal
                     isOpen={showEditModal}
                     onClose={handleModalClose}
-                    onSave={handleModalSave}
+                    onSave={handleModalSave} // Dieser Callback sollte reichen, um die Liste neu zu laden via refreshAppointmentsList
                     appointmentData={selectedAppointment}
                     adminView={adminView}
                 />
@@ -247,7 +249,9 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
                 <AppointmentCreateModal
                     isOpen={showCreateModal}
                     onClose={handleModalClose}
-                    onSave={handleModalSave}
+                    onSave={handleModalSave} // onSave statt onAppointmentCreated für Konsistenz
+                    currentUser={currentUser} // currentUser für das Modal
+                    // selectedSlot wird hier nicht benötigt, da Admins von überall erstellen können
                 />
             )}
             {showConfirmDeleteModal && (
@@ -255,10 +259,10 @@ function AppointmentList({ adminView = false, refreshAppointmentsList, onAppoint
                     isOpen={showConfirmDeleteModal}
                     onClose={() => setShowConfirmDeleteModal(false)}
                     onConfirm={handleDelete}
-                    title="Termin löschen"
+                    title="Termin löschen/stornieren"
                     message={`Möchten Sie diesen Termin wirklich ${adminView ? 'löschen' : 'stornieren'}? Diese Aktion kann nicht rückgängig gemacht werden.`}
                     confirmButtonText={adminView ? "Ja, löschen" : "Ja, stornieren"}
-                    isLoading={loading}
+                    isLoading={loading} // Allgemeinen Ladezustand verwenden oder einen spezifischen für die Aktion
                 />
             )}
         </div>

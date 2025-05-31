@@ -83,27 +83,36 @@ function App() {
         const user = AuthService.getCurrentUser();
         setCurrentUser(user);
         setIsMobileMenuOpen(false);
-        navigate('/my-account');
+        // Check if admin to redirect appropriately
+        if (user && user.roles && user.roles.includes('ROLE_ADMIN')) {
+            navigate('/my-account?tab=admin-dashboard');
+        } else {
+            navigate('/my-account');
+        }
     }, [navigate]);
 
     const handleProfileUpdateSuccess = useCallback((updatedUserData) => {
-        if (updatedUserData && (!currentUser || updatedUserData.id !== currentUser.id || updatedUserData.username !== currentUser.username || updatedUserData.email !== currentUser.email)) {
-            console.log("App.js: handleProfileUpdateSuccess - currentUser wird aktualisiert.", updatedUserData);
-            setCurrentUser(updatedUserData);
-        } else if (!updatedUserData && currentUser) {
-            setCurrentUser(AuthService.getCurrentUser());
+        // Get the full user object from localStorage as updateProfile in auth.service now updates it.
+        const refreshedUser = AuthService.getCurrentUser();
+        if (refreshedUser) {
+            console.log("App.js: handleProfileUpdateSuccess - currentUser wird aktualisiert mit:", refreshedUser);
+            setCurrentUser(refreshedUser);
         }
-    }, [currentUser]);
+    }, []);
+
 
     const handleProfileUpdateError = useCallback((errorMessage) => {
         console.error("App.js: Fehler beim Profilupdate:", errorMessage);
+        // Optionally: display a global error message to the user
     }, []);
 
     useEffect(() => {
         const user = AuthService.getCurrentUser();
-        if (user && (!currentUser || user.id !== currentUser.id)) {
-            setCurrentUser(user);
-        } else if (!user && currentUser) {
+        if (user) {
+            if (!currentUser || user.id !== currentUser.id || user.token !== currentUser.token) {
+                setCurrentUser(user);
+            }
+        } else if (currentUser) {
             setCurrentUser(undefined);
         }
 
@@ -112,7 +121,16 @@ function App() {
 
         const handleProfileUpdatedEvent = (updatedUserFromEvent) => {
             console.log("App.js: Event 'profileUpdated' empfangen", updatedUserFromEvent);
-            if (updatedUserFromEvent && (!currentUser || updatedUserFromEvent.id !== currentUser.id || updatedUserFromEvent.username !== currentUser.username)) {
+            // Check if the received data is different before updating, to prevent unnecessary re-renders
+            if (updatedUserFromEvent &&
+                (!currentUser ||
+                    updatedUserFromEvent.id !== currentUser.id ||
+                    updatedUserFromEvent.email !== currentUser.email || // Use email
+                    updatedUserFromEvent.firstName !== currentUser.firstName ||
+                    updatedUserFromEvent.lastName !== currentUser.lastName ||
+                    updatedUserFromEvent.phoneNumber !== currentUser.phoneNumber
+                    // Add other relevant fields if necessary
+                )) {
                 setCurrentUser(updatedUserFromEvent);
             }
         };
@@ -138,7 +156,7 @@ function App() {
                 setIsHeaderScrolled(scrolled);
             };
             window.addEventListener('scroll', scrollHandler, { passive: true });
-            scrollHandler();
+            scrollHandler(); // Initial check
         }
         return () => {
             if (preloaderTimeoutId) clearTimeout(preloaderTimeoutId);
@@ -154,40 +172,40 @@ function App() {
             }
         };
 
-        updateBodyPadding();
+        updateBodyPadding(); // Initial call
 
+        // Observe header size changes
         const resizeObserver = new ResizeObserver(updateBodyPadding);
         if (headerRef.current) {
             resizeObserver.observe(headerRef.current);
         }
 
-        const transitionTimeout = setTimeout(updateBodyPadding, 350);
+        // Update padding after transitions (e.g., mobile menu opening/closing)
+        const transitionTimeout = setTimeout(updateBodyPadding, 350); // Adjust timeout as needed
 
         return () => {
             if (headerRef.current) {
                 resizeObserver.unobserve(headerRef.current);
             }
             clearTimeout(transitionTimeout);
-            if(document.body) document.body.style.paddingTop = '0';
+            if(document.body) document.body.style.paddingTop = '0'; // Reset padding on unmount
         };
-    }, [isHeaderScrolled, isMobileMenuOpen, location.pathname]);
+    }, [isHeaderScrolled, isMobileMenuOpen, location.pathname]); // Re-run on these changes
 
     const navigateToBooking = useCallback((serviceName = null) => {
-        if (location.pathname === "/") {
-            const servicesSection = document.getElementById('services-dynamic');
-            if (servicesSection) {
-                servicesSection.scrollIntoView({ behavior: 'smooth' });
-            }
+        if (serviceName) {
+            navigate(`/buchen/${encodeURIComponent(serviceName)}`);
         } else {
-            navigate('/#services-dynamic');
+            navigate('/buchen');
         }
         closeMobileMenu();
-    }, [navigate, closeMobileMenu, location.pathname]);
+    }, [navigate, closeMobileMenu]);
+
 
     const toggleMobileMenu = () => setIsMobileMenuOpen(prev => !prev);
 
     // Ermitteln, ob es sich um eine Dashboard-Seite handelt
-    const isDashboardPage = location.pathname.startsWith('/my-account') || location.pathname.startsWith('/admin');
+    const isDashboardPage = location.pathname.startsWith('/my-account');
 
     const HomePageLayout = () => (
         <main>
@@ -196,7 +214,7 @@ function App() {
             <ExperienceSection />
             <TestimonialsSection />
             <AboutFounderSection />
-            <ServicesSection />
+            <ServicesSection openBookingModal={navigateToBooking} /> {/* navigateToBooking weitergeben */}
             <GalleryJournalSection />
             <EssentialsSection />
             <FAQSection />
@@ -217,11 +235,13 @@ function App() {
                 headerRef={headerRef}
                 navigateToBooking={navigateToBooking}
                 logOut={logOut}
-                // Neue Prop, um dem Header mitzuteilen, auf welcher Art von Seite er sich befindet
                 pageType={isDashboardPage ? "dashboard" : "default"}
             />
             <Routes>
                 <Route path="/" element={<HomePageLayout />} />
+                <Route path="/buchen" element={<BookingPage onAppointmentAdded={handleAppointmentAdded} currentUser={currentUser} onLoginSuccess={handleLoginSuccess} />} />
+                <Route path="/buchen/:serviceName" element={<BookingPage onAppointmentAdded={handleAppointmentAdded} currentUser={currentUser} onLoginSuccess={handleLoginSuccess}/>} />
+
 
                 <Route
                     path="/login"
@@ -242,36 +262,22 @@ function App() {
                     }
                 />
                 <Route
-                    path="/my-account" // Hauptroute für das Benutzer-Dashboard
+                    path="/my-account"
                     element={
                         <ProtectedRoute currentUser={currentUser} redirectPath="/login">
                             <AccountDashboard
                                 currentUser={currentUser}
                                 logOut={logOut}
-                                onAppointmentAdded={handleAppointmentAdded}
-                                refreshAppointmentsList={refreshAppointmentsList}
+                                onAppointmentAdded={handleAppointmentAdded} // Prop für Terminaktualisierungen
+                                refreshAppointmentsList={refreshAppointmentsList} // Prop für expliziten Refresh
                                 onServiceAdded={handleServiceAdded}
                                 refreshServicesList={refreshServicesList}
-                                onProfileUpdateSuccess={handleProfileUpdateSuccess}
-                                onProfileUpdateError={handleProfileUpdateError}
+                                onProfileUpdateSuccess={handleProfileUpdateSuccess} // Prop für Profilaktualisierungen
+                                onProfileUpdateError={handleProfileUpdateError} // Prop für Profilaktualisierungsfehler
                             />
                         </ProtectedRoute>
                     }
                 />
-                {/* Beispiel für Admin-Routen, falls dein AdminDashboard verschachtelte Routen verwendet */}
-                {/* Wenn AccountDashboard bereits Admin-Routen intern handhabt, ist dies nicht nötig */}
-                {/* <Route path="/admin/*" element={
-                    <ProtectedRoute currentUser={currentUser} roles={["ROLE_ADMIN"]}>
-                        <AdminDashboardLayout> // Deine Admin-Layout-Komponente
-                             <Routes>
-                                <Route path="dashboard" element={<AdminDashboardStats />} />
-                                // Weitere Admin-Unterrouten
-                            </Routes>
-                        </AdminDashboardLayout>
-                    </ProtectedRoute>
-                } />
-                */}
-
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <Footer />
