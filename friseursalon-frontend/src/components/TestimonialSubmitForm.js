@@ -4,7 +4,7 @@ import api from '../services/api.service';
 import AuthService from '../services/auth.service';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faStar, faPaperPlane, faSpinner, faExclamationCircle, faCheckCircle, faConciergeBell } from '@fortawesome/free-solid-svg-icons';
-import './TestimonialSubmitForm.module.css'; // Eigene CSS-Datei
+import './TestimonialSubmitForm.module.css';
 
 const MAX_COMMENT_LENGTH = 1000;
 
@@ -34,7 +34,7 @@ const TestimonialSubmitForm = ({ serviceIdProp, onTestimonialSubmitted }) => {
     const [customerName, setCustomerName] = useState('');
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
-    const [serviceId, setServiceId] = useState(serviceIdProp || ''); // Für optionale Serviceauswahl
+    const [serviceId, setServiceId] = useState(serviceIdProp || '');
     const [availableServices, setAvailableServices] = useState([]);
 
     const [isLoading, setIsLoading] = useState(false);
@@ -48,17 +48,16 @@ const TestimonialSubmitForm = ({ serviceIdProp, onTestimonialSubmitted }) => {
     }, [currentUser]);
 
     useEffect(() => {
-        // Lade Services, falls keine serviceIdProp übergeben wurde und der User wählen soll
         const fetchServices = async () => {
             try {
-                const response = await api.get('/services');
+                // KORREKTUR HIER:
+                const response = await api.get('services'); // Relativer Pfad
                 setAvailableServices(response.data || []);
             } catch (err) {
                 console.error("Fehler beim Laden der Services für Testimonial-Formular:", err);
-                // Optional: Fehler anzeigen, falls Service-Auswahl kritisch ist
             }
         };
-        if (!serviceIdProp) { // Nur laden, wenn kein Service vorausgewählt ist
+        if (!serviceIdProp) {
             fetchServices();
         }
     }, [serviceIdProp]);
@@ -89,7 +88,7 @@ const TestimonialSubmitForm = ({ serviceIdProp, onTestimonialSubmitted }) => {
         setIsLoading(true);
 
         const testimonialData = {
-            customerName: customerName.trim(), // Wird nur für submit-guest relevant
+            customerName: customerName.trim(),
             rating,
             comment: comment.trim(),
             serviceId: serviceId ? parseInt(serviceId) : null,
@@ -98,15 +97,12 @@ const TestimonialSubmitForm = ({ serviceIdProp, onTestimonialSubmitted }) => {
         try {
             let response;
             if (currentUser) {
-                // Für eingeloggte User wird customerName serverseitig aus UserDetails genommen (oder wir schicken es explizit)
-                // Der Backend-Endpunkt /api/testimonials/submit erwartet, dass customerId aus dem Token kommt.
-                // Der Backend TestimonialService.submitTestimonial erwartet customerId als Parameter
-                // Wir passen den Request so an, dass wir customerName nicht mitschicken, wenn User eingeloggt ist,
-                // da der Backend Service dies aus dem User-Objekt nimmt, das über die ID geholt wird.
                 const loggedInTestimonialData = { rating, comment: comment.trim(), serviceId: serviceId ? parseInt(serviceId) : null, customerName: undefined };
-                response = await api.post('/testimonials/submit', loggedInTestimonialData);
+                // KORREKTUR HIER:
+                response = await api.post('testimonials/submit', loggedInTestimonialData); // Relativer Pfad
             } else {
-                response = await api.post('/testimonials/submit-guest', testimonialData);
+                // KORREKTUR HIER:
+                response = await api.post('testimonials/submit-guest', testimonialData); // Relativer Pfad
             }
 
             setSuccessMessage('Vielen Dank! Ihre Bewertung wurde erfolgreich übermittelt und wird bald geprüft.');

@@ -19,13 +19,12 @@ const ServiceSchema = Yup.object().shape({
         .required('Dauer ist erforderlich.')
         .integer('Dauer muss eine ganze Zahl sein.')
         .min(5, 'Dauer muss mindestens 5 Minuten betragen.'),
-    // Optional: imageUrl, category etc. könnten hier validiert werden
 });
 
 function ServiceEditModal({ isOpen, onClose, onSave, serviceData }) {
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState(''); // Für Erfolgsmeldungen
-    const [error, setError] = useState('');     // Für Fehlermeldungen
+    const [message, setMessage] = useState('');
+    const [error, setError] = useState('');
 
     const isEditing = Boolean(serviceData && serviceData.id);
     const modalTitle = isEditing ? "Dienstleistung bearbeiten" : "Neue Dienstleistung erstellen";
@@ -37,8 +36,6 @@ function ServiceEditModal({ isOpen, onClose, onSave, serviceData }) {
         description: serviceData?.description || '',
         price: serviceData?.price || '',
         duration: serviceData?.duration || '', // duration statt durationMinutes
-        // imageUrl: serviceData?.imageUrl || '', // Falls vorhanden
-        // category: serviceData?.category || '', // Falls vorhanden
     };
 
     const handleSubmit = async (values, { setSubmitting, resetForm }) => {
@@ -51,23 +48,22 @@ function ServiceEditModal({ isOpen, onClose, onSave, serviceData }) {
             description: values.description,
             price: parseFloat(values.price),
             duration: parseInt(values.duration, 10), // duration statt durationMinutes
-            // imageUrl: values.imageUrl,
-            // category: values.category,
         };
 
         try {
             if (isEditing) {
-                await api.put(`/api/services/${serviceData.id}`, payload);
+                // KORREKTUR HIER: 'services/' statt '/api/services/'
+                await api.put(`services/${serviceData.id}`, payload);
             } else {
-                await api.post('/api/services', payload);
+                // KORREKTUR HIER: 'services' statt '/api/services'
+                await api.post('services', payload);
             }
             setMessage(isEditing ? 'Dienstleistung erfolgreich aktualisiert!' : 'Dienstleistung erfolgreich erstellt!');
             if (typeof onSave === 'function') {
-                onSave(); // Elternkomponente benachrichtigen, um Liste neu zu laden etc.
+                onSave();
             }
             setTimeout(() => {
-                onClose(); // Modal nach kurzer Verzögerung schließen
-                // resetForm(); // Optional: Formular zurücksetzen, wenn Modal geschlossen wird
+                onClose();
             }, 1500);
         } catch (err) {
             console.error("Error saving service:", err.response?.data || err.message);
@@ -78,7 +74,6 @@ function ServiceEditModal({ isOpen, onClose, onSave, serviceData }) {
         }
     };
 
-    // Effekt, um Nachrichten zu löschen, wenn das Modal geschlossen/geöffnet wird oder sich serviceData ändert
     useEffect(() => {
         if (isOpen) {
             setMessage('');
@@ -92,11 +87,8 @@ function ServiceEditModal({ isOpen, onClose, onSave, serviceData }) {
     }
 
     return (
-        // Modal Overlay (globale Stile aus App.css oder Tailwind)
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[1051] p-4 animate-fadeInModalOverlay backdrop-blur-sm"> {/* Höherer z-index als Dashboard-Sidebar */}
-            {/* Modal Content */}
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[1051] p-4 animate-fadeInModalOverlay backdrop-blur-sm">
             <div className={`bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col animate-slideInModalContent ${styles.modalContent}`}>
-                {/* Modal Header */}
                 <div className="flex justify-between items-center p-5 border-b border-gray-200">
                     <h3 className="text-xl font-semibold text-gray-800 font-serif">{modalTitle}</h3>
                     <button
@@ -108,13 +100,11 @@ function ServiceEditModal({ isOpen, onClose, onSave, serviceData }) {
                         <FontAwesomeIcon icon={faTimes} size="lg" />
                     </button>
                 </div>
-
-                {/* Modal Body mit Formik */}
                 <Formik
                     initialValues={initialValues}
                     validationSchema={ServiceSchema}
                     onSubmit={handleSubmit}
-                    enableReinitialize // Wichtig, damit das Formular aktualisiert wird, wenn sich 'serviceData' ändert
+                    enableReinitialize
                 >
                     {({ errors, touched, isSubmitting, dirty }) => (
                         <Form className="p-6 space-y-5 overflow-y-auto">
@@ -156,7 +146,7 @@ function ServiceEditModal({ isOpen, onClose, onSave, serviceData }) {
                                 <div className={styles.formGroup}>
                                     <label htmlFor="duration" className="block text-sm font-medium text-gray-700 mb-1">Dauer (Minuten)</label>
                                     <Field
-                                        name="duration" // Geändert von durationMinutes
+                                        name="duration"
                                         type="number"
                                         id="duration"
                                         className={`w-full px-3 py-2.5 border ${errors.duration && touched.duration ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`}
@@ -164,8 +154,6 @@ function ServiceEditModal({ isOpen, onClose, onSave, serviceData }) {
                                     <ErrorMessage name="duration" component="div" className="mt-1 text-xs text-red-500" />
                                 </div>
                             </div>
-
-                            {/* Weitere Felder wie imageUrl, category könnten hier hinzugefügt werden */}
 
                             {error && (
                                 <div className={`p-3 rounded-md bg-red-50 text-red-700 border border-red-200 text-sm flex items-center ${styles.formMessage} ${styles.error}`}>
@@ -178,7 +166,6 @@ function ServiceEditModal({ isOpen, onClose, onSave, serviceData }) {
                                 </div>
                             )}
 
-                            {/* Modal Footer / Actions */}
                             <div className="pt-5 flex justify-end space-x-3">
                                 <button
                                     type="button"
@@ -190,7 +177,7 @@ function ServiceEditModal({ isOpen, onClose, onSave, serviceData }) {
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={loading || isSubmitting || !dirty} // Button nur aktiv, wenn Formular geändert wurde
+                                    disabled={loading || isSubmitting || !dirty}
                                     className={`inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-60 ${styles.actionButton} ${styles.saveButton}`}
                                 >
                                     {loading ? <FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> : <FontAwesomeIcon icon={submitButtonIcon} className="mr-2" />}

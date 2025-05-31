@@ -31,13 +31,12 @@ const messages = {
     agenda: 'Agenda',
     date: 'Datum',
     time: 'Zeit',
-    event: 'Termin', // Backend sendet 'Ereignis', aber Kalender verwendet 'Termin'
+    event: 'Termin',
     noEventsInRange: 'Keine Termine in diesem Bereich.',
     showMore: total => `+ ${total} weitere`,
 };
 
 function AdminCalendarView({ onAppointmentAction, currentUser }) {
-    // Removed 'appointments' state as 'events' already holds the transformed data for the calendar
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -53,23 +52,20 @@ function AdminCalendarView({ onAppointmentAction, currentUser }) {
         setLoading(true);
         setError(null);
         try {
-            // Corrected API endpoint
-            const response = await api.get('/api/appointments');
+            // KORREKTUR: Relativer Pfad
+            const response = await api.get('appointments');
             const fetchedAppointments = response.data || [];
-            // setAppointments(fetchedAppointments); // Not strictly needed if events are derived directly
 
             const calendarEvents = fetchedAppointments.map(apt => {
                 const start = parseISO(apt.startTime);
-                // Use service.durationMinutes from the nested service object
-                const end = addMinutes(start, apt.service?.durationMinutes || 60); // Default to 60min if no duration
+                const end = addMinutes(start, apt.service?.durationMinutes || 60);
                 return {
                     id: apt.id,
-                    // Access nested properties for title
                     title: `${apt.service?.name || 'Service'} - ${apt.customer?.firstName || ''} ${apt.customer?.lastName || 'Kunde'}`,
                     start,
                     end,
                     allDay: false,
-                    resource: apt, // Store the original appointment object
+                    resource: apt,
                     status: apt.status
                 };
             });
@@ -88,7 +84,7 @@ function AdminCalendarView({ onAppointmentAction, currentUser }) {
     }, [fetchAppointments, onAppointmentAction]);
 
     const handleSelectEvent = (event) => {
-        setSelectedEventForEdit(event.resource); // event.resource contains the full appointment object
+        setSelectedEventForEdit(event.resource);
         setShowEditModal(true);
     };
 
@@ -113,16 +109,16 @@ function AdminCalendarView({ onAppointmentAction, currentUser }) {
 
     const handleModalSave = () => {
         handleModalClose();
-        fetchAppointments(); // Reload appointments after save
+        fetchAppointments();
         if (typeof onAppointmentAction === 'function') {
             onAppointmentAction();
         }
     };
 
     const eventStyleGetter = (event, start, end, isSelected) => {
-        let backgroundColor = '#3174ad'; // Default blue
+        let backgroundColor = '#3174ad';
         let borderColor = '#25567b';
-        const status = event.resource?.status; // Status from the original appointment object
+        const status = event.resource?.status;
 
         if (status === 'CONFIRMED') {
             backgroundColor = 'var(--success-color, #28a745)';

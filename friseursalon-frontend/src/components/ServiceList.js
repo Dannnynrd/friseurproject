@@ -1,16 +1,12 @@
 // friseursalon-frontend/src/components/ServiceList.js
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api.service';
-// Erstelle diese Datei, auch wenn sie anfangs leer ist oder nur minimale Stile enthält
 import styles from './ServiceList.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faEdit, faTrashAlt, faSpinner, faExclamationTriangle, faCheckCircle, faTag, faClock, faEuroSign } from '@fortawesome/free-solid-svg-icons';
 
-// Annahme: Diese Modale existieren und sind gestylt/werden separat migriert
 import ServiceEditModal from './ServiceEditModal';
 import ConfirmModal from './ConfirmModal';
-// ServiceForm könnte direkt im ServiceEditModal verwendet werden oder als separates Modal zum Erstellen
-// Für dieses Beispiel nehmen wir an, ServiceEditModal kann auch zum Erstellen verwendet werden (wenn serviceToEdit null ist)
 
 function ServiceList({ onServiceAdded, refreshServicesList }) {
     const [services, setServices] = useState([]);
@@ -19,7 +15,7 @@ function ServiceList({ onServiceAdded, refreshServicesList }) {
     const [successMessage, setSuccessMessage] = useState('');
 
     const [showEditModal, setShowEditModal] = useState(false);
-    const [serviceToEdit, setServiceToEdit] = useState(null); // Für Bearbeiten und Neuanlage (null bei Neuanlage)
+    const [serviceToEdit, setServiceToEdit] = useState(null);
 
     const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
     const [serviceToDelete, setServiceToDelete] = useState(null);
@@ -29,7 +25,8 @@ function ServiceList({ onServiceAdded, refreshServicesList }) {
         setError(null);
         setSuccessMessage('');
         try {
-            const response = await api.get('/api/services'); // Admin-Endpunkt zum Abrufen aller Services
+            // KORREKTUR: Relativer Pfad
+            const response = await api.get('services');
             setServices(response.data || []);
         } catch (err) {
             console.error("Error fetching services:", err);
@@ -42,7 +39,7 @@ function ServiceList({ onServiceAdded, refreshServicesList }) {
 
     useEffect(() => {
         fetchServices();
-    }, [fetchServices, refreshServicesList]); // Refresh, wenn refreshServicesList sich ändert
+    }, [fetchServices, refreshServicesList]);
 
     const handleEdit = (service) => {
         setServiceToEdit(service);
@@ -50,8 +47,8 @@ function ServiceList({ onServiceAdded, refreshServicesList }) {
     };
 
     const handleCreateNew = () => {
-        setServiceToEdit(null); // Kein Service zum Bearbeiten, also Neuanlage
-        setShowEditModal(true); // Wir verwenden dasselbe Modal
+        setServiceToEdit(null);
+        setShowEditModal(true);
     };
 
     const confirmDelete = (serviceId) => {
@@ -61,22 +58,20 @@ function ServiceList({ onServiceAdded, refreshServicesList }) {
 
     const handleDelete = async () => {
         if (!serviceToDelete) return;
-        // Hier könnte man den Ladezustand spezifisch für den Löschvorgang setzen
-        // setLoading(true); // Oder einen eigenen Ladezustand für den Button
         setError(null);
         setSuccessMessage('');
         try {
-            await api.delete(`/api/services/${serviceToDelete}`); // Admin-Endpunkt zum Löschen
+            // KORREKTUR: Relativer Pfad
+            await api.delete(`services/${serviceToDelete}`);
             setSuccessMessage("Dienstleistung erfolgreich gelöscht.");
-            fetchServices(); // Liste neu laden
-            if (typeof onServiceAdded === 'function') { // Allgemeiner Callback für Änderungen
+            fetchServices();
+            if (typeof onServiceAdded === 'function') {
                 onServiceAdded();
             }
         } catch (err) {
             console.error("Error deleting service:", err);
             setError(err.response?.data?.message || "Fehler beim Löschen der Dienstleistung.");
         } finally {
-            // setLoading(false);
             setShowConfirmDeleteModal(false);
             setServiceToDelete(null);
         }
@@ -89,20 +84,24 @@ function ServiceList({ onServiceAdded, refreshServicesList }) {
 
     const handleModalSave = () => {
         handleModalClose();
-        fetchServices(); // Liste neu laden nach Speichern
+        fetchServices();
         if (typeof onServiceAdded === 'function') {
-            onServiceAdded(); // Elternkomponente benachrichtigen
+            onServiceAdded();
         }
         setSuccessMessage(serviceToEdit ? "Dienstleistung erfolgreich aktualisiert." : "Dienstleistung erfolgreich erstellt.");
     };
 
     const formatPrice = (price) => {
         if (typeof price !== 'number') return 'N/A';
+        // Beachte die Unterscheidung zwischen service.duration und service.durationMinutes
+        // Hier wird service.durationMinutes (aus dem Backend-Modell) erwartet
         return `${price.toFixed(2).replace('.', ',')} €`;
     };
 
     const formatDuration = (minutes) => {
         if (typeof minutes !== 'number' || minutes <= 0) return 'N/A';
+        // In deinem Backend Service-Modell heißt das Feld 'durationMinutes'
+        // Stelle sicher, dass das Service-Objekt hier `service.durationMinutes` enthält oder passe es an
         const h = Math.floor(minutes / 60);
         const m = minutes % 60;
         let durationString = '';
@@ -177,7 +176,8 @@ function ServiceList({ onServiceAdded, refreshServicesList }) {
                                 <td className="px-5 py-4 text-sm text-gray-600 hidden sm:table-cell">
                                     <p className="truncate w-64 md:w-96" title={service.description}>{service.description || '-'}</p>
                                 </td>
-                                <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600">{formatDuration(service.duration)}</td>
+                                {/* HINWEIS: Stelle sicher, dass das Service-Objekt hier das Feld 'durationMinutes' hat, wie im Backend-Modell */}
+                                <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600">{formatDuration(service.durationMinutes)}</td>
                                 <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600">{formatPrice(service.price)}</td>
                                 <td className="px-5 py-4 whitespace-nowrap text-right text-sm font-medium space-x-1.5">
                                     <button onClick={() => handleEdit(service)} className={`text-indigo-600 hover:text-indigo-800 p-1.5 rounded-md hover:bg-indigo-50 transition-colors ${styles.actionButton}`} title="Bearbeiten">
@@ -195,11 +195,11 @@ function ServiceList({ onServiceAdded, refreshServicesList }) {
             )}
 
             {showEditModal && (
-                <ServiceEditModal // Annahme: Dieses Modal kann auch zum Erstellen verwendet werden, wenn serviceToEdit null ist
+                <ServiceEditModal
                     isOpen={showEditModal}
                     onClose={handleModalClose}
                     onSave={handleModalSave}
-                    serviceData={serviceToEdit} // Ist null für "Neu erstellen"
+                    serviceData={serviceToEdit}
                 />
             )}
             {showConfirmDeleteModal && (
@@ -210,7 +210,6 @@ function ServiceList({ onServiceAdded, refreshServicesList }) {
                     title="Dienstleistung löschen"
                     message="Möchten Sie diese Dienstleistung wirklich endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden."
                     confirmButtonText="Ja, löschen"
-                    // isLoading={loading} // Ein spezifischer Ladezustand für den Lösch-Button wäre besser
                 />
             )}
         </div>

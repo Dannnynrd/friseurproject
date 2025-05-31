@@ -65,7 +65,7 @@ function BookingPage({ onAppointmentAdded: onAppointmentAddedProp, currentUser: 
         const loadServicesAndSetInitial = async () => {
             setIsLoadingServices(true);
             try {
-                const response = await api.get('/api/services');
+                const response = await api.get('services');
                 const servicesData = response.data || [];
                 setAllServices(servicesData);
                 if (serviceNameFromUrl) {

@@ -1,7 +1,6 @@
 // friseursalon-frontend/src/components/AppointmentCreateModal.js
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../services/api.service';
-// AuthService nicht mehr direkt hier, currentUser kommt als Prop
 import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { de } from 'date-fns/locale';
@@ -22,7 +21,6 @@ const AppointmentSchema = Yup.object().shape({
     isNewCustomer: Yup.boolean(),
     customerName: Yup.string().when('isNewCustomer', {
         is: true,
-        // Validierung für Vor- und Nachname, mindestens zwei Wörter
         then: () => Yup.string()
             .required('Kundenname (Vor- und Nachname) ist erforderlich für Neukunden.')
             .matches(/^(\S+\s+\S+.*)$/, 'Bitte Vor- und Nachnamen angeben (mind. 2 Wörter).'),
@@ -38,7 +36,7 @@ const AppointmentSchema = Yup.object().shape({
     appointmentTime: Yup.string().required('Uhrzeit ist erforderlich.'),
     notes: Yup.string().max(500, 'Notizen dürfen maximal 500 Zeichen lang sein.').notRequired(),
     selectedExistingCustomer: Yup.string().when(['isNewCustomer', 'adminView'], {
-        is: (isNewCustomer, adminView) => !isNewCustomer && adminView, // Nur für Admin relevant, wenn kein Neukunde
+        is: (isNewCustomer, adminViewValue) => !isNewCustomer && adminViewValue,
         then: () => Yup.string().required('Bitte wählen Sie einen Bestandskunden oder markieren Sie "Neukunde".'),
         otherwise: () => Yup.string().notRequired(),
     }),
@@ -79,7 +77,7 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
 
     const getInitialValues = useCallback(() => ({
         serviceId: '',
-        isNewCustomer: !currentUser || adminView, // Standard für Gäste oder wenn Admin erstellt
+        isNewCustomer: !currentUser || adminView,
         selectedExistingCustomer: '',
         customerName: '',
         customerEmail: '',
@@ -87,7 +85,7 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
         appointmentDate: initialDate,
         appointmentTime: initialTime,
         notes: '',
-        adminView: adminView // Um Yup Schema dynamisch zu machen
+        adminView: adminView
     }), [currentUser, adminView, initialDate, initialTime]);
 
 
@@ -96,8 +94,10 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
         setLoadingCustomers(true);
         setError('');
         try {
-            const servicesResPromise = api.get('/api/services').catch(e => { console.error("Error fetching services", e); return { data: [] }; });
-            const customersResPromise = adminView ? api.get('/api/customers').catch(e => { console.error("Error fetching customers", e); return { data: [] }; }) : Promise.resolve({ data: [] });
+            // KORREKTUR HIER:
+            const servicesResPromise = api.get('services').catch(e => { console.error("Error fetching services", e); return { data: [] }; });
+            // KORREKTUR HIER:
+            const customersResPromise = adminView ? api.get('customers').catch(e => { console.error("Error fetching customers", e); return { data: [] }; }) : Promise.resolve({ data: [] });
 
             const [servicesRes, customersRes] = await Promise.all([servicesResPromise, customersResPromise]);
 
@@ -134,7 +134,8 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
         if (setFieldValue) setFieldValue('appointmentTime', '');
         try {
             const formattedDate = formatDateFns(date, 'yyyy-MM-dd');
-            const response = await api.get('/api/appointments/available-slots', {
+            // KORREKTUR HIER:
+            const response = await api.get('appointments/available-slots', { // Relativer Pfad
                 params: { serviceId: service.id, date: formattedDate },
             });
             setAvailableTimeSlots(response.data || []);
@@ -167,21 +168,21 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
 
         let customerPayload = {};
         if (values.isNewCustomer) {
-            const nameParts = values.customerName.trim().split(/\s+/); // Teilt bei einem oder mehreren Leerzeichen
+            const nameParts = values.customerName.trim().split(/\s+/);
             customerPayload = {
                 firstName: nameParts[0] || '',
-                lastName: nameParts.slice(1).join(' ') || (nameParts.length > 1 ? '' : nameParts[0]), // Fallback, falls nur ein Wort
+                lastName: nameParts.slice(1).join(' ') || (nameParts.length > 1 ? '' : nameParts[0]),
                 email: values.customerEmail.trim(),
                 phoneNumber: values.customerPhone.trim() || null,
             };
-        } else if (currentUser && !adminView) { // Eingeloggter User bucht für sich selbst
+        } else if (currentUser && !adminView) {
             customerPayload = {
                 firstName: currentUser.firstName,
                 lastName: currentUser.lastName,
                 email: currentUser.email,
                 phoneNumber: currentUser.phoneNumber || null,
             };
-        } else if (adminView && values.selectedExistingCustomer) { // Admin wählt existierenden Kunden
+        } else if (adminView && values.selectedExistingCustomer) {
             const existingCustomer = customers.find(c => c.id.toString() === values.selectedExistingCustomer);
             if (existingCustomer) {
                 customerPayload = {
@@ -201,22 +202,21 @@ function AppointmentCreateModal({ isOpen, onClose, onSave, selectedSlot, current
 
 
         const payload = {
-            service: { id: parseInt(values.serviceId, 10) }, // Korrekt: Service Objekt mit ID
-            customer: customerPayload, // Korrekt: Genestetes Kundenobjekt
+            service: { id: parseInt(values.serviceId, 10) },
+            customer: customerPayload,
             startTime: appointmentDateTime.toISOString(),
             notes: values.notes,
         };
 
         try {
-            // Korrigierter API Endpunkt
-            await api.post('/api/appointments', payload);
+            // KORREKTUR HIER:
+            await api.post('appointments', payload); // Relativer Pfad
             setSuccess('Termin erfolgreich erstellt!');
             if (typeof onSave === 'function') {
                 onSave();
             }
             setTimeout(() => {
                 onClose();
-                // resetForm({ values: getInitialValues() }); // Formular beim Schließen zurücksetzen
             }, 2000);
         } catch (err) {
             console.error("Error creating appointment:", err.response?.data || err.message);

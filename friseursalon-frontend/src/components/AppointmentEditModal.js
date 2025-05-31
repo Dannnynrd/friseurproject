@@ -45,7 +45,7 @@ function AppointmentEditModal({ isOpen, onClose, onSave, appointmentData, adminV
   const [loadingTimeSlots, setLoadingTimeSlots] = useState(false);
 
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(''); // setSuccessMessage wurde zu setSuccess umbenannt/konsolidiert
+  const [success, setSuccess] = useState('');
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
@@ -69,7 +69,8 @@ function AppointmentEditModal({ isOpen, onClose, onSave, appointmentData, adminV
     if (!isOpen) return;
     setLoadingServices(true);
     try {
-      const response = await api.get('/api/services');
+      // KORREKTUR: Relativer Pfad
+      const response = await api.get('services');
       setServices(response.data || []);
     } catch (err) {
       console.error("Error fetching services for edit modal:", err);
@@ -91,21 +92,21 @@ function AppointmentEditModal({ isOpen, onClose, onSave, appointmentData, adminV
     setLoadingTimeSlots(true);
     try {
       const formattedDate = formatDateFns(date, 'yyyy-MM-dd');
-      const response = await api.get('/api/appointments/available-slots', {
+      // KORREKTUR: Relativer Pfad
+      const response = await api.get('appointments/available-slots', {
         params: {
           serviceId: parseInt(serviceId, 10),
           date: formattedDate,
-          excludeId: currentAppointmentId // Backend should handle this parameter if needed
+          excludeId: currentAppointmentId
         },
       });
       const slots = response.data || [];
       const currentAppointmentTime = appointmentData?.startTime ? formatDateFns(parseISO(appointmentData.startTime), 'HH:mm') : '';
-      // If current time is not in new slots and it's the original date, add it.
       if (currentAppointmentTime &&
           formatDateFns(date, 'yyyy-MM-dd') === formatDateFns(parseISO(appointmentData.startTime), 'yyyy-MM-dd') &&
           !slots.includes(currentAppointmentTime)) {
         slots.push(currentAppointmentTime);
-        slots.sort(); // Keep slots sorted
+        slots.sort();
       }
       setAvailableTimeSlots(slots);
       if (currentAppointmentTime &&
@@ -168,8 +169,9 @@ function AppointmentEditModal({ isOpen, onClose, onSave, appointmentData, adminV
     };
 
     try {
-      await api.put(`/api/appointments/${appointmentData.id}`, payload);
-      setSuccess('Termin erfolgreich aktualisiert!'); // setSuccess verwenden
+      // KORREKTUR: Relativer Pfad
+      await api.put(`appointments/${appointmentData.id}`, payload);
+      setSuccess('Termin erfolgreich aktualisiert!');
       if (typeof onSave === 'function') {
         onSave();
       }
@@ -191,8 +193,10 @@ function AppointmentEditModal({ isOpen, onClose, onSave, appointmentData, adminV
     setError('');
     setSuccess('');
     try {
-      await api.delete(`/api/appointments/${appointmentData.id}`);
-      setSuccess('Termin erfolgreich storniert!'); // KORREKTUR: setSuccessMessage zu setSuccess
+      // KORREKTUR: Relativer Pfad
+      await api.delete(`appointments/${appointmentData.id}`);
+      // KORREKTUR: setSuccessMessage zu setSuccess
+      setSuccess('Termin erfolgreich storniert!');
       if (typeof onSave === 'function') {
         onSave();
       }
@@ -211,7 +215,7 @@ function AppointmentEditModal({ isOpen, onClose, onSave, appointmentData, adminV
   useEffect(() => {
     if (isOpen) {
       setError('');
-      setSuccess(''); // setSuccessMessage zu setSuccess
+      setSuccess('');
     }
   }, [isOpen]);
 
@@ -275,7 +279,7 @@ function AppointmentEditModal({ isOpen, onClose, onSave, appointmentData, adminV
                             const selectedService = services.find(s => s.id.toString() === newServiceId);
                             if (selectedService) {
                               setFieldValue('price', formatPriceForInput(selectedService.price));
-                              setFieldValue('duration', formatDurationForInput(selectedService.durationMinutes)); // durationMinutes
+                              setFieldValue('duration', formatDurationForInput(selectedService.durationMinutes));
                               if (values.appointmentDate && isValidDateFns(values.appointmentDate)) {
                                 fetchAvailableTimeSlotsInternal(values.appointmentDate, selectedService.durationMinutes, newServiceId, appointmentData.id, setFieldValue);
                               }
@@ -390,9 +394,9 @@ function AppointmentEditModal({ isOpen, onClose, onSave, appointmentData, adminV
                           <FontAwesomeIcon icon={faExclamationCircle} className="mr-2 flex-shrink-0" /> {error}
                         </div>
                     )}
-                    {success && ( // KORREKTUR: message zu success
+                    {success && (
                         <div className={`p-3 rounded-md bg-green-50 text-green-600 border border-green-200 text-sm flex items-center ${styles.formMessage} ${styles.success}`}>
-                          <FontAwesomeIcon icon={faCheckCircle} className="mr-2 flex-shrink-0" /> {success} {/* KORREKTUR: message zu success */}
+                          <FontAwesomeIcon icon={faCheckCircle} className="mr-2 flex-shrink-0" /> {success}
                         </div>
                     )}
 
@@ -404,7 +408,7 @@ function AppointmentEditModal({ isOpen, onClose, onSave, appointmentData, adminV
                               disabled={isSubmittingForm || isSubmitting || isCancelling}
                               className={`w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 border border-red-500 text-sm font-medium rounded-md text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-60 ${styles.actionButton} ${styles.cancelAppointmentButton}`}
                           >
-                            <FontAwesomeIcon icon={isCancelling ? faSpinner : faTimesCircle} spin={isCancelling} className="mr-2" /> {/* KORREKTUR: faTrashAlt zu faTimesCircle (oder importiere faTrashAlt zusätzlich) */}
+                            <FontAwesomeIcon icon={isCancelling ? faSpinner : faTimesCircle} spin={isCancelling} className="mr-2" />
                             Termin stornieren
                           </button>
                       )}
