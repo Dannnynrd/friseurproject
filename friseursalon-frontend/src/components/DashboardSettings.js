@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styles from './DashboardSettings.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// faBullseye hinzugefügt
 import { faSave, faUndo, faEye, faEyeSlash, faGripVertical, faArrowUp, faArrowDown, faCog, faChartBar, faTags, faBullseye } from '@fortawesome/free-solid-svg-icons';
 
 const KPI_VISIBILITY_STORAGE_KEY = 'friseurDashboardKpiVisibility_v2';
@@ -88,9 +87,10 @@ function DashboardSettings({ showMessage }) {
             const saved = localStorage.getItem(KPI_GROUP_ORDER_STORAGE_KEY);
             const parsed = saved ? JSON.parse(saved) : Object.keys(KPI_DEFINITIONS);
             const currentGroups = Object.keys(KPI_DEFINITIONS);
+            // Stelle sicher, dass die Reihenfolge nur gültige und alle aktuellen Gruppen enthält
             const validOrder = parsed.filter(groupKey => currentGroups.includes(groupKey));
             currentGroups.forEach(groupKey => {
-                if (!validOrder.includes(groupKey)) validOrder.push(groupKey);
+                if (!validOrder.includes(groupKey)) validOrder.push(groupKey); // Füge neue Gruppen am Ende hinzu
             });
             return validOrder;
         } catch (e) { return Object.keys(KPI_DEFINITIONS); }
@@ -120,11 +120,15 @@ function DashboardSettings({ showMessage }) {
     };
 
     const handleResetSettings = () => {
-        if (window.confirm("Möchten Sie wirklich alle Dashboard-Einstellungen auf die Standardwerte zurücksetzen?")) {
+        // Verwende window.confirm für eine einfache Bestätigung
+        if (window.confirm("Möchten Sie wirklich alle Dashboard-Einstellungen auf die Standardwerte zurücksetzen? Diese Aktion kann nicht rückgängig gemacht werden.")) {
             localStorage.removeItem(KPI_VISIBILITY_STORAGE_KEY);
             localStorage.removeItem(KPI_GOALS_STORAGE_KEY);
             localStorage.removeItem(KPI_GROUP_ORDER_STORAGE_KEY);
             localStorage.removeItem(TOP_N_SERVICES_STORAGE_KEY);
+            // Neuladen der Seite, um die Standardwerte effektiv anzuwenden
+            // Eine bessere Methode wäre, die State-Variablen auf ihre Default-Funktionen zurückzusetzen
+            // und dann showMessage aufzurufen, aber für einen schnellen Reset ist Reload okay.
             window.location.reload();
         }
     };
@@ -147,13 +151,13 @@ function DashboardSettings({ showMessage }) {
     };
 
     const handleGoalChange = (goalKey, value) => {
-        const numValue = value === '' ? '' : Number(value);
+        const numValue = value === '' ? '' : Number(value); // Erlaube leeren String für "kein Ziel"
+        // Erlaube leeren String oder positive Zahlen (inkl. 0)
         if (value === '' || (!isNaN(numValue) && numValue >= 0)) {
-            setKpiGoals(prev => ({ ...prev, [goalKey]: numValue === '' ? null : numValue }));
+            setKpiGoals(prev => ({ ...prev, [goalKey]: value === '' ? null : numValue })); // Speichere null wenn leer
         }
     };
 
-    // Definition der moveKpiGroup Funktion im Gültigkeitsbereich der Komponente
     const moveKpiGroup = (groupKey, direction) => {
         setKpiGroupOrder(prevOrder => {
             const currentIndex = prevOrder.indexOf(groupKey);
@@ -162,7 +166,6 @@ function DashboardSettings({ showMessage }) {
             if (newIndex < 0 || newIndex >= prevOrder.length) return prevOrder;
 
             const newOrder = [...prevOrder];
-            // Element an der alten Position entfernen und an der neuen einfügen
             const [item] = newOrder.splice(currentIndex, 1);
             newOrder.splice(newIndex, 0, item);
             return newOrder;
@@ -173,16 +176,20 @@ function DashboardSettings({ showMessage }) {
     const handleDragStart = (e, index) => {
         draggedItem.current = index;
         e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData('text/html', e.target);
+        // e.dataTransfer.setData('text/html', e.target); // Kann bei komplexen Elementen Probleme machen
+        e.dataTransfer.setData('application/json', JSON.stringify({index: index, groupKey: kpiGroupOrder[index]}));
     };
 
     const handleDragOver = (e, index) => {
-        e.preventDefault();
+        e.preventDefault(); // Notwendig, um onDrop zu ermöglichen
         draggedOverItem.current = index;
     };
 
-    const handleDrop = () => {
+    const handleDrop = (e) => {
+        e.preventDefault();
         if (draggedItem.current === null || draggedOverItem.current === null || draggedItem.current === draggedOverItem.current) {
+            draggedItem.current = null;
+            draggedOverItem.current = null;
             return;
         }
         const newOrder = [...kpiGroupOrder];
@@ -206,7 +213,7 @@ function DashboardSettings({ showMessage }) {
                     <FontAwesomeIcon icon={faChartBar} className="mr-2 text-gray-500" /> Kennzahlen (KPIs) anpassen
                 </h3>
                 <p className="text-sm text-gray-500 mb-4">
-                    Wählen Sie aus, welche Kennzahlengruppen und einzelne KPIs in Ihrer Dashboard-Übersicht angezeigt werden sollen. Ändern Sie die Reihenfolge der Gruppen per Drag & Drop.
+                    Wählen Sie aus, welche Kennzahlengruppen und einzelne KPIs in Ihrer Dashboard-Übersicht angezeigt werden sollen. Ändern Sie die Reihenfolge der Gruppen per Drag & Drop oder mit den Pfeiltasten.
                 </p>
                 <ul className={`space-y-3 ${styles.kpiGroupList}`}>
                     {kpiGroupOrder.map((groupKey, index) => {
@@ -221,12 +228,12 @@ function DashboardSettings({ showMessage }) {
                                 onDragStart={(e) => handleDragStart(e, index)}
                                 onDragOver={(e) => handleDragOver(e, index)}
                                 onDrop={handleDrop}
-                                onDragEnd={() => { draggedItem.current = null; draggedOverItem.current = null; }}
-                                className={`p-4 border border-gray-200 rounded-lg bg-slate-50 cursor-move ${styles.kpiGroupItem}`}
+                                onDragEnd={() => { /* Reset drag refs if needed */ }}
+                                className={`p-4 border border-gray-200 rounded-lg bg-slate-50 hover:shadow-md transition-shadow ${styles.kpiGroupItem}`}
                             >
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center">
-                                        <FontAwesomeIcon icon={faGripVertical} className="mr-3 text-gray-400 cursor-grab" />
+                                        <FontAwesomeIcon icon={faGripVertical} className="mr-3 text-gray-400 cursor-move" title="Verschieben (Drag & Drop)" />
                                         <label htmlFor={`group-toggle-${groupKey}`} className="flex items-center cursor-pointer">
                                             <input
                                                 type="checkbox"
@@ -239,13 +246,12 @@ function DashboardSettings({ showMessage }) {
                                         </label>
                                     </div>
                                     <div className="space-x-1">
-                                        {/* Hier werden moveKpiGroup aufgerufen */}
-                                        <button onClick={() => moveKpiGroup(groupKey, 'up')} disabled={index === 0} className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"><FontAwesomeIcon icon={faArrowUp} /></button>
-                                        <button onClick={() => moveKpiGroup(groupKey, 'down')} disabled={index === kpiGroupOrder.length - 1} className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"><FontAwesomeIcon icon={faArrowDown} /></button>
+                                        <button onClick={() => moveKpiGroup(groupKey, 'up')} disabled={index === 0} className={`p-1.5 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-md hover:bg-gray-100 ${styles.moveButton}`} title="Gruppe nach oben verschieben"><FontAwesomeIcon icon={faArrowUp} /></button>
+                                        <button onClick={() => moveKpiGroup(groupKey, 'down')} disabled={index === kpiGroupOrder.length - 1} className={`p-1.5 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-md hover:bg-gray-100 ${styles.moveButton}`} title="Gruppe nach unten verschieben"><FontAwesomeIcon icon={faArrowDown} /></button>
                                     </div>
                                 </div>
                                 {groupVisibility.visible && (
-                                    <ul className="pl-8 mt-2 space-y-1">
+                                    <ul className="pl-10 mt-2 space-y-1.5"> {/* Etwas mehr Einzug und Abstand */}
                                         {groupDef.kpis.map(kpi => (
                                             <li key={kpi.id} className="flex items-center">
                                                 <input
@@ -253,7 +259,7 @@ function DashboardSettings({ showMessage }) {
                                                     id={`kpi-toggle-${groupKey}-${kpi.id}`}
                                                     checked={groupVisibility.kpis?.[kpi.id] ?? true}
                                                     onChange={() => toggleIndividualKpiVisibility(groupKey, kpi.id)}
-                                                    className="h-4 w-4 text-indigo-500 border-gray-300 rounded focus:ring-indigo-400 mr-2"
+                                                    className="h-4 w-4 text-indigo-500 border-gray-300 rounded focus:ring-indigo-400 mr-2.5" // Größerer Abstand
                                                 />
                                                 <label htmlFor={`kpi-toggle-${groupKey}-${kpi.id}`} className="text-sm text-gray-600 cursor-pointer">{kpi.label}</label>
                                             </li>
@@ -268,7 +274,6 @@ function DashboardSettings({ showMessage }) {
 
             <section className="mb-8">
                 <h3 className="text-lg font-medium text-gray-700 mb-4 font-serif flex items-center">
-                    {/* Hier wird faBullseye verwendet */}
                     <FontAwesomeIcon icon={faBullseye} className="mr-2 text-gray-500" /> KPI Ziele definieren
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 p-4 border border-gray-200 rounded-lg bg-slate-50">
@@ -277,9 +282,10 @@ function DashboardSettings({ showMessage }) {
                         <input
                             type="number"
                             id="monthlyRevenueGoal"
-                            value={kpiGoals.monthlyRevenueGoal || ''}
+                            value={kpiGoals.monthlyRevenueGoal === null ? '' : kpiGoals.monthlyRevenueGoal} // Zeige leeren String für null
                             onChange={(e) => handleGoalChange('monthlyRevenueGoal', e.target.value)}
                             placeholder="z.B. 5000"
+                            min="0" // Verhindert negative Eingaben im Browser
                             className={`mt-1 w-full p-2.5 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`}
                         />
                     </div>
@@ -288,9 +294,10 @@ function DashboardSettings({ showMessage }) {
                         <input
                             type="number"
                             id="monthlyAppointmentsGoal"
-                            value={kpiGoals.monthlyAppointmentsGoal || ''}
+                            value={kpiGoals.monthlyAppointmentsGoal === null ? '' : kpiGoals.monthlyAppointmentsGoal} // Zeige leeren String für null
                             onChange={(e) => handleGoalChange('monthlyAppointmentsGoal', e.target.value)}
                             placeholder="z.B. 100"
+                            min="0"
                             className={`mt-1 w-full p-2.5 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`}
                         />
                     </div>

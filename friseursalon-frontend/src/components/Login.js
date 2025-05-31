@@ -9,14 +9,14 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSignInAlt, faUserPlus, faSpinner, faExclamationCircle } from '@fortawesome/free-solid-svg-icons';
 
 const LoginSchema = Yup.object().shape({
-    email: Yup.string().email("Ungültige E-Mail-Adresse.").required('E-Mail ist erforderlich'), // Geändert von username
+    email: Yup.string().email("Ungültige E-Mail-Adresse.").required('E-Mail ist erforderlich'),
     password: Yup.string().required('Passwort ist erforderlich'),
 });
 
-function Login({ onLoginSuccess }) { // onLoginSuccess prop hinzugefügt
+function Login({ onLoginSuccess }) {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState('');
+    const [message, setMessage] = useState(''); // Für Fehlermeldungen
     const sectionRef = useRef(null);
 
     useEffect(() => {
@@ -39,25 +39,26 @@ function Login({ onLoginSuccess }) { // onLoginSuccess prop hinzugefügt
         };
     }, []);
 
-    const handleLogin = (formValue, { setSubmitting }) => { // setSubmitting von Formik hinzugefügt
-        const { email, password } = formValue; // Geändert von username
+    const handleLogin = (formValue, { setSubmitting }) => {
+        const { email, password } = formValue;
         setMessage('');
         setLoading(true);
+        setSubmitting(true); // Formik informieren
 
-        AuthService.login(email, password).then( // email statt username
-            () => {
+        AuthService.login(email, password).then( // AuthService.login erwartet email und password
+            (userData) => { // AuthService.login gibt jetzt userData zurück
+                setLoading(false);
+                setSubmitting(false);
                 if (typeof onLoginSuccess === 'function') {
-                    onLoginSuccess(); // Callback für App.js aufrufen
+                    onLoginSuccess(userData); // Übergibt die Benutzerdaten an App.js
                 } else {
-                    // Fallback, falls Prop nicht übergeben wurde (sollte aber)
-                    const user = AuthService.getCurrentUser();
-                    if (user && user.roles && user.roles.includes('ROLE_ADMIN')) {
-                        navigate('/my-account?tab=admin-dashboard'); // Ziel für Admin
+                    // Fallback Navigation, falls onLoginSuccess nicht übergeben wurde
+                    if (userData.roles && userData.roles.includes('ROLE_ADMIN')) {
+                        navigate('/my-account?tab=admin-dashboard');
                     } else {
-                        navigate('/my-account'); // Standard-Dashboard für User
+                        navigate('/my-account');
                     }
                 }
-                // window.location.reload(); // Wird nicht mehr benötigt, da App.js den currentUser aktualisiert
             },
             (error) => {
                 const resMessage =
@@ -68,7 +69,7 @@ function Login({ onLoginSuccess }) { // onLoginSuccess prop hinzugefügt
                     error.toString();
                 setLoading(false);
                 setMessage(resMessage);
-                setSubmitting(false); // Formik darüber informieren, dass Submit beendet ist
+                setSubmitting(false);
             }
         );
     };
@@ -89,23 +90,23 @@ function Login({ onLoginSuccess }) { // onLoginSuccess prop hinzugefügt
                 </div>
 
                 <Formik
-                    initialValues={{ email: '', password: '' }} // Geändert von username
+                    initialValues={{ email: '', password: '' }}
                     validationSchema={LoginSchema}
                     onSubmit={handleLogin}
                 >
-                    {({ errors, touched, isSubmitting }) => ( // isSubmitting von Formik
+                    {({ errors, touched, isSubmitting }) => (
                         <Form className="mt-8 space-y-6">
                             <div className={styles.formGroup}>
                                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                                    E-Mail-Adresse {/* Geändert */}
+                                    E-Mail-Adresse
                                 </label>
                                 <Field
-                                    name="email" // Geändert
-                                    type="email"  // Typ auf email geändert
-                                    autoComplete="email" // Geändert
+                                    name="email"
+                                    type="email"
+                                    autoComplete="email"
                                     className={`mt-1 block w-full px-3 py-2 border ${errors.email && touched.email ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`}
                                 />
-                                <ErrorMessage name="email" component="div" className="mt-1 text-xs text-red-600" /> {/* Geändert */}
+                                <ErrorMessage name="email" component="div" className="mt-1 text-xs text-red-600" />
                             </div>
 
                             <div className={styles.formGroup}>
@@ -132,10 +133,10 @@ function Login({ onLoginSuccess }) { // onLoginSuccess prop hinzugefügt
                             <div>
                                 <button
                                     type="submit"
-                                    disabled={loading || isSubmitting} // Auch Formiks isSubmitting verwenden
+                                    disabled={loading || isSubmitting}
                                     className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 ${styles.authButton}`}
                                 >
-                                    {loading || isSubmitting ? ( // Auch Formiks isSubmitting verwenden
+                                    {loading || isSubmitting ? (
                                         <FontAwesomeIcon icon={faSpinner} spin className="mr-2" />
                                     ) : (
                                         <FontAwesomeIcon icon={faSignInAlt} className="mr-2 h-5 w-5 text-indigo-300 group-hover:text-indigo-200" />
@@ -153,8 +154,6 @@ function Login({ onLoginSuccess }) { // onLoginSuccess prop hinzugefügt
                         </Form>
                     )}
                 </Formik>
-                {/* Der "Oder weiter mit" Teil bleibt unverändert, da er OAuth betrifft, was aktuell nicht implementiert ist. */}
-                {/* ... (bestehender OAuth Teil) ... */}
             </div>
         </section>
     );

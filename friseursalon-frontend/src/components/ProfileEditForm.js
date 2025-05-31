@@ -9,7 +9,7 @@ import styles from './ProfileEditForm.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSave, faSpinner, faExclamationCircle, faCheckCircle, faEye, faEyeSlash, faKey, faUserEdit } from '@fortawesome/free-solid-svg-icons';
 
-// Validierungsschemata (bleiben gleich)
+// Validierungsschemata
 const ProfileUpdateSchema = Yup.object().shape({
     username: Yup.string().required("Benutzername ist erforderlich."),
     email: Yup.string().email("Ungültige E-Mail-Adresse.").required("E-Mail ist erforderlich."),
@@ -42,12 +42,13 @@ function ProfileEditForm({ user, onProfileUpdateSuccess, onProfileUpdateError })
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
 
+    // Initialwerte basierend auf dem übergebenen Benutzerobjekt
     const initialProfileValues = {
         username: user?.username || '',
         email: user?.email || '',
         firstName: user?.firstName || '',
         lastName: user?.lastName || '',
-        phone: user?.phone || '',
+        phone: user?.phone || '', // Beachte: Dein Backend User-Modell könnte 'phoneNumber' verwenden
     };
 
     const initialPasswordValues = {
@@ -66,17 +67,23 @@ function ProfileEditForm({ user, onProfileUpdateSuccess, onProfileUpdateError })
             email: formValue.email,
             firstName: formValue.firstName,
             lastName: formValue.lastName,
-            phone: formValue.phone,
+            phone: formValue.phone || null, // Sende null, wenn leer, anstatt leerem String
         };
 
-        AuthService.updateProfile(user.id, profileData)
+        // Der AuthService sollte intern die korrekten API-Pfade verwenden
+        AuthService.updateUserProfile(profileData) // Annahme: updateUserProfile benötigt keine ID mehr separat, wenn sie im Token ist, oder die ID ist im user-Objekt
             .then((response) => {
                 setLoadingProfile(false);
                 setSubmitting(false);
-                setMessageProfile(response.data.message || "Profil erfolgreich aktualisiert!");
+                // Die response-Struktur von AuthService.updateUserProfile ist hier wichtig
+                // In deinem vorherigen Code war es response.message, jetzt response.data.message
+                setMessageProfile(response.data?.message || response.message || "Profil erfolgreich aktualisiert!");
                 setErrorProfile('');
-                if(onProfileUpdateSuccess) onProfileUpdateSuccess(response.data.user);
-                // resetForm({ values: response.data.user }); // Optional: Formular mit neuen Werten zurücksetzen
+                if(onProfileUpdateSuccess) {
+                    // response.user oder response.data.user, je nach Service-Implementierung
+                    onProfileUpdateSuccess(response.data?.user || response.user);
+                }
+                // resetForm({ values: response.data.user }); // Optional
             })
             .catch((error) => {
                 const resMessage =
@@ -95,11 +102,15 @@ function ProfileEditForm({ user, onProfileUpdateSuccess, onProfileUpdateError })
         setMessagePassword('');
         setErrorPassword('');
 
-        AuthService.changePassword(user.id, formValue.currentPassword, formValue.newPassword)
+        // Der AuthService sollte intern die korrekten API-Pfade verwenden
+        AuthService.changeUserPassword({ // Sende ein Objekt, wie in deinem vorherigen Code
+            currentPassword: formValue.currentPassword,
+            newPassword: formValue.newPassword,
+        })
             .then((response) => {
                 setLoadingPassword(false);
                 setSubmitting(false);
-                setMessagePassword(response.data.message || "Passwort erfolgreich geändert!");
+                setMessagePassword(response.data?.message || response.message || "Passwort erfolgreich geändert!");
                 setErrorPassword('');
                 resetForm();
             })
@@ -137,7 +148,6 @@ function ProfileEditForm({ user, onProfileUpdateSuccess, onProfileUpdateError })
         </div>
     );
 
-    // HINZUGEFÜGT: Tailwind-Klasse mx-auto für die Zentrierung
     return (
         <div className={`${styles.profileEditFormContainer} mx-auto`}>
             <h2 className="text-2xl md:text-3xl font-semibold text-gray-800 mb-8 font-serif">Profil bearbeiten</h2>
@@ -146,9 +156,9 @@ function ProfileEditForm({ user, onProfileUpdateSuccess, onProfileUpdateError })
                 initialValues={initialProfileValues}
                 validationSchema={ProfileUpdateSchema}
                 onSubmit={handleProfileUpdate}
-                enableReinitialize
+                enableReinitialize // Wichtig, damit das Formular bei Änderung von 'user' Prop aktualisiert wird
             >
-                {({ errors, touched, isSubmitting }) => (
+                {({ errors, touched, isSubmitting, dirty }) => ( // 'dirty' hinzugefügt für Button-Deaktivierung
                     <Form className={`p-6 md:p-8 bg-white rounded-xl shadow-lg space-y-6 ${styles.formSection}`}>
                         <h3 className="text-xl font-semibold text-gray-700 border-b pb-3 mb-6 font-serif flex items-center">
                             <FontAwesomeIcon icon={faUserEdit} className="mr-3 text-indigo-500" /> Persönliche Daten
@@ -157,27 +167,27 @@ function ProfileEditForm({ user, onProfileUpdateSuccess, onProfileUpdateError })
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                             <div className={styles.formGroup}>
                                 <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">Vorname</label>
-                                <Field name="firstName" type="text" className={`mt-1 block w-full px-3 py-2.5 border ${errors.firstName && touched.firstName ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`} />
+                                <Field name="firstName" type="text" id="firstName" className={`mt-1 block w-full px-3 py-2.5 border ${errors.firstName && touched.firstName ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`} />
                                 <ErrorMessage name="firstName" component="div" className="mt-1 text-xs text-red-600" />
                             </div>
                             <div className={styles.formGroup}>
                                 <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Nachname</label>
-                                <Field name="lastName" type="text" className={`mt-1 block w-full px-3 py-2.5 border ${errors.lastName && touched.lastName ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`} />
+                                <Field name="lastName" type="text" id="lastName" className={`mt-1 block w-full px-3 py-2.5 border ${errors.lastName && touched.lastName ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`} />
                                 <ErrorMessage name="lastName" component="div" className="mt-1 text-xs text-red-600" />
                             </div>
                             <div className={styles.formGroup}>
                                 <label htmlFor="username" className="block text-sm font-medium text-gray-700">Benutzername</label>
-                                <Field name="username" type="text" className={`mt-1 block w-full px-3 py-2.5 border ${errors.username && touched.username ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`} />
+                                <Field name="username" type="text" id="username" className={`mt-1 block w-full px-3 py-2.5 border ${errors.username && touched.username ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`} />
                                 <ErrorMessage name="username" component="div" className="mt-1 text-xs text-red-600" />
                             </div>
                             <div className={styles.formGroup}>
                                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">E-Mail</label>
-                                <Field name="email" type="email" className={`mt-1 block w-full px-3 py-2.5 border ${errors.email && touched.email ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`} />
+                                <Field name="email" type="email" id="email" className={`mt-1 block w-full px-3 py-2.5 border ${errors.email && touched.email ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`} />
                                 <ErrorMessage name="email" component="div" className="mt-1 text-xs text-red-600" />
                             </div>
                             <div className={`md:col-span-2 ${styles.formGroup}`}>
                                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Telefon (optional)</label>
-                                <Field name="phone" type="tel" className={`mt-1 block w-full px-3 py-2.5 border ${errors.phone && touched.phone ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`} />
+                                <Field name="phone" type="tel" id="phone" className={`mt-1 block w-full px-3 py-2.5 border ${errors.phone && touched.phone ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`} />
                                 <ErrorMessage name="phone" component="div" className="mt-1 text-xs text-red-600" />
                             </div>
                         </div>
@@ -196,7 +206,7 @@ function ProfileEditForm({ user, onProfileUpdateSuccess, onProfileUpdateError })
                         <div className="flex justify-end">
                             <button
                                 type="submit"
-                                disabled={loadingProfile || isSubmitting}
+                                disabled={loadingProfile || isSubmitting || !dirty} // Button deaktivieren, wenn nicht geändert
                                 className={`inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-60 ${styles.submitButton}`}
                             >
                                 {loadingProfile ? <FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> : <FontAwesomeIcon icon={faSave} className="mr-2" />}
@@ -211,8 +221,9 @@ function ProfileEditForm({ user, onProfileUpdateSuccess, onProfileUpdateError })
                 initialValues={initialPasswordValues}
                 validationSchema={PasswordChangeSchema}
                 onSubmit={handlePasswordChange}
+                enableReinitialize // Falls initialPasswordValues sich ändern könnten (unwahrscheinlich hier)
             >
-                {({ errors, touched, isSubmitting, dirty }) => (
+                {({ errors, touched, isSubmitting, dirty }) => ( // 'dirty' hinzugefügt
                     <Form className={`mt-10 p-6 md:p-8 bg-white rounded-xl shadow-lg space-y-6 ${styles.formSection}`}>
                         <h3 className="text-xl font-semibold text-gray-700 border-b pb-3 mb-6 font-serif flex items-center">
                             <FontAwesomeIcon icon={faKey} className="mr-3 text-indigo-500" /> Passwort ändern
@@ -247,7 +258,7 @@ function ProfileEditForm({ user, onProfileUpdateSuccess, onProfileUpdateError })
                         <div className="flex justify-end">
                             <button
                                 type="submit"
-                                disabled={loadingPassword || isSubmitting || !dirty}
+                                disabled={loadingPassword || isSubmitting || !dirty} // Button deaktivieren, wenn nicht geändert
                                 className={`inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-60 ${styles.submitButton}`}
                             >
                                 {loadingPassword ? <FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> : <FontAwesomeIcon icon={faKey} className="mr-2" />}
