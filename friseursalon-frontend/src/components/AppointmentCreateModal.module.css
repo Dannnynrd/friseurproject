@@ -1,129 +1,50 @@
-/* src/components/AppointmentCreateModal.module.css or App.css */
+/* friseursalon-frontend/src/components/AppointmentCreateModal.module.css */
 
-.appointment-create-modal-content {
-    width: 90%;
-    max-width: 600px; /* Etwas breiter für mehr Felder */
-    padding: 1.5rem 2rem; /* Mehr Padding */
+.modalContent {
+    /* Tailwind im JS: bg-white rounded-xl shadow-2xl w-full max-w-xl max-h-[95vh] flex flex-col */
 }
 
-.appointment-create-modal-content .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--border-color);
+.formGroup {
+    /* Tailwind im JS: space-y-5 im Formular-Tag, oder spezifische mb-X auf den Gruppen */
 }
 
-.appointment-create-modal-content .modal-header h3 {
-    margin: 0;
-    font-size: 1.4rem;
-    font-family: var(--font-serif);
-    color: var(--dark-text);
-}
-.appointment-create-modal-content .modal-header h3 .svg-inline--fa {
-    margin-right: 0.75rem;
-    color: var(--medium-grey-text);
+.formInput {
+    /* Tailwind im JS: w-full px-3 py-2.5 border border-gray-300 rounded-md shadow-sm ... */
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
-
-.appointment-create-modal-content .modal-close-button {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: var(--medium-grey-text);
-    padding: 0.25rem;
-}
-.appointment-create-modal-content .modal-close-button:hover {
-    color: var(--dark-text);
+.formTextarea {
+    min-height: 70px; /* Mindesthöhe für Textarea */
 }
 
-
-.appointment-create-form .form-section {
-    margin-bottom: 1.75rem;
-    padding-bottom: 1.25rem;
-    border-bottom: 1px dashed var(--border-color-light); /* Leichte Trennung */
-}
-.appointment-create-form .form-section:last-of-type {
-    border-bottom: none;
-    margin-bottom: 1rem;
+.actionButton {
+    /* Tailwind im JS: px-5 py-2.5 border rounded-md text-sm font-medium ... */
 }
 
-.appointment-create-form .form-section h4 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--dark-text);
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-}
-.appointment-create-form .form-section h4 .svg-inline--fa {
-    margin-right: 0.6rem;
-    color: var(--medium-grey-text);
-    font-size: 1rem;
+.saveButton {
+    /* Tailwind im JS: bg-indigo-600 hover:bg-indigo-700 text-white ... */
 }
 
-
-.appointment-create-form .form-group {
-    margin-bottom: 1rem;
+.cancelButton {
+    /* Tailwind im JS: border-gray-300 text-gray-700 bg-white hover:bg-gray-50 ... */
 }
 
-.appointment-create-form .form-group label {
-    display: block;
-    margin-bottom: 0.4rem;
-    font-weight: 500;
-    font-size: 0.9rem;
-    color: var(--medium-grey-text);
+.formMessage {
+    /* Tailwind im JS: p-3 rounded-md border text-sm flex items-center ... */
 }
 
-.appointment-create-form input[type="text"],
-.appointment-create-form input[type="email"],
-.appointment-create-form input[type="tel"],
-.appointment-create-form input[type="date"],
-.appointment-create-form input[type="time"],
-.appointment-create-form select,
-.appointment-create-form textarea {
+.formMessage.error { /* Semantischer Haken */ }
+.formMessage.success { /* Semantischer Haken */ }
+
+/* Anpassung für react-datepicker, falls globale Stile nicht ausreichen
+   oder spezifisch für diese Komponente sein sollen.
+   Oft sind globale Anpassungen in App.css oder index.css besser.
+*/
+:global(.react-datepicker-wrapper),
+:global(.react-datepicker__input-container),
+:global(.react-datepicker__input-container input) { /* Ziel das Input-Feld spezifischer */
+    display: block; /* Stellt sicher, dass der DatePicker die volle Breite einnimmt */
     width: 100%;
-    padding: 0.75rem 0.9rem;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 0.95rem;
-    background-color: var(--light-bg);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.appointment-create-form input:focus-visible,
-.appointment-create-form select:focus-visible,
-.appointment-create-form textarea:focus-visible {
-    border-color: var(--focus-ring-color);
-    box-shadow: 0 0 0 2px var(--focus-ring-subtle-color);
-    outline: none;
-}
-.appointment-create-form input:disabled,
-.appointment-create-form select:disabled,
-.appointment-create-form textarea:disabled {
-    background-color: var(--disabled-bg);
-    cursor: not-allowed;
-    opacity: 0.7;
-}
+/* Die Tailwind-Klassen auf dem DatePicker-Input im JS sollten das meiste Styling übernehmen. */
 
-
-.appointment-create-form .form-grid-halved {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-}
-
-.appointment-create-form .modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border-color);
-}
-.appointment-create-form .modal-actions .button-link,
-.appointment-create-form .modal-actions .button-link-outline {
-    padding: 0.7rem 1.2rem;
-    font-size: 0.9rem;
-}

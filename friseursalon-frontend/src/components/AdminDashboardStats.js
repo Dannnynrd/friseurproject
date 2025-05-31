@@ -1,8 +1,7 @@
 // Datei: friseursalon-frontend/src/components/AdminDashboardStats.js
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import api from '../services/api.service';
-// Korrekter Import für CSS-Module
-import styles from './AdminDashboardStats.module.css';
+import styles from './AdminDashboardStats.module.css'; // Korrekter modularer Import
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faChartLine, faCalendarCheck, faSpinner, faUsers,
@@ -34,13 +33,12 @@ import RevenueOverTimeRechart from './charts/RevenueOverTimeRechart';
 import AppointmentsByHourRechart from './charts/AppointmentsByHourRechart';
 
 const AppointmentsByEmployeeRechart = ({ title }) => (
-    // Tailwind für Karten-Styling hier anwenden
     <div className="p-4 bg-white rounded-lg shadow">
-        <h4 className={`text-md font-semibold text-gray-700 mb-2 flex items-center ${styles.chartTitle || 'chart-title'}`}> {/* Fallback für CSS-Modul */}
+        <h4 className={`text-md font-semibold text-gray-700 mb-2 flex items-center ${styles.chartTitle}`}>
             <FontAwesomeIcon icon={faUsersGear} className="mr-2 text-gray-500" />
             {title || 'Termine / Mitarbeiter'}
         </h4>
-        <p className={`text-sm text-gray-500 ${styles.chartNoDataMessage || 'chart-no-data-message'}`}>
+        <p className={`text-sm text-gray-500 ${styles.chartNoDataMessage}`}>
             Dieses Diagramm wird relevant, sobald mehrere Mitarbeiter verwaltet werden.
             <br/><small>(Benötigt zukünftige Backend-Anpassung)</small>
         </p>
@@ -147,17 +145,17 @@ const CustomDateRangeModal = ({ isOpen, onClose, startDate, endDate, onStartDate
     if (!isOpen) return null;
 
     return (
-        <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1070] p-4 ${styles.customDatePickersModalOverlay || 'custom-date-pickers-modal-overlay'}`} onClick={onClose}>
-            <div className={`bg-white p-6 rounded-lg shadow-xl w-auto min-w-[300px] max-w-2xl relative ${styles.customDatePickersModalContent || 'custom-date-pickers-modal-content'}`} onClick={(e) => e.stopPropagation()}>
+        <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1070] p-4 ${styles.customDatePickersModalOverlay}`} onClick={onClose}>
+            <div className={`bg-white p-6 rounded-lg shadow-xl w-auto min-w-[300px] max-w-2xl relative ${styles.customDatePickersModalContent}`} onClick={(e) => e.stopPropagation()}>
                 <button
-                    className={`absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-1 rounded-full ${styles.modalCloseButton || 'modal-close-button'}`}
+                    className={`absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-1 rounded-full ${styles.modalCloseButton}`}
                     onClick={onClose}
                     aria-label="Schließen"
                 >
                     <FontAwesomeIcon icon={faTimes} size="lg"/>
                 </button>
                 <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center pb-2 border-b border-gray-200">Benutzerdefinierten Zeitraum wählen</h4>
-                <div className={`flex flex-col sm:flex-row gap-4 justify-center ${styles.customDatePickersInline || 'custom-date-pickers-inline'}`}>
+                <div className={`flex flex-col sm:flex-row gap-4 justify-center ${styles.customDatePickersInline}`}>
                     <DatePicker
                         selected={startDate}
                         onChange={onStartDateChange}
@@ -167,7 +165,7 @@ const CustomDateRangeModal = ({ isOpen, onClose, startDate, endDate, onStartDate
                         dateFormat="dd.MM.yyyy"
                         locale="de"
                         placeholderText="Startdatum"
-                        className={`w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 ${styles.datePickerInput || 'date-picker-input'}`}
+                        className={`w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 ${styles.datePickerInput}`}
                         maxDate={addMonths(new Date(), 12)}
                         inline
                     />
@@ -182,11 +180,11 @@ const CustomDateRangeModal = ({ isOpen, onClose, startDate, endDate, onStartDate
                         dateFormat="dd.MM.yyyy"
                         locale="de"
                         placeholderText="Enddatum"
-                        className={`w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 ${styles.datePickerInput || 'date-picker-input'}`}
+                        className={`w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 ${styles.datePickerInput}`}
                         inline
                     />
                 </div>
-                <div className={`flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 ${styles.customDateModalActions || 'custom-date-modal-actions'}`}>
+                <div className={`flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 ${styles.customDateModalActions}`}>
                     <button
                         onClick={onClose}
                         className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
@@ -311,9 +309,6 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
 
     const firstUpdateTopNServices = useRef(true);
 
-    // fetchMainStatsAndCharts als useCallback definieren
-    // Der Name wurde zu fetchMainStatsAndCharts_Memoized geändert, um Konflikte zu vermeiden,
-    // falls die ursprüngliche Funktion noch irgendwo referenziert wird (obwohl sie jetzt durch diese ersetzt werden sollte).
     const fetchMainStatsAndCharts_Memoized = useCallback(async (startDate, endDate) => {
         setIsLoadingStats(true);
         let currentError = '';
@@ -410,7 +405,8 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
             setError(currentError.trim());
             setIsLoadingStats(false);
         }
-    }, [selectedPeriod, topNServicesConfig, showCustomDatePickersModal]); // Abhängigkeiten von fetchMainStatsAndCharts_Memoized
+    }, [selectedPeriod, topNServicesConfig, showCustomDatePickersModal, currentFilterStartDate, currentFilterEndDate]); // Hinzugefügt: currentFilterStartDate, currentFilterEndDate
+
 
     useEffect(() => {
         if (firstUpdateTopNServices.current) {
@@ -419,9 +415,35 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         }
         localStorage.setItem(TOP_N_SERVICES_STORAGE_KEY, topNServicesConfig.toString());
         showAndClearCustomizationMessage("Top N Services aktualisiert.");
-        // Rufe die memoized Version auf
         fetchMainStatsAndCharts_Memoized(currentFilterStartDate, currentFilterEndDate);
-    }, [topNServicesConfig, currentFilterStartDate, currentFilterEndDate, fetchMainStatsAndCharts_Memoized]); // fetchMainStatsAndCharts_Memoized als Abhängigkeit
+    }, [topNServicesConfig, currentFilterStartDate, currentFilterEndDate, fetchMainStatsAndCharts_Memoized]); // Korrigiert und fetchMainStatsAndCharts_Memoized hinzugefügt
+
+    const handleGoalChange = (goalKey, value) => {
+        const numericValue = value === '' ? null : Number(value);
+        if (value === '' || (!isNaN(numericValue) && numericValue >= 0)) {
+            setKpiGoals(prev => ({ ...prev, [goalKey]: numericValue }));
+            showAndClearCustomizationMessage("KPI Ziel angepasst.");
+        }
+    };
+    const toggleKpiGroupVisibility = (groupKey) => {
+        setKpiVisibility(prev => ({ ...prev, [groupKey]: { ...prev[groupKey], visible: !prev[groupKey].visible } }));
+        showAndClearCustomizationMessage("KPI Gruppe Sichtbarkeit geändert.");
+    };
+    const toggleIndividualKpiVisibility = (groupKey, kpiId) => {
+        setKpiVisibility(prev => ({ ...prev, [groupKey]: { ...prev[groupKey], kpis: { ...prev[groupKey].kpis, [kpiId]: !prev[groupKey].kpis[kpiId] } } }));
+        showAndClearCustomizationMessage("KPI Sichtbarkeit geändert.");
+    };
+
+    const moveKpiGroup = (groupKey, direction) => {
+        setKpiGroupOrder(prevOrder => {
+            const currentIndex = prevOrder.indexOf(groupKey); if (currentIndex === -1) return prevOrder;
+            const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+            if (newIndex < 0 || newIndex >= prevOrder.length) return prevOrder;
+            const newOrder = [...prevOrder]; [newOrder[currentIndex], newOrder[newIndex]] = [newOrder[newIndex], newOrder[currentIndex]];
+            return newOrder;
+        });
+        showAndClearCustomizationMessage("KPI Gruppenreihenfolge geändert.");
+    };
 
 
     const fetchActivityAndUpcoming = useCallback(async () => {
@@ -497,21 +519,22 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
 
     const renderComparison = (changePercentageInput, previousValue, isGrowthGood = true) => {
         const hasPreviousData = previousValue !== null && previousValue !== undefined && !isNaN(parseFloat(previousValue));
-        let changeText = 'vs. Vorp.: N/A'; let icon = faEquals; let colorClass = 'neutral';
+        let changeText = 'vs. Vorp.: N/A'; let icon = faEquals;
+        let colorClass = styles.neutral; // Standard CSS-Modul Klasse
         const changePercentage = Number(changePercentageInput);
 
         if (hasPreviousData && parseFloat(previousValue) !== 0) {
             if (!isNaN(changePercentage) && changePercentageInput !== null) {
                 icon = changePercentage > 0 ? faArrowUp : (changePercentage < 0 ? faArrowDown : faEquals);
-                colorClass = changePercentage > 0 ? (isGrowthGood ? 'positive' : 'negative') : (changePercentage < 0 ? (isGrowthGood ? 'negative' : 'positive') : 'neutral');
+                colorClass = changePercentage > 0 ? (isGrowthGood ? styles.positive : styles.negative) : (changePercentage < 0 ? (isGrowthGood ? styles.negative : styles.positive) : styles.neutral);
                 changeText = `${changePercentage > 0 ? '+' : ''}${changePercentage.toFixed(1).replace('.', ',')}%`;
             }
         } else if (hasPreviousData && parseFloat(previousValue) === 0 && !isNaN(changePercentage) && changePercentage > 0) {
-            changeText = 'vs. 0'; icon = faArrowUp; colorClass = 'positive';
+            changeText = 'vs. 0'; icon = faArrowUp; colorClass = styles.positive;
         } else if (hasPreviousData && parseFloat(previousValue) === 0 && (isNaN(changePercentage) || changePercentage === 0)) {
             changeText = 'vs. 0';
         }
-        return <span className={`comparison-data ${colorClass}`}><FontAwesomeIcon icon={icon} /> {changeText}</span>;
+        return <span className={`${styles.comparisonData} ${colorClass}`}><FontAwesomeIcon icon={icon} /> {changeText}</span>;
     };
 
     const KpiCard = ({ label, value, icon, iconClass, comparison, tooltipText, isMain = false, goalValue, isCurrency = false, isPercentage = false }) => {
@@ -528,7 +551,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         return (
             <div className={`bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow duration-200 ${styles.statCard} ${isMain ? styles.mainKpi : styles.smallKpi}`} title={cardTitleTooltip}>
                 <div className={`flex items-center text-gray-500 mb-1 ${styles.statCardHeader}`}>
-                    <FontAwesomeIcon icon={icon} className={`w-4 h-4 mr-2 ${styles.statIcon} ${iconClass ? styles[iconClass] : ''}`} />
+                    <FontAwesomeIcon icon={icon} className={`w-4 h-4 mr-2 ${styles.statIcon} ${iconClass && styles[iconClass] ? styles[iconClass] : ''}`} />
                     <span className={`text-xs font-medium uppercase tracking-wider ${styles.statLabel}`}>{label}</span>
                     {tooltipText && (
                         <span className={`ml-auto relative ${styles.kpiTooltipWrapper}`} data-tooltip={tooltipText}>
@@ -554,12 +577,12 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         if (isLoadingStats && !detailedStats) {
             return (<div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ${styles.statsOverviewCards} ${styles.kpiGroup}`}>
                 {Array(4).fill(0).map((_, i) => (
-                    <div key={`skel-main-${i}`} className={`bg-white p-4 rounded-lg shadow animate-pulse ${styles.statCard} ${styles.mainKpi}`}>
-                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div> <div className="h-8 bg-gray-300 rounded w-1/2 mb-1"></div> <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    <div key={`skel-main-${i}`} className={`bg-white p-4 rounded-lg shadow animate-pulse ${styles.statCard} ${styles.mainKpi} ${styles.isLoadingSkeleton}`}>
+                        <div className={styles.statCardHeaderSkeleton}></div> <div className={`${styles.statValueSkeleton} ${styles.large}`}></div> <div className={styles.statComparisonSkeleton}></div>
                     </div>))}
                 {Array(6).fill(0).map((_, i) => (
-                    <div key={`skel-small-${i}`} className={`bg-white p-4 rounded-lg shadow animate-pulse ${styles.statCard} ${styles.smallKpi}`}>
-                        <div className="h-3 bg-gray-200 rounded w-2/3 mb-2"></div> <div className="h-6 bg-gray-300 rounded w-1/3"></div>
+                    <div key={`skel-small-${i}`} className={`bg-white p-4 rounded-lg shadow animate-pulse ${styles.statCard} ${styles.smallKpi} ${styles.isLoadingSkeleton}`}>
+                        <div className={styles.statCardHeaderSkeleton}></div> <div className={styles.statValueSkeleton}></div>
                     </div>))}
             </div>);
         }
@@ -663,7 +686,8 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
 
 
     return (
-        <div className={`p-4 sm:p-6 lg:p-8 bg-slate-50 min-h-full ${styles.adminDashboardStats}`}>
+        <div className={`p-4 sm:p-6 lg:p-8 bg-slate-50 min-h-full ${styles.adminDashboardStats}`}> {/* Hauptcontainer mit Tailwind */}
+            {/* Filterleiste mit Tailwind */}
             <div className={`flex flex-wrap items-center gap-2 sm:gap-3 mb-6 p-3 bg-white rounded-lg shadow ${styles.statsPeriodFilterBar}`}>
                 <div className={`flex flex-wrap gap-1.5 ${styles.periodButtonsMain}`}>
                     {MAIN_PERIOD_OPTIONS.map(key => (
@@ -740,16 +764,20 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                 </div>
             }
 
+            {/* Haupt-Grid-Layout mit Tailwind */}
             <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 ${styles.dashboardGridLayout}`}>
+                {/* Hauptspalte für KPIs und Diagramme */}
                 <div className={`lg:col-span-2 space-y-6 ${styles.mainStatsColumn}`}>
-                    <div className={`bg-white p-5 rounded-xl shadow-lg ${styles.statsOverviewCardsWrapper} ${styles.statsSectionBox}`}>
+                    {/* KPI Karten Sektion mit Tailwind */}
+                    <div className={`bg-white p-5 rounded-xl shadow-lg ${styles.statsSectionBox} ${styles.statsOverviewCardsWrapper}`}>
                         <h3 className={`text-lg font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200 flex items-center justify-between ${styles.statsSectionTitle}`}>
                             <span><FontAwesomeIcon icon={faChartLine} className="mr-2 text-indigo-500" /> Kennzahlen</span>
                             <span className={`text-xs font-normal text-gray-500 ${styles.statsPeriodDisplay}`}>({activeDateRangeLabel.startsWith("Custom:") || activeDateRangeLabel.startsWith("Zeitraum:") ? activeDateRangeLabel.replace(/Custom:|Zeitraum:/g, "").trim() : activeDateRangeLabel})</span>
                         </h3>
                         {renderStatCards()}
                     </div>
-                    <div className={`bg-white p-5 rounded-xl shadow-lg ${styles.chartsSectionWrapper} ${styles.statsSectionBox}`}>
+                    {/* Diagramm Sektion mit Tailwind */}
+                    <div className={`bg-white p-5 rounded-xl shadow-lg ${styles.statsSectionBox} ${styles.chartsSectionWrapper}`}>
                         <div className={`flex justify-between items-center mb-4 pb-2 border-b border-gray-200 ${styles.sectionHeaderWithExport}`}>
                             <h3 className={`text-lg font-semibold text-gray-700 flex items-center ${styles.statsSectionTitle}`}>
                                 <FontAwesomeIcon icon={faChartPie} className="mr-2 text-indigo-500" /> Visuelle Analysen
@@ -778,8 +806,9 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                     </div>
                 </div>
 
+                {/* Sidebar-Spalte mit Tailwind */}
                 <div className={`space-y-6 ${styles.sidebarStatsColumn}`}>
-                    <div className={`bg-white p-5 rounded-xl shadow-lg ${styles.quickAccessSection} ${styles.statsSectionBox}`}>
+                    <div className={`bg-white p-5 rounded-xl shadow-lg ${styles.statsSectionBox} ${styles.quickAccessSection}`}>
                         <h3 className={`text-base font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200 flex items-center ${styles.statsSectionTitle} ${styles.smallTitle}`}>
                             <FontAwesomeIcon icon={faBolt} className="mr-2 text-indigo-500" /> Schnellzugriff & Aktivität
                         </h3>
@@ -796,7 +825,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                             </div>
                         </div>
                     </div>
-                    <div className={`bg-white p-5 rounded-xl shadow-lg ${styles.salonHighlightsSection} ${styles.statsSectionBox}`}>
+                    <div className={`bg-white p-5 rounded-xl shadow-lg ${styles.statsSectionBox} ${styles.salonHighlightsSection}`}>
                         <h3 className={`text-base font-semibold text-gray-700 mb-2 pb-2 border-b border-gray-200 flex items-center justify-between ${styles.statsSectionTitle} ${styles.smallTitle}`}>
                             <span><FontAwesomeIcon icon={faBullseye} className="mr-2 text-indigo-500" /> Wichtige Veränderungen</span>
                             <span className={`text-xs font-normal text-gray-500 ${styles.statsPeriodDisplay}`}>(vs. Vorp.)</span>
@@ -808,7 +837,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                         </h3>
                         {renderDashboardAlerts()}
                     </div>
-                    <div className={`bg-white p-5 rounded-xl shadow-lg ${styles.dailyAppointmentsSection} ${styles.statsSectionBox}`}>
+                    <div className={`bg-white p-5 rounded-xl shadow-lg ${styles.statsSectionBox} ${styles.dailyAppointmentsSection}`}>
                         <div className={`flex justify-between items-center mb-3 pb-2 border-b border-gray-200 ${styles.sectionHeaderWithExport}`}>
                             <h3 className={`text-base font-semibold text-gray-700 flex items-center ${styles.dailyAppointmentsHeading}`}>
                                 <FontAwesomeIcon icon={faListAlt} className="mr-2 text-indigo-500" /> Heutige & Nächste Termine
