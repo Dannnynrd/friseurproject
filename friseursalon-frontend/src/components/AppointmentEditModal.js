@@ -8,7 +8,11 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import styles from './AppointmentEditModal.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faSave, faSpinner, faExclamationCircle, faCheckCircle, faUser, faCut, faClock, faEnvelope, faStickyNote, faCalendarAlt, faTrashAlt, faEdit } from '@fortawesome/free-solid-svg-icons';
+import {
+  faTimes, faSave, faSpinner, faExclamationCircle, faCheckCircle,
+  faUser, faCut, faClock, faEnvelope, faStickyNote, faCalendarAlt,
+  faTrashAlt, faEdit, faTimesCircle // faTimesCircle HIER HINZUGEFÜGT
+} from '@fortawesome/free-solid-svg-icons';
 import { parseISO, format as formatDateFns, isValid as isValidDateFns } from 'date-fns';
 import ConfirmModal from './ConfirmModal';
 
@@ -41,7 +45,7 @@ function AppointmentEditModal({ isOpen, onClose, onSave, appointmentData, adminV
   const [loadingTimeSlots, setLoadingTimeSlots] = useState(false);
 
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [success, setSuccess] = useState(''); // setSuccessMessage wurde zu setSuccess umbenannt/konsolidiert
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
@@ -132,6 +136,7 @@ function AppointmentEditModal({ isOpen, onClose, onSave, appointmentData, adminV
         setFieldValue('appointmentTime', '');
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, services, appointmentData?.id, fetchAvailableTimeSlotsInternal, formikRef.current?.values?.appointmentDate, formikRef.current?.values?.serviceId, formikRef.current?.values?.duration]);
 
 
@@ -144,22 +149,18 @@ function AppointmentEditModal({ isOpen, onClose, onSave, appointmentData, adminV
     const [hours, minutes] = values.appointmentTime.split(':');
     appointmentDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
 
-    const selectedServiceForPayload = services.find(s => s.id.toString() === values.serviceId);
+    // const selectedServiceForPayload = services.find(s => s.id.toString() === values.serviceId); // Nicht verwendet
 
     const payload = {
-      // serviceId: parseInt(values.serviceId, 10), // Backend erwartet ein Service-Objekt
-      service: { id: parseInt(values.serviceId, 10) }, // Korrekt: Objekt mit ID
-      startTime: appointmentDateTime.toISOString(), // Geändert von appointmentTime
+      service: { id: parseInt(values.serviceId, 10) },
+      startTime: appointmentDateTime.toISOString(),
       notes: values.notes,
       status: values.status,
-      // Preis und Dauer werden jetzt vom Frontend mitgeschickt, Backend sollte sie verwenden
-      // oder basierend auf serviceId validieren/überschreiben
       price: parseFloat(values.price),
-      durationMinutes: parseInt(values.duration, 10), // Konsistent mit Backend Service Model
-      // customer Objekt muss hier mitgesendet werden, da das Backend es erwartet
+      durationMinutes: parseInt(values.duration, 10),
       customer: {
-        id: appointmentData.customer.id, // ID des existierenden Kunden
-        email: appointmentData.customer.email, // Email ist wichtig für findOrCreateCustomer
+        id: appointmentData.customer.id,
+        email: appointmentData.customer.email,
         firstName: appointmentData.customer.firstName,
         lastName: appointmentData.customer.lastName,
         phoneNumber: appointmentData.customer.phoneNumber
@@ -167,9 +168,8 @@ function AppointmentEditModal({ isOpen, onClose, onSave, appointmentData, adminV
     };
 
     try {
-      // Geändert: /api/appointments/{id} statt /api/appointments/admin/{id}
       await api.put(`/api/appointments/${appointmentData.id}`, payload);
-      setSuccess('Termin erfolgreich aktualisiert!');
+      setSuccess('Termin erfolgreich aktualisiert!'); // setSuccess verwenden
       if (typeof onSave === 'function') {
         onSave();
       }
@@ -187,13 +187,12 @@ function AppointmentEditModal({ isOpen, onClose, onSave, appointmentData, adminV
 
   const handleCancelAppointment = async () => {
     setShowConfirmCancelModal(false);
-    setIsCancelling(true); // Ladezustand für Stornierung
+    setIsCancelling(true);
     setError('');
     setSuccess('');
     try {
-      // Geändert: DELETE /api/appointments/{id} statt PUT /api/appointments/{id}/cancel
       await api.delete(`/api/appointments/${appointmentData.id}`);
-      setSuccessMessage('Termin erfolgreich storniert!');
+      setSuccess('Termin erfolgreich storniert!'); // KORREKTUR: setSuccessMessage zu setSuccess
       if (typeof onSave === 'function') {
         onSave();
       }
@@ -212,7 +211,7 @@ function AppointmentEditModal({ isOpen, onClose, onSave, appointmentData, adminV
   useEffect(() => {
     if (isOpen) {
       setError('');
-      setSuccess('');
+      setSuccess(''); // setSuccessMessage zu setSuccess
     }
   }, [isOpen]);
 
@@ -391,9 +390,9 @@ function AppointmentEditModal({ isOpen, onClose, onSave, appointmentData, adminV
                           <FontAwesomeIcon icon={faExclamationCircle} className="mr-2 flex-shrink-0" /> {error}
                         </div>
                     )}
-                    {success && (
+                    {success && ( // KORREKTUR: message zu success
                         <div className={`p-3 rounded-md bg-green-50 text-green-600 border border-green-200 text-sm flex items-center ${styles.formMessage} ${styles.success}`}>
-                          <FontAwesomeIcon icon={faCheckCircle} className="mr-2 flex-shrink-0" /> {success}
+                          <FontAwesomeIcon icon={faCheckCircle} className="mr-2 flex-shrink-0" /> {success} {/* KORREKTUR: message zu success */}
                         </div>
                     )}
 
@@ -405,7 +404,7 @@ function AppointmentEditModal({ isOpen, onClose, onSave, appointmentData, adminV
                               disabled={isSubmittingForm || isSubmitting || isCancelling}
                               className={`w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 border border-red-500 text-sm font-medium rounded-md text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-60 ${styles.actionButton} ${styles.cancelAppointmentButton}`}
                           >
-                            <FontAwesomeIcon icon={isCancelling ? faSpinner : faTimesCircle} spin={isCancelling} className="mr-2" />
+                            <FontAwesomeIcon icon={isCancelling ? faSpinner : faTimesCircle} spin={isCancelling} className="mr-2" /> {/* KORREKTUR: faTrashAlt zu faTimesCircle (oder importiere faTrashAlt zusätzlich) */}
                             Termin stornieren
                           </button>
                       )}
