@@ -1,63 +1,30 @@
 /* friseursalon-frontend/src/components/HeroSection.module.css */
 
-/*
-  Diese Datei enthält Stile, die spezifisch für die HeroSection sind
-  und nicht einfach durch Tailwind-Utility-Klassen abgedeckt werden können,
-  oder wenn Eigenschaften  die Komplexität der Selektoren oderdies erfordert.
-*/
-
 .heroBackground {
-    /* Das Hintergrundbild und der Overlay-Effekt werden hier definiert,
-       da dies spezifisch für diese Sektion ist und ggf. komplexere
-       Layering-Techniken erfordert, die über einfache Tailwind-Klassen hinausgehen.
-       Die min-height wird jetzt über Tailwind-Klassen im JS gesetzt.
-    */
     background: url('https://images.pexels.com/photos/3065171/pexels-photo-3065171.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2') no-repeat center center;
     background-size: cover;
-    /* Der Textschatten wird hier belassen, da er spezifisch für den Kontrast zum Hintergrund ist. */
-    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    /* Tailwind-Klassen für Positionierung und Höhe werden im JS gesetzt. */
 }
 
-.heroBackground::after {
-    content: '';
-    position: absolute;
-    inset: 0; /* Kurzform für top:0, right:0, bottom:0, left:0 */
-    background: rgba(255,255,255,0.05); /* Leichter Overlay für den Texteffekt */
-    z-index: 0; /* Stellt sicher, dass der Overlay hinter dem Inhalt liegt */
+/* Wir verwenden hier einen einfachen Textschatten, den man auch über tailwind.config.js definieren könnte */
+:global(.text-shadow) {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+:global(.text-shadow-sm) {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.heroContent {
-    /*
-      Die Tailwind-Klassen 'container mx-auto px-6 relative z-10 max-w-3xl'
-      übernehmen bereits das meiste Layout.
-      Spezifische Stile für .heroContent, die nicht von Tailwind abgedeckt werden,
-      könnten hier hinzugefügt werden. Momentan nicht viel benötigt.
-    */
+.dynamicServiceInfo {
+    /* Tailwind-Klassen im JS: inline-flex items-center bg-white/10 backdrop-blur-sm ... */
 }
 
-.heroTitle {
-    /*
-      Tailwind-Klassen (text-4xl sm:text-5xl etc., leading-tight, font-medium, text-dark-text)
-      übernehmen die Typografie.
-      'font-serif' wird über die Tailwind-Konfiguration angewendet.
-      Spezifische Textschatten oder komplexe Text-Effekte könnten hier bleiben.
-    */
-    /* Beispiel: Falls ein spezifischer Textschatten benötigt wird, der nicht leicht mit Tailwind geht: */
-    /* text-shadow: 1px 1px 3px rgba(0,0,0,0.2); */
+/* Fallback-Animationen, falls die globalen nicht greifen */
+.animate-up {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
-
-.heroSubtitle {
-    /*
-      Tailwind-Klassen (text-base sm:text-lg etc., mt-5, max-w-md, text-medium-grey-text)
-      übernehmen die Typografie und Abstände.
-      'font-sans' wird über die Tailwind-Konfiguration angewendet.
-    */
+.animate-up.visible {
+    opacity: 1;
+    transform: translateY(0);
 }
-
-/*
-  Die Animationsklassen .animate-up und .visible werden weiterhin
-  global in App.css oder index.css definiert, da sie potenziell
-  von mehreren Komponenten genutzt werden.
-  Wenn sie absolut spezifisch für HeroSection wären, könnten sie auch hier sein.
-*/
-

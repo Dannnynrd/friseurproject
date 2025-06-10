@@ -1,12 +1,12 @@
 // friseursalon-frontend/src/components/Login.js
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom'; // useLocation hinzugefügt
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import AuthService from '../services/auth.service';
 import styles from './Login.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSignInAlt, faUserPlus, faSpinner, faExclamationCircle } from '@fortawesome/free-solid-svg-icons';
+import { faSignInAlt, faSpinner, faExclamationCircle, faCheckCircle } from '@fortawesome/free-solid-svg-icons'; // faCheckCircle hinzugefügt
 
 const LoginSchema = Yup.object().shape({
     email: Yup.string().email("Ungültige E-Mail-Adresse.").required('E-Mail ist erforderlich'),
@@ -15,11 +15,19 @@ const LoginSchema = Yup.object().shape({
 
 function Login({ onLoginSuccess }) {
     const navigate = useNavigate();
+    const location = useLocation(); // Hook, um auf den Navigationsstatus zuzugreifen
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState(''); // Für Fehlermeldungen
+    const [message, setMessage] = useState(''); // Für Fehler- UND Erfolgsmeldungen
+    const [isError, setIsError] = useState(false); // Um zwischen Fehler und Erfolg zu unterscheiden
     const sectionRef = useRef(null);
 
     useEffect(() => {
+        // KORREKTUR: Prüfen, ob eine Nachricht von der Registrierungsseite mitgegeben wurde
+        if (location.state && location.state.message) {
+            setMessage(location.state.message);
+            setIsError(false); // Dies ist eine Erfolgs-/Info-Nachricht
+        }
+        // Animation-Observer
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -37,39 +45,31 @@ function Login({ onLoginSuccess }) {
                 observer.unobserve(currentSectionRef);
             }
         };
-    }, []);
+    }, [location.state]);
 
     const handleLogin = (formValue, { setSubmitting }) => {
         const { email, password } = formValue;
         setMessage('');
+        setIsError(false);
         setLoading(true);
-        setSubmitting(true); // Formik informieren
+        setSubmitting(true);
 
-        AuthService.login(email, password).then( // AuthService.login erwartet email und password
-            (userData) => { // AuthService.login gibt jetzt userData zurück
+        AuthService.login(email, password).then(
+            (userData) => {
                 setLoading(false);
                 setSubmitting(false);
                 if (typeof onLoginSuccess === 'function') {
-                    onLoginSuccess(userData); // Übergibt die Benutzerdaten an App.js
+                    onLoginSuccess(userData);
                 } else {
-                    // Fallback Navigation, falls onLoginSuccess nicht übergeben wurde
-                    if (userData.roles && userData.roles.includes('ROLE_ADMIN')) {
-                        navigate('/my-account?tab=admin-dashboard');
-                    } else {
-                        navigate('/my-account');
-                    }
+                    navigate(userData.roles?.includes('ROLE_ADMIN') ? '/my-account?tab=admin-dashboard' : '/my-account');
                 }
             },
             (error) => {
-                const resMessage =
-                    (error.response &&
-                        error.response.data &&
-                        error.response.data.message) ||
-                    error.message ||
-                    error.toString();
+                const resMessage = (error.response?.data?.message) || error.message || error.toString();
                 setLoading(false);
-                setMessage(resMessage);
                 setSubmitting(false);
+                setMessage(resMessage);
+                setIsError(true);
             }
         );
     };
@@ -78,9 +78,7 @@ function Login({ onLoginSuccess }) {
         <section ref={sectionRef} className={`flex items-center justify-center min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8 ${styles.loginPageContainer}`}>
             <div className={`w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-2xl animate-up ${styles.authContainer}`}>
                 <div>
-                    <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 font-serif">
-                        Anmelden
-                    </h2>
+                    <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 font-serif">Anmelden</h2>
                     <p className="mt-2 text-center text-sm text-gray-600">
                         Oder{' '}
                         <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500 hover:underline">
@@ -89,6 +87,14 @@ function Login({ onLoginSuccess }) {
                     </p>
                 </div>
 
+                {/* KORREKTUR: Nachrichtenanzeige außerhalb der Formik-Form, um sie permanent anzuzeigen */}
+                {message && (
+                    <div className={`p-3 rounded-md text-sm flex items-center ${isError ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200'} ${styles.formMessage}`}>
+                        <FontAwesomeIcon icon={isError ? faExclamationCircle : faCheckCircle} className="mr-2" />
+                        {message}
+                    </div>
+                )}
+
                 <Formik
                     initialValues={{ email: '', password: '' }}
                     validationSchema={LoginSchema}
@@ -96,6 +102,7 @@ function Login({ onLoginSuccess }) {
                 >
                     {({ errors, touched, isSubmitting }) => (
                         <Form className="mt-8 space-y-6">
+                            {/* Formularfelder bleiben wie bisher */}
                             <div className={styles.formGroup}>
                                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                                     E-Mail-Adresse
@@ -136,21 +143,10 @@ function Login({ onLoginSuccess }) {
                                     disabled={loading || isSubmitting}
                                     className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 ${styles.authButton}`}
                                 >
-                                    {loading || isSubmitting ? (
-                                        <FontAwesomeIcon icon={faSpinner} spin className="mr-2" />
-                                    ) : (
-                                        <FontAwesomeIcon icon={faSignInAlt} className="mr-2 h-5 w-5 text-indigo-300 group-hover:text-indigo-200" />
-                                    )}
+                                    {loading || isSubmitting ? <FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> : <FontAwesomeIcon icon={faSignInAlt} className="mr-2 h-5 w-5 text-indigo-300 group-hover:text-indigo-200" />}
                                     Anmelden
                                 </button>
                             </div>
-
-                            {message && (
-                                <div className={`mt-4 p-3 rounded-md bg-red-50 text-red-700 border border-red-200 text-sm flex items-center ${styles.formMessage} ${styles.error}`}>
-                                    <FontAwesomeIcon icon={faExclamationCircle} className="mr-2" />
-                                    {message}
-                                </div>
-                            )}
                         </Form>
                     )}
                 </Formik>

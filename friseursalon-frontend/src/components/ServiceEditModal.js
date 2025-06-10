@@ -1,7 +1,7 @@
 // friseursalon-frontend/src/components/ServiceEditModal.js
 import React, { useState, useEffect } from 'react';
-import api from '../services/api.service'; // Verwende die konfigurierte Axios-Instanz
-import styles from './ServiceEditModal.module.css'; // CSS-Modul importieren
+import api from '../services/api.service';
+import styles from './ServiceEditModal.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faSave, faSpinner, faExclamationCircle, faCheckCircle, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
@@ -14,7 +14,8 @@ const ServiceSchema = Yup.object().shape({
         .typeError('Preis muss eine Zahl sein.')
         .required('Preis ist erforderlich.')
         .positive('Preis muss positiv sein.'),
-    duration: Yup.number() // duration statt durationMinutes, um konsistent mit Backend-Modell zu sein
+    // KORREKTUR: Feldname im Schema auf 'duration' geändert für Konsistenz im Formular
+    duration: Yup.number()
         .typeError('Dauer muss eine Zahl sein.')
         .required('Dauer ist erforderlich.')
         .integer('Dauer muss eine ganze Zahl sein.')
@@ -35,7 +36,8 @@ function ServiceEditModal({ isOpen, onClose, onSave, serviceData }) {
         name: serviceData?.name || '',
         description: serviceData?.description || '',
         price: serviceData?.price || '',
-        duration: serviceData?.duration || '', // duration statt durationMinutes
+        // KORREKTUR: Initialwert vom Backend-Feld 'durationMinutes' auf das Formularfeld 'duration' mappen
+        duration: serviceData?.durationMinutes || '',
     };
 
     const handleSubmit = async (values, { setSubmitting, resetForm }) => {
@@ -43,19 +45,18 @@ function ServiceEditModal({ isOpen, onClose, onSave, serviceData }) {
         setMessage('');
         setError('');
 
+        // KORREKTUR: Payload wird jetzt korrekt mit `durationMinutes` erstellt
         const payload = {
             name: values.name,
             description: values.description,
             price: parseFloat(values.price),
-            duration: parseInt(values.duration, 10), // duration statt durationMinutes
+            durationMinutes: parseInt(values.duration, 10), // Hier wird von 'duration' auf 'durationMinutes' gemappt
         };
 
         try {
             if (isEditing) {
-                // KORREKTUR HIER: 'services/' statt '/api/services/'
                 await api.put(`services/${serviceData.id}`, payload);
             } else {
-                // KORREKTUR HIER: 'services' statt '/api/services'
                 await api.post('services', payload);
             }
             setMessage(isEditing ? 'Dienstleistung erfolgreich aktualisiert!' : 'Dienstleistung erfolgreich erstellt!');
@@ -116,7 +117,7 @@ function ServiceEditModal({ isOpen, onClose, onSave, serviceData }) {
                                     id="name"
                                     className={`w-full px-3 py-2.5 border ${errors.name && touched.name ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`}
                                 />
-                                <ErrorMessage name="name" component="div" className="mt-1 text-xs text-red-500" />
+                                <ErrorMessage name="name" component="div" className="mt-1 text-xs text-red-600" />
                             </div>
 
                             <div className={styles.formGroup}>
@@ -128,7 +129,7 @@ function ServiceEditModal({ isOpen, onClose, onSave, serviceData }) {
                                     rows="3"
                                     className={`w-full px-3 py-2.5 border ${errors.description && touched.description ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput} ${styles.formTextarea}`}
                                 />
-                                <ErrorMessage name="description" component="div" className="mt-1 text-xs text-red-500" />
+                                <ErrorMessage name="description" component="div" className="mt-1 text-xs text-red-600" />
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
@@ -141,7 +142,7 @@ function ServiceEditModal({ isOpen, onClose, onSave, serviceData }) {
                                         step="0.01"
                                         className={`w-full px-3 py-2.5 border ${errors.price && touched.price ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`}
                                     />
-                                    <ErrorMessage name="price" component="div" className="mt-1 text-xs text-red-500" />
+                                    <ErrorMessage name="price" component="div" className="mt-1 text-xs text-red-600" />
                                 </div>
                                 <div className={styles.formGroup}>
                                     <label htmlFor="duration" className="block text-sm font-medium text-gray-700 mb-1">Dauer (Minuten)</label>
@@ -151,7 +152,7 @@ function ServiceEditModal({ isOpen, onClose, onSave, serviceData }) {
                                         id="duration"
                                         className={`w-full px-3 py-2.5 border ${errors.duration && touched.duration ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`}
                                     />
-                                    <ErrorMessage name="duration" component="div" className="mt-1 text-xs text-red-500" />
+                                    <ErrorMessage name="duration" component="div" className="mt-1 text-xs text-red-600" />
                                 </div>
                             </div>
 

@@ -1,166 +1,78 @@
 /* friseursalon-frontend/src/components/Header.module.css */
 
 .siteHeader {
-    /* Die Höhe wird im JS durch h-16 md:h-20 gesetzt */
+    /* Basiskontrolle für Höhe und Positionierung wird durch Tailwind-Klassen im JS gehandhabt. */
 }
 
 .headerInitial {
-    /* Stile für den Header, wenn er oben auf der Seite ist (transparent) */
-    /* Die Textfarben für diesen Zustand werden im JS dynamisch gesetzt */
+    /* Stile für den transparenten Zustand oben auf der Seite */
 }
 
 .headerScrolled {
-    /* Stile für den Header, wenn gescrollt wurde oder das mobile Menü offen ist */
-    /* Tailwind-Klassen im JS: bg-white/95 shadow-lg backdrop-blur-md */
-    /* --header-height-desktop und --header-height-mobile sind in App.css definiert. */
-    /* height: var(--header-height-desktop); */ /* Feste Höhe, falls gewünscht */
+    /* Stile für den gescrollten, soliden Zustand. Tailwind im JS: bg-white/95 shadow-md backdrop-blur-sm */
 }
-/* @media (max-width: 767px) {
-  .headerScrolled {
-    height: var(--header-height-mobile);
-  }
-} */
-
 
 .logo {
-    /* Tailwind: text-2xl font-bold font-serif transition-colors duration-300 */
-    /* Farbe wird dynamisch im JS gesetzt */
+    /* Tailwind: text-2xl font-bold font-serif etc. */
 }
 
-/* --- Navigationslinks Desktop --- */
+/* Navigationslinks Desktop */
 .navLinkItem {
     position: relative;
-    padding-top: 0.5rem; /* Etwas mehr Platz oben */
-    padding-bottom: 0.75rem; /* Mehr Platz unten für die Linie */
-    margin-left: 0.25rem; /* Tailwind: space-x-1 oder space-x-2 im Parent */
-    margin-right: 0.25rem;
+    padding-bottom: 0.5rem; /* Platz für den animierten Unterstrich */
 }
 
-.initialLinkText { /* Für transparente Header-Variante */
-    color: theme('colors.white'); /* Standardmäßig weiß */
-}
-.scrolledLinkText { /* Für gescrollte Header-Variante */
-    color: theme('colors.gray.700'); /* Dunkleres Grau */
-}
-.navLinkItem:hover .scrolledLinkText, /* Sicherstellen, dass Hover auch auf gescrolltem Text greift */
-.navLinkItem:hover .initialLinkText {
-    /* Die Hover-Farbe wird durch text-${accentColor} im JS gesetzt */
+.initialLinkText {
+    color: white;
 }
 
+.scrolledLinkText {
+    color: #4B5563; /* Tailwind: text-gray-600 */
+}
 
-/* Unterstrich-Animation für Desktop-Links */
 .navLinkItem::after {
     content: '';
     position: absolute;
-    bottom: 4px; /* Position des Unterstrichs anpassen */
-    left: 0.75rem; /* Tailwind: px-3 */
-    right: 0.75rem; /* Tailwind: px-3 */
+    bottom: 0;
+    left: 0;
+    right: 0;
     height: 2px;
-    background-color: currentColor; /* Nimmt die Akzentfarbe des Links an (wird im JS gesetzt) */
-    opacity: 0;
+    background-color: currentColor; /* Nimmt die Farbe des Links an (wird von Tailwind gesetzt) */
     transform: scaleX(0);
-    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+    transition: transform 0.25s ease-out;
+    transform-origin: center;
 }
 
 .navLinkItem:hover::after,
-.activeNavLink::after { /* .activeNavLink wird im JS für den aktiven Link gesetzt */
-    opacity: 1;
+.activeNavLink::after {
     transform: scaleX(1);
 }
-.activeNavLink {
-    /* Die Textfarbe wird im JS durch text-${accentColor} gesetzt */
-}
 
-
-/* --- User Menu Desktop --- */
-.userMenuButton {
-    /* Tailwind: flex items-center text-sm rounded-full ... */
-}
-.userMenuButton svg { /* Icon Farbe */
-    /* Farbe wird dynamisch im JS gesetzt */
-}
-
+/* User Menu Desktop */
 .dropdownMenu {
-    z-index: 60;
-    /* Tailwind: absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 origin-top-right ring-1 ring-black ring-opacity-5 */
-    /* Tailwind Animation: opacity-0 invisible group-hover:opacity-100 group-hover:visible ... transform scale-95 group-hover:scale-100 */
-}
-.dropdownItem {
-    /* Tailwind: block px-4 py-2 text-sm ... */
-}
-.dropdownItem svg {
-    opacity: 0.7;
-}
-.dropdownItem:hover svg {
-    opacity: 1;
+    /* Tailwind für Sichtbarkeit und Animation: opacity-0 invisible group-hover:opacity-100 etc. */
 }
 
-
-/* --- Auth Link & CTA Desktop --- */
-.initialAuthLink { /* Für transparente Header-Variante */
-    /* Tailwind: border border-white/80 text-white hover:bg-white/10 */
-}
-.scrolledAuthLink { /* Für gescrollte Header-Variante */
-    /* Tailwind: border border-gray-300 text-gray-700 hover:bg-gray-50 */
-}
-
-.initialCta { /* Für transparente Header-Variante */
-    /* Tailwind: text-dark-text bg-white hover:bg-gray-100 */
-}
-.scrolledCta { /* Für gescrollte Header-Variante */
-    /* Tailwind: text-white bg-${accentColor} hover:bg-indigo-700 */
-}
-
-
-/* --- Mobile Menu --- */
-.mobileMenuToggle {
-    /* Farben werden dynamisch im JS gesetzt */
-}
-.mobileMenuToggleInitial svg {
-    /* color: theme('colors.white'); */ /* Falls spezifische Farbe für Icon im initialen Zustand */
-}
-.mobileMenuToggleScrolled svg {
-    /* color: theme('colors.gray.800'); */ /* Falls spezifische Farbe für Icon im gescrollten Zustand */
-}
-
+/* Mobile Menu */
 .mobileMenu {
-    background-color: white; /* Heller Hintergrund für das mobile Menü */
+    background-color: white;
     max-height: 0;
-    overflow-y: auto; /* Scrollbar, falls Inhalt länger ist */
-    opacity: 0;
+    overflow: hidden;
     position: absolute;
     top: 100%;
     left: 0;
     right: 0;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1); /* Deutlicherer Schatten */
-    transform: translateY(-20px); /* Startet etwas weiter oben */
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
     transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.3s ease-in-out,
-    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    padding-bottom: env(safe-area-inset-bottom, 1rem); /* Für iPhone X Notch etc. */
+    opacity 0.3s ease-in-out;
+    opacity: 0;
 }
 
 .mobileMenuOpen {
-    max-height: calc(100vh - theme('spacing.16')); /* Höhe des Headers abziehen (h-16) */
+    max-height: calc(100vh - 4rem); /* Höhe des Headers abziehen */
     opacity: 1;
-    transform: translateY(0);
 }
 
 .mobileNavLinkItem {
-    /* Tailwind: block px-3 py-2 rounded-md text-base font-medium ... */
-    /* Farben werden im JS gesetzt */
+    /* Basis-Stile werden durch Tailwind im JS gesetzt */
 }
-.mobileNavLinkItem svg { /* Icons im mobilen Menü */
-    opacity: 0.8;
-}
-
-.mobileNavCta {
-    /* Tailwind: block w-full text-center px-4 py-3 ... */
-}
-
-
-/* Globale Klasse für Body, wenn mobiles Menü offen ist */
-:global(body.mobileMenuActive) {
-    overflow: hidden;
-}
-
