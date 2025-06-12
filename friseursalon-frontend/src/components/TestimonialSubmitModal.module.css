@@ -1,0 +1,65 @@
+/* friseursalon-frontend/src/components/TestimonialSubmitModal.module.css */
+
+.modalContent {
+    /* Basis-Stile über Tailwind im JS */
+}
+
+.formGroup {
+    margin-bottom: 1.25rem;
+}
+
+.formInput,
+.formTextarea {
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.formTextarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.actionButton:disabled {
+    cursor: not-allowed;
+}
+
+.formMessage {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.starRatingInput {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+    font-size: 1.75rem; /* Größere Sterne */
+}
+
+.starIcon {
+    color: #cbd5e1; /* Tailwind: text-gray-300 */
+    cursor: pointer;
+    transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.starIcon:hover,
+.starIcon.hover {
+    color: #fcd34d; /* Tailwind: text-amber-300 */
+    transform: scale(1.15);
+}
+
+.starIcon.selected {
+    color: #f59e0b; /* Tailwind: text-amber-500 */
+}
+
+.starIcon.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.starIcon.disabled:hover {
+    color: #cbd5e1;
+    transform: none;
+}

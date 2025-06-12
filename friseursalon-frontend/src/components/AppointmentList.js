@@ -3,11 +3,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api.service';
 import styles from './AppointmentList.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCalendarCheck, faSpinner, faExclamationTriangle, faInfoCircle, faTimesCircle, faEdit, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
-import { format, parseISO } from 'date-fns';
+import { faCalendarCheck, faSpinner, faExclamationTriangle, faInfoCircle, faTimesCircle, faEdit, faTrashAlt, faStar } from '@fortawesome/free-solid-svg-icons';
+import { format, parseISO, isPast } from 'date-fns';
 import { de } from 'date-fns/locale';
-import AppointmentEditModal from './AppointmentEditModal'; // Importieren, falls Benutzer Termine bearbeiten können
-import ConfirmModal from './ConfirmModal'; // Für die Stornierungsbestätigung
+import AppointmentEditModal from './AppointmentEditModal';
+import ConfirmModal from './ConfirmModal';
+import TestimonialSubmitModal from './TestimonialSubmitModal'; // Import des neuen Modals
 
 function AppointmentList({ refreshTrigger, onAppointmentAction }) {
     const [appointments, setAppointments] = useState([]);
@@ -17,8 +18,12 @@ function AppointmentList({ refreshTrigger, onAppointmentAction }) {
 
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedAppointmentForEdit, setSelectedAppointmentForEdit] = useState(null);
+
     const [showConfirmCancelModal, setShowConfirmCancelModal] = useState(false);
     const [appointmentToCancel, setAppointmentToCancel] = useState(null);
+
+    const [showTestimonialModal, setShowTestimonialModal] = useState(false);
+    const [appointmentToReview, setAppointmentToReview] = useState(null);
 
 
     const fetchAppointments = useCallback(async () => {
@@ -26,7 +31,6 @@ function AppointmentList({ refreshTrigger, onAppointmentAction }) {
         setError(null);
         setSuccessMessage('');
         try {
-            // KORREKTUR: Relativer Pfad
             const response = await api.get('appointments/my-appointments');
             setAppointments(response.data || []);
         } catch (err) {
@@ -54,7 +58,7 @@ function AppointmentList({ refreshTrigger, onAppointmentAction }) {
 
     const handleAppointmentUpdated = () => {
         handleCloseEditModal();
-        fetchAppointments(); // Termine neu laden
+        fetchAppointments();
         setSuccessMessage("Termin erfolgreich aktualisiert.");
         if (onAppointmentAction) onAppointmentAction();
     };
@@ -69,10 +73,9 @@ function AppointmentList({ refreshTrigger, onAppointmentAction }) {
         setError(null);
         setSuccessMessage('');
         try {
-            // KORREKTUR: Relativer Pfad
             await api.delete(`appointments/${appointmentToCancel}`);
             setSuccessMessage("Termin erfolgreich storniert.");
-            fetchAppointments(); // Liste neu laden
+            fetchAppointments();
             if (onAppointmentAction) onAppointmentAction();
         } catch (err) {
             console.error("Error cancelling appointment:", err);
@@ -83,6 +86,16 @@ function AppointmentList({ refreshTrigger, onAppointmentAction }) {
         }
     };
 
+    const handleReviewAppointment = (appointment) => {
+        setAppointmentToReview(appointment);
+        setShowTestimonialModal(true);
+    };
+
+    const handleTestimonialSubmitted = () => {
+        // Hier könnten wir den Status des Termins lokal aktualisieren, um den "Bewerten"-Button auszublenden,
+        // oder einfach die Liste neu laden. Fürs Erste laden wir neu.
+        fetchAppointments();
+    };
 
     const formatAppointmentDate = (dateString) => {
         try {
@@ -142,49 +155,48 @@ function AppointmentList({ refreshTrigger, onAppointmentAction }) {
                                             app.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
                                                 app.status === 'CANCELLED' ? 'bg-red-100 text-red-700 line-through' :
                                                     app.status === 'COMPLETED' ? 'bg-gray-100 text-gray-600' :
-                                                        'bg-blue-100 text-blue-700' // Default/Fallback
+                                                        'bg-blue-100 text-blue-700'
                                     } ${styles.statusBadge}`}>
                                         {app.status === 'PENDING' ? 'Ausstehend' :
                                             app.status === 'CONFIRMED' ? 'Bestätigt' :
                                                 app.status === 'COMPLETED' ? 'Abgeschlossen' :
                                                     app.status === 'CANCELLED' ? 'Storniert' : app.status}
                                     </span>
-                                    {/* Nur Bearbeiten/Stornieren für PENDING oder CONFIRMED Termine */}
-                                    {(app.status === 'PENDING' || app.status === 'CONFIRMED') && (
-                                        <div className="mt-2 sm:mt-0 flex space-x-2">
-                                            <button
-                                                onClick={() => handleEditAppointment(app)}
-                                                className={`p-1.5 text-xs text-indigo-600 hover:text-indigo-800 rounded-md hover:bg-indigo-50 transition-colors ${styles.actionButton}`}
-                                                title="Termin bearbeiten"
-                                            >
-                                                <FontAwesomeIcon icon={faEdit} />
-                                                <span className="ml-1 hidden sm:inline">Bearbeiten</span>
+                                    <div className="mt-2 sm:mt-0 flex space-x-2">
+                                        {(app.status === 'PENDING' || (app.status === 'CONFIRMED' && !isPast(parseISO(app.startTime)))) && (
+                                            <>
+                                                <button onClick={() => handleEditAppointment(app)} className={`p-1.5 text-xs text-indigo-600 hover:text-indigo-800 rounded-md hover:bg-indigo-50 transition-colors ${styles.actionButton}`} title="Termin bearbeiten">
+                                                    <FontAwesomeIcon icon={faEdit} />
+                                                </button>
+                                                <button onClick={() => confirmCancelAppointment(app.id)} className={`p-1.5 text-xs text-red-500 hover:text-red-700 rounded-md hover:bg-red-50 transition-colors ${styles.actionButton}`} title="Termin stornieren">
+                                                    <FontAwesomeIcon icon={faTrashAlt} />
+                                                </button>
+                                            </>
+                                        )}
+                                        {app.status === 'COMPLETED' && (
+                                            <button onClick={() => handleReviewAppointment(app)} className={`inline-flex items-center px-3 py-1.5 border border-amber-500 text-xs font-medium rounded-md text-amber-700 bg-amber-100 hover:bg-amber-200 ${styles.actionButton}`} title="Bewertung abgeben">
+                                                <FontAwesomeIcon icon={faStar} className="mr-1.5" />
+                                                Bewerten
                                             </button>
-                                            <button
-                                                onClick={() => confirmCancelAppointment(app.id)}
-                                                className={`p-1.5 text-xs text-red-500 hover:text-red-700 rounded-md hover:bg-red-50 transition-colors ${styles.actionButton}`}
-                                                title="Termin stornieren"
-                                            >
-                                                <FontAwesomeIcon icon={faTrashAlt} />
-                                                <span className="ml-1 hidden sm:inline">Stornieren</span>
-                                            </button>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </li>
                     ))}
                 </ul>
             )}
+
             {showEditModal && selectedAppointmentForEdit && (
                 <AppointmentEditModal
                     isOpen={showEditModal}
                     onClose={handleCloseEditModal}
                     onSave={handleAppointmentUpdated}
                     appointmentData={selectedAppointmentForEdit}
-                    adminView={false} // Benutzeransicht
+                    adminView={false}
                 />
             )}
+
             {showConfirmCancelModal && (
                 <ConfirmModal
                     isOpen={showConfirmCancelModal}
@@ -195,6 +207,15 @@ function AppointmentList({ refreshTrigger, onAppointmentAction }) {
                     confirmButtonText="Ja, stornieren"
                     icon={faTimesCircle}
                     iconColorClass="text-red-500"
+                />
+            )}
+
+            {showTestimonialModal && appointmentToReview && (
+                <TestimonialSubmitModal
+                    isOpen={showTestimonialModal}
+                    onClose={() => setShowTestimonialModal(false)}
+                    onSubmitted={handleTestimonialSubmitted}
+                    appointment={appointmentToReview}
                 />
             )}
         </div>
