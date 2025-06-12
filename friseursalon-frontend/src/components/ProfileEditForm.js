@@ -1,35 +1,31 @@
-// friseursalon-frontend/src/components/ProfileEditForm.js
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import AuthService from '../services/auth.service';
-// EventBus wird hier nicht direkt verwendet, aber AuthService könnte es intern nutzen
-// import EventBus from '../common/EventBus';
 import styles from './ProfileEditForm.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSave, faSpinner, faExclamationCircle, faCheckCircle, faEye, faEyeSlash, faKey, faUserEdit } from '@fortawesome/free-solid-svg-icons';
 
-// Validierungsschemata
+// Schema für die Profildaten-Aktualisierung
 const ProfileUpdateSchema = Yup.object().shape({
-    username: Yup.string().required("Benutzername ist erforderlich."),
-    email: Yup.string().email("Ungültige E-Mail-Adresse.").required("E-Mail ist erforderlich."),
-    firstName: Yup.string().required("Vorname ist erforderlich."),
-    lastName: Yup.string().required("Nachname ist erforderlich."),
-    phone: Yup.string().matches(/^[0-9+\-\s()]*$/, "Ungültige Telefonnummer.").notRequired(),
+    firstName: Yup.string().required('Vorname ist erforderlich.'),
+    lastName: Yup.string().required('Nachname ist erforderlich.'),
+    phoneNumber: Yup.string().matches(/^[0-9+\-\s()]*$/, "Ungültige Telefonnummer.").notRequired(),
 });
 
+// Schema für die Passwortänderung
 const PasswordChangeSchema = Yup.object().shape({
     currentPassword: Yup.string().required("Aktuelles Passwort ist erforderlich."),
     newPassword: Yup.string()
         .required("Neues Passwort ist erforderlich.")
         .min(6, "Das neue Passwort muss mindestens 6 Zeichen lang sein."),
     confirmNewPassword: Yup.string()
-        .oneOf([Yup.ref('newPassword'), null], "Passwörter müssen übereinstimmen.")
-        .required("Bestätigung des neuen Passworts ist erforderlich."),
+        .oneOf([Yup.ref('newPassword'), null], 'Passwörter müssen übereinstimmen.')
+        .required('Bestätigung des neuen Passworts ist erforderlich.'),
 });
 
-
 function ProfileEditForm({ user, onProfileUpdateSuccess, onProfileUpdateError }) {
+    // State-Hooks für beide Formulare
     const [loadingProfile, setLoadingProfile] = useState(false);
     const [messageProfile, setMessageProfile] = useState('');
     const [errorProfile, setErrorProfile] = useState('');
@@ -38,17 +34,17 @@ function ProfileEditForm({ user, onProfileUpdateSuccess, onProfileUpdateError })
     const [messagePassword, setMessagePassword] = useState('');
     const [errorPassword, setErrorPassword] = useState('');
 
+    // State für die Sichtbarkeit der Passwortfelder
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
 
-    // Initialwerte basierend auf dem übergebenen Benutzerobjekt
+    // Initialwerte für die Formulare, basierend auf dem aktuellen Benutzer
     const initialProfileValues = {
-        username: user?.username || '',
         email: user?.email || '',
         firstName: user?.firstName || '',
         lastName: user?.lastName || '',
-        phone: user?.phone || '', // Beachte: Dein Backend User-Modell könnte 'phoneNumber' verwenden
+        phoneNumber: user?.phoneNumber || '',
     };
 
     const initialPasswordValues = {
@@ -63,37 +59,26 @@ function ProfileEditForm({ user, onProfileUpdateSuccess, onProfileUpdateError })
         setErrorProfile('');
 
         const profileData = {
-            username: formValue.username,
-            email: formValue.email,
             firstName: formValue.firstName,
             lastName: formValue.lastName,
-            phone: formValue.phone || null, // Sende null, wenn leer, anstatt leerem String
+            phoneNumber: formValue.phoneNumber,
         };
 
-        // Der AuthService sollte intern die korrekten API-Pfade verwenden
-        AuthService.updateUserProfile(profileData) // Annahme: updateUserProfile benötigt keine ID mehr separat, wenn sie im Token ist, oder die ID ist im user-Objekt
+        AuthService.updateProfile(profileData)
             .then((response) => {
-                setLoadingProfile(false);
-                setSubmitting(false);
-                // Die response-Struktur von AuthService.updateUserProfile ist hier wichtig
-                // In deinem vorherigen Code war es response.message, jetzt response.data.message
-                setMessageProfile(response.data?.message || response.message || "Profil erfolgreich aktualisiert!");
-                setErrorProfile('');
-                if(onProfileUpdateSuccess) {
-                    // response.user oder response.data.user, je nach Service-Implementierung
-                    onProfileUpdateSuccess(response.data?.user || response.user);
+                setMessageProfile(response.message || "Profil erfolgreich aktualisiert!");
+                if (onProfileUpdateSuccess) {
+                    onProfileUpdateSuccess();
                 }
-                // resetForm({ values: response.data.user }); // Optional
             })
             .catch((error) => {
-                const resMessage =
-                    (error.response && error.response.data && error.response.data.message) ||
-                    error.message || error.toString();
+                const resMessage = (error.response?.data?.message) || error.message || error.toString();
+                setErrorProfile(resMessage);
+                if (onProfileUpdateError) onProfileUpdateError(resMessage);
+            })
+            .finally(() => {
                 setLoadingProfile(false);
                 setSubmitting(false);
-                setErrorProfile(resMessage);
-                setMessageProfile('');
-                if(onProfileUpdateError) onProfileUpdateError(resMessage);
             });
     };
 
@@ -102,33 +87,26 @@ function ProfileEditForm({ user, onProfileUpdateSuccess, onProfileUpdateError })
         setMessagePassword('');
         setErrorPassword('');
 
-        // Der AuthService sollte intern die korrekten API-Pfade verwenden
-        AuthService.changeUserPassword({ // Sende ein Objekt, wie in deinem vorherigen Code
-            currentPassword: formValue.currentPassword,
-            newPassword: formValue.newPassword,
-        })
+        AuthService.changePassword(formValue.currentPassword, formValue.newPassword)
             .then((response) => {
-                setLoadingPassword(false);
-                setSubmitting(false);
-                setMessagePassword(response.data?.message || response.message || "Passwort erfolgreich geändert!");
-                setErrorPassword('');
+                setMessagePassword(response.message || "Passwort erfolgreich geändert!");
                 resetForm();
             })
             .catch((error) => {
-                const resMessage =
-                    (error.response && error.response.data && error.response.data.message) ||
-                    error.message || error.toString();
+                const resMessage = (error.response?.data?.message) || error.message || error.toString();
+                setErrorPassword(resMessage);
+            })
+            .finally(() => {
                 setLoadingPassword(false);
                 setSubmitting(false);
-                setErrorPassword(resMessage);
-                setMessagePassword('');
             });
     };
 
     if (!user) {
-        return <p className="text-center text-gray-500 p-8">Benutzerdaten werden geladen...</p>;
+        return <p className="p-8 text-center text-gray-600">Benutzerdaten werden geladen...</p>;
     }
 
+    // ... rest of the component ...
     const renderPasswordField = (name, placeholder, showPassword, setShowPassword, errors, touched) => (
         <div className="relative">
             <Field
@@ -156,9 +134,9 @@ function ProfileEditForm({ user, onProfileUpdateSuccess, onProfileUpdateError })
                 initialValues={initialProfileValues}
                 validationSchema={ProfileUpdateSchema}
                 onSubmit={handleProfileUpdate}
-                enableReinitialize // Wichtig, damit das Formular bei Änderung von 'user' Prop aktualisiert wird
+                enableReinitialize
             >
-                {({ errors, touched, isSubmitting, dirty }) => ( // 'dirty' hinzugefügt für Button-Deaktivierung
+                {({ errors, touched, isSubmitting, dirty }) => (
                     <Form className={`p-6 md:p-8 bg-white rounded-xl shadow-lg space-y-6 ${styles.formSection}`}>
                         <h3 className="text-xl font-semibold text-gray-700 border-b pb-3 mb-6 font-serif flex items-center">
                             <FontAwesomeIcon icon={faUserEdit} className="mr-3 text-indigo-500" /> Persönliche Daten
@@ -166,29 +144,23 @@ function ProfileEditForm({ user, onProfileUpdateSuccess, onProfileUpdateError })
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                             <div className={styles.formGroup}>
-                                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">Vorname</label>
+                                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">Vorname*</label>
                                 <Field name="firstName" type="text" id="firstName" className={`mt-1 block w-full px-3 py-2.5 border ${errors.firstName && touched.firstName ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`} />
                                 <ErrorMessage name="firstName" component="div" className="mt-1 text-xs text-red-600" />
                             </div>
                             <div className={styles.formGroup}>
-                                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Nachname</label>
+                                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Nachname*</label>
                                 <Field name="lastName" type="text" id="lastName" className={`mt-1 block w-full px-3 py-2.5 border ${errors.lastName && touched.lastName ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`} />
                                 <ErrorMessage name="lastName" component="div" className="mt-1 text-xs text-red-600" />
                             </div>
-                            <div className={styles.formGroup}>
-                                <label htmlFor="username" className="block text-sm font-medium text-gray-700">Benutzername</label>
-                                <Field name="username" type="text" id="username" className={`mt-1 block w-full px-3 py-2.5 border ${errors.username && touched.username ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`} />
-                                <ErrorMessage name="username" component="div" className="mt-1 text-xs text-red-600" />
-                            </div>
-                            <div className={styles.formGroup}>
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-700">E-Mail</label>
-                                <Field name="email" type="email" id="email" className={`mt-1 block w-full px-3 py-2.5 border ${errors.email && touched.email ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`} />
-                                <ErrorMessage name="email" component="div" className="mt-1 text-xs text-red-600" />
+                            <div className={`md:col-span-2 ${styles.formGroup}`}>
+                                <label htmlFor="email" className="block text-sm font-medium text-gray-700">E-Mail (nicht änderbar)</label>
+                                <Field name="email" type="email" id="email" disabled className={`mt-1 block w-full px-3 py-2.5 border border-gray-300 bg-gray-100 rounded-md shadow-sm sm:text-sm text-gray-500 ${styles.formInput}`} />
                             </div>
                             <div className={`md:col-span-2 ${styles.formGroup}`}>
-                                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Telefon (optional)</label>
-                                <Field name="phone" type="tel" id="phone" className={`mt-1 block w-full px-3 py-2.5 border ${errors.phone && touched.phone ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`} />
-                                <ErrorMessage name="phone" component="div" className="mt-1 text-xs text-red-600" />
+                                <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">Telefon (optional)</label>
+                                <Field name="phoneNumber" type="tel" id="phoneNumber" className={`mt-1 block w-full px-3 py-2.5 border ${errors.phoneNumber && touched.phoneNumber ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${styles.formInput}`} />
+                                <ErrorMessage name="phoneNumber" component="div" className="mt-1 text-xs text-red-600" />
                             </div>
                         </div>
 
@@ -206,7 +178,7 @@ function ProfileEditForm({ user, onProfileUpdateSuccess, onProfileUpdateError })
                         <div className="flex justify-end">
                             <button
                                 type="submit"
-                                disabled={loadingProfile || isSubmitting || !dirty} // Button deaktivieren, wenn nicht geändert
+                                disabled={loadingProfile || isSubmitting || !dirty}
                                 className={`inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-60 ${styles.submitButton}`}
                             >
                                 {loadingProfile ? <FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> : <FontAwesomeIcon icon={faSave} className="mr-2" />}
@@ -221,9 +193,8 @@ function ProfileEditForm({ user, onProfileUpdateSuccess, onProfileUpdateError })
                 initialValues={initialPasswordValues}
                 validationSchema={PasswordChangeSchema}
                 onSubmit={handlePasswordChange}
-                enableReinitialize // Falls initialPasswordValues sich ändern könnten (unwahrscheinlich hier)
             >
-                {({ errors, touched, isSubmitting, dirty }) => ( // 'dirty' hinzugefügt
+                {({ errors, touched, isSubmitting, dirty }) => (
                     <Form className={`mt-10 p-6 md:p-8 bg-white rounded-xl shadow-lg space-y-6 ${styles.formSection}`}>
                         <h3 className="text-xl font-semibold text-gray-700 border-b pb-3 mb-6 font-serif flex items-center">
                             <FontAwesomeIcon icon={faKey} className="mr-3 text-indigo-500" /> Passwort ändern
@@ -258,7 +229,7 @@ function ProfileEditForm({ user, onProfileUpdateSuccess, onProfileUpdateError })
                         <div className="flex justify-end">
                             <button
                                 type="submit"
-                                disabled={loadingPassword || isSubmitting || !dirty} // Button deaktivieren, wenn nicht geändert
+                                disabled={loadingPassword || isSubmitting || !dirty}
                                 className={`inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-60 ${styles.submitButton}`}
                             >
                                 {loadingPassword ? <FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> : <FontAwesomeIcon icon={faKey} className="mr-2" />}

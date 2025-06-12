@@ -1,44 +1,31 @@
 /* friseursalon-frontend/src/components/AdminTestimonialManagement.module.css */
 
-/*
-  Da die AdminTestimonialManagement-Komponente primär mit Tailwind CSS gestylt wird,
-  enthält dieses Modul möglicherweise nur sehr spezifische Stile oder bleibt leer.
-*/
-
 .testimonialManagementContainer {
-    /* Tailwind im JS: bg-white p-4 sm:p-6 rounded-xl shadow-lg */
+    max-width: 900px;
+    margin: auto;
 }
 
 .message {
-    /* Tailwind im JS: mb-4 p-3 rounded-md border text-sm flex items-center */
+    animation: fadeIn 0.3s ease-in-out;
 }
 
-.noTestimonials {
-    /* Tailwind im JS: text-center py-8 px-6 bg-slate-50 rounded-lg */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .testimonialCard {
-    /* Tailwind im JS: p-5 rounded-lg shadow-md border ...
-       Dynamische Farben für border und Hintergrund je nach 'approved'-Status.
-    */
     transition: box-shadow 0.2s ease-in-out;
 }
 .testimonialCard:hover {
-    box-shadow: theme('boxShadow.lg'); /* Tailwind: shadow-lg */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .testimonialComment {
-    /* Tailwind im JS: text-gray-700 text-sm italic mb-4 leading-relaxed */
-    /* 'word-break: break-word;' ist oft nützlich für längere Kommentare ohne Leerzeichen,
-       aber Tailwind's `break-words` utility kann das auch.
-       Beispiel: className="break-words ..."
-    */
-    white-space: pre-wrap; /* Erhält Zeilenumbrüche aus dem Kommentar */
+    white-space: pre-wrap;
+    word-break: break-word;
 }
-
 
 .actionButton {
-    /* Tailwind im JS: inline-flex items-center px-3 py-1.5 border text-xs font-medium rounded-md ... */
-    /* Farben und spezifische Hover-Effekte werden direkt im JS mit Tailwind gesetzt. */
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }
-

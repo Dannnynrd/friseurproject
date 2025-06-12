@@ -1,30 +1,9 @@
 /* friseursalon-frontend/src/components/ProfileEditForm.module.css */
 
 .profileEditFormContainer {
-    display: block;
-    max-width: 768px; /* Tailwind-Äquivalent: max-w-3xl */
-    /* margin-left: auto;  WIRD ENTFERNT - Tailwind mx-auto übernimmt das */
-    /* margin-right: auto; WIRD ENTFERNT - Tailwind mx-auto übernimmt das */
-    width: 100%; /* Stellt sicher, dass es die Breite bis zum max-width ausnutzt,
-                  wichtig für die korrekte Funktion von mx-auto im Elternelement.
-                  Wenn das Elternelement (main im Dashboard) bereits flex-Eigenschaften hat,
-                  die die Breite des Kindes beeinflussen, könnte dies auch ohne width: 100% funktionieren.
-                  Aber es schadet nicht, es explizit zu setzen. */
-
-    /* Debugging-Hinweise bleiben relevant, falls es immer noch nicht zentriert ist:
-       1. Überprüfen Sie, ob die Klasse `styles.profileEditFormContainer` UND die Tailwind-Klasse `mx-auto`
-          korrekt auf das HTML-Element in Ihrer ProfileEditForm.js-Datei angewendet werden.
-       2. Untersuchen Sie das Element in den Entwickler-Tools:
-          - Sind beide Klassen im HTML vorhanden?
-          - Welche CSS-Regeln werden im "Styles" oder "Regeln" Panel angezeigt?
-          - Werden die `margin-left` und `margin-right` Werte von Tailwind (sollten `auto` sein) durch andere Regeln überschrieben?
-       3. Überprüfen Sie den Elterncontainer (das <main>-Element im AccountDashboard):
-          - Hat der Elterncontainer genügend Breite?
-          - Gibt es Flexbox- oder Grid-Eigenschaften auf dem Elternelement, die die Zentrierung beeinflussen?
-            (z.B. wenn das Elternelement `justify-content: flex-start;` hätte, würde `mx-auto` nicht greifen).
-            Das <main>-Element im AccountDashboard hat `flex-1`, was es flexibel macht, aber keine direkte
-            Ausrichtung für seine Kinder vorgibt, die `mx-auto` stören sollte.
-    */
+    max-width: 768px; /* Tailwind: max-w-3xl */
+    width: 100%;
+    /* Zentrierung erfolgt durch mx-auto in der Parent-Komponente (AccountDashboard.js) */
 }
 
 .formSection {
@@ -32,7 +11,7 @@
 }
 
 .formGroup {
-    /* Tailwind im JS: mb-5 (oder space-y-6 im Formular) */
+    /* Tailwind im JS: Wird durch space-y im Form-Tag geregelt */
 }
 
 .formInput {

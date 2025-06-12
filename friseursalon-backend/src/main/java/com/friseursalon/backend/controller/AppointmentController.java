@@ -1,7 +1,7 @@
 // Datei: friseursalon-backend/src/main/java/com/friseursalon/backend/controller/AppointmentController.java
 package com.friseursalon.backend.controller;
 
-import com.friseursalon.backend.dto.DailyAppointmentsDTO; // NEU: Importieren
+import com.friseursalon.backend.dto.DailyAppointmentsDTO;
 import com.friseursalon.backend.model.Appointment;
 import com.friseursalon.backend.model.Customer;
 import com.friseursalon.backend.model.Service;
@@ -48,8 +48,6 @@ public class AppointmentController {
         this.serviceService = serviceService;
     }
 
-    // ... (bestehende Endpunkte bleiben unverändert) ...
-
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public List<Appointment> getAllAppointments() {
@@ -72,6 +70,7 @@ public class AppointmentController {
         boolean isAdmin = userDetails.getAuthorities().stream()
                 .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
 
+        // Admins oder der Besitzer des Termins dürfen ihn sehen
         if (isAdmin || (appointment.getCustomer() != null && appointment.getCustomer().getEmail().equals(userDetails.getEmail()))) {
             return new ResponseEntity<>(appointment, HttpStatus.OK);
         } else {
@@ -202,7 +201,6 @@ public class AppointmentController {
         }
     }
 
-    // NEUER ENDPUNKT
     @GetMapping("/recent")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<DailyAppointmentsDTO>> getRecentAppointments(

@@ -36,7 +36,9 @@ public class StatisticsController {
             }
             return ResponseEntity.ok(statisticsService.getDetailedAppointmentStats(startDate, endDate));
         } else {
-            return ResponseEntity.ok(statisticsService.getDetailedAppointmentStats());
+            // Standardzeitraum, wenn keine Daten übergeben werden (z.B. aktueller Monat)
+            LocalDate today = LocalDate.now();
+            return ResponseEntity.ok(statisticsService.getDetailedAppointmentStats(today.withDayOfMonth(1), today.with(TemporalAdjusters.lastDayOfMonth())));
         }
     }
 
@@ -94,7 +96,6 @@ public class StatisticsController {
         return ResponseEntity.ok(statisticsService.getCapacityUtilization(startDate, endDate));
     }
 
-    // NEUER ENDPUNKT
     @GetMapping("/by-hour-of-day")
     public ResponseEntity<List<AppointmentsByHourDTO>> getAppointmentsByHourOfDay(
             @RequestParam(name = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
