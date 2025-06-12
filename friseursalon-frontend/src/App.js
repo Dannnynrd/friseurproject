@@ -1,4 +1,3 @@
-// File: friseursalon-frontend/src/App.js
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './App.css'; // Globale Stile
 import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
@@ -7,14 +6,20 @@ import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-
 import Header from './components/Header';
 import Footer from './components/Footer';
 
-// Dynamische Komponenten
+// Auth & Pages
 import Login from './components/Login';
+import Register from './components/Register';
+import ForgotPasswordPage from './pages/ForgotPasswordPage'; // NEU
+import ResetPasswordPage from './pages/ResetPasswordPage';   // NEU
+import BookingPage from './pages/BookingPage';
+import AccountDashboard from './pages/AccountDashboard';
+
+// Services & Common
 import AuthService from './services/auth.service';
 import AuthVerify from './common/AuthVerify';
 import EventBus from './common/EventBus';
-import Register from './components/Register';
 
-// Statische Design-Komponenten (Homepage Sektionen)
+// Homepage Sektionen
 import HeroSection from './components/HeroSection';
 import TrustBarSection from './components/TrustBarSection';
 import ExperienceSection from './components/ExperienceSection';
@@ -26,10 +31,6 @@ import EssentialsSection from './components/EssentialsSection';
 import FAQSection from './components/FAQSection';
 import LocationSection from './components/LocationSection';
 import NewsletterSection from './components/NewsletterSection';
-
-// Seiten
-import BookingPage from './pages/BookingPage';
-import AccountDashboard from './pages/AccountDashboard';
 
 // ProtectedRoute Komponente zum Schutz von Routen, die eine Anmeldung erfordern
 const ProtectedRoute = ({ children, currentUser, redirectPath = '/login' }) => {
@@ -83,7 +84,6 @@ function App() {
         const user = AuthService.getCurrentUser();
         setCurrentUser(user);
         setIsMobileMenuOpen(false);
-        // Check if admin to redirect appropriately
         if (user && user.roles && user.roles.includes('ROLE_ADMIN')) {
             navigate('/my-account?tab=admin-dashboard');
         } else {
@@ -92,30 +92,23 @@ function App() {
     }, [navigate]);
 
     const handleProfileUpdateSuccess = useCallback((updatedUserData) => {
-        // AuthService.updateProfile now updates localStorage and dispatches an event.
-        // This handler will be called by the EventBus listener.
-        // We can simply re-fetch the user from AuthService to ensure consistency.
         const refreshedUser = AuthService.getCurrentUser();
         if (refreshedUser) {
-            console.log("App.js: handleProfileUpdateSuccess (via EventBus) - currentUser wird aktualisiert mit:", refreshedUser);
             setCurrentUser(refreshedUser);
         }
     }, []);
 
-
     const handleProfileUpdateError = useCallback((errorMessage) => {
         console.error("App.js: Fehler beim Profilupdate:", errorMessage);
-        // Optionally: display a global error message to the user
     }, []);
 
     useEffect(() => {
         const user = AuthService.getCurrentUser();
         if (user) {
-            // More robust check to prevent unnecessary updates if user object is identical
             if (!currentUser || JSON.stringify(user) !== JSON.stringify(currentUser)) {
                 setCurrentUser(user);
             }
-        } else if (currentUser) { // If no user in localStorage but currentUser state exists, clear it
+        } else if (currentUser) {
             setCurrentUser(undefined);
         }
 
@@ -123,17 +116,7 @@ function App() {
         EventBus.on("logout", handleLogoutEvent);
 
         const handleProfileUpdatedEvent = (updatedUserFromEvent) => {
-            console.log("App.js: Event 'profileUpdated' empfangen", updatedUserFromEvent);
-            // Check if the received data is different before updating, to prevent unnecessary re-renders
-            if (updatedUserFromEvent &&
-                (!currentUser ||
-                    updatedUserFromEvent.id !== currentUser.id ||
-                    updatedUserFromEvent.email !== currentUser.email || // Use email
-                    updatedUserFromEvent.firstName !== currentUser.firstName ||
-                    updatedUserFromEvent.lastName !== currentUser.lastName ||
-                    updatedUserFromEvent.phoneNumber !== currentUser.phoneNumber ||
-                    JSON.stringify(updatedUserFromEvent.roles) !== JSON.stringify(currentUser.roles) // Also check roles
-                )) {
+            if (updatedUserFromEvent && (!currentUser || JSON.stringify(updatedUserFromEvent) !== JSON.stringify(currentUser))) {
                 setCurrentUser(updatedUserFromEvent);
             }
         };
@@ -143,7 +126,7 @@ function App() {
             EventBus.remove("logout", handleLogoutEvent);
             EventBus.remove("profileUpdated", handleProfileUpdatedEvent);
         };
-    }, [logOut, currentUser]); // currentUser is a dependency to re-evaluate if it changes externally
+    }, [logOut, currentUser]);
 
     useEffect(() => {
         const preloader = preloaderRef.current;
@@ -159,7 +142,7 @@ function App() {
                 setIsHeaderScrolled(scrolled);
             };
             window.addEventListener('scroll', scrollHandler, { passive: true });
-            scrollHandler(); // Initial check
+            scrollHandler();
         }
         return () => {
             if (preloaderTimeoutId) clearTimeout(preloaderTimeoutId);
@@ -175,15 +158,12 @@ function App() {
             }
         };
 
-        updateBodyPadding(); // Initial call
-
+        updateBodyPadding();
         const resizeObserver = new ResizeObserver(updateBodyPadding);
         if (headerRef.current) {
             resizeObserver.observe(headerRef.current);
         }
-
         const transitionTimeout = setTimeout(updateBodyPadding, 350);
-
         return () => {
             if (headerRef.current) {
                 resizeObserver.unobserve(headerRef.current);
@@ -193,7 +173,6 @@ function App() {
         };
     }, [isHeaderScrolled, isMobileMenuOpen, location.pathname]);
 
-    // Modified navigateToBooking
     const navigateToBooking = useCallback((serviceName = null) => {
         if (serviceName) {
             navigate(`/buchen/${encodeURIComponent(serviceName)}`);
@@ -215,7 +194,6 @@ function App() {
             <ExperienceSection />
             <TestimonialsSection />
             <AboutFounderSection />
-            {/* Pass navigateToBooking to ServicesSection */}
             <ServicesSection openBookingModal={navigateToBooking} />
             <GalleryJournalSection />
             <EssentialsSection />
@@ -241,29 +219,18 @@ function App() {
             />
             <Routes>
                 <Route path="/" element={<HomePageLayout />} />
-                {/* Added routes for BookingPage */}
                 <Route path="/buchen" element={<BookingPage onAppointmentAdded={handleAppointmentAdded} currentUser={currentUser} onLoginSuccess={handleLoginSuccess} />} />
                 <Route path="/buchen/:serviceName" element={<BookingPage onAppointmentAdded={handleAppointmentAdded} currentUser={currentUser} onLoginSuccess={handleLoginSuccess}/>} />
 
+                {/* Auth Routes */}
+                <Route path="/login" element={ currentUser ? <Navigate to="/my-account" replace /> : <Login onLoginSuccess={handleLoginSuccess} />} />
+                <Route path="/register" element={ currentUser ? <Navigate to="/my-account" replace /> : <Register />} />
 
-                <Route
-                    path="/login"
-                    element={
-                        currentUser ? <Navigate to="/my-account" replace /> :
-                            <div className="page-center-content">
-                                <Login onLoginSuccess={handleLoginSuccess} />
-                            </div>
-                    }
-                />
-                <Route
-                    path="/register"
-                    element={
-                        currentUser ? <Navigate to="/my-account" replace /> :
-                            <div className="page-center-content">
-                                <Register /> {/* Assuming Register component does not need onLoginSuccess */}
-                            </div>
-                    }
-                />
+                {/* NEU HINZUGEFÜGTE ROUTEN */}
+                <Route path="/passwort-vergessen" element={ currentUser ? <Navigate to="/" replace /> : <ForgotPasswordPage />} />
+                <Route path="/passwort-zuruecksetzen" element={ currentUser ? <Navigate to="/" replace /> : <ResetPasswordPage />} />
+
+                {/* Geschützte Route für das Nutzer-Dashboard */}
                 <Route
                     path="/my-account"
                     element={
@@ -281,7 +248,8 @@ function App() {
                         </ProtectedRoute>
                     }
                 />
-                {/* Fallback route */}
+
+                {/* Fallback Route */}
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <Footer />

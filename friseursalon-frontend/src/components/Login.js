@@ -1,12 +1,11 @@
-// friseursalon-frontend/src/components/Login.js
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom'; // useLocation hinzugefügt
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import AuthService from '../services/auth.service';
 import styles from './Login.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSignInAlt, faSpinner, faExclamationCircle, faCheckCircle } from '@fortawesome/free-solid-svg-icons'; // faCheckCircle hinzugefügt
+import { faSignInAlt, faSpinner, faExclamationCircle, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 
 const LoginSchema = Yup.object().shape({
     email: Yup.string().email("Ungültige E-Mail-Adresse.").required('E-Mail ist erforderlich'),
@@ -15,19 +14,17 @@ const LoginSchema = Yup.object().shape({
 
 function Login({ onLoginSuccess }) {
     const navigate = useNavigate();
-    const location = useLocation(); // Hook, um auf den Navigationsstatus zuzugreifen
+    const location = useLocation();
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState(''); // Für Fehler- UND Erfolgsmeldungen
-    const [isError, setIsError] = useState(false); // Um zwischen Fehler und Erfolg zu unterscheiden
+    const [message, setMessage] = useState('');
+    const [isError, setIsError] = useState(false);
     const sectionRef = useRef(null);
 
     useEffect(() => {
-        // KORREKTUR: Prüfen, ob eine Nachricht von der Registrierungsseite mitgegeben wurde
         if (location.state && location.state.message) {
             setMessage(location.state.message);
-            setIsError(false); // Dies ist eine Erfolgs-/Info-Nachricht
+            setIsError(false);
         }
-        // Animation-Observer
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -87,7 +84,6 @@ function Login({ onLoginSuccess }) {
                     </p>
                 </div>
 
-                {/* KORREKTUR: Nachrichtenanzeige außerhalb der Formik-Form, um sie permanent anzuzeigen */}
                 {message && (
                     <div className={`p-3 rounded-md text-sm flex items-center ${isError ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200'} ${styles.formMessage}`}>
                         <FontAwesomeIcon icon={isError ? faExclamationCircle : faCheckCircle} className="mr-2" />
@@ -102,7 +98,6 @@ function Login({ onLoginSuccess }) {
                 >
                     {({ errors, touched, isSubmitting }) => (
                         <Form className="mt-8 space-y-6">
-                            {/* Formularfelder bleiben wie bisher */}
                             <div className={styles.formGroup}>
                                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                                     E-Mail-Adresse

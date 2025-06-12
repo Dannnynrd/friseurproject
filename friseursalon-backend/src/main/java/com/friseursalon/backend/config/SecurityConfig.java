@@ -1,4 +1,4 @@
-// src/main/java/com/friseursalon/backend/config/SecurityConfig.java
+// friseursalon-backend/src/main/java/com/friseursalon/backend/config/SecurityConfig.java
 package com.friseursalon.backend.config;
 
 import com.friseursalon.backend.service.UserService;
@@ -77,7 +77,7 @@ public class SecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll() // Erfasst jetzt auch /forgot-password und /reset-password
                         .requestMatchers("/api/hello").permitAll()
                         .requestMatchers("/api/services/**").permitAll()
                         .requestMatchers("/api/workinghours/**").permitAll()
@@ -86,13 +86,11 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/appointments").permitAll()
                         .requestMatchers("/api/statistics/**").hasRole("ADMIN")
-                        // Regeln für Benutzerprofil und Passwortänderung
                         .requestMatchers(HttpMethod.PUT, "/api/users/profile").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/users/change-password").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/users/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/users/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
-                        // NEUE REGELN für Testimonials
                         .requestMatchers(HttpMethod.POST, "/api/testimonials/submit").hasRole("USER")
                         .requestMatchers(HttpMethod.POST, "/api/testimonials/submit-guest").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/testimonials").permitAll()

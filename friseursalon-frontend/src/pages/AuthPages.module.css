@@ -1,0 +1,30 @@
+/* friseursalon-frontend/src/pages/AuthPages.module.css */
+/* Dieses Modul wird von Login, Register, ForgotPassword und ResetPassword gemeinsam genutzt. */
+
+.authPageContainer {
+    /* Tailwind im JS: flex items-center justify-center min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8 */
+    background-image:
+            radial-gradient(circle at 1px 1px, #E5E7EB 1px, transparent 0),
+            radial-gradient(circle at 10px 10px, #E5E7EB 1px, transparent 0);
+    background-size: 20px 20px;
+}
+
+.authContainer {
+    /* Tailwind im JS: w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-2xl animate-up */
+}
+
+.formGroup {
+    margin-bottom: 1.25rem;
+}
+
+.formInput {
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.authButton {
+    /* Tailwind-Klassen im JS */
+}
+
+.formMessage {
+    /* Tailwind-Klassen im JS */
+}
