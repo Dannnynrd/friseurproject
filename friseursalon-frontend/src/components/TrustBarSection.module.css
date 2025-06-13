@@ -1,29 +1,48 @@
 /* src/components/TrustBarSection.module.css */
 
 .trustSection {
-    background-color: var(--color-background);
-    padding: 4rem 1.5rem;
+    position: relative; /* Wichtig für den ::before Pseudo-Effekt */
+    background-color: var(--color-background-offset);
+    /* Das Padding oben wird erhöht, um Platz für die Welle zu schaffen */
+    padding: 8rem 1.5rem 5rem 1.5rem;
+    /* Die Sektion wird über die Hero-Sektion gezogen */
+    margin-top: -80px;
 
-    /* Animation */
     opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.8s ease-out 0.2s, transform 0.8s ease-out 0.2s;
+    transition: opacity 1s ease-out 0.2s;
+}
+
+/* Der Wellen-Effekt, der den Übergang bildet */
+.trustSection::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 80px;
+    background-color: inherit; /* Nimmt die Hintergrundfarbe der Sektion an */
+    /* Erzeugt die Kurve */
+    -webkit-mask-image: url("data:image/svg+xml,%3csvg viewBox='0 0 1440 80' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M0 80H1440V0C1193.33 53.3333 821 80 720 80C619 80 246.667 53.3333 0 0V80Z' fill='black'/%3e%3c/svg%3e");
+    mask-image: url("data:image/svg+xml,%3csvg viewBox='0 0 1440 80' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M0 80H1440V0C1193.33 53.3333 821 80 720 80C619 80 246.667 53.3333 0 0V80Z' fill='black'/%3e%3c/svg%3e");
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
 }
 
 .trustSection.visible {
     opacity: 1;
-    transform: translateY(0);
 }
 
 .container {
     max-width: var(--container-width);
     margin: 0 auto;
+    position: relative; /* Stellt sicher, dass der Inhalt über der Welle liegt */
+    z-index: 2;
 }
 
 .grid {
     display: grid;
-    grid-template-columns: 1fr; /* Startet einspaltig auf Mobilgeräten */
-    gap: 3rem;
+    grid-template-columns: 1fr;
+    gap: 3.5rem;
 }
 
 .trustElement {
@@ -31,29 +50,42 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    transition: transform 0.3s ease; /* KORREKTUR: Transition für das gesamte Element */
+    padding: 1.5rem;
+    border-radius: 12px;
+    background-color: transparent;
+    /* Sanfter Übergang für den neuen Hover-Effekt */
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
 }
 
-/* KORREKTUR: Hover-Effekt auf das gesamte Element angewendet */
+/* KORREKTUR: Neuer, professionellerer Hover-Effekt */
 .trustElement:hover {
-    transform: translateY(-8px);
+    transform: translateY(-10px);
+    box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.1);
 }
 
 .iconWrapper {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 64px;
-    width: 64px;
+    height: 60px;
+    width: 60px;
     border-radius: 50%;
-    background-color: var(--color-background-offset);
-    color: var(--color-text-medium);
+    /* Hintergrundfarbe des Icons für besseren Kontrast */
+    background-color: #fff;
+    border: 1px solid var(--color-border);
+    color: var(--color-text-dark);
     margin-bottom: 1.5rem;
-    transition: all 0.3s ease;
+    transition: all 0.4s ease;
+}
+
+.trustElement:hover .iconWrapper {
+    background-color: var(--color-text-dark);
+    color: #fff;
+    border-color: var(--color-text-dark);
 }
 
 .textWrapper {
-    max-width: 280px;
+    max-width: 300px;
 }
 
 .elementTitle {
@@ -62,6 +94,11 @@
     font-weight: 700;
     color: var(--color-text-dark);
     margin: 0 0 0.5rem 0;
+    transition: color 0.4s ease;
+}
+
+.trustElement:hover .elementTitle {
+    color: var(--color-accent); /* Optional: Akzentfarbe für den Titel beim Hover */
 }
 
 .elementText {
@@ -71,51 +108,24 @@
     line-height: 1.7;
 }
 
-/* KORREKTUR: Der Hover-Effekt ändert nun die Icon-Farbe und fügt einen Schatten hinzu */
-.trustElement:hover .iconWrapper {
-    background-color: var(--color-text-dark);
-    color: #fff;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-}
-
 /* Responsive Anpassungen */
-
 @media (min-width: 540px) {
     .grid {
-        /* Zwei Spalten für größere Mobilgeräte */
         grid-template-columns: repeat(2, 1fr);
-        gap: 3rem 2rem;
+        gap: 2rem;
     }
 }
 
 @media (min-width: 1024px) {
     .trustSection {
-        padding: 6rem 2rem;
+        padding: 10rem 2rem 6rem 2rem;
+        margin-top: -100px;
+    }
+    .trustSection::before {
+        height: 100px;
     }
     .grid {
-        /* Vier Spalten für Desktops */
         grid-template-columns: repeat(4, 1fr);
-        gap: 2.5rem;
-    }
-    .trustElement {
-        position: relative;
-        flex-direction: row;
-        text-align: left;
-        align-items: flex-start;
-        gap: 1.5rem;
-    }
-    /* KORREKTUR: Modernisierte, kürzere Trennlinie */
-    .trustElement:not(:last-child)::after {
-        content: '';
-        position: absolute;
-        top: 50%;
-        right: -1.25rem;
-        height: 60%;
-        width: 1px;
-        background-color: var(--color-border);
-        transform: translateY(-50%);
-    }
-    .iconWrapper {
-        margin-bottom: 0;
+        gap: 2rem;
     }
 }
