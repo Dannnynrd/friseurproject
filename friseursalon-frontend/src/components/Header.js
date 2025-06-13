@@ -1,125 +1,120 @@
+// src/components/Header.js
+
 import React, { useState, useEffect } from 'react';
-import { NavLink, Link, useLocation } from 'react-router-dom';
-import AuthService from '../services/auth.service';
-import EventBus from '../common/EventBus';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styles from './Header.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faBars } from '@fortawesome/free-solid-svg-icons';
 
-const Header = () => {
-    const [currentUser, setCurrentUser] = useState(AuthService.getCurrentUser());
+const Header = ({ currentUser, logOut }) => {
     const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const location = useLocation();
+    const navigate = useNavigate();
 
-    // Bestimmt, ob der Header auf der aktuellen Seite transparent starten soll
-    const isTransparentStart = location.pathname === '/';
+    const isHomePage = location.pathname === '/';
 
-    // Effekt für den Scroll-Zustand des Headers
+    // Effekt für das Scroll-Verhalten
     useEffect(() => {
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 20);
         };
-        window.addEventListener('scroll', handleScroll);
-        // Initialer Check beim Laden der Seite
+        window.addEventListener('scroll', handleScroll, { passive: true });
         handleScroll();
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Effekt für die Authentifizierung des Benutzers
-    useEffect(() => {
-        const user = AuthService.getCurrentUser();
-        if (user) {
-            setCurrentUser(user);
-        }
-        EventBus.on("logout", logOut);
-        return () => EventBus.remove("logout", logOut);
-    }, []);
-
-    // Logik für das Öffnen/Schließen des mobilen Menüs und Verhindern des Body-Scrolls
+    // Effekt für das mobile Menü (Body-Scroll sperren)
     useEffect(() => {
         document.body.classList.toggle('mobile-menu-active', isMobileMenuOpen);
     }, [isMobileMenuOpen]);
 
-    // Schließt das Menü bei einem Routenwechsel
+    // Menü bei Routenwechsel schließen
     useEffect(() => {
         closeMobileMenu();
     }, [location.pathname]);
 
-    const logOut = () => {
-        AuthService.logout();
-        setCurrentUser(undefined);
-        closeMobileMenu();
-    };
-
     const toggleMobileMenu = () => setMobileMenuOpen(prev => !prev);
     const closeMobileMenu = () => setMobileMenuOpen(false);
 
-    const isAdmin = currentUser?.roles.includes("ROLE_ADMIN");
+    // Funktion für sanftes Scrollen zu Anker-Links auf der Startseite
+    const handleNavClick = (e, targetId) => {
+        closeMobileMenu();
+        if (isHomePage) {
+            e.preventDefault();
+            document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            // Wenn nicht auf der Startseite, zuerst dorthin navigieren
+            // und den Anker in der Location State speichern, um dorthin zu scrollen.
+            navigate(`/${targetId}`);
+        }
+    };
 
-    // Baut die CSS-Klassen für den Header dynamisch zusammen
     const headerClasses = [
         styles.header,
-        (isScrolled || !isTransparentStart || isMobileMenuOpen) && styles.scrolled,
+        (isScrolled || !isHomePage || isMobileMenuOpen) && styles.scrolled,
+        isMobileMenuOpen && styles.menuOpen
     ].filter(Boolean).join(' ');
 
     return (
         <header className={headerClasses}>
             <div className={styles.container}>
                 <Link to="/" className={styles.logo} onClick={closeMobileMenu}>
-                    STUDIO
+                    IMW
                 </Link>
 
-                <nav className={`${styles.nav} ${isMobileMenuOpen ? styles.navOpen : ''}`}>
+                {/* --- Desktop Navigation --- */}
+                <nav className={styles.desktopNav}>
                     <ul className={styles.navList}>
-                        <li><NavLink to="/services" className={({ isActive }) => isActive ? styles.activeLink : styles.navLink}>Dienstleistungen</NavLink></li>
-                        <li><NavLink to="/about" className={({ isActive }) => isActive ? styles.activeLink : styles.navLink}>Über Uns</NavLink></li>
-                        <li><NavLink to="/contact" className={({ isActive }) => isActive ? styles.activeLink : styles.navLink}>Kontakt</NavLink></li>
+                        <li><a href="/#services-section" onClick={(e) => handleNavClick(e, 'services-section')} className={styles.navLink}>Dienstleistungen</a></li>
+                        <li><a href="/#about-founder" onClick={(e) => handleNavClick(e, 'about-founder')} className={styles.navLink}>Über Uns</a></li>
+                        <li><a href="/#location" onClick={(e) => handleNavClick(e, 'location')} className={styles.navLink}>Kontakt</a></li>
                     </ul>
                 </nav>
 
                 <div className={styles.actions}>
                     {currentUser ? (
                         <div className={styles.authActions}>
-                            <Link to={isAdmin ? "/account" : "/account"} className={styles.navLink}>Dashboard</Link>
-                            <a href="/login" className={styles.navLink} onClick={logOut}>Logout</a>
+                            <Link to="/account" className={styles.navLink}>Dashboard</Link>
+                            <a href="/" className={styles.navLink} onClick={(e) => { e.preventDefault(); logOut(); }}>Logout</a>
                         </div>
                     ) : (
                         <div className={styles.authActions}>
                             <Link to="/login" className={styles.navLink}>Login</Link>
                         </div>
                     )}
-                    <Link to="/buchen" className={styles.ctaButton}>Jetzt Buchen</Link>
+                    <Link to="/buchen" className={styles.ctaButton}>Termin buchen</Link>
                 </div>
 
-                <button className={styles.mobileMenuButton} onClick={toggleMobileMenu} aria-label="Menü">
+                {/* --- Mobile Menu Button --- */}
+                <button className={styles.mobileMenuButton} onClick={toggleMobileMenu} aria-label="Menü öffnen/schließen">
                     <FontAwesomeIcon icon={isMobileMenuOpen ? faTimes : faBars} />
                 </button>
             </div>
 
-            {/* Mobiles Menü Overlay */}
-            {isMobileMenuOpen && (
-                <div className={styles.mobileMenuOverlay}>
+            {/* --- Mobile Menu Overlay --- */}
+            <div className={`${styles.mobileMenuOverlay} ${isMobileMenuOpen ? styles.isOpen : ''}`}>
+                <nav>
                     <ul className={styles.mobileNavList}>
-                        <li><NavLink to="/services" onClick={closeMobileMenu}>Dienstleistungen</NavLink></li>
-                        <li><NavLink to="/about" onClick={closeMobileMenu}>Über Uns</NavLink></li>
-                        <li><NavLink to="/contact" onClick={closeMobileMenu}>Kontakt</NavLink></li>
+                        <li><a href="/#services-section" onClick={(e) => handleNavClick(e, 'services-section')}>Dienstleistungen</a></li>
+                        <li><a href="/#about-founder" onClick={(e) => handleNavClick(e, 'about-founder')}>Über Uns</a></li>
+                        <li><a href="/#location" onClick={(e) => handleNavClick(e, 'location')}>Kontakt</a></li>
                     </ul>
-                    <div className={styles.mobileMenuFooter}>
-                        {currentUser ? (
-                            <>
-                                <Link to={isAdmin ? "/account" : "/account"} className={styles.mobileCtaButton} onClick={closeMobileMenu}>Dashboard</Link>
-                                <a href="/login" className={styles.mobileLink} onClick={logOut}>Logout</a>
-                            </>
-                        ) : (
-                            <>
-                                <Link to="/login" className={styles.mobileCtaButton} onClick={closeMobileMenu}>Login</Link>
-                                <Link to="/register" className={styles.mobileLink} onClick={closeMobileMenu}>Registrieren</Link>
-                            </>
-                        )}
-                    </div>
+                </nav>
+                <div className={styles.mobileMenuFooter}>
+                    {currentUser ? (
+                        <>
+                            <Link to="/account" className={styles.mobileCtaButton} onClick={closeMobileMenu}>Dashboard</Link>
+                            <a href="/" className={styles.mobileLink} onClick={(e) => { e.preventDefault(); closeMobileMenu(); logOut(); }}>Logout</a>
+                        </>
+                    ) : (
+                        <>
+                            <Link to="/login" className={styles.mobileCtaButton} onClick={closeMobileMenu}>Login</Link>
+                            <Link to="/register" className={styles.mobileLink} onClick={closeMobileMenu}>Registrieren</Link>
+                        </>
+                    )}
                 </div>
-            )}
+            </div>
         </header>
     );
 };

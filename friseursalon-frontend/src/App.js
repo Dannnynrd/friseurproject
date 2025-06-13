@@ -47,13 +47,20 @@ const HomePage = () => (
         <HeroSection />
         <TrustBarSection />
         <ExperienceSection />
+        {/* Die IDs sind hier für die Anker-Navigation aus dem Header entscheidend */}
+        <div id="services-section">
+            <ServicesSection maxServicesToShow={3} />
+        </div>
         <TestimonialsSection />
-        <AboutFounderSection />
-        <ServicesSection />
+        <div id="about-founder">
+            <AboutFounderSection />
+        </div>
         <GalleryJournalSection />
         <EssentialsSection />
         <FAQSection />
-        <LocationSection />
+        <div id="location">
+            <LocationSection />
+        </div>
         <NewsletterSection />
     </div>
 );
@@ -69,16 +76,26 @@ const ProtectedRoute = ({ children, currentUser }) => {
 // --- Main App Component ---
 
 function App() {
-    const [currentUser, setCurrentUser] = useState(AuthService.getCurrentUser());
+    const [currentUser, setCurrentUser] = useState(undefined);
     const preloaderRef = useRef(null);
     const navigate = useNavigate();
     const location = useLocation();
+
+    // Init-Effekt, um den Benutzer zu Beginn zu setzen
+    useEffect(() => {
+        const user = AuthService.getCurrentUser();
+        if (user) {
+            setCurrentUser(user);
+        }
+    }, []);
 
     // Preloader-Logik
     useEffect(() => {
         const preloader = preloaderRef.current;
         if (preloader) {
-            const timer = setTimeout(() => preloader.classList.add('loaded'), 300);
+            const timer = setTimeout(() => {
+                if (preloader) preloader.classList.add('loaded');
+            }, 150);
             return () => clearTimeout(timer);
         }
     }, []);
@@ -86,13 +103,16 @@ function App() {
     // Logout-Logik
     const logOut = useCallback(() => {
         AuthService.logout();
-        setCurrentUser(null);
+        setCurrentUser(undefined);
         navigate('/');
     }, [navigate]);
 
     useEffect(() => {
-        EventBus.on("logout", logOut);
-        return () => EventBus.remove("logout", logOut);
+        const handleLogout = () => logOut();
+        EventBus.on("logout", handleLogout);
+        return () => {
+            EventBus.remove("logout", handleLogout);
+        };
     }, [logOut]);
 
     // Nach erfolgreichem Login navigieren
@@ -106,35 +126,41 @@ function App() {
 
     return (
         <div className="App">
-            <div id="preloader" ref={preloaderRef}><span className="loader-char">SD</span></div>
+            {/* Vereinfachter Preloader ohne Text */}
+            <div id="preloader" ref={preloaderRef}></div>
 
-            <Header />
+            <Header currentUser={currentUser} logOut={logOut} />
 
             <main>
                 <Routes>
-                    {/* Homepage Route - ohne PageLayout für den transparenten Header-Effekt */}
+                    {/* Homepage Route */}
                     <Route path="/" element={<HomePage />} />
 
-                    {/* Alle anderen Seiten werden mit PageLayout gewrappt */}
-                    <Route path="/buchen/*" element={<PageLayout><BookingPage currentUser={currentUser} onLoginSuccess={handleLoginSuccess} /></PageLayout>} />
+                    {/* Fallback für Ankerlinks von anderen Seiten */}
+                    <Route path="/#services-section" element={<Navigate to="/" replace />} />
+                    <Route path="/#about-founder" element={<Navigate to="/" replace />} />
+                    <Route path="/#location" element={<Navigate to="/" replace />} />
 
+                    {/* Alle anderen Seiten werden mit PageLayout gewrappt */}
+                    <Route path="/buchen" element={<PageLayout><BookingPage currentUser={currentUser} onLoginSuccess={handleLoginSuccess} /></PageLayout>} />
                     <Route path="/login" element={currentUser ? <Navigate to="/account" replace /> : <PageLayout><Login onLoginSuccess={handleLoginSuccess} /></PageLayout>} />
                     <Route path="/register" element={currentUser ? <Navigate to="/account" replace /> : <PageLayout><Register /></PageLayout>} />
                     <Route path="/passwort-vergessen" element={currentUser ? <Navigate to="/" replace /> : <PageLayout><ForgotPasswordPage /></PageLayout>} />
                     <Route path="/passwort-zuruecksetzen" element={currentUser ? <Navigate to="/" replace /> : <PageLayout><ResetPasswordPage /></PageLayout>} />
 
+                    {/* Geschützte Route für das Benutzerkonto */}
                     <Route
-                        path="/account/*"
+                        path="/account"
                         element={
                             <ProtectedRoute currentUser={currentUser}>
                                 <PageLayout>
-                                    <AccountDashboard currentUser={currentUser} onProfileUpdateSuccess={() => setCurrentUser(AuthService.getCurrentUser())} />
+                                    <AccountDashboard currentUser={currentUser} logOut={logOut} onProfileUpdateSuccess={() => setCurrentUser(AuthService.getCurrentUser())} />
                                 </PageLayout>
                             </ProtectedRoute>
                         }
                     />
 
-                    {/* Fallback-Route */}
+                    {/* Fallback-Route, leitet zur Startseite um */}
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </main>

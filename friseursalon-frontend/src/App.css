@@ -6,26 +6,34 @@
 /* --- Globale CSS Variablen (Design System) --- */
 :root {
   /* Farben */
-  --color-primary: #4f46e5; /* Indigo */
-  --color-primary-dark: #4338ca;
-  --color-text-dark: #111827; /* Gray-900 */
-  --color-text-medium: #374151; /* Gray-700 */
-  --color-text-light: #6b7280; /* Gray-500 */
+  --color-text-dark: #111827;
+  --color-text-medium: #374151;
+  --color-text-light: #6b7280;
+  --color-text-on-dark: #f9fafb;
+
   --color-background: #ffffff;
-  --color-background-offset: #f9fafb; /* Gray-50 */
-  --color-border: #e5e7eb; /* Gray-200 */
+  --color-background-offset: #f9fafb; /* Helles Grau für Header & Sektionen */
+
+  --color-border: #e5e7eb;
+
+  /* Akzentfarbe */
+  --color-accent: #4f46e5;
+  --color-accent-dark: #4338ca;
 
   /* Schriftarten */
-  --font-heading: 'Playfair Display', serif; /* Eine elegante Schrift für Überschriften */
+  --font-heading: 'Playfair Display', serif;
   --font-sans: 'Manrope', sans-serif;
 
   /* Layout */
-  --header-height: 5.5rem; /* 88px, Höhe des Headers für den Abstand */
-  --container-width: 1320px;
-  --container-padding: 1.5rem;
+  --header-height: 5.5rem;
+  --container-width: 1280px;
 }
 
 /* --- Globale Resets & Body Styles --- */
+html {
+  scroll-behavior: smooth;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -39,59 +47,62 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Verhindert das Scrollen, wenn das mobile Menü aktiv ist */
 body.mobile-menu-active {
   overflow: hidden;
 }
 
-/* --- Globale Layout-Klassen (Schlüssel zur Lösung) --- */
-
-/* Wrapper für die gesamte App */
+/* --- Globale Layout-Klassen --- */
 .App {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-/* Dieser Wrapper wird für ALLE Seiten außer der Homepage verwendet. */
-/* Er sorgt dafür, dass der Inhalt unter dem fixierten Header beginnt. */
 .page-layout {
   padding-top: var(--header-height);
-  flex-grow: 1; /* Stellt sicher, dass der Footer unten bleibt */
+  flex-grow: 1;
   width: 100%;
 }
 
-/* Homepage-spezifisches Layout */
 .homepage-layout {
-  /* Die Homepage hat keinen Abstand, da die Hero-Section hinter dem Header liegt */
   width: 100%;
   flex-grow: 1;
 }
 
 
-/* --- Preloader Styles --- */
+/* --- Vereinfachter Preloader --- */
 #preloader {
   position: fixed;
   inset: 0;
   background: var(--color-background);
   z-index: 10002;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.5s ease 0.2s, visibility 0s 0.7s linear;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
 }
 #preloader.loaded {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
 }
-.loader-char {
-  font-family: var(--font-heading), serif;
-  font-size: 2rem;
-  animation: pulse 1.5s infinite ease-in-out;
-  color: var(--color-text-dark);
+
+
+/* --- Globale Animationen --- */
+.animate-up {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
-@keyframes pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
+.animate-up.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
+
+@keyframes fadeInModalOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideInModalContent {
+  from { opacity: 0; transform: translateY(-20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-fadeInModalOverlay { animation: fadeInModalOverlay 0.3s ease-out forwards; }
+.animate-slideInModalContent { animation: slideInModalContent 0.3s ease-out forwards; }
