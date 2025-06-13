@@ -1,78 +1,206 @@
 /* friseursalon-frontend/src/components/Header.module.css */
-
-.siteHeader {
-    /* Basiskontrolle für Höhe und Positionierung wird durch Tailwind-Klassen im JS gehandhabt. */
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-height);
+    z-index: 100;
+    transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
 }
 
-.headerInitial {
-    /* Stile für den transparenten Zustand oben auf der Seite */
+.header.solid {
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
-
-.headerScrolled {
-    /* Stile für den gescrollten, soliden Zustand. Tailwind im JS: bg-white/95 shadow-md backdrop-blur-sm */
+.header.transparent {
+    background-color: transparent;
+    border-bottom: 1px solid transparent;
 }
 
 .logo {
-    /* Tailwind: text-2xl font-bold font-serif etc. */
+    font-family: var(--font-serif);
+    font-size: 1.75rem;
+    font-weight: 700;
+    transition: color 0.3s ease;
 }
 
-/* Navigationslinks Desktop */
 .navLinkItem {
     position: relative;
-    padding-bottom: 0.5rem; /* Platz für den animierten Unterstrich */
+    padding-bottom: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.3s ease;
 }
-
-.initialLinkText {
-    color: white;
-}
-
-.scrolledLinkText {
-    color: #4B5563; /* Tailwind: text-gray-600 */
-}
-
 .navLinkItem::after {
     content: '';
     position: absolute;
     bottom: 0;
-    left: 0;
-    right: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0%;
     height: 2px;
-    background-color: currentColor; /* Nimmt die Farbe des Links an (wird von Tailwind gesetzt) */
-    transform: scaleX(0);
-    transition: transform 0.25s ease-out;
-    transform-origin: center;
+    background-color: currentColor;
+    transition: width 0.35s cubic-bezier(0.19, 1, 0.22, 1);
+}
+.navLinkItem:hover::after, .navLinkActive::after {
+    width: 100%;
+}
+.navLinkActive {
+    font-weight: 600;
 }
 
-.navLinkItem:hover::after,
-.activeNavLink::after {
-    transform: scaleX(1);
+/* --- Buttons & Auth --- */
+.ctaButton, .loginButton, .userButton, .mobileToggle {
+    border-radius: 0.375rem;
+    transition: all 0.25s ease;
+    -webkit-tap-highlight-color: transparent;
 }
 
-/* User Menu Desktop */
-.dropdownMenu {
-    /* Tailwind für Sichtbarkeit und Animation: opacity-0 invisible group-hover:opacity-100 etc. */
+.ctaButton {
+    padding: 0.6rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-left: 1rem;
 }
-
-/* Mobile Menu */
-.mobileMenu {
+.ctaButtonSolid {
+    background-color: var(--dark-text);
+    color: white;
+}
+.ctaButtonSolid:hover {
+    background-color: #000;
+    transform: translateY(-2px);
+}
+.ctaButtonThemed {
     background-color: white;
-    max-height: 0;
-    overflow: hidden;
+    color: var(--dark-text);
+}
+.ctaButtonThemed:hover {
+    background-color: #f0f0f0;
+    transform: translateY(-2px);
+}
+
+.loginButton {
+    padding: 0.6rem 1rem;
+    font-size: 0.875rem;
+    border: 1px solid;
+}
+.loginButtonSolid {
+    color: var(--medium-grey-text);
+    border-color: var(--border-color-medium);
+}
+.loginButtonSolid:hover {
+    color: var(--dark-text);
+    border-color: var(--dark-text);
+    background-color: var(--light-grey-bg);
+}
+.loginButtonThemed {
+    color: white;
+    border-color: rgba(255, 255, 255, 0.5);
+}
+.loginButtonThemed:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: white;
+}
+
+.userButton {
+    font-size: 1.75rem;
+    padding: 0.25rem;
+}
+
+.dropdownMenu {
     position: absolute;
-    top: 100%;
-    left: 0;
     right: 0;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.3s ease-in-out;
+    margin-top: 1rem;
+    width: 14rem;
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.1);
+    border: 1px solid rgba(0,0,0,.05);
     opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+    pointer-events: none;
 }
-
-.mobileMenuOpen {
-    max-height: calc(100vh - 4rem); /* Höhe des Headers abziehen */
+.group:hover .dropdownMenu {
     opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+.dropdownItem {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: var(--medium-grey-text);
+    transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+}
+.dropdownItem:hover, .dropdownItem:focus {
+    background-color: var(--light-grey-bg);
+    color: var(--dark-text);
+    outline: none;
+}
+.dropdownItem .dropdownIcon {
+    margin-right: 0.75rem;
+    width: 1rem;
+    color: #9ca3af;
+    transition: color 0.15s ease-in-out;
+}
+.dropdownItem:hover .dropdownIcon, .dropdownItem:focus .dropdownIcon {
+    color: var(--dark-text);
 }
 
-.mobileNavLinkItem {
-    /* Basis-Stile werden durch Tailwind im JS gesetzt */
+
+/* --- MOBILE --- */
+.mobileToggle {
+    font-size: 1.5rem;
+    padding: 0.5rem;
+    z-index: 1001; /* Stellt sicher, dass der Button über dem Menü bleibt */
+}
+
+.mobileMenu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    padding-top: var(--header-height);
+    background-color: white;
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    overflow-y: auto;
+}
+.mobileMenuOpen {
+    transform: translateX(0);
+}
+
+.mobileLink {
+    display: block;
+    padding: 1rem 1.5rem;
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: var(--dark-text);
+    transition: color 0.2s ease, background-color 0.2s ease;
+    border-bottom: 1px solid var(--border-color-light);
+}
+.mobileLink:hover {
+    background-color: var(--light-grey-bg);
+}
+.mobileCtaButton {
+    display: block;
+    width: 100%;
+    text-align: center;
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: var(--dark-text);
+    color: white;
+    border-radius: 0.375rem;
+    font-weight: 600;
 }
