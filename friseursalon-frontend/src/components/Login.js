@@ -1,153 +1,97 @@
-// friseursalon-frontend/src/components/Login.js
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { Formik, Form, Field, ErrorMessage } from 'formik';
-import * as Yup from 'yup';
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { Link } from 'react-router-dom';
 import AuthService from '../services/auth.service';
 import styles from './Login.module.css';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSignInAlt, faSpinner, faExclamationCircle, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
-
-const LoginSchema = Yup.object().shape({
-    email: Yup.string().email("Ungültige E-Mail-Adresse.").required('E-Mail ist erforderlich'),
-    password: Yup.string().required('Passwort ist erforderlich'),
-});
 
 function Login({ onLoginSuccess }) {
-    const navigate = useNavigate();
-    const location = useLocation();
+    const { register, handleSubmit, formState: { errors } } = useForm();
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
-    const [isError, setIsError] = useState(false);
-    const sectionRef = useRef(null);
 
-    useEffect(() => {
-        if (location.state && location.state.message) {
-            setMessage(location.state.message);
-            setIsError(false);
-        }
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                }
-            });
-        }, { threshold: 0.1 });
-
-        const currentSectionRef = sectionRef.current;
-        if (currentSectionRef) {
-            observer.observe(currentSectionRef);
-        }
-        return () => {
-            if (currentSectionRef) {
-                observer.unobserve(currentSectionRef);
-            }
-        };
-    }, [location.state]);
-
-    const handleLogin = (formValue, { setSubmitting }) => {
-        const { email, password } = formValue;
+    const onSubmit = (data) => {
         setMessage('');
-        setIsError(false);
         setLoading(true);
-        setSubmitting(true);
 
-        AuthService.login(email, password).then(
-            (userData) => {
-                setLoading(false);
-                setSubmitting(false);
-                if (typeof onLoginSuccess === 'function') {
-                    onLoginSuccess(userData);
-                } else {
-                    navigate(userData.roles?.includes('ROLE_ADMIN') ? '/my-account?tab=admin-dashboard' : '/my-account');
-                }
+        // Das Feld heißt intern 'username', um zum Backend zu passen,
+        // obwohl der Benutzer seine E-Mail eingibt.
+        AuthService.login(data.username, data.password).then(
+            () => {
+                onLoginSuccess();
             },
             (error) => {
-                const resMessage = (error.response?.data?.message) || error.message || error.toString();
+                const resMessage =
+                    (error.response &&
+                        error.response.data &&
+                        error.response.data.message) ||
+                    error.message ||
+                    error.toString();
+
                 setLoading(false);
-                setSubmitting(false);
-                setMessage(resMessage);
-                setIsError(true);
+                setMessage('Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Zugangsdaten.');
             }
         );
     };
 
     return (
-        <section ref={sectionRef} className={`flex items-center justify-center min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8 ${styles.loginPageContainer}`}>
-            <div className={`w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-2xl animate-up ${styles.authContainer}`}>
-                <div>
-                    <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 font-serif">Anmelden</h2>
-                    <p className="mt-2 text-center text-sm text-gray-600">
-                        Oder{' '}
-                        <Link to="/register" className="font-medium text-gray-800 hover:text-black hover:underline">
-                            erstellen Sie ein neues Konto
-                        </Link>
-                    </p>
-                </div>
+        <div className={styles.loginContainer}>
+            <div className={styles.loginWrapper}>
+                <h1 className={styles.headline}>Willkommen zurück</h1>
+                <p className={styles.subheadline}>Bitte melden Sie sich an, um auf Ihr Konto zuzugreifen.</p>
 
-                {message && (
-                    <div className={`p-3 rounded-md text-sm flex items-center ${isError ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200'} ${styles.formMessage}`}>
-                        <FontAwesomeIcon icon={isError ? faExclamationCircle : faCheckCircle} className="mr-2" />
-                        {message}
+                <form onSubmit={handleSubmit(onSubmit)} className={styles.form} noValidate>
+                    <div className={styles.inputGroup}>
+                        {/* KORREKTUR: Fragt nach E-Mail, sendet aber als 'username' */}
+                        <label htmlFor="email" className={styles.label}>E-Mail-Adresse</label>
+                        <input
+                            type="email"
+                            id="email"
+                            className={`${styles.input} ${errors.username ? styles.inputError : ''}`}
+                            // Das Feld wird als 'username' registriert
+                            {...register('username', {
+                                required: 'E-Mail-Adresse ist erforderlich',
+                                pattern: {
+                                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                                    message: "Ungültige E-Mail-Adresse"
+                                }
+                            })}
+                        />
+                        {errors.username && <p className={styles.error}>{errors.username.message}</p>}
                     </div>
-                )}
 
-                <Formik
-                    initialValues={{ email: '', password: '' }}
-                    validationSchema={LoginSchema}
-                    onSubmit={handleLogin}
-                >
-                    {({ errors, touched, isSubmitting }) => (
-                        <Form className="mt-8 space-y-6">
-                            <div className={styles.formGroup}>
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                                    E-Mail-Adresse
-                                </label>
-                                <Field
-                                    name="email"
-                                    type="email"
-                                    autoComplete="email"
-                                    className={`mt-1 block w-full px-3 py-2 border ${errors.email && touched.email ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm ${styles.formInput}`}
-                                />
-                                <ErrorMessage name="email" component="div" className="mt-1 text-xs text-red-600" />
-                            </div>
+                    <div className={styles.inputGroup}>
+                        <label htmlFor="password" className={styles.label}>Passwort</label>
+                        <input
+                            type="password"
+                            id="password"
+                            className={`${styles.input} ${errors.password ? styles.inputError : ''}`}
+                            {...register('password', { required: 'Passwort ist erforderlich' })}
+                        />
+                        {errors.password && <p className={styles.error}>{errors.password.message}</p>}
+                    </div>
 
-                            <div className={styles.formGroup}>
-                                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                                    Passwort
-                                </label>
-                                <Field
-                                    name="password"
-                                    type="password"
-                                    autoComplete="current-password"
-                                    className={`mt-1 block w-full px-3 py-2 border ${errors.password && touched.password ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm ${styles.formInput}`}
-                                />
-                                <ErrorMessage name="password" component="div" className="mt-1 text-xs text-red-600" />
-                            </div>
-
-                            <div className="flex items-center justify-end">
-                                <div className="text-sm">
-                                    <Link to="/passwort-vergessen" className="font-medium text-gray-800 hover:text-black hover:underline">
-                                        Passwort vergessen?
-                                    </Link>
-                                </div>
-                            </div>
-
-                            <div>
-                                <button
-                                    type="submit"
-                                    disabled={loading || isSubmitting}
-                                    className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 ${styles.authButton}`}
-                                >
-                                    {loading || isSubmitting ? <FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> : <FontAwesomeIcon icon={faSignInAlt} className="mr-2 h-5 w-5 text-gray-400 group-hover:text-gray-200" />}
-                                    Anmelden
-                                </button>
-                            </div>
-                        </Form>
+                    {message && (
+                        <div className={styles.serverError}>
+                            {message}
+                        </div>
                     )}
-                </Formik>
+
+                    <div className={styles.options}>
+                        <Link to="/passwort-vergessen" className={styles.link}>
+                            Passwort vergessen?
+                        </Link>
+                    </div>
+
+                    <button type="submit" className={styles.submitButton} disabled={loading}>
+                        {loading ? 'Anmelden...' : 'Sicher Anmelden'}
+                    </button>
+
+                    <div className={styles.footer}>
+                        <p>Noch kein Konto? <Link to="/register" className={styles.link}>Jetzt registrieren</Link></p>
+                    </div>
+                </form>
             </div>
-        </section>
+        </div>
     );
 }
 

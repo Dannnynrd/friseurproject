@@ -1,71 +1,142 @@
-/* friseursalon-frontend/src/components/Login.module.css */
+/* src/components/Login.module.css */
 
-/*
-  Die meisten Layout- und Formular-Stile werden durch Tailwind CSS
-  direkt in der JS-Datei gehandhabt.
-  Dieses Modul enthält spezifische Stile für die Login-Seite,
-  falls diese über Standard-Tailwind-Utilities hinausgehen.
-*/
-
-.loginPageContainer {
-    /*
-      Tailwind-Klassen im JS:
-      flex items-center justify-center min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8
-    */
-    /* Hier könnte z.B. ein Hintergrundbild oder -muster für die gesamte Seite hin. */
+.loginContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center; /* Vertikal zentrieren */
+    min-height: calc(100vh - var(--header-height));
+    padding: 2rem 1.5rem;
+    background-color: var(--color-background-offset);
 }
 
-.authContainer {
-    /*
-      Tailwind-Klassen im JS:
-      w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-2xl animate-up
-    */
-    /* Spezifische Stile für den Haupt-Login-Container, falls benötigt. */
+.loginWrapper {
+    width: 100%;
+    max-width: 420px;
+    padding: 2.5rem;
+    background-color: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: 16px; /* Modernerer Radius */
+    box-shadow: 0 10px 40px -15px rgba(0,0,0,0.05);
 }
 
-.formGroup {
-    /* Dient als semantischer Haken. Das meiste Styling kommt von Tailwind auf den Inputs/Labels. */
-    margin-bottom: 1.25rem; /* Tailwind: mb-5 */
+.headline {
+    font-family: var(--font-heading);
+    font-size: 2.25rem;
+    color: var(--color-text-dark);
+    text-align: center;
+    margin: 0 0 0.5rem 0;
 }
 
-.formInput {
-    /*
-      Tailwind-Klassen im JS:
-      mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm
-      placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm
-      Fehlerfall (border-red-500) wird dynamisch im JS gesetzt.
-    */
-    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+.subheadline {
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    color: var(--color-text-light);
+    text-align: center;
+    margin-bottom: 2.5rem;
 }
 
-.authButton {
-    /*
-      Tailwind-Klassen im JS:
-      group relative w-full flex justify-center py-3 px-4 border border-transparent
-      text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700
-      focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50
-    */
+.form {
+    display: flex;
+    flex-direction: column;
 }
 
-.authButton .svg-inline--fa:not(.fa-spinner) { /* Für das Icon neben dem Text, nicht den Spinner */
-    /* Tailwind-Klassen im JS: mr-2 h-5 w-5 text-indigo-500 group-hover:text-indigo-400 */
-    /* Die Farbe des Icons wird hier über Tailwind gesteuert, daher keine spezifische CSS-Regel nötig,
-       es sei denn, es gibt komplexere Anforderungen. */
+.inputGroup {
+    margin-bottom: 1.25rem;
 }
 
-
-.formMessage {
-    /*
-      Tailwind-Klassen im JS:
-      mt-4 p-3 rounded-md text-sm flex items-center
-      Spezifische Farben für error/success werden im JS gesetzt (z.B. bg-red-50 text-red-700 border-red-200).
-    */
+.label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-medium);
+    margin-bottom: 0.5rem;
 }
 
-.formMessage.error {
-    /* Dient als semantischer Haken, falls spezifische Modul-Stile für Fehlermeldungen benötigt werden. */
+.input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    font-size: 1rem;
+    background-color: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
 
-/* Die .animate-up Klasse und die Logik mit .visible für die Animation
-   wird als global betrachtet und sollte in App.css oder index.css verbleiben. */
+.inputError {
+    border-color: #ef4444;
+}
+
+.error, .serverError {
+    color: #ef4444; /* Rot */
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+}
+
+.serverError {
+    background-color: rgba(239, 68, 68, 0.1);
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    text-align: center;
+    margin: 0.5rem 0 1.5rem 0;
+}
+
+.options {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1.5rem;
+}
+
+.submitButton {
+    background-color: var(--color-text-dark);
+    color: #fff;
+    border: none;
+    padding: 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.submitButton:hover {
+    background-color: var(--color-text-medium);
+    transform: translateY(-2px);
+}
+
+.submitButton:disabled {
+    background-color: #9ca3af; /* Grau */
+    cursor: not-allowed;
+    transform: none;
+}
+
+.footer {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-border);
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--color-text-light);
+}
+
+.link {
+    font-weight: 600;
+    color: var(--color-accent);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.link:hover {
+    text-decoration: underline;
+}
+
+@media (min-width: 768px) {
+    .loginWrapper {
+        padding: 3rem;
+    }
+}
