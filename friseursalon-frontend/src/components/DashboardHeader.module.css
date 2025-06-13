@@ -1,0 +1,113 @@
+/* friseursalon-frontend/src/components/DashboardHeader.module.css */
+.statsPeriodFilterBar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    padding: 0.5rem;
+    background-color: white;
+    border-radius: 8px;
+    border: 1px solid #e7e7e7;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.periodButtonsMain {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.periodButton {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    background-color: transparent;
+    color: #4b5563; /* text-gray-600 */
+}
+
+.periodButton:hover:not(:disabled) {
+    background-color: #f3f4f6; /* bg-gray-100 */
+    color: #1f2937; /* text-gray-800 */
+}
+
+.periodButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.periodButton.active {
+    background-color: #4f46e5; /* bg-indigo-600 */
+    color: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.periodButtonsMore {
+    position: relative;
+}
+
+.moreIcon {
+    margin-left: 0.375rem; /* ml-1.5 */
+    transition: transform 0.2s ease;
+}
+
+.morePeriodsBtn[aria-expanded="true"] .moreIcon {
+    transform: rotate(180deg);
+}
+
+.morePeriodsDropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background-color: white;
+    border: 1px solid #e5e7eb; /* border-gray-200 */
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    z-index: 50;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 180px;
+}
+
+.dropdownItem {
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border-radius: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.dropdownItem:hover {
+    background-color: #f3f4f6;
+}
+
+.dropdownItem.active {
+    color: #4f46e5;
+    background-color: #e0e7ff;
+}
+
+.customPeriodBtn .filterIcon {
+    margin-right: 0.375rem; /* mr-1.5 */
+}
+
+.lastUpdatedTimestamp {
+    font-size: 0.75rem;
+    color: #6b7280; /* text-gray-500 */
+    text-align: right;
+    margin: -1rem 0.5rem 1.5rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.375rem; /* gap-1.5 */
+}

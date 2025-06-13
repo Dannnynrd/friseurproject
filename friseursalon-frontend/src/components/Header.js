@@ -1,118 +1,115 @@
-import React from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, Link } from 'react-router-dom';
+import EventBus from '../common/EventBus';
+import AuthService from '../services/auth.service';
 import styles from './Header.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBars, faTimes, faUserCircle, faSignOutAlt, faTachometerAlt, faUserCog, faCalendarCheck } from '@fortawesome/free-solid-svg-icons';
+import { faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
 
-function Header({
-                    currentUser,
-                    logOut,
-                    isMobileMenuOpen,
-                    toggleMobileMenu,
-                    closeMobileMenu,
-                    isHeaderScrolled,
-                    navigateToBooking,
-                    variant = 'solid'
-                }) {
+const Header = () => {
+    const [currentUser, setCurrentUser] = useState(undefined);
+    const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    const isAdmin = currentUser?.roles?.includes("ROLE_ADMIN");
-    const isThemed = variant === 'transparent' && !isHeaderScrolled;
-
-    const headerClasses = `${styles.header} ${isThemed ? styles.transparent : styles.solid}`;
-    const textColor = isThemed ? 'text-white' : 'text-gray-800';
-    const hoverTextColor = isThemed ? 'hover:text-white' : 'hover:text-black';
-
-    const navLinkClasses = ({ isActive }) =>
-        `${styles.navLinkItem} ${textColor} ${hoverTextColor}` +
-        (isActive ? ` ${styles.navLinkActive}` : '');
-
-    const ctaButtonClasses = `${styles.ctaButton} ${isThemed ? styles.ctaButtonThemed : styles.ctaButtonSolid}`;
-
-    const handleNavLinkClick = (e, hash) => {
-        if (location.pathname !== '/') {
-            navigate('/' + hash, { replace: true });
-        } else {
-            e.preventDefault();
-            document.querySelector(hash)?.scrollIntoView({ behavior: 'smooth' });
+    useEffect(() => {
+        const user = AuthService.getCurrentUser();
+        if (user) {
+            setCurrentUser(user);
         }
-        closeMobileMenu();
+
+        EventBus.on("logout", () => {
+            logOut();
+        });
+
+        return () => {
+            EventBus.remove("logout");
+        };
+    }, []);
+
+    const logOut = () => {
+        AuthService.logout();
+        setCurrentUser(undefined);
+        setMobileMenuOpen(false); // Menü bei Logout schließen
     };
 
+    const toggleMobileMenu = () => {
+        setMobileMenuOpen(!isMobileMenuOpen);
+    };
+
+    const closeMobileMenu = () => {
+        setMobileMenuOpen(false);
+    }
+
+    // Fügt eine Klasse zum Body hinzu, um das Scrollen zu verhindern, wenn das Menü geöffnet ist
+    useEffect(() => {
+        if (isMobileMenuOpen) {
+            document.body.classList.add(styles.noScroll);
+        } else {
+            document.body.classList.remove(styles.noScroll);
+        }
+    }, [isMobileMenuOpen]);
+
+
+    const isAdmin = currentUser && currentUser.roles.includes("ROLE_ADMIN");
 
     return (
-        <header className={headerClasses}>
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full">
-                <div className="flex items-center justify-between h-full">
+        <header className={styles.header}>
+            <div className={styles.container}>
+                <Link to="/" className={styles.logo} onClick={closeMobileMenu}>
+                    SalonName
+                </Link>
 
-                    <div className="flex items-center">
-                        <Link to="/" className={`${styles.logo} ${textColor}`} onClick={closeMobileMenu}>IMW</Link>
-                    </div>
+                <nav className={`${styles.nav} ${isMobileMenuOpen ? styles.navOpen : ''}`}>
+                    <ul className={styles.navList}>
+                        <li><NavLink to="/services" className={({ isActive }) => isActive ? styles.activeLink : ''} onClick={closeMobileMenu}>Dienstleistungen</NavLink></li>
+                        <li><NavLink to="/about" className={({ isActive }) => isActive ? styles.activeLink : ''} onClick={closeMobileMenu}>Über Uns</NavLink></li>
+                        <li><NavLink to="/contact" className={({ isActive }) => isActive ? styles.activeLink : ''} onClick={closeMobileMenu}>Kontakt</NavLink></li>
 
-                    <nav className="hidden md:flex items-center space-x-2 lg:space-x-4">
-                        <NavLink to="/" className={navLinkClasses} end>Start</NavLink>
-                        <a href="/#services-section" className={navLinkClasses} onClick={(e) => handleNavLinkClick(e, '#services-section')}>Dienstleistungen</a>
-                        <a href="/#gallery-journal" className={navLinkClasses} onClick={(e) => handleNavLinkClick(e, '#gallery-journal')}>Galerie</a>
-                    </nav>
-
-                    <div className="hidden md:flex items-center justify-end">
-                        {currentUser ? (
-                            <div className="relative group">
-                                <button className={`${styles.userButton} ${textColor}`}>
-                                    <FontAwesomeIcon icon={faUserCircle} />
-                                </button>
-                                <div className={styles.dropdownMenu}>
-                                    <div className="px-4 py-3 border-b border-gray-100">
-                                        <p className="text-xs text-gray-500">Angemeldet als</p>
-                                        <p className="text-sm font-medium text-gray-900 truncate">{currentUser.firstName || currentUser.email}</p>
-                                    </div>
-                                    <div className="py-1">
-                                        <NavLink to="/my-account" className={styles.dropdownItem}><FontAwesomeIcon icon={faCalendarCheck} className={styles.dropdownIcon} /> Meine Termine</NavLink>
-                                        <NavLink to="/my-account?tab=profile" className={styles.dropdownItem}><FontAwesomeIcon icon={faUserCog} className={styles.dropdownIcon} /> Profil</NavLink>
-                                        {isAdmin && <NavLink to="/my-account?tab=admin-dashboard" className={styles.dropdownItem}><FontAwesomeIcon icon={faTachometerAlt} className={styles.dropdownIcon} /> Admin</NavLink>}
-                                    </div>
-                                    <div className="py-1 border-t border-gray-100">
-                                        <button onClick={logOut} className={`${styles.dropdownItem} w-full text-left`}><FontAwesomeIcon icon={faSignOutAlt} className={styles.dropdownIcon} /> Ausloggen</button>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <NavLink to="/login" className={`${styles.loginButton} ${isThemed ? styles.loginButtonThemed : styles.loginButtonSolid}`}>
-                                Login
-                            </NavLink>
-                        )}
-                        <button onClick={navigateToBooking} className={ctaButtonClasses}>Termin buchen</button>
-                    </div>
-
-                    <div className="md:hidden">
-                        <button onClick={toggleMobileMenu} className={`${styles.mobileToggle} ${textColor}`}>
-                            <FontAwesomeIcon icon={isMobileMenuOpen ? faTimes : faBars} />
-                        </button>
-                    </div>
-
-                </div>
-            </div>
-
-            <div className={`${styles.mobileMenu} ${isMobileMenuOpen ? styles.mobileMenuOpen : ''}`}>
-                <nav className="p-4 space-y-2">
-                    <NavLink to="/" className={styles.mobileLink} onClick={closeMobileMenu}>Start</NavLink>
-                    <a href="/#services-section" className={styles.mobileLink} onClick={(e) => handleNavLinkClick(e, '#services-section')}>Dienstleistungen</a>
-                    <a href="/#gallery-journal" className={styles.mobileLink} onClick={(e) => handleNavLinkClick(e, '#gallery-journal')}>Galerie</a>
+                        {/* Auth Links im mobilen Menü */}
+                        <li className={styles.mobileAuthLinks}>
+                            {currentUser ? (
+                                <>
+                                    <Link to={isAdmin ? "/admin/dashboard" : "/account/dashboard"} className={styles.authButtonMobile} onClick={closeMobileMenu}>
+                                        Dashboard
+                                    </Link>
+                                    <a href="/login" className={styles.authButtonMobile} onClick={(e) => { e.preventDefault(); closeMobileMenu(); logOut(); }}>
+                                        Logout
+                                    </a>
+                                </>
+                            ) : (
+                                <>
+                                    <Link to="/login" className={styles.authButtonMobile} onClick={closeMobileMenu}>Login</Link>
+                                    <Link to="/register" className={styles.authButtonMobile} onClick={closeMobileMenu}>Registrieren</Link>
+                                </>
+                            )}
+                        </li>
+                    </ul>
                 </nav>
-                <div className="p-4 border-t border-gray-100 space-y-2">
+
+                <div className={styles.actions}>
                     {currentUser ? (
-                        <>
-                            <NavLink to="/my-account" className={styles.mobileLink} onClick={closeMobileMenu}><FontAwesomeIcon icon={faUserCircle} className="mr-2" /> Mein Konto</NavLink>
-                            {isAdmin && <NavLink to="/my-account?tab=admin-dashboard" className={styles.mobileLink} onClick={closeMobileMenu}><FontAwesomeIcon icon={faTachometerAlt} className="mr-2" /> Admin</NavLink>}
-                            <button onClick={logOut} className={`${styles.mobileLink} w-full text-left`}><FontAwesomeIcon icon={faSignOutAlt} className="mr-2" /> Ausloggen</button>
-                        </>
+                        <div className={styles.authActions}>
+                            <Link to={isAdmin ? "/admin/dashboard" : "/account/dashboard"} className={styles.dashboardLink}>
+                                Dashboard
+                            </Link>
+                            <a href="/login" className={styles.logoutLink} onClick={logOut}>
+                                Logout
+                            </a>
+                        </div>
                     ) : (
-                        <NavLink to="/login" className={styles.mobileLink} onClick={closeMobileMenu}>Login</NavLink>
+                        <div className={styles.authActions}>
+                            <Link to="/login" className={styles.loginLink}>Login</Link>
+                            <Link to="/register" className={styles.registerButton}>Registrieren</Link>
+                        </div>
                     )}
-                    <button onClick={() => {navigateToBooking(); closeMobileMenu()}} className={styles.mobileCtaButton}>Termin buchen</button>
+                    <Link to="/booking" className={styles.ctaButton}>Jetzt Buchen</Link>
                 </div>
+
+                <button className={styles.mobileMenuButton} onClick={toggleMobileMenu} aria-label="Menü öffnen/schließen">
+                    <FontAwesomeIcon icon={isMobileMenuOpen ? faTimes : faBars} />
+                </button>
             </div>
         </header>
     );
-}
+};
 
 export default Header;

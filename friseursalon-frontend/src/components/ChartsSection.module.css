@@ -1,0 +1,73 @@
+/* friseursalon-frontend/src/components/ChartsSection.module.css */
+.statsSectionBox {
+    background-color: white;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.statsSectionTitle {
+    font-family: 'Georgia', serif;
+    font-size: 1.25rem;
+    color: #1f2937;
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.statsSectionTitle > span:first-child {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.statsPeriodDisplay {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: #6b7280;
+}
+
+.chartsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.chartCard {
+    position: relative;
+    background-color: #fdfdff;
+    border: 1px solid #f3f4f6;
+    border-radius: 8px;
+    padding: 1rem;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.exportButton {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    color: #6b7280;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.exportButton:hover {
+    background: #f3f4f6;
+    color: #1f2937;
+    transform: scale(1.1);
+}

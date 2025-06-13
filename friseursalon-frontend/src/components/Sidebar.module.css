@@ -1,0 +1,164 @@
+/* friseursalon-frontend/src/components/Sidebar.module.css */
+.sidebarColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.sidebarSection {
+    background-color: white;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.sidebarTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.marginTop {
+    margin-top: 1.5rem;
+}
+
+.quickCreateButton {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    background-color: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.quickCreateButton:hover {
+    background-color: #4338ca;
+}
+
+.activityWidget {
+    background-color: #f9fafb;
+    padding: 0.75rem;
+    border-radius: 8px;
+}
+.activityWidget h4 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+}
+.activityWidget p {
+    font-size: 0.8rem;
+    color: #4b5563;
+    margin: 0;
+}
+.activityWidget p span {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.highlightsList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.85rem;
+}
+.highlightsList li {
+    padding: 0.25rem 0;
+}
+.highlightsList li.positive { color: #166534; }
+.highlightsList li.negative { color: #991b1b; }
+.highlightsList li.alert { background-color: #fefce8; padding: 0.5rem; border-radius: 6px; }
+
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f3f4f6;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+.sectionHeader .sidebarTitle {
+    margin: 0;
+}
+.exportButton {
+    background: none;
+    border: 1px solid #e5e7eb;
+    color: #6b7280;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.exportButton:hover {
+    background-color: #f3f4f6;
+    color: #1f2937;
+}
+
+.appointmentList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+.appointmentList li {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-radius: 6px;
+}
+.appointmentList li:hover {
+    background-color: #f9fafb;
+}
+.appointmentList li:last-child {
+    border-bottom: none;
+}
+.appointmentTime {
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+.appointmentDetails {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.8rem;
+}
+.appointmentDetails span:first-child {
+    font-weight: 500;
+    color: #1f2937;
+}
+.appointmentDetails span:last-child {
+    color: #6b7280;
+}
+.appointmentStatus {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    background-color: #eff6ff;
+    color: #3b82f6;
+}
+
+.loadingSmall, .noDataSmall {
+    text-align: center;
+    padding: 1rem;
+    color: #6b7280;
+    font-size: 0.85rem;
+}
