@@ -1,55 +1,84 @@
-/* friseursalon-frontend/src/App.css */
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Merriweather:wght@400;700&display=swap');
+/* src/App.css */
 
+/* --- Schriftarten Importieren --- */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
+
+/* --- Globale CSS Variablen (Design System) --- */
 :root {
-  /* --- Farbpalette --- */
-  --light-bg: #ffffff;
-  --dark-text: #1f1f1f;
-  --medium-grey-text: #5f5f5f;
-  --light-grey-text: #8c8c8c;
-  --border-color: #e7e7e7;
-  --border-color-light: #f0f0f0;
-  --border-color-medium: #d1d5db;
-  --light-grey-bg: #f9f9f9;
+  /* Farben */
+  --color-primary: #4f46e5; /* Indigo */
+  --color-primary-dark: #4338ca;
+  --color-text-dark: #111827; /* Gray-900 */
+  --color-text-medium: #374151; /* Gray-700 */
+  --color-text-light: #6b7280; /* Gray-500 */
+  --color-background: #ffffff;
+  --color-background-offset: #f9fafb; /* Gray-50 */
+  --color-border: #e5e7eb; /* Gray-200 */
 
-  /* --- UI-Element Farben --- */
-  --focus-ring-color: #374151; /* Tailwind gray-700 */
-
-  /* --- Schriftarten & Übergänge --- */
-  --font-serif: 'Merriweather', serif;
+  /* Schriftarten */
+  --font-heading: 'Playfair Display', serif; /* Eine elegante Schrift für Überschriften */
   --font-sans: 'Manrope', sans-serif;
 
-  /* --- STABIL: Header-Höhe als Variable --- */
-  --header-height: 5rem; /* 80px */
+  /* Layout */
+  --header-height: 5.5rem; /* 88px, Höhe des Headers für den Abstand */
+  --container-width: 1320px;
+  --container-padding: 1.5rem;
+}
+
+/* --- Globale Resets & Body Styles --- */
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 body {
+  margin: 0;
   font-family: var(--font-sans);
-  color: var(--medium-grey-text);
-  background-color: var(--light-bg);
+  color: var(--color-text-medium);
+  background-color: var(--color-background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* --- STABIL: Layout-Klassen --- */
-.main-content {
-  /* Pusht den gesamten Inhalt unter den fixierten Header */
-  padding-top: var(--header-height);
-}
-
-.mobile-menu-active {
-  /* Verhindert das Scrollen des Body, wenn das mobile Menü geöffnet ist */
+/* Verhindert das Scrollen, wenn das mobile Menü aktiv ist */
+body.mobile-menu-active {
   overflow: hidden;
 }
 
-/* PRELOADER etc. bleibt wie in deiner Version */
+/* --- Globale Layout-Klassen (Schlüssel zur Lösung) --- */
+
+/* Wrapper für die gesamte App */
+.App {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Dieser Wrapper wird für ALLE Seiten außer der Homepage verwendet. */
+/* Er sorgt dafür, dass der Inhalt unter dem fixierten Header beginnt. */
+.page-layout {
+  padding-top: var(--header-height);
+  flex-grow: 1; /* Stellt sicher, dass der Footer unten bleibt */
+  width: 100%;
+}
+
+/* Homepage-spezifisches Layout */
+.homepage-layout {
+  /* Die Homepage hat keinen Abstand, da die Hero-Section hinter dem Header liegt */
+  width: 100%;
+  flex-grow: 1;
+}
+
+
+/* --- Preloader Styles --- */
 #preloader {
   position: fixed;
   inset: 0;
-  background: var(--light-bg);
+  background: var(--color-background);
   z-index: 10002;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.5s ease 0.1s, visibility 0s 0.6s linear;
+  transition: opacity 0.5s ease 0.2s, visibility 0s 0.7s linear;
 }
 #preloader.loaded {
   opacity: 0;
@@ -57,10 +86,10 @@ body {
   pointer-events: none;
 }
 .loader-char {
-  font-family: var(--font-serif), serif;
-  font-size: 1.6rem;
-  animation: pulse 1.3s infinite ease-in-out;
-  color: var(--dark-text);
+  font-family: var(--font-heading), serif;
+  font-size: 2rem;
+  animation: pulse 1.5s infinite ease-in-out;
+  color: var(--color-text-dark);
 }
 @keyframes pulse {
   0%, 100% { opacity: 0.4; }

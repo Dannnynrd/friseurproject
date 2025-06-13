@@ -32,8 +32,33 @@ import FAQSection from './components/FAQSection';
 import LocationSection from './components/LocationSection';
 import NewsletterSection from './components/NewsletterSection';
 
-// --- Helper Components ---
+// --- Helper Components für das Layout ---
 
+// Dieser Wrapper wird für ALLE Seiten außer der Homepage verwendet.
+const PageLayout = ({ children }) => (
+    <div className="page-layout">
+        {children}
+    </div>
+);
+
+// Bündelt alle Sektionen der Homepage
+const HomePage = () => (
+    <div className="homepage-layout">
+        <HeroSection />
+        <TrustBarSection />
+        <ExperienceSection />
+        <TestimonialsSection />
+        <AboutFounderSection />
+        <ServicesSection />
+        <GalleryJournalSection />
+        <EssentialsSection />
+        <FAQSection />
+        <LocationSection />
+        <NewsletterSection />
+    </div>
+);
+
+// Schützt Routen, die eine Anmeldung erfordern
 const ProtectedRoute = ({ children, currentUser }) => {
     if (!currentUser) {
         return <Navigate to="/login" state={{ from: window.location.pathname }} replace />;
@@ -41,154 +66,80 @@ const ProtectedRoute = ({ children, currentUser }) => {
     return children;
 };
 
-const MainLayout = ({ children }) => (
-    <main className="main-content">
-        {children}
-        <Footer />
-    </main>
-);
-
-const HomePage = ({ navigateToBooking }) => (
-    <>
-        <HeroSection />
-        <TrustBarSection />
-        <ExperienceSection />
-        <TestimonialsSection />
-        <AboutFounderSection />
-        <ServicesSection openBookingModal={navigateToBooking} />
-        <GalleryJournalSection />
-        <EssentialsSection />
-        <FAQSection />
-        <LocationSection />
-        <NewsletterSection />
-    </>
-);
-
 // --- Main App Component ---
 
 function App() {
     const [currentUser, setCurrentUser] = useState(AuthService.getCurrentUser());
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
-    const [refreshAppointmentsList, setRefreshAppointmentsList] = useState(0);
-    const [refreshServicesList, setRefreshServicesList] = useState(0);
-
     const preloaderRef = useRef(null);
     const navigate = useNavigate();
     const location = useLocation();
 
-    // --- Side Effects ---
-
-    // Close mobile menu on route change
-    useEffect(() => {
-        setIsMobileMenuOpen(false);
-    }, [location.pathname]);
-
-    // Prevent body scrolling when mobile menu is open
-    useEffect(() => {
-        document.body.classList.toggle('mobile-menu-active', isMobileMenuOpen);
-        return () => document.body.classList.remove('mobile-menu-active');
-    }, [isMobileMenuOpen]);
-
-    // Handle scroll detection for header effects
-    useEffect(() => {
-        const handleScroll = () => setIsHeaderScrolled(window.scrollY > 20);
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        handleScroll(); // Initial check
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
-
-    // Handle preloader
+    // Preloader-Logik
     useEffect(() => {
         const preloader = preloaderRef.current;
         if (preloader) {
-            const id = setTimeout(() => preloader.classList.add('loaded'), 300);
-            return () => clearTimeout(id);
+            const timer = setTimeout(() => preloader.classList.add('loaded'), 300);
+            return () => clearTimeout(timer);
         }
     }, []);
 
-    // --- Authentication Logic ---
-
+    // Logout-Logik
     const logOut = useCallback(() => {
         AuthService.logout();
         setCurrentUser(null);
-        setIsMobileMenuOpen(false);
         navigate('/');
     }, [navigate]);
-
-    const handleLoginSuccess = useCallback(() => {
-        const user = AuthService.getCurrentUser();
-        setCurrentUser(user);
-        const from = location.state?.from || (user?.roles?.includes('ROLE_ADMIN') ? '/my-account?tab=admin-dashboard' : '/my-account');
-        navigate(from, { replace: true });
-    }, [navigate, location]);
-
-    const handleProfileUpdateSuccess = useCallback(() => {
-        setCurrentUser(AuthService.getCurrentUser());
-    }, []);
 
     useEffect(() => {
         EventBus.on("logout", logOut);
         return () => EventBus.remove("logout", logOut);
     }, [logOut]);
 
-    // --- Navigation ---
+    // Nach erfolgreichem Login navigieren
+    const handleLoginSuccess = useCallback(() => {
+        const user = AuthService.getCurrentUser();
+        setCurrentUser(user);
+        const from = location.state?.from || (user?.roles?.includes('ROLE_ADMIN') ? '/account' : '/account');
+        navigate(from, { replace: true });
+    }, [navigate, location.state]);
 
-    const navigateToBooking = useCallback((serviceName = null) => {
-        navigate(serviceName ? `/buchen/${encodeURIComponent(serviceName)}` : '/buchen');
-    }, [navigate]);
-
-    // --- Render ---
-
-    const headerVariant = location.pathname === '/' ? 'transparent' : 'solid';
 
     return (
         <div className="App">
-            <div id="preloader" ref={preloaderRef}><span className="loader-char">IMW</span></div>
+            <div id="preloader" ref={preloaderRef}><span className="loader-char">SD</span></div>
 
-            <Header
-                currentUser={currentUser}
-                isMobileMenuOpen={isMobileMenuOpen}
-                toggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)}
-                closeMobileMenu={() => setIsMobileMenuOpen(false)}
-                isHeaderScrolled={isHeaderScrolled}
-                navigateToBooking={navigateToBooking}
-                logOut={logOut}
-                variant={headerVariant}
-            />
+            <Header />
 
-            <Routes>
-                <Route path="/" element={<MainLayout><HomePage navigateToBooking={navigateToBooking} /></MainLayout>} />
-                <Route path="/buchen/*" element={<MainLayout><BookingPage onAppointmentAdded={() => setRefreshAppointmentsList(p => p + 1)} currentUser={currentUser} onLoginSuccess={handleLoginSuccess} /></MainLayout>} />
+            <main>
+                <Routes>
+                    {/* Homepage Route - ohne PageLayout für den transparenten Header-Effekt */}
+                    <Route path="/" element={<HomePage />} />
 
-                <Route path="/login" element={currentUser ? <Navigate to="/my-account" replace /> : <Login onLoginSuccess={handleLoginSuccess} />} />
-                <Route path="/register" element={currentUser ? <Navigate to="/my-account" replace /> : <Register />} />
-                <Route path="/passwort-vergessen" element={currentUser ? <Navigate to="/" replace /> : <ForgotPasswordPage />} />
-                <Route path="/passwort-zuruecksetzen" element={currentUser ? <Navigate to="/" replace /> : <ResetPasswordPage />} />
+                    {/* Alle anderen Seiten werden mit PageLayout gewrappt */}
+                    <Route path="/buchen/*" element={<PageLayout><BookingPage currentUser={currentUser} onLoginSuccess={handleLoginSuccess} /></PageLayout>} />
 
-                <Route
-                    path="/my-account"
-                    element={
-                        <ProtectedRoute currentUser={currentUser}>
-                            <MainLayout>
-                                <AccountDashboard
-                                    currentUser={currentUser}
-                                    logOut={logOut}
-                                    onAppointmentAdded={() => setRefreshAppointmentsList(p => p + 1)}
-                                    refreshAppointmentsList={refreshAppointmentsList}
-                                    onServiceAdded={() => setRefreshServicesList(p => p + 1)}
-                                    refreshServicesList={refreshServicesList}
-                                    onProfileUpdateSuccess={handleProfileUpdateSuccess}
-                                    onProfileUpdateError={(err) => console.error("Profile update error:", err)}
-                                />
-                            </MainLayout>
-                        </ProtectedRoute>
-                    }
-                />
+                    <Route path="/login" element={currentUser ? <Navigate to="/account" replace /> : <PageLayout><Login onLoginSuccess={handleLoginSuccess} /></PageLayout>} />
+                    <Route path="/register" element={currentUser ? <Navigate to="/account" replace /> : <PageLayout><Register /></PageLayout>} />
+                    <Route path="/passwort-vergessen" element={currentUser ? <Navigate to="/" replace /> : <PageLayout><ForgotPasswordPage /></PageLayout>} />
+                    <Route path="/passwort-zuruecksetzen" element={currentUser ? <Navigate to="/" replace /> : <PageLayout><ResetPasswordPage /></PageLayout>} />
 
-                <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                    <Route
+                        path="/account/*"
+                        element={
+                            <ProtectedRoute currentUser={currentUser}>
+                                <PageLayout>
+                                    <AccountDashboard currentUser={currentUser} onProfileUpdateSuccess={() => setCurrentUser(AuthService.getCurrentUser())} />
+                                </PageLayout>
+                            </ProtectedRoute>
+                        }
+                    />
 
+                    {/* Fallback-Route */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </main>
+
+            <Footer />
             <AuthVerify logOut={logOut} />
         </div>
     );
