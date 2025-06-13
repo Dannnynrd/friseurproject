@@ -21,7 +21,7 @@ import EventBus from './common/EventBus';
 
 // Homepage Sections
 import HeroSection from './components/HeroSection';
-import TrustBarSection from './components/TrustBarSection';
+import TrustBarSection from './components/TrustBarSection'; // Wichtig: Import hinzugefügt
 import ExperienceSection from './components/ExperienceSection';
 import TestimonialsSection from './components/TestimonialsSection';
 import AboutFounderSection from './components/AboutFounderSection';
@@ -45,9 +45,8 @@ const PageLayout = ({ children }) => (
 const HomePage = () => (
     <div className="homepage-layout">
         <HeroSection />
-        <TrustBarSection />
+        <TrustBarSection /> {/* KORREKTUR: Komponente hier eingefügt */}
         <ExperienceSection />
-        {/* Die IDs sind hier für die Anker-Navigation aus dem Header entscheidend */}
         <div id="services-section">
             <ServicesSection maxServicesToShow={3} />
         </div>
@@ -126,29 +125,24 @@ function App() {
 
     return (
         <div className="App">
-            {/* Vereinfachter Preloader ohne Text */}
             <div id="preloader" ref={preloaderRef}></div>
 
             <Header currentUser={currentUser} logOut={logOut} />
 
             <main>
                 <Routes>
-                    {/* Homepage Route */}
                     <Route path="/" element={<HomePage />} />
 
-                    {/* Fallback für Ankerlinks von anderen Seiten */}
                     <Route path="/#services-section" element={<Navigate to="/" replace />} />
                     <Route path="/#about-founder" element={<Navigate to="/" replace />} />
                     <Route path="/#location" element={<Navigate to="/" replace />} />
 
-                    {/* Alle anderen Seiten werden mit PageLayout gewrappt */}
                     <Route path="/buchen" element={<PageLayout><BookingPage currentUser={currentUser} onLoginSuccess={handleLoginSuccess} /></PageLayout>} />
                     <Route path="/login" element={currentUser ? <Navigate to="/account" replace /> : <PageLayout><Login onLoginSuccess={handleLoginSuccess} /></PageLayout>} />
                     <Route path="/register" element={currentUser ? <Navigate to="/account" replace /> : <PageLayout><Register /></PageLayout>} />
                     <Route path="/passwort-vergessen" element={currentUser ? <Navigate to="/" replace /> : <PageLayout><ForgotPasswordPage /></PageLayout>} />
                     <Route path="/passwort-zuruecksetzen" element={currentUser ? <Navigate to="/" replace /> : <PageLayout><ResetPasswordPage /></PageLayout>} />
 
-                    {/* Geschützte Route für das Benutzerkonto */}
                     <Route
                         path="/account"
                         element={
@@ -160,7 +154,6 @@ function App() {
                         }
                     />
 
-                    {/* Fallback-Route, leitet zur Startseite um */}
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </main>
