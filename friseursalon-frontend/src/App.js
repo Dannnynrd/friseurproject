@@ -21,8 +21,8 @@ import EventBus from './common/EventBus';
 
 // Homepage Sections
 import HeroSection from './components/HeroSection';
-import TrustBarSection from './components/TrustBarSection'; // Wichtig: Import hinzugefügt
-import ExperienceSection from './components/ExperienceSection';
+import TrustBarSection from './components/TrustBarSection';
+import ExperienceSection from './components/ExperienceSection'; // Wichtig: Import hinzugefügt
 import TestimonialsSection from './components/TestimonialsSection';
 import AboutFounderSection from './components/AboutFounderSection';
 import ServicesSection from './components/ServicesSection';
@@ -45,8 +45,8 @@ const PageLayout = ({ children }) => (
 const HomePage = () => (
     <div className="homepage-layout">
         <HeroSection />
-        <TrustBarSection /> {/* KORREKTUR: Komponente hier eingefügt */}
-        <ExperienceSection />
+        <TrustBarSection />
+        <ExperienceSection /> {/* KORREKTUR: Komponente hier eingefügt */}
         <div id="services-section">
             <ServicesSection maxServicesToShow={3} />
         </div>

@@ -1,82 +1,134 @@
-/* friseursalon-frontend/src/components/ExperienceSection.module.css */
+/* src/components/ExperienceSection.module.css */
 
-/*
-  Die meisten Layout- und Typografie-Stile werden durch Tailwind CSS
-  direkt in der JS-Datei oder über die tailwind.config.js gehandhabt.
-  Diese Datei ist für spezifische Stile, die darüber hinausgehen oder
-  zur besseren Lesbarkeit ausgelagert werden.
-*/
-
-.experienceGrid {
-    /*
-      Tailwind-Klassen im JS:
-      grid md:grid-cols-3 gap-8 lg:gap-10
-      Diese decken das responsive Grid-Layout ab.
-    */
-}
-
-.experienceStep {
-    /*
-      Tailwind-Klassen im JS:
-      text-center p-6 md:p-8 bg-light-bg border border-gray-200 rounded-xl
-      shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out
-      animate-up hover:-translate-y-2
-      Diese decken das Basis-Styling der Karten und den Hover-Effekt ab.
-      Die border-color wurde zu gray-200 und rounded zu -xl für einen moderneren Look geändert.
-      Der Schatten wurde intensiviert (shadow-lg, hover:shadow-2xl) und der Hover-Effekt (-translate-y-2) verstärkt.
-    */
-    /* Falls ein spezifischer innerer Rahmen oder Effekt gewünscht ist: */
-    /*
-    position: relative;
+.experienceSection {
+    background-color: var(--color-background-offset);
+    padding: 6rem 1.5rem;
     overflow: hidden;
-    */
 }
 
-/* Beispiel für einen subtilen inneren Glanz-Effekt (optional)
-.experienceStep::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
-  transform: rotate(45deg);
-  transition: opacity 0.5s ease;
-  opacity: 0;
-  pointer-events: none;
+.container {
+    max-width: var(--container-width);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: center;
+    gap: 2rem;
 }
 
-.experienceStep:hover::before {
-  opacity: 1;
-}
-*/
+.imageWrapper {
+    position: relative;
+    min-height: 400px;
+    border-radius: 12px;
+    overflow: hidden;
 
-.stepNumber {
-    /*
-      Tailwind-Klassen im JS:
-      block text-2xl font-bold text-indigo-500 mb-4
-      (Größer, fetter und andere Akzentfarbe für mehr Hervorhebung)
-    */
-    line-height: 1; /* Stellt sicher, dass die Nummer nicht zu viel vertikalen Platz einnimmt */
+    /* Animation */
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 1s ease-out, transform 1s ease-out;
 }
 
-.stepTitle {
-    /*
-      Tailwind-Klassen im JS:
-      font-serif text-xl md:text-2xl font-semibold text-dark-text mb-3
-    */
+.experienceSection.visible .imageWrapper {
+    opacity: 1;
+    transform: scale(1);
 }
 
-.stepDescription {
-    /*
-      Tailwind-Klassen im JS:
-      text-sm md:text-base text-medium-grey-text leading-relaxed
-    */
-    min-height: 4.5em; /* Hilft, die Kartenhöhe etwas konsistenter zu halten */
+.imageWrapper::before {
+    content: '';
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: url('https://images.pexels.com/photos/3993442/pexels-photo-3993442.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2') no-repeat center center;
+    background-size: cover;
+    transition: transform 0.4s ease;
 }
 
-/*
-  Die .animate-up Klasse und die Logik mit .visible für die Animation
-  wird als global betrachtet und sollte in App.css oder index.css verbleiben.
-*/
+.imageWrapper:hover::before {
+    transform: scale(1.05);
+}
+
+.contentWrapper {
+    padding: 2rem;
+    background-color: var(--color-background);
+    border-radius: 12px;
+    z-index: 2;
+
+    /* Animation */
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 1s ease-out 0.2s, transform 1s ease-out 0.2s;
+}
+
+.experienceSection.visible .contentWrapper {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.headline {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    color: var(--color-text-dark);
+    margin: 0 0 1.5rem 0;
+    line-height: 1.1;
+}
+
+.description {
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    color: var(--color-text-light);
+    line-height: 1.7;
+    margin-bottom: 2.5rem;
+    max-width: 450px; /* Begrenzt die Textbreite */
+}
+
+.ctaButton {
+    display: inline-flex;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text-dark);
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.ctaButton:hover {
+    color: var(--color-accent);
+}
+
+.ctaIcon {
+    margin-left: 0.5rem;
+    transition: transform 0.3s ease;
+}
+
+.ctaButton:hover .ctaIcon {
+    transform: translateX(5px);
+}
+
+/* Responsive Anpassungen */
+@media (min-width: 992px) {
+    .experienceSection {
+        padding: 8rem 2rem;
+    }
+    .container {
+        grid-template-columns: repeat(12, 1fr);
+        gap: 0;
+    }
+    .imageWrapper {
+        grid-column: 1 / span 7;
+        grid-row: 1 / 1;
+        min-height: 550px;
+    }
+    .contentWrapper {
+        grid-column: 6 / span 6;
+        grid-row: 1 / 1;
+        padding: 3rem;
+        box-shadow: 0 20px 40px -15px rgba(0,0,0,0.1);
+    }
+    .headline {
+        font-size: 3.5rem;
+    }
+}
