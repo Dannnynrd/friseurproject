@@ -1,88 +1,181 @@
-/* friseursalon-frontend/src/components/ServicesSection.module.css */
+/* src/components/ServicesSection.module.css */
 
-.servicesGrid {
-    /*
-      Tailwind-Klassen im JS:
-      grid md:grid-cols-2 lg:grid-cols-3 gap-8
-    */
+.servicesSection {
+    background-color: var(--color-background);
+    padding: 6rem 1.5rem;
+
+    opacity: 0;
+    transition: opacity 1s ease-out;
 }
 
+.servicesSection.visible {
+    opacity: 1;
+}
+
+.container {
+    max-width: var(--container-width);
+    margin: 0 auto;
+}
+
+.sectionHeader {
+    text-align: center;
+    max-width: 48rem;
+    margin: 0 auto 4rem auto;
+
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s ease-out 0.2s, transform 0.8s ease-out 0.2s;
+}
+
+.servicesSection.visible .sectionHeader {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.headline {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    color: var(--color-text-dark);
+    margin: 0 0 1rem 0;
+}
+
+.subheadline {
+    font-family: var(--font-sans);
+    font-size: 1.05rem;
+    color: var(--color-text-light);
+    line-height: 1.7;
+}
+
+.servicesGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+}
+
+/* Service Card Styling */
 .serviceCard {
-    /*
-      Tailwind-Klassen im JS:
-      bg-light-bg border border-border-color-light rounded-lg shadow-sm overflow-hidden flex flex-col
-      Die Klasse 'flex flex-col' ist wichtig, damit der Button unten bleibt, wenn flex-grow auf der Beschreibung ist.
-    */
-    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    background-color: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 25px rgba(0,0,0,0.05);
+    border: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+/* Staggered animation for cards */
+.servicesGrid > div:nth-child(1) { transition-delay: 0.3s; }
+.servicesGrid > div:nth-child(2) { transition-delay: 0.4s; }
+.servicesGrid > div:nth-child(3) { transition-delay: 0.5s; }
+.servicesGrid > div:nth-child(4) { transition-delay: 0.6s; }
+
+.servicesSection.visible .serviceCard {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .serviceCard:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08); /* Etwas stärkerer Schatten beim Hover */
+    transform: translateY(-8px);
+    box-shadow: 0 15px 35px -5px rgba(0,0,0,0.1);
 }
 
-.serviceImageContainer {
-    /* Container für das Bild, falls spezifische Stile benötigt werden, z.B. für Seitenverhältnisse */
-    position: relative;
-    overflow: hidden; /* Stellt sicher, dass das Bild innerhalb der Rundung bleibt, falls das Bild selbst nicht gerundet ist */
+.imageWrapper {
+    height: 220px;
+    overflow: hidden;
 }
 
 .serviceImage {
-    /*
-      Tailwind-Klassen im JS:
-      w-full h-48 object-cover
-    */
-    transition: transform 0.4s ease-in-out;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
 }
 
 .serviceCard:hover .serviceImage {
-    transform: scale(1.05); /* Leichter Zoom-Effekt auf das Bild beim Hover der Karte */
+    transform: scale(1.05);
 }
 
-.serviceName { /* ehemals #services-dynamic .service-item h3 */
-    /*
-      Tailwind-Klassen im JS:
-      font-serif text-xl font-medium text-dark-text mb-2
-    */
+.cardContent {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Wichtig, damit der Button unten bleibt */
 }
 
-.serviceDescription { /* ehemals #services-dynamic .service-item p */
-    /*
-      Tailwind-Klassen im JS:
-      text-sm text-medium-grey-text mb-4 flex-grow
-      'flex-grow' ist wichtig, damit dieser Bereich den verfügbaren Platz einnimmt
-      und der Button darunter am unteren Rand der Karte bleibt.
-    */
-    min-height: 4.5em; /* Ca. 3 Zeilen Text, um Layout-Sprünge zu reduzieren */
+.serviceName {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    color: var(--color-text-dark);
+    margin: 0 0 0.5rem 0;
 }
 
-.servicePrice,
-.serviceDuration {
-    /*
-      Tailwind-Klassen im JS:
-      text-sm text-dark-text
-    */
-    font-weight: 500; /* Etwas fetter für bessere Lesbarkeit */
+.serviceDescription {
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    color: var(--color-text-light);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    flex-grow: 1; /* Wächst, um den Button nach unten zu schieben */
 }
 
-.bookButton { /* ehemals #services-dynamic .service-item .button-link */
-    /*
-      Tailwind-Klassen im JS:
-      mt-auto w-full inline-flex items-center justify-center bg-dark-text text-light-bg px-6 py-3 rounded font-medium text-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200
-    */
+.serviceMeta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.duration, .price {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--color-text-medium);
+}
+
+.price {
+    color: var(--color-text-dark);
+}
+
+.bookButton {
+    background-color: var(--color-text-dark);
+    color: #fff;
+    border: none;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 100%;
+}
+
+.bookButton:hover {
+    background-color: var(--color-accent);
 }
 
 
-/* Globale Klasse für Modal offen Zustand (aus App.css übernommen, falls noch nicht in index.css) */
-/* body.modal-open {
-  overflow: hidden;
-} */
-/* Diese Klasse sollte idealerweise in index.css oder einer globalen Styling-Datei sein,
-   da sie den body direkt beeinflusst. Wenn sie bereits in App.css oder index.css existiert
-   und dort bleibt, ist das in Ordnung.
-*/
+/* Responsive Anpassungen */
+@media (min-width: 640px) {
+    .servicesGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
 
-/*
-  Die .animate-up Klasse und die Logik mit .visible für die Animation
-  wird als global betrachtet und sollte in App.css oder index.css verbleiben.
-*/
+@media (min-width: 1024px) {
+    .servicesSection {
+        padding: 8rem 2rem;
+    }
+    .headline {
+        font-size: 3rem;
+    }
+    .servicesGrid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}

@@ -1,119 +1,115 @@
-// friseursalon-frontend/src/components/ServicesSection.js
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom'; // useNavigate statt Link für programmatische Navigation
+import React, { useEffect, useState, useRef } from 'react';
 import styles from './ServicesSection.module.css';
-import api from '../services/api.service';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCalendarCheck, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { useNavigate } from 'react-router-dom';
+import apiService from '../services/api.service';
 
-function ServicesSection({ maxServicesToShow = 0 }) {
-    const [fetchedServices, setFetchedServices] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState('');
-    const sectionRef = useRef(null);
+function ServiceCard({ service }) {
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                }
-            });
-        }, { threshold: 0.1 });
+    const handleBookingClick = () => {
+        navigate('/buchen', { state: { serviceId: service.id } });
+    };
 
-        const currentSectionRef = sectionRef.current;
-        if (currentSectionRef) {
-            observer.observe(currentSectionRef);
+    // Placeholder image logic
+    const getPlaceholderImage = (serviceName) => {
+        const keywords = {
+            'schnitt': 'https://images.pexels.com/photos/3992874/pexels-photo-3992874.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+            'farbe': 'https://images.pexels.com/photos/705255/pexels-photo-705255.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+            'strähnen': 'https://images.pexels.com/photos/4137275/pexels-photo-4137275.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+            'styling': 'https://images.pexels.com/photos/2068478/pexels-photo-2068478.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'
+        };
+        const lowerCaseName = serviceName.toLowerCase();
+        for (const key in keywords) {
+            if (lowerCaseName.includes(key)) {
+                return keywords[key];
+            }
         }
+        return 'https://images.pexels.com/photos/1926620/pexels-photo-1926620.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'; // Fallback
+    };
+
+    const imageUrl = getPlaceholderImage(service.name);
+
+    return (
+        <div className={styles.serviceCard}>
+            <div className={styles.imageWrapper}>
+                <img src={imageUrl} alt={service.name} className={styles.serviceImage} />
+            </div>
+            <div className={styles.cardContent}>
+                <h3 className={styles.serviceName}>{service.name}</h3>
+                <p className={styles.serviceDescription}>{service.description}</p>
+                <div className={styles.serviceMeta}>
+                    <span className={styles.duration}>{service.duration} Min.</span>
+                    <span className={styles.price}>{service.price.toFixed(2)} €</span>
+                </div>
+                <button onClick={handleBookingClick} className={styles.bookButton}>
+                    Jetzt buchen
+                </button>
+            </div>
+        </div>
+    );
+}
+
+
+function ServicesSection({ maxServicesToShow }) {
+    const [services, setServices] = useState([]);
+    const [error, setError] = useState(null);
+    const sectionRef = useRef(null);
+
+    useEffect(() => {
+        const fetchServices = async () => {
+            try {
+                const response = await apiService.get('/services');
+                setServices(response.data);
+            } catch (err) {
+                setError('Dienstleistungen konnten nicht geladen werden.');
+                console.error(err);
+            }
+        };
+        fetchServices();
+    }, []);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add(styles.visible);
+                        observer.unobserve(entry.target);
+                    }
+                });
+            },
+            { threshold: 0.1 }
+        );
+
+        if (sectionRef.current) {
+            observer.observe(sectionRef.current);
+        }
+
         return () => {
-            if (currentSectionRef) {
-                observer.unobserve(currentSectionRef);
+            if (sectionRef.current) {
+                observer.unobserve(sectionRef.current);
             }
         };
     }, []);
 
-    useEffect(() => {
-        setIsLoading(true);
-        api.get('services')
-            .then(response => {
-                setFetchedServices(response.data || []);
-                setIsLoading(false);
-            })
-            .catch(err => {
-                console.error("Error fetching services for ServicesSection:", err);
-                setError("Dienstleistungen konnten nicht geladen werden.");
-                setIsLoading(false);
-            });
-    }, []);
-
-    const servicesToDisplay = maxServicesToShow > 0 && fetchedServices.length > maxServicesToShow
-        ? fetchedServices.slice(0, maxServicesToShow)
-        : fetchedServices;
-
-    const handleBookClick = (service) => {
-        // Navigiere zur Buchungsseite und übergebe den Servicenamen als URL-Parameter
-        if (service && typeof service.name === 'string') {
-            navigate(`/buchen?service=${encodeURIComponent(service.name)}`);
-        } else {
-            console.error("Service-Name ist ungültig, Navigation zur allgemeinen Buchungsseite.");
-            navigate('/buchen');
-        }
-    };
-
-
-    if (isLoading) {
-        return (
-            <section id="services-section" className="py-16 md:py-24 bg-white">
-                <div className="container mx-auto px-6 text-center">
-                    <FontAwesomeIcon icon={faSpinner} spin size="2x" className="text-indigo-500" />
-                    <p className="mt-2 text-medium-grey-text">Dienstleistungen werden geladen...</p>
-                </div>
-            </section>
-        );
-    }
+    const servicesToDisplay = maxServicesToShow ? services.slice(0, maxServicesToShow) : services;
 
     if (error) {
-        return <div className="py-16 text-center text-red-600">{error}</div>;
-    }
-
-    if (servicesToDisplay.length === 0) {
-        return null; // Keine Sektion anzeigen, wenn keine Services da sind
+        return <div className={styles.error}>{error}</div>;
     }
 
     return (
-        <section id="services-section" ref={sectionRef} className="py-16 md:py-24 bg-white">
-            <div className="container mx-auto px-6">
-                <div className="text-center max-w-2xl mx-auto mb-12 md:mb-16 animate-up">
-                    <h2 className="font-serif text-3xl md:text-4xl font-medium text-dark-text mb-4">
-                        Unsere Dienstleistungen
-                    </h2>
-                    <p className="text-base text-medium-grey-text leading-relaxed">
-                        Entdecken Sie unser Angebot an exklusiven Behandlungen – von klassischen Schnitten bis hin zu kreativen Farbtechniken.
+        <section ref={sectionRef} className={styles.servicesSection}>
+            <div className={styles.container}>
+                <div className={styles.sectionHeader}>
+                    <h2 className={styles.headline}>Unsere Leistungen</h2>
+                    <p className={styles.subheadline}>
+                        Entdecken Sie eine Auswahl unserer exklusiven Dienstleistungen, die darauf ausgelegt sind, Ihre natürliche Schönheit zu betonen.
                     </p>
                 </div>
-                <div className={`grid md:grid-cols-2 lg:grid-cols-3 gap-8 ${styles.servicesGrid}`}>
-                    {servicesToDisplay.map((service, index) => (
-                        <div
-                            key={service.id}
-                            className={`animate-up bg-light-bg border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 ${styles.serviceCard}`}
-                            style={{ transitionDelay: `${index * 0.1}s` }}
-                        >
-                            <div className="p-6 flex flex-col flex-grow">
-                                <h3 className={`font-serif text-xl font-medium text-dark-text mb-2 ${styles.serviceName}`}>{service.name}</h3>
-                                <p className={`text-sm text-medium-grey-text mb-4 flex-grow ${styles.serviceDescription}`}>{service.description}</p>
-                                <div className={`flex justify-between items-center text-sm text-dark-text pt-4 border-t border-gray-100 ${styles.serviceDetails}`}>
-                                    <span>Dauer: <strong>{service.durationMinutes} Min.</strong></span>
-                                    <span>Preis: <strong>{service.price?.toFixed(2).replace('.', ',')} €</strong></span>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => handleBookClick(service)}
-                                className={`w-full mt-auto bg-dark-text text-white px-6 py-3 text-sm font-medium hover:bg-gray-700 transition-colors duration-200 flex items-center justify-center ${styles.bookButton}`}
-                            >
-                                Jetzt buchen <FontAwesomeIcon icon={faCalendarCheck} className="ml-2"/>
-                            </button>
-                        </div>
+                <div className={styles.servicesGrid}>
+                    {servicesToDisplay.map(service => (
+                        <ServiceCard key={service.id} service={service} />
                     ))}
                 </div>
             </div>

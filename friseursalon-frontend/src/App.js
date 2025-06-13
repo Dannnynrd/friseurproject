@@ -22,10 +22,10 @@ import EventBus from './common/EventBus';
 // Homepage Sections
 import HeroSection from './components/HeroSection';
 import TrustBarSection from './components/TrustBarSection';
-import ExperienceSection from './components/ExperienceSection'; // Wichtig: Import hinzugefügt
+import ExperienceSection from './components/ExperienceSection';
 import TestimonialsSection from './components/TestimonialsSection';
 import AboutFounderSection from './components/AboutFounderSection';
-import ServicesSection from './components/ServicesSection';
+import ServicesSection from './components/ServicesSection'; // Wichtig: Import hinzugefügt
 import GalleryJournalSection from './components/GalleryJournalSection';
 import EssentialsSection from './components/EssentialsSection';
 import FAQSection from './components/FAQSection';
@@ -46,8 +46,9 @@ const HomePage = () => (
     <div className="homepage-layout">
         <HeroSection />
         <TrustBarSection />
-        <ExperienceSection /> {/* KORREKTUR: Komponente hier eingefügt */}
+        <ExperienceSection />
         <div id="services-section">
+            {/* KORREKTUR: ServicesSection hier platziert */}
             <ServicesSection maxServicesToShow={3} />
         </div>
         <TestimonialsSection />
