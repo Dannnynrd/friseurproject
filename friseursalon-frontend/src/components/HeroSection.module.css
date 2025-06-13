@@ -1,30 +1,145 @@
-/* friseursalon-frontend/src/components/HeroSection.module.css */
+/* src/components/HeroSection.module.css */
+
+.heroSection {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    color: #fff;
+    text-align: center;
+    padding: 2rem;
+    overflow: hidden;
+    background-color: #e5e5e5; /* Fallback-Farbe, falls das Bild nicht lädt */
+}
 
 .heroBackground {
-    background: url('https://images.pexels.com/photos/3065171/pexels-photo-3065171.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2') no-repeat center center;
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    /* NEUES, ZUVERLÄSSIGES BILD */
+    background: url('https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?q=80&w=2070&auto=format&fit=crop') no-repeat center center;
     background-size: cover;
-    /* Tailwind-Klassen für Positionierung und Höhe werden im JS gesetzt. */
+    /* Langsamere, sanftere Animation für einen hochwertigen Look */
+    animation: zoomEffect 40s infinite alternate;
+    transform: scale(1.05);
 }
 
-/* Wir verwenden hier einen einfachen Textschatten, den man auch über tailwind.config.js definieren könnte */
-:global(.text-shadow) {
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-:global(.text-shadow-sm) {
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-.dynamicServiceInfo {
-    /* Tailwind-Klassen im JS: inline-flex items-center bg-white/10 backdrop-blur-sm ... */
+.heroOverlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.1) 100%);
 }
 
-/* Fallback-Animationen, falls die globalen nicht greifen */
-.animate-up {
+.heroContent {
+    position: relative;
+    z-index: 3;
+    max-width: 58rem;
+
+    /* Weichere Einblend-Animation */
     opacity: 0;
     transform: translateY(20px);
-    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    transition: opacity 1s ease-out 0.4s, transform 1s ease-out 0.4s;
 }
-.animate-up.visible {
+
+.heroSection.visible .heroContent {
     opacity: 1;
     transform: translateY(0);
+}
+
+.heroHeadline {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 3rem;
+    line-height: 1.15;
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+    color: #fff;
+    margin: 0 auto;
+}
+
+/* Neuer Stil für den dezenten Untertitel */
+.heroSubtitle {
+    font-family: var(--font-sans);
+    font-weight: 400; /* Leichteres Gewicht */
+    font-size: 1.05rem;
+    line-height: 1.6;
+    max-width: 40rem;
+    margin: 1rem auto 2.5rem auto; /* Gesteuerter Abstand */
+    opacity: 0.9;
+    letter-spacing: 0.03em;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.ctaContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+    justify-content: center;
+}
+
+.ctaButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.8rem 2rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-width: 220px;
+}
+
+.ctaButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.ctaButtonPrimary {
+    background-color: #fff;
+    color: var(--color-text-dark);
+}
+.ctaButtonPrimary:hover {
+    background-color: #f3f4f6;
+}
+
+.ctaButtonSecondary {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(5px);
+}
+.ctaButtonSecondary:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Responsive Anpassungen */
+@media (min-width: 768px) {
+    .heroHeadline {
+        font-size: 4.75rem;
+    }
+    .heroSubtitle {
+        font-size: 1.2rem;
+    }
+    .ctaContainer {
+        flex-direction: row;
+        gap: 1.25rem;
+    }
+    .ctaButton {
+        padding: 1rem 2.5rem;
+    }
+}
+
+@keyframes zoomEffect {
+    from {
+        transform: scale(1.05);
+    }
+    to {
+        transform: scale(1.15);
+    }
 }
