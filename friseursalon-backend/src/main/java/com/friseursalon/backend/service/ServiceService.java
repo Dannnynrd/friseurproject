@@ -2,57 +2,55 @@ package com.friseursalon.backend.service;
 
 import com.friseursalon.backend.model.Service;
 import com.friseursalon.backend.repository.ServiceRepository;
-import org.springframework.beans.factory.annotation.Autowired; // Für Dependency Injection
- // Markiert diese Klasse als Spring Service
-
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Optional;
 
-@org.springframework.stereotype.Service // Markiert diese Klasse als eine Spring Service-Komponente
+@Component
 public class ServiceService {
 
-    private final ServiceRepository serviceRepository;// Hier wird unser Repository injiziert
+    private final ServiceRepository serviceRepository;
 
-    @Autowired // Spring injiziert das ServiceRepository automatisch
+    @Autowired
     public ServiceService(ServiceRepository serviceRepository) {
         this.serviceRepository = serviceRepository;
     }
 
-    // Alle Dienstleistungen abrufen
+    public Service createService(Service service) {
+        // Stellt sicher, dass beim Erstellen keine ID vorhanden ist.
+        service.setId(null);
+        return serviceRepository.save(service);
+    }
+
     public List<Service> getAllServices() {
         return serviceRepository.findAll();
     }
 
-    // Eine Dienstleistung anhand der ID abrufen
     public Optional<Service> getServiceById(Long id) {
         return serviceRepository.findById(id);
     }
 
-    // Eine neue Dienstleistung erstellen/speichern
-    public Service createService(Service service) {
-        return serviceRepository.save(service);
-    }
-
-    // Eine bestehende Dienstleistung aktualisieren
+    // KORREKTUR: Dies ist die korrekte Logik, um eine Dienstleistung zu aktualisieren.
     public Service updateService(Long id, Service serviceDetails) {
-        // Zuerst prüfen, ob die Dienstleistung existiert
-        Service service = serviceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Dienstleistung nicht gefunden für diese ID :: " + id));
+        // Finde den existierenden Service in der Datenbank.
+        Service existingService = serviceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Dienstleistung mit ID " + id + " nicht gefunden."));
 
-        // Details aktualisieren
-        service.setName(serviceDetails.getName());
-        service.setDescription(serviceDetails.getDescription());
-        service.setPrice(serviceDetails.getPrice());
-        service.setDurationMinutes(serviceDetails.getDurationMinutes());
+        // Aktualisiere die Felder des existierenden Services mit den neuen Daten.
+        existingService.setName(serviceDetails.getName());
+        existingService.setDescription(serviceDetails.getDescription());
+        existingService.setPrice(serviceDetails.getPrice());
+        existingService.setDurationMinutes(serviceDetails.getDurationMinutes());
 
-        // Aktualisierte Dienstleistung speichern
-        return serviceRepository.save(service);
+        // Speichere die aktualisierte Entität.
+        return serviceRepository.save(existingService);
     }
 
-    // Eine Dienstleistung löschen
     public void deleteService(Long id) {
-        Service service = serviceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Dienstleistung nicht gefunden für diese ID :: " + id));
-        serviceRepository.delete(service);
+        if (!serviceRepository.existsById(id)) {
+            throw new RuntimeException("Dienstleistung mit ID " + id + " nicht gefunden.");
+        }
+        serviceRepository.deleteById(id);
     }
 }
