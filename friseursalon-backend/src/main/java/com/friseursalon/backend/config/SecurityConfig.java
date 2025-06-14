@@ -1,4 +1,3 @@
-// friseursalon-backend/src/main/java/com/friseursalon/backend/config/SecurityConfig.java
 package com.friseursalon.backend.config;
 
 import com.friseursalon.backend.service.UserService;
@@ -22,6 +21,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -50,6 +51,7 @@ public class SecurityConfig {
         return authProvider;
     }
 
+    // KORREKTUR: AuthenticationManager als Bean bereitstellen.
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
@@ -60,10 +62,9 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.addAllowedOrigin("http://localhost:3000"); // Frontend-URL
-        config.addAllowedOrigin("http://localhost:8080"); // Backend-URL für interne Weiterleitungen (falls relevant)
+        config.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:3001")); // Frontend-URLs
         config.addAllowedHeader("*");
-        config.addAllowedMethod("*");
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         source.registerCorsConfiguration("/**", config);
         return source;
     }
@@ -73,28 +74,44 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
-                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)) // Für H2 Konsole
+                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // Erfasst jetzt auch /forgot-password und /reset-password
+                        // Öffentliche Endpunkte
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/hello").permitAll()
-                        .requestMatchers("/api/services/**").permitAll()
-                        .requestMatchers("/api/workinghours/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/blockedtimeslots/date/**").permitAll()
-                        .requestMatchers("/api/blockedtimeslots/**").hasRole("ADMIN")
-                        .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/services/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/workinghours/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/appointments/available-slots").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/appointments").permitAll()
-                        .requestMatchers("/api/statistics/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/testimonials/approved").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/testimonials/submit-guest").permitAll()
+                        .requestMatchers("/h2-console/**").permitAll()
+
+                        // Benutzer-spezifische Endpunkte
+                        .requestMatchers(HttpMethod.GET, "/api/users/me").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/appointments/my-appointments").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/testimonials/submit").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/users/profile").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/users/change-password").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/users/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/users/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/testimonials/submit").hasRole("USER")
-                        .requestMatchers(HttpMethod.POST, "/api/testimonials/submit-guest").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/testimonials").permitAll()
+
+                        // Admin-spezifische Endpunkte
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/statistics/**").hasRole("ADMIN")
+                        .requestMatchers("/api/customers/**").hasRole("ADMIN")
+                        .requestMatchers("/api/users/**").hasRole("ADMIN")
+                        .requestMatchers("/api/blockedtimeslots/**").hasRole("ADMIN")
                         .requestMatchers("/api/testimonials/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/services").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/services/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/services/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/workinghours").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/workinghours/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/appointments").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/appointments/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/appointments/**").hasRole("ADMIN")
+
                         .anyRequest().authenticated()
                 );
 
