@@ -12,7 +12,10 @@ import com.friseursalon.backend.repository.WorkingHoursRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Pageable;
+
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -59,6 +62,42 @@ public class StatisticsService {
         this.customerRepository = customerRepository;
         this.serviceRepository = serviceRepository;
     }
+
+    // HIER BEGINNT DIE NEUE METHODE
+    public List<TopServiceDTO> getTopServices(String sortBy, int limit) {
+        logger.info("Rufe Top-{} Services ab, sortiert nach {}", limit, sortBy);
+        Pageable pageable = PageRequest.of(0, limit);
+        List<Map<String, Object>> results;
+
+        if ("revenue".equalsIgnoreCase(sortBy)) {
+            results = appointmentRepository.findTopServicesByRevenue(pageable);
+        } else { // Standard ist "bookings"
+            results = appointmentRepository.findTopServicesByBookings(pageable);
+        }
+
+        return results.stream().map(result -> {
+            Long serviceId = (Long) result.get("serviceId");
+            // Optional, die vollen Service-Details zu laden
+            com.friseursalon.backend.model.Service service = serviceRepository.findById(serviceId).orElse(new com.friseursalon.backend.model.Service());
+
+            // Die Metriken aus der Datenbank-Antwort extrahieren
+            long totalBookings = (result.get("totalBookings") != null) ? ((Number) result.get("totalBookings")).longValue() : 0L;
+            BigDecimal totalRevenue = (result.get("totalRevenue") != null) ? new BigDecimal(((Number) result.get("totalRevenue")).toString()) : BigDecimal.ZERO;
+
+            // Wenn nach Umsatz sortiert wird, müssen wir die Buchungen separat ermitteln (optional, aber gut für die Anzeige)
+            // Fürs Erste lassen wir es einfach, um die Komplexität gering zu halten.
+
+            return new TopServiceDTO(
+                    serviceId,
+                    service.getName(),
+                    service.getDescription(),
+                    totalBookings,
+                    totalRevenue
+            );
+        }).collect(Collectors.toList());
+    }
+    // HIER ENDET DIE NEUE METHODE
+
 
     public DetailedAppointmentStatsDTO getDetailedAppointmentStats() {
         LocalDate today = LocalDate.now();

@@ -88,4 +88,19 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             "GROUP BY HOUR(a.start_time) " +
             "ORDER BY HOUR(a.start_time) ASC", nativeQuery = true)
     List<Map<String, Object>> countAppointmentsPerHourBetweenNative(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    // Fügen Sie diese Methoden zum bestehenden Interface hinzu
+
+    @Query("SELECT a.service.id as serviceId, COUNT(a.id) as totalBookings " +
+            "FROM Appointment a " +
+            "WHERE a.status <> com.friseursalon.backend.model.AppointmentStatus.CANCELLED " +
+            "GROUP BY a.service.id " +
+            "ORDER BY totalBookings DESC")
+    List<Map<String, Object>> findTopServicesByBookings(Pageable pageable);
+
+    @Query("SELECT a.service.id as serviceId, SUM(a.service.price) as totalRevenue " +
+            "FROM Appointment a " +
+            "WHERE a.status <> com.friseursalon.backend.model.AppointmentStatus.CANCELLED " +
+            "GROUP BY a.service.id " +
+            "ORDER BY totalRevenue DESC")
+    List<Map<String, Object>> findTopServicesByRevenue(Pageable pageable);
 }

@@ -24,7 +24,18 @@ public class StatisticsController {
     public StatisticsController(StatisticsService statisticsService) {
         this.statisticsService = statisticsService;
     }
+    // Vorschlag für StatisticsController.java
 
+    @GetMapping("/top-services")
+    public ResponseEntity<List<TopServiceDTO>> getTopServices(
+            @RequestParam(defaultValue = "bookings") String sortBy,
+            @RequestParam(defaultValue = "3") int limit) {
+        // Hier käme die neue Logik im StatisticsService,
+        // die je nach 'sortBy' ("bookings" oder "revenue")
+        // die Daten aus der Datenbank holt, aggregiert und die Top 'limit' Ergebnisse zurückgibt.
+        List<TopServiceDTO> topServices = statisticsService.getTopServices(sortBy, limit);
+        return ResponseEntity.ok(topServices);
+    }
     @GetMapping("/detailed-counts")
     public ResponseEntity<DetailedAppointmentStatsDTO> getDetailedAppointmentCounts(
             @RequestParam(name = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
