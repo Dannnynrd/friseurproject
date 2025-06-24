@@ -1,117 +1,174 @@
-import React, { useEffect, useState, useRef } from 'react';
+// src/components/ServicesSection.js
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import api from '../services/api.service';
 import styles from './ServicesSection.module.css';
-import { useNavigate } from 'react-router-dom';
-import apiService from '../services/api.service';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faClock, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 
-function ServiceCard({ service }) {
-    const navigate = useNavigate();
-
-    const handleBookingClick = () => {
-        navigate('/buchen', { state: { serviceId: service.id } });
-    };
-
-    // Placeholder image logic
-    const getPlaceholderImage = (serviceName) => {
-        const keywords = {
-            'schnitt': 'https://images.pexels.com/photos/3992874/pexels-photo-3992874.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-            'farbe': 'https://images.pexels.com/photos/705255/pexels-photo-705255.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-            'strähnen': 'https://images.pexels.com/photos/4137275/pexels-photo-4137275.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-            'styling': 'https://images.pexels.com/photos/2068478/pexels-photo-2068478.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'
-        };
-        const lowerCaseName = serviceName.toLowerCase();
-        for (const key in keywords) {
-            if (lowerCaseName.includes(key)) {
-                return keywords[key];
-            }
+// Throttling-Funktion, um Scroll-Events zu optimieren und die Performance zu verbessern
+const throttle = (func, limit) => {
+    let inThrottle;
+    return function() {
+        const args = arguments;
+        const context = this;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
         }
-        return 'https://images.pexels.com/photos/1926620/pexels-photo-1926620.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'; // Fallback
     };
+};
 
-    const imageUrl = getPlaceholderImage(service.name);
-
-    return (
-        <div className={styles.serviceCard}>
-            <div className={styles.imageWrapper}>
-                <img src={imageUrl} alt={service.name} className={styles.serviceImage} />
-            </div>
-            <div className={styles.cardContent}>
-                <h3 className={styles.serviceName}>{service.name}</h3>
-                <p className={styles.serviceDescription}>{service.description}</p>
-                <div className={styles.serviceMeta}>
-                    <span className={styles.duration}>{service.duration} Min.</span>
-                    <span className={styles.price}>{service.price.toFixed(2)} €</span>
-                </div>
-                <button onClick={handleBookingClick} className={styles.bookButton}>
-                    Jetzt buchen
-                </button>
-            </div>
-        </div>
-    );
-}
-
-
-function ServicesSection({ maxServicesToShow }) {
+function ServicesSection() {
     const [services, setServices] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const sectionRef = useRef(null);
+    const [activeServiceId, setActiveServiceId] = useState(null);
+
+    const sectionRefs = useRef({});
+    const isScrollingProgrammatically = useRef(false);
 
     useEffect(() => {
         const fetchServices = async () => {
             try {
-                const response = await apiService.get('/services');
-                setServices(response.data);
+                const response = await api.get('/services');
+                const fetchedServices = response.data || [];
+                setServices(fetchedServices);
+                if (fetchedServices.length > 0) {
+                    setActiveServiceId(fetchedServices[0].id);
+                }
             } catch (err) {
-                setError('Dienstleistungen konnten nicht geladen werden.');
-                console.error(err);
+                console.error("Fehler beim Laden der Dienstleistungen:", err);
+                setError("Dienstleistungen konnten nicht geladen werden.");
+            } finally {
+                setLoading(false);
             }
         };
         fetchServices();
     }, []);
 
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add(styles.visible);
-                        observer.unobserve(entry.target);
+    const handleScroll = useCallback(() => {
+        if (isScrollingProgrammatically.current) return;
+
+        const viewportCenter = window.innerHeight / 2;
+        let bestCandidate = null;
+        let smallestDistance = Infinity;
+
+        services.forEach(service => {
+            const section = sectionRefs.current[service.id];
+            if (section) {
+                const rect = section.getBoundingClientRect();
+                if (rect.top < viewportCenter && rect.bottom > viewportCenter - rect.height / 2) {
+                    const distance = Math.abs(rect.top - viewportCenter);
+                    if (distance < smallestDistance) {
+                        smallestDistance = distance;
+                        bestCandidate = service.id;
                     }
-                });
-            },
-            { threshold: 0.1 }
-        );
-
-        if (sectionRef.current) {
-            observer.observe(sectionRef.current);
-        }
-
-        return () => {
-            if (sectionRef.current) {
-                observer.unobserve(sectionRef.current);
+                }
             }
-        };
-    }, []);
+        });
 
-    const servicesToDisplay = maxServicesToShow ? services.slice(0, maxServicesToShow) : services;
+        if (bestCandidate) {
+            setActiveServiceId(bestCandidate);
+        }
+    }, [services]);
 
-    if (error) {
-        return <div className={styles.error}>{error}</div>;
+    useEffect(() => {
+        const throttledScrollHandler = throttle(handleScroll, 100);
+        window.addEventListener('scroll', throttledScrollHandler);
+        return () => window.removeEventListener('scroll', throttledScrollHandler);
+    }, [handleScroll]);
+
+    const handleNavClick = (e, serviceId) => {
+        e.preventDefault();
+        isScrollingProgrammatically.current = true;
+        setActiveServiceId(serviceId);
+
+        sectionRefs.current[serviceId]?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+        });
+
+        setTimeout(() => {
+            isScrollingProgrammatically.current = false;
+        }, 1000); // Setzt das Flag nach der Scroll-Animation zurück
+    };
+
+    const renderServiceContent = () => {
+        if (loading) return <div className={styles.statusMessage}>Lade Dienstleistungen...</div>;
+        if (error) return <div className={`${styles.statusMessage} ${styles.error}`}>{error}</div>;
+        if (services.length === 0) return <div className={styles.statusMessage}>Keine Dienstleistungen verfügbar.</div>;
+
+        return (
+            <div className={styles.servicesGrid}>
+                {services.map((service) => (
+                    <div
+                        key={service.id}
+                        id={`service-${service.id}`}
+                        ref={el => sectionRefs.current[service.id] = el}
+                        className={`${styles.serviceCard} ${activeServiceId === service.id ? styles.cardActive : ''}`}
+                        tabIndex={0} // Macht die Karte fokussierbar für "Tipp"-Effekt
+                    >
+                        <div className={styles.cardHeader}>
+                            <h3 className={styles.serviceName}>{service.name}</h3>
+                            <div className={styles.metaInfo}>
+                                <span className={styles.price}>{`€${service.price.toFixed(2)}`}</span>
+                                <span className={styles.duration}>
+                                    <FontAwesomeIcon icon={faClock} className={styles.icon} />
+                                    {`${service.durationMinutes} min`}
+                                </span>
+                            </div>
+                        </div>
+                        <div className={styles.cardBody}>
+                            <p className={styles.serviceDescription}>{service.description}</p>
+                            <Link to={`/buchen?service=${service.id}`} className={styles.bookingLink}>
+                                Termin Buchen
+                            </Link>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
     }
 
     return (
-        <section ref={sectionRef} className={styles.servicesSection}>
+        <section className={styles.servicesSection}>
             <div className={styles.container}>
-                <div className={styles.sectionHeader}>
-                    <h2 className={styles.headline}>Unsere Leistungen</h2>
-                    <p className={styles.subheadline}>
-                        Entdecken Sie eine Auswahl unserer exklusiven Dienstleistungen, die darauf ausgelegt sind, Ihre natürliche Schönheit zu betonen.
-                    </p>
-                </div>
-                <div className={styles.servicesGrid}>
-                    {servicesToDisplay.map(service => (
-                        <ServiceCard key={service.id} service={service} />
-                    ))}
-                </div>
+                {/* --- Linke, sticky Navigationsspalte für Desktop --- */}
+                <aside className={styles.stickyNav}>
+                    <header className={styles.sectionHeader}>
+                        <p className={styles.subtitle}>Handwerk & Präzision</p>
+                        <h2 className={styles.title}>Unsere Leistungen</h2>
+                        <p className={styles.description}>
+                            Jede Behandlung ist ein Versprechen – für Qualität, Stil und Ihr persönliches Wohlbefinden.
+                        </p>
+                    </header>
+                    <nav className={styles.serviceNavList}>
+                        {services.map(service => (
+                            <a
+                                key={service.id}
+                                href={`#service-${service.id}`}
+                                className={`${styles.serviceNavItem} ${activeServiceId === service.id ? styles.serviceNavItemActive : ''}`}
+                                onClick={(e) => handleNavClick(e, service.id)}
+                            >
+                                {service.name}
+                                <FontAwesomeIcon icon={faChevronRight} className={styles.navArrow} />
+                            </a>
+                        ))}
+                    </nav>
+                </aside>
+
+                {/* --- Rechte, scrollbare Inhaltsspalte (Desktop) & Hauptinhalt (Mobile) --- */}
+                <main className={styles.scrollableContent}>
+                    {/* Header, der nur auf Mobile sichtbar ist */}
+                    <header className={styles.mobileSectionHeader}>
+                        <p className={styles.subtitle}>Handwerk & Präzision</p>
+                        <h2 className={styles.title}>Unsere Leistungen</h2>
+                    </header>
+                    {renderServiceContent()}
+                </main>
             </div>
         </section>
     );
