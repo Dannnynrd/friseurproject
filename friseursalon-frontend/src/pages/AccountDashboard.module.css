@@ -4,31 +4,63 @@
     /* Tailwind: min-h-screen bg-slate-100 */
 }
 
-.dashboardSidebar {
-    /* Tailwind: hidden md:flex md:flex-col md:w-64 lg:w-72 bg-white fixed md:sticky top-0 left-0 md:!h-screen shadow-lg md:shadow-none md:border-r border-gray-200 z-30 */
+/* Stile für die Desktop-Seitenleiste */
+.sidebarExpanded, .sidebarCollapsed {
+    transition: width 0.3s ease-in-out;
 }
-.dashboardSidebar nav {
-    display: flex;
-    flex-direction: column;
-    height: calc(100% - theme('spacing.20') - theme('spacing.3') - theme('spacing.3'));
+
+.sidebarExpanded {
+    width: 18rem; /* lg:w-72 */
+}
+
+.sidebarCollapsed {
+    width: 5rem; /* w-20 */
+}
+
+.sidebarHeader, .sidebarFooter {
+    flex-shrink: 0;
 }
 
 .navItem {
-    /* Tailwind: w-full flex items-center px-4 py-2.5 text-sm rounded-lg transition-all duration-200 ease-in-out group text-gray-600 hover:bg-slate-50 hover:text-accent-dark */
+    justify-content: flex-start;
 }
 
+.navItemCollapsed {
+    justify-content: center;
+}
+
+.navLabel {
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    opacity: 1;
+    visibility: visible;
+    white-space: nowrap;
+}
+
+.navLabelCollapsed {
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.adminDividerCollapsed {
+    border-top: 1px solid #e5e7eb; /* border-gray-200 */
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+}
+
+/* Stile für den aktiven Navigationspunkt */
 .navItemActive {
-    /* Tailwind: bg-slate-100 text-accent-dark font-semibold */
     position: relative;
 }
-/* Akzentstrich für den aktiven Navigationspunkt */
+
 .navItemActive::before {
     content: '';
     position: absolute;
     left: 0;
-    top: 15%; /* Etwas höher positioniert */
+    top: 15%;
     bottom: 15%;
-    width: 4px; /* Etwas dicker für mehr Präsenz */
+    width: 4px;
     background-color: var(--color-accent);
     border-top-right-radius: 4px;
     border-bottom-right-radius: 4px;
@@ -37,41 +69,75 @@
     opacity: 1;
 }
 
-.navItem .svg-inline--fa {
-    transition: color 0.2s ease-in-out;
+/* Tooltip für eingeklappte Seitenleiste */
+.navItemCollapsed::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: var(--color-text-dark);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease 0.2s, visibility 0.2s ease 0.2s; /* Verzögerung für den Tooltip */
+    z-index: 60;
 }
 
-.logoutButton {
-    /* Tailwind: w-full flex items-center px-4 py-2.5 text-sm rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 group */
+.navItemCollapsed:hover::after {
+    opacity: 1;
+    visibility: visible;
 }
 
 
+/* Stile für den Hauptinhalt, angepasst an die Seitenleiste */
+.dashboardContent {
+    flex-grow: 1;
+    margin-top: 4rem; /* mt-16 für mobilen Header */
+    transition: margin-left 0.3s ease-in-out;
+}
+
+@media (min-width: 768px) { /* md */
+    .dashboardContent {
+        margin-top: 0;
+    }
+    .contentWithExpandedSidebar {
+        margin-left: 18rem; /* lg:ml-72 */
+    }
+    .contentWithCollapsedSidebar {
+        margin-left: 5rem; /* w-20 */
+    }
+}
+
+/* Mobile Nav (unverändert) */
 .mobileNavOverlay {
-    /* Tailwind: fixed inset-0 z-40 bg-black bg-opacity-40 backdrop-blur-sm md:hidden */
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
 }
 
 .mobileDashboardNav {
-    /* Tailwind: fixed top-0 left-0 h-full w-72 bg-white shadow-xl z-50 transform transition-transform ease-in-out duration-300 md:hidden pt-safe-top */
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 18rem; /* w-72 */
+    background-color: white;
     box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.15);
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
 }
-.mobileDashboardNav nav {
-    scrollbar-width: thin;
-    scrollbar-color: theme('colors.slate.300') transparent;
-}
-.mobileDashboardNav nav::-webkit-scrollbar {
-    width: 6px;
-}
-.mobileDashboardNav nav::-webkit-scrollbar-track {
-    background: transparent;
-}
-.mobileDashboardNav nav::-webkit-scrollbar-thumb {
-    background-color: theme('colors.slate.300');
-    border-radius: 6px;
-}
-
-
-.dashboardContent {
-    /* Tailwind: flex-1 mt-16 md:mt-0 md:ml-64 lg:ml-72 */
+.mobileDashboardNav[data-open="true"] {
+    transform: translateX(0);
 }
 
 :global(body.dashboardMobileNavOpen) {

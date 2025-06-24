@@ -1,155 +1,82 @@
-/* friseursalon-frontend/src/components/KpiGrid.module.css */
-.statsSectionSubtitle {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #4b5563; /* text-gray-600 */
-    margin-top: 1.5rem;
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.25rem;
-    border-bottom: 1px solid #f3f4f6; /* border-gray-100 */
-}
+/* src/components/KpiGrid.module.css */
 .kpiGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.5rem;
 }
 
 .statCard {
-    background-color: white;
-    padding: 1rem;
-    border-radius: 8px;
-    border: 1px solid #f0f0f0;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    background-color: var(--color-background-offset);
+    padding: 1.25rem;
+    border-radius: 12px;
+    border: 1px solid var(--color-border-subtle);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
     transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
-
 .statCard:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px -4px rgba(0,0,0,0.05);
 }
 
 .statCardHeader {
     display: flex;
+    justify-content: space-between;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 0.25rem;
-    color: #6b7280; /* text-gray-500 */
-}
-
-.statIcon {
-    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
 }
 
 .statLabel {
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-medium);
+}
+.statIcon {
+    color: var(--color-text-subtle);
 }
 
 .statValue {
     font-weight: 700;
-    font-size: 1.75rem;
-    color: #1f2937; /* text-gray-800 */
-}
-
-.mainKpi .statValue {
-    font-size: 2.25rem;
+    font-size: 2rem;
+    color: var(--color-text-dark);
 }
 
 .statComparison {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 500;
     margin-top: 0.25rem;
 }
 
-/* Tooltip styles */
 .kpiTooltipWrapper {
-    margin-left: auto;
-    position: relative;
-}
-.statTooltipIcon {
-    color: #9ca3af; /* text-gray-400 */
     cursor: help;
-    transition: color 0.2s ease;
+    color: var(--color-text-subtle);
 }
-.statTooltipIcon:hover {
-    color: #4b5563;
-}
-.kpiTooltipWrapper::before {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%) translateY(5px);
-    background-color: #1f2937;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    line-height: 1.4;
-    white-space: normal;
-    width: max-content;
-    max-width: 240px;
-    text-align: left;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition: all 0.2s ease;
-    z-index: 100;
-}
-.kpiTooltipWrapper:hover::before {
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(-50%) translateY(0);
+.kpiTooltipWrapper:hover {
+    color: var(--color-text-medium);
 }
 
-
-.kpiGoalProgress {
-    margin-top: 0.75rem;
-}
-.progressBarContainer {
-    width: 100%;
-    background-color: #e5e7eb;
-    border-radius: 9999px;
-    height: 0.375rem; /* h-1.5 */
-}
-.progressBar {
-    background-color: var(--color-accent); /* GEÄNDERT von green-500 */
-    height: 100%;
-    border-radius: 9999px;
-}
-.goalText {
-    display: block;
-    text-align: right;
-    font-size: 0.7rem;
-    color: #6b7280;
-    margin-top: 0.25rem;
-}
+/* Skeleton- und NoData-Stile können weitgehend beibehalten oder
+   an die neuen Farben (var(--color-background-hover) etc.) angepasst werden. */
 
 .kpiGridSkeleton {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.5rem;
 }
 .skeletonCard {
-    background-color: #f9fafb;
-    padding: 1rem;
-    border-radius: 8px;
+    background-color: var(--color-background-offset);
+    padding: 1.25rem;
+    border-radius: 12px;
+    border: 1px solid var(--color-border-subtle);
+}
+@keyframes pulse {
+    50% { opacity: .6; }
+}
+.skeletonCard > div {
+    background-color: var(--color-background-hover);
+    border-radius: 6px;
     animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
-.skeletonHeader { height: 1rem; width: 60%; background-color: #e5e7eb; border-radius: 4px; margin-bottom: 0.75rem; }
-.skeletonValue { height: 2rem; width: 40%; background-color: #e5e7eb; border-radius: 4px; }
-.skeletonFooter { height: 0.75rem; width: 70%; background-color: #e5e7eb; border-radius: 4px; margin-top: 0.75rem; }
-
-@keyframes pulse {
-    50% { opacity: .5; }
-}
-
-.noData {
-    padding: 2rem;
-    text-align: center;
-    color: #6b7280;
-    background-color: #f9fafb;
-    border-radius: 8px;
-}
+.skeletonHeader { height: 1rem; width: 60%; margin-bottom: 1rem; }
+.skeletonValue { height: 2.25rem; width: 40%; }
+.skeletonFooter { height: 0.875rem; width: 70%; margin-top: 1rem; }

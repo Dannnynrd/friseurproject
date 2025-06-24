@@ -1,8 +1,7 @@
 /* src/App.css */
 
 /* --- Schriftarten Importieren --- */
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@700&family=Poppins:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap');
 
 /* --- Globale CSS Variablen (Design System) --- */
 :root {
@@ -10,25 +9,31 @@
   --color-text-dark: #111827;
   --color-text-medium: #374151;
   --color-text-light: #6b7280;
+  --color-text-subtle: #9ca3af;
   --color-text-on-dark: #f9fafb;
 
-  --color-background: #ffffff;
-  --color-background-offset: #f9fafb;
+  /* Hintergrundfarben */
+  --color-background: #f8fafc;
+  --color-background-offset: #ffffff;
+  --color-background-hover: #f1f5f9;
 
-  --color-border: #e5e7eb;
+  /* Rahmenfarben */
+  --color-border: #e2e8f0;
+  --color-border-subtle: #f1f5f9;
 
-  /* Akzentfarbe (NEU: Moderner Grau/Schwarz-Ton) */
-  --color-accent: #1f2937;      /* Tailwind gray-800 */
-  --color-accent-dark: #111827; /* Tailwind gray-900 */
-
+  /* Akzentfarbe */
+  --color-accent: #1e293b;
+  --color-accent-dark: #0f172a;
+  --color-accent-text: #ffffff;
 
   /* Schriftarten */
   --font-heading: 'Playfair Display', serif;
   --font-sans: 'Manrope', sans-serif;
 
   /* Layout */
-  --header-height: 5.5rem;
-  --container-width: 1280px;
+  --header-height: 5.5rem; /* Höhe des globalen Headers */
+  --bottom-nav-height-mobile: 5rem;
+  --container-width: 1600px;
 }
 
 /* --- Globale Resets & Body Styles --- */
@@ -49,10 +54,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-body.mobile-menu-active {
-  overflow: hidden;
-}
-
 /* --- Globale Layout-Klassen --- */
 .App {
   min-height: 100vh;
@@ -60,51 +61,36 @@ body.mobile-menu-active {
   flex-direction: column;
 }
 
+/* KORREKTUR: Stellt sicher, dass der Inhalt unter dem Header beginnt */
 .page-layout {
   padding-top: var(--header-height);
-  flex-grow: 1;
-  width: 100%;
+  flex-grow: 1; /* Nimmt den restlichen Platz ein */
+  display: flex;
+  flex-direction: column;
 }
-
-.homepage-layout {
-  width: 100%;
-  flex-grow: 1;
-}
-
-
-/* --- Vereinfachter Preloader --- */
-#preloader {
-  position: fixed;
-  inset: 0;
-  background: var(--color-background);
-  z-index: 10002;
-  transition: opacity 0.4s ease, visibility 0.4s ease;
-}
-#preloader.loaded {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
+.page-layout > div {
+  height: 100%;
 }
 
 
-/* --- Globale Animationen --- */
-.animate-up {
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+/* Hilfsklassen für Buttons etc. */
+.primary-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--color-accent);
+  color: var(--color-accent-text);
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
-.animate-up.visible {
-  opacity: 1;
-  transform: translateY(0);
+.primary-button:hover {
+  background-color: var(--color-accent-dark);
+  box-shadow: 0 4px 10px -2px rgba(0,0,0,0.1);
 }
-
-@keyframes fadeInModalOverlay {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes slideInModalContent {
-  from { opacity: 0; transform: translateY(-20px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-.animate-fadeInModalOverlay { animation: fadeInModalOverlay 0.3s ease-out forwards; }
-.animate-slideInModalContent { animation: slideInModalContent 0.3s ease-out forwards; }
