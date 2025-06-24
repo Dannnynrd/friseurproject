@@ -49,11 +49,13 @@ function HeroSection() {
 
             <div className={styles.heroContent}>
                 <h1 className={styles.heroHeadline}>
-                    Die Kunst des <br /> perfekten Schnitts
+                    Eleganz in Perfektion.
                 </h1>
+                {/* --- REDUZIERTER UNTERTITEL --- */}
                 <p className={styles.heroSubtitle}>
-                    Wir verbinden zeitlose Eleganz mit modernen Techniken, um einen Look zu kreieren, der Ihre Persönlichkeit unterstreicht.
+                    Ihr exklusiver Friseursalon für meisterhaftes Haarstyling in Kiel.
                 </p>
+
                 <div className={styles.ctaContainer}>
                     <button onClick={() => navigate('/buchen')} className={`${styles.ctaButton} ${styles.ctaButtonPrimary}`}>
                         <FontAwesomeIcon icon={faCalendarAlt} className={styles.ctaIcon} />
