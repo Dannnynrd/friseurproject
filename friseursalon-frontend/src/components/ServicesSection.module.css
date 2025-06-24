@@ -1,139 +1,171 @@
-/* src/components/ServicesSection.module.css */
+/* friseursalon-frontend/src/components/ServicesSection.module.css */
 
 .servicesSection {
-    background-color: var(--color-background);
-    padding: 0 1rem;
+    padding: 5rem 1.5rem;
+    background-color: var(--color-background-offset); /* Weißer Hintergrund für klaren Kontrast */
+    overflow: hidden; /* Verhindert, dass Elemente bei Animationen überlappen */
 }
 
-.container {
-    max-width: 1400px;
-    margin: 0 auto;
-}
-
-/* --- Default-Styles (Mobile First & Masonry Grid) --- */
-.stickyNav {
-    display: none;
-}
-
-.mobileSectionHeader {
+.header {
     text-align: center;
-    padding: 4rem 0 3rem 0;
+    max-width: 700px;
+    margin: 0 auto 5rem auto;
 }
 
-.subtitle { font-size: 0.875rem; font-weight: 600; color: var(--color-text-light); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
-.title { font-family: var(--font-heading); font-size: 2.25rem; font-weight: 700; color: var(--color-text-dark); margin: 0; line-height: 1.2; }
-.description { font-size: 1rem; color: var(--color-text-medium); max-width: 500px; margin: 1rem auto 0; line-height: 1.6; }
-
-.statusMessage { text-align: center; padding: 2rem; color: var(--color-text-light); }
-.error { color: #ef4444; }
-
-.servicesGrid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr); /* Zweispaltiges Grid auf Mobile */
-    gap: 1rem;
-    padding-bottom: 4rem;
+.subtitle {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-accent); /* Akzentfarbe für den Untertitel */
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
 }
 
-/* Service-Karten für Mobile */
-.serviceCard {
-    background-color: var(--color-background-offset);
-    border-radius: 12px;
-    border: 1px solid var(--color-border);
-    padding: 1.25rem;
-    display: flex;
-    flex-direction: column;
-    break-inside: avoid; /* Wichtig für Masonry-ähnliche Layouts */
-    transition: box-shadow 0.3s ease;
-}
-
-.cardHeader {
-    margin-bottom: 1rem;
-}
-.serviceName {
+.title {
     font-family: var(--font-heading);
-    font-size: 1.2rem;
+    font-size: 2.75rem;
     font-weight: 700;
     color: var(--color-text-dark);
-    line-height: 1.3;
+    margin: 0;
+    line-height: 1.2;
 }
-.metaInfo {
-    margin-top: 0.75rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    font-size: 0.8rem;
+
+.statusMessage {
+    text-align: center;
+    padding: 3rem;
     color: var(--color-text-light);
-    border-top: 1px solid var(--color-border-subtle);
-    padding-top: 0.75rem;
 }
-.price {
-    font-size: 1.1rem;
+
+.error {
+    color: #ef4444;
+}
+
+.serviceBlock {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 0;
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s cubic-bezier(0.165, 0.84, 0.44, 1), transform 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.serviceBlock.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.imageWrapper {
+    aspect-ratio: 4 / 3;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
+}
+
+.serviceImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.serviceBlock:hover .serviceImage {
+    transform: scale(1.05);
+}
+
+.contentWrapper {
+    padding: 1rem;
+}
+
+.serviceCategory {
+    font-size: 0.8rem;
     font-weight: 600;
+    color: var(--color-text-light);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+}
+
+.serviceName {
+    font-family: var(--font-heading);
+    font-size: 2.25rem;
+    color: var(--color-text-dark);
+    margin-bottom: 1.5rem;
+}
+
+.serviceDescription {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--color-text-medium);
+    margin-bottom: 2rem;
+    max-width: 500px;
+}
+
+.detailsList {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2.5rem 0;
+    display: flex;
+    gap: 2rem;
+    border-top: 1px solid var(--color-border);
+    padding-top: 1.5rem;
+}
+
+.detailItem {
+    font-size: 1rem;
+    font-weight: 500;
     color: var(--color-text-dark);
 }
-.icon {
-    margin-right: 0.3rem;
+
+.detailItem .icon {
+    margin-right: 0.5rem;
+    color: var(--color-accent);
 }
-.cardBody {
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    transition: max-height 0.4s ease, opacity 0.3s ease, margin-top 0.4s ease;
-}
-.serviceCard:focus .cardBody, /* Auf Touch-Geräten funktioniert :focus wie ein Tap */
-.serviceCard:hover .cardBody {
-    max-height: 300px;
-    opacity: 1;
-    margin-top: 1rem;
-}
-.serviceDescription {
+
+.ctaButton {
+    background-color: var(--color-text-dark);
+    color: var(--color-text-on-dark);
+    text-decoration: none;
+    padding: 0.9rem 2rem;
+    border-radius: 8px;
+    font-weight: 600;
     font-size: 0.9rem;
-    color: var(--color-text-medium);
-    line-height: 1.6;
-    margin-bottom: 1.25rem;
-}
-.bookingLink { background-color: var(--color-accent); color: var(--color-accent-text); text-decoration: none; padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 600; font-size: 0.875rem; display: inline-block; text-align: center; transition: background-color 0.2s ease, transform 0.2s ease; }
-.bookingLink:hover { background-color: var(--color-accent-dark); transform: scale(1.05); }
-
-/* --- Desktop Layout (ab 1024px) --- */
-@media (min-width: 1024px) {
-    .servicesSection { padding: 6rem 1.5rem; }
-    .container { display: grid; grid-template-columns: 400px 1fr; gap: 4rem; }
-    .mobileSectionHeader { display: none; }
-    .stickyNav { display: block; position: sticky; top: var(--header-height, 6rem); height: calc(100vh - var(--header-height, 6rem)); align-self: start; }
-    .sectionHeader { text-align: left; }
-    .title { font-size: 3rem; }
-    .description { text-align: left; margin-left: 0; max-width: 100%; }
-    .serviceNavList { margin-top: 2.5rem; border-top: 1px solid var(--color-border); padding-top: 1.5rem; }
-    .serviceNavItem { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; font-size: 1rem; font-weight: 500; color: var(--color-text-light); cursor: pointer; text-decoration: none; transition: color 0.2s ease; }
-    .navArrow { opacity: 0; transform: translateX(-10px); transition: opacity 0.2s ease, transform 0.2s ease; }
-    .serviceNavItem:hover { color: var(--color-text-dark); }
-    .serviceNavItem:hover .navArrow { opacity: 1; transform: translateX(0); }
-    .serviceNavItemActive { color: var(--color-accent); font-weight: 600; }
-    .serviceNavItemActive .navArrow { opacity: 1; transform: translateX(0); color: var(--color-accent); }
-
-    .scrollableContent { padding-top: 0; }
-    .servicesGrid { grid-template-columns: 1fr; gap: 1.5rem; padding-bottom: 0; }
-
-    .serviceCard {
-        padding: 2rem;
-        transition: box-shadow 0.3s ease, border-color 0.3s ease;
-    }
-    .cardActive {
-        border-color: var(--color-accent);
-        box-shadow: 0 8px 30px -5px rgba(30, 41, 59, 0.1);
-    }
-    .cardHeader { margin-bottom: 0; }
-    .serviceName { font-size: 1.75rem; }
-    .metaInfo { all: unset; display: flex; gap: 1rem; align-items: baseline; margin-top: 0.5rem; font-size: 0.9rem; border: none; padding: 0; }
-    .price { font-size: 1.25rem; font-weight: 600; }
-    .cardBody { all: unset; /* Desktop ignoriert das Accordion */ margin-top: 1.25rem; }
-    .bookingLink { display: inline-block; width: auto; }
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
-/* Anpassung für sehr kleine Bildschirme */
-@media (max-width: 380px) {
-    .servicesGrid {
-        grid-template-columns: 1fr;
+.ctaButton:hover {
+    background-color: var(--color-accent);
+    transform: translateY(-2px);
+}
+
+/* --- Desktop Layout --- */
+@media (min-width: 768px) {
+    .serviceBlock {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 4rem;
+        padding: 5rem 0;
+    }
+
+    /* Alternierendes Layout */
+    .serviceBlock:nth-child(even) .imageWrapper {
+        grid-column: 2 / 3;
+        grid-row: 1 / 2;
+    }
+
+    .serviceBlock:nth-child(even) .contentWrapper {
+        grid-column: 1 / 2;
+        grid-row: 1 / 2;
+        text-align: right;
+    }
+
+    .serviceBlock:nth-child(even) .contentWrapper .detailsList,
+    .serviceBlock:nth-child(even) .contentWrapper .ctaButton {
+        justify-content: flex-end; /* Kehrt die Ausrichtung für Text-Rechts-Layout um */
     }
 }

@@ -1,8 +1,7 @@
+// src/components/HeroSection.js
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './HeroSection.module.css';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCalendarCheck, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 
 function HeroSection() {
     const navigate = useNavigate();
@@ -49,7 +48,6 @@ function HeroSection() {
                     Ihr Moment der Eleganz
                 </h1>
 
-                {/* Neuer, dezenter Untertitel */}
                 <p className={styles.heroSubtitle}>
                     Exklusives Haarstyling und persönliche Beratung in Kiel.
                 </p>
