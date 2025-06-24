@@ -2,18 +2,20 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './HeroSection.module.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowRight, faCalendarAlt, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 
 function HeroSection() {
     const navigate = useNavigate();
     const sectionRef = useRef(null);
 
-    // Intersection Observer für die Einblend-Animation
     useEffect(() => {
         const observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting) {
                         entry.target.classList.add(styles.visible);
+                        observer.unobserve(entry.target);
                     }
                 });
             },
@@ -32,10 +34,12 @@ function HeroSection() {
         };
     }, []);
 
-    // Funktion zum sanften Scrollen zu einer Sektion
-    const scrollToSection = (e, sectionId) => {
+    const scrollToNextSection = (e) => {
         e.preventDefault();
-        document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
+        const nextSection = sectionRef.current.nextElementSibling;
+        if (nextSection) {
+            nextSection.scrollIntoView({ behavior: 'smooth' });
+        }
     };
 
     return (
@@ -45,22 +49,26 @@ function HeroSection() {
 
             <div className={styles.heroContent}>
                 <h1 className={styles.heroHeadline}>
-                    Ihr Moment der Eleganz
+                    Die Kunst des <br /> perfekten Schnitts
                 </h1>
-
                 <p className={styles.heroSubtitle}>
-                    Exklusives Haarstyling und persönliche Beratung in Kiel.
+                    Wir verbinden zeitlose Eleganz mit modernen Techniken, um einen Look zu kreieren, der Ihre Persönlichkeit unterstreicht.
                 </p>
-
                 <div className={styles.ctaContainer}>
                     <button onClick={() => navigate('/buchen')} className={`${styles.ctaButton} ${styles.ctaButtonPrimary}`}>
+                        <FontAwesomeIcon icon={faCalendarAlt} className={styles.ctaIcon} />
                         Termin buchen
                     </button>
-                    <a href="#services-section" onClick={(e) => scrollToSection(e, 'services-section')} className={`${styles.ctaButton} ${styles.ctaButtonSecondary}`}>
+                    <button onClick={() => document.getElementById('services-section')?.scrollIntoView({ behavior: 'smooth' })} className={`${styles.ctaButton} ${styles.ctaButtonSecondary}`}>
                         Unsere Services
-                    </a>
+                        <FontAwesomeIcon icon={faArrowRight} className={`${styles.ctaIcon} ${styles.ctaIconRight}`} />
+                    </button>
                 </div>
             </div>
+
+            <a href="#trust-bar" onClick={scrollToNextSection} className={styles.scrollDownIndicator} aria-label="Zum nächsten Abschnitt scrollen">
+                <FontAwesomeIcon icon={faChevronDown} />
+            </a>
         </section>
     );
 }
