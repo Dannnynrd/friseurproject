@@ -5,9 +5,9 @@ import AuthService from '../services/auth.service';
 import styles from './AccountDashboard.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faCalendarAlt, faUserEdit, faCog, faChartBar, faListAlt,
-    faUsers, faCut, faClock, faGift, faSignOutAlt, faBars, faTimes,
-    faThLarge, faBuilding
+    faUserEdit, faCog, faUsers, faScissors, faClock,
+    faSignOutAlt, faBars, faTimes, faStore, faGaugeHigh,
+    faCalendarDays, faCalendarCheck, faStar, faCalendarXmark
 } from '@fortawesome/free-solid-svg-icons';
 
 import AppointmentList from '../components/AppointmentList';
@@ -48,29 +48,32 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
     const toggleMobileNav = () => setIsMobileNavOpen(!isMobileNavOpen);
 
     const userTabs = [
-        { name: 'appointments', label: 'Meine Termine', icon: faCalendarAlt, component: <AppointmentList key={`user-${refreshAppointmentsList}`} currentUser={currentUser} /> },
+        { name: 'appointments', label: 'Meine Termine', icon: faCalendarCheck, component: <AppointmentList key={`user-${refreshAppointmentsList}`} currentUser={currentUser} /> },
         { name: 'profile', label: 'Profil bearbeiten', icon: faUserEdit, component: <ProfileEditForm user={currentUser} onProfileUpdateSuccess={onProfileUpdateSuccess} onProfileUpdateError={onProfileUpdateError} /> },
     ];
 
     const adminTabs = [
-        { name: 'admin-dashboard', label: 'Übersicht', icon: faThLarge, component: <AdminDashboardStats /> },
-        { name: 'admin-calendar', label: 'Kalender', icon: faCalendarAlt, component: <AdminCalendarView /> },
-        { name: 'admin-appointments', label: 'Terminverwaltung', icon: faListAlt, component: <AppointmentList key={`admin-${refreshAppointmentsList}`} adminView={true} currentUser={currentUser} /> },
+        { name: 'admin-dashboard', label: 'Übersicht', icon: faGaugeHigh, component: <AdminDashboardStats /> },
+        { name: 'admin-calendar', label: 'Kalender', icon: faCalendarDays, component: <AdminCalendarView /> },
+        { name: 'admin-appointments', label: 'Terminverwaltung', icon: faCalendarCheck, component: <AppointmentList key={`admin-${refreshAppointmentsList}`} adminView={true} currentUser={currentUser} /> },
         { name: 'admin-customers', label: 'Kundenverwaltung', icon: faUsers, component: <CustomerManagement /> },
-        { name: 'admin-services', label: 'Dienstleistungen', icon: faCut, component: <ServiceList onServiceAdded={onServiceAdded} refreshServicesList={refreshServicesList} /> },
+        { name: 'admin-services', label: 'Dienstleistungen', icon: faScissors, component: <ServiceList onServiceAdded={onServiceAdded} refreshServicesList={refreshServicesList} /> },
         { name: 'admin-working-hours', label: 'Öffnungszeiten', icon: faClock, component: <WorkingHoursManager /> },
-        { name: 'admin-blocked-slots', label: 'Sperrzeiten', icon: faGift, component: <BlockedTimeSlotManager /> },
-        { name: 'admin-testimonials', label: 'Bewertungen', icon: faChartBar, component: <AdminTestimonialManagement /> },
+        { name: 'admin-blocked-slots', label: 'Sperrzeiten', icon: faCalendarXmark, component: <BlockedTimeSlotManager /> },
+        { name: 'admin-testimonials', label: 'Bewertungen', icon: faStar, component: <AdminTestimonialManagement /> },
         { name: 'admin-settings', label: 'Salon Einstellungen', icon: faCog, component: <DashboardSettings /> },
     ];
 
     const getTabContent = () => {
-        const allTabs = isAdmin ? [...userTabs, ...adminTabs] : userTabs;
+        const allTabs = isAdmin ? [...adminTabs, ...userTabs] : userTabs;
         const currentTabConfig = allTabs.find(tab => tab.name === activeTab);
+
         if (!currentTabConfig) {
-            if (isAdmin) return <AdminDashboardStats />;
-            return <AppointmentList key={`user-fallback-${refreshAppointmentsList}`} currentUser={currentUser} />;
+            const defaultTab = isAdmin ? 'admin-dashboard' : 'appointments';
+            const defaultComponent = (isAdmin ? adminTabs : userTabs).find(tab => tab.name === defaultTab)?.component;
+            return defaultComponent || null;
         }
+
         const componentProps = { key: activeTab };
         if (currentTabConfig.name.includes('appointments')) {
             componentProps.currentUser = currentUser;
@@ -97,15 +100,15 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                 onClick={() => handleTabChange(tab.name)}
                 className={`w-full flex items-center px-4 py-2.5 text-sm rounded-lg transition-all duration-200 ease-in-out group
                     ${activeTab === tab.name
-                    ? `bg-slate-100 text-indigo-700 font-medium ${styles.navItemActive}`
-                    : `text-gray-700 hover:bg-slate-50 hover:text-indigo-700 ${styles.navItem}`}
+                    ? `bg-slate-100 text-accent-dark font-semibold ${styles.navItemActive}`
+                    : `text-gray-600 hover:bg-slate-50 hover:text-accent-dark ${styles.navItem}`}
                     ${isMobile ? 'text-left' : 'justify-start'}`}
                 aria-current={activeTab === tab.name ? 'page' : undefined}
             >
                 <FontAwesomeIcon
                     icon={tab.icon}
                     className={`mr-3 h-5 w-5 flex-shrink-0 
-                        ${activeTab === tab.name ? 'text-indigo-600' : 'text-gray-400 group-hover:text-indigo-600'}`}
+                        ${activeTab === tab.name ? 'text-accent' : 'text-gray-400 group-hover:text-accent-dark'}`}
                 />
                 {tab.label}
             </button>
@@ -121,11 +124,11 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
             <div className="md:hidden bg-white shadow-sm fixed top-0 left-0 right-0 z-40 pt-safe-top">
                 <div className="container mx-auto px-4 h-16 flex justify-between items-center">
                     <span className="text-lg font-semibold text-gray-800">
-                        { (isAdmin ? [...userTabs, ...adminTabs] : userTabs).find(t => t.name === activeTab)?.label || "Menü" }
+                        { (isAdmin ? [...adminTabs, ...userTabs] : userTabs).find(t => t.name === activeTab)?.label || "Menü" }
                     </span>
                     <button
                         onClick={toggleMobileNav}
-                        className="p-2 rounded-md text-gray-500 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+                        className="p-2 rounded-md text-gray-500 hover:text-accent-dark focus:outline-none focus:ring-2 focus:ring-inset focus:ring-accent"
                         aria-controls="dashboard-mobile-nav"
                         aria-expanded={isMobileNavOpen}
                     >
@@ -139,8 +142,8 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                 <aside className={`hidden md:flex md:flex-col md:w-64 lg:w-72 bg-white fixed md:sticky top-0 left-0 md:!h-screen shadow-lg md:shadow-none md:border-r border-gray-200 z-30 ${styles.dashboardSidebar}`}>
                     <div className="flex items-center justify-center h-16 md:h-20 border-b border-gray-200 px-4">
                         <Link to="/" className="flex items-center space-x-2 group">
-                            <FontAwesomeIcon icon={faBuilding} className="h-7 w-7 text-indigo-600 group-hover:text-indigo-700 transition-colors" />
-                            <span className="text-xl font-bold text-gray-800 font-serif group-hover:text-indigo-700 transition-colors">Salon Dashboard</span>
+                            <FontAwesomeIcon icon={faStore} className="h-7 w-7 text-accent group-hover:text-accent-dark transition-colors" />
+                            <span className="text-xl font-bold text-gray-800 font-serif group-hover:text-accent-dark transition-colors">Salon Dashboard</span>
                         </Link>
                     </div>
                     <nav className="flex-grow p-3 space-y-1 overflow-y-auto">
@@ -179,7 +182,7 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                                  ${isMobileNavOpen ? 'translate-x-0' : '-translate-x-full'} ${styles.mobileDashboardNav}`}>
                     <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
                         <span className="text-lg font-semibold text-gray-800">Menü</span>
-                        <button onClick={toggleMobileNav} className="p-2 text-gray-600 hover:text-indigo-600">
+                        <button onClick={toggleMobileNav} className="p-2 text-gray-600 hover:text-accent">
                             <FontAwesomeIcon icon={faTimes} className="h-6 w-6" />
                         </button>
                     </div>
@@ -209,7 +212,6 @@ function AccountDashboard({ currentUser, logOut, onAppointmentAdded, refreshAppo
                 </aside>
 
                 <main className={`flex-1 mt-16 md:mt-0 ${styles.dashboardContent}`}>
-                    {/* HINZUGEFÜGT: flex flex-col items-center, um den Inhalt zu zentrieren */}
                     <div className="p-6 md:p-8 lg:p-10 w-full flex flex-col items-center">
                         {getTabContent()}
                     </div>

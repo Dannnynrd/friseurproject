@@ -1,11 +1,11 @@
 // src/components/charts/AppointmentsByDayRechart.js
-// Version für V5 - ohne onBarClick Prop und Handler
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChartBar } from '@fortawesome/free-solid-svg-icons';
 
-const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F', '#FFBB28'];
+// NEU: Monochrome Farbpalette
+const COLORS = ['#111827', '#1f2937', '#374151', '#4b5569', '#6b7280', '#9ca3af', '#d1d5db'];
 
 const AppointmentsByDayRechart = ({ chartData, title }) => {
     const hasData = chartData && chartData.labels && chartData.labels.length > 0 && chartData.data && chartData.data.some(d => d > 0);
@@ -20,15 +20,17 @@ const AppointmentsByDayRechart = ({ chartData, title }) => {
     }
 
     const data = chartData.labels.map((label, index) => ({
-        name: label,
+        name: label.substring(0, 2), // Abkürzung für Wochentage
+        fullName: label,
         Termine: chartData.data[index] || 0,
     }));
 
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
+            const dataPoint = data.find(d => d.name === label);
             return (
                 <div className="custom-recharts-tooltip">
-                    <p className="label">{`${label}`}</p>
+                    <p className="label">{`${dataPoint?.fullName || label}`}</p>
                     <p className="intro">{`Termine: ${payload[0].value}`}</p>
                 </div>
             );
@@ -39,7 +41,7 @@ const AppointmentsByDayRechart = ({ chartData, title }) => {
     const renderCustomBarLabel = ({ x, y, width, value }) => {
         if (value > 0) {
             return (
-                <text x={x + width / 2} y={y} fill="var(--medium-grey-text, #5f5f5f)" textAnchor="middle" dy={-6} fontSize="10px">
+                <text x={x + width / 2} y={y} fill="#6b7280" textAnchor="middle" dy={-6} fontSize="10px">
                     {value}
                 </text>
             );
@@ -61,24 +63,24 @@ const AppointmentsByDayRechart = ({ chartData, title }) => {
                     }}
                     barCategoryGap="25%"
                 >
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color-light, #e9e9e9)" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                     <XAxis
                         dataKey="name"
-                        tick={{ fontSize: 11, fill: 'var(--dark-text, #333)' }}
-                        axisLine={{ stroke: 'var(--border-color, #ccc)' }}
-                        tickLine={{ stroke: 'var(--border-color, #ccc)' }}
+                        tick={{ fontSize: 11, fill: '#374151' }}
+                        axisLine={{ stroke: '#e5e7eb' }}
+                        tickLine={{ stroke: '#e5e7eb' }}
                         interval={0}
                     />
                     <YAxis
                         allowDecimals={false}
-                        tick={{ fontSize: 10, fill: 'var(--medium-grey-text, #5f5f5f)' }}
+                        tick={{ fontSize: 10, fill: '#6b7280' }}
                         axisLine={false}
                         tickLine={false}
-                        label={{ value: 'Anzahl Termine', angle: -90, position: 'insideLeft', offset: 5, fontSize: 11, fill: 'var(--medium-grey-text, #5f5f5f)'}}
+                        label={{ value: 'Anzahl Termine', angle: -90, position: 'insideLeft', offset: 5, fontSize: 11, fill: '#6b7280'}}
                         width={40}
                     />
                     <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(206, 206, 206, 0.25)'}}/>
-                    <Bar dataKey="Termine" radius={[5, 5, 0, 0]} /* onClick Handler entfernt */ cursor="default">
+                    <Bar dataKey="Termine" radius={[5, 5, 0, 0]} cursor="default">
                         <LabelList dataKey="Termine" content={renderCustomBarLabel} />
                         {
                             data.map((entry, index) => (

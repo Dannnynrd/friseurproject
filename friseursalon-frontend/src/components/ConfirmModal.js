@@ -1,6 +1,5 @@
 // friseursalon-frontend/src/components/ConfirmModal.js
 import React from 'react';
-// HIER den Import ändern:
 import styles from './ConfirmModal.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faExclamationTriangle, faSpinner, faCheck, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
@@ -54,7 +53,7 @@ function ConfirmModal({
                         onClick={onConfirm}
                         disabled={isLoading}
                         className={`w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white 
-                                    ${icon === faTrashAlt || iconColorClass === "text-red-500" ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500' : 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500'} 
+                                    ${icon === faTrashAlt || iconColorClass === "text-red-500" ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500' : 'bg-accent hover:bg-accent-dark focus:ring-accent'} 
                                     focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 ${styles.actionButton} ${styles.confirmButton}`}
                     >
                         {isLoading ? (
@@ -68,7 +67,7 @@ function ConfirmModal({
                         type="button"
                         onClick={onClose}
                         disabled={isLoading}
-                        className={`w-full sm:w-auto inline-flex justify-center px-4 py-2.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-150 disabled:opacity-60 ${styles.actionButton} ${styles.cancelButton}`}
+                        className={`w-full sm:w-auto inline-flex justify-center px-4 py-2.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-colors duration-150 disabled:opacity-60 ${styles.actionButton} ${styles.cancelButton}`}
                     >
                         {cancelButtonText}
                     </button>

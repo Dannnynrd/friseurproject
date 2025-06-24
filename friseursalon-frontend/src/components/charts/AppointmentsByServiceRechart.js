@@ -1,11 +1,11 @@
 // src/components/charts/AppointmentsByServiceRechart.js
-// Version für V5 - ohne onSegmentClick Prop und Handler
 import React, { PureComponent } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, Sector } from 'recharts';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChartPie } from '@fortawesome/free-solid-svg-icons';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#d0ed57', '#ffc0cb', '#a4de6c'];
+// NEU: Monochrome Farbpalette
+const COLORS = ['#111827', '#374151', '#4b5569', '#6b7280', '#9ca3af', '#d1d5db', '#e5e7eb'];
 
 const renderActiveShape = (props) => {
     const RADIAN = Math.PI / 180;
@@ -57,7 +57,6 @@ class AppointmentsByServiceRechart extends PureComponent {
     };
 
     render() {
-        // chartData ist jetzt ein Objekt { labels: [], data: [] }
         const { chartData: chartDataObject, title } = this.props;
 
         const hasData = chartDataObject && chartDataObject.labels && chartDataObject.labels.length > 0 &&
@@ -72,16 +71,14 @@ class AppointmentsByServiceRechart extends PureComponent {
             );
         }
 
-        // Daten für Recharts PieChart formatieren
         let dataForPie = chartDataObject.labels.map((label, index) => ({
             name: label,
             value: chartDataObject.data[index] || 0,
         })).filter(item => item.value > 0)
             .sort((a,b) => b.value - a.value);
 
-        // Wenn es mehr als 7 Services gibt, fasse den Rest als "Andere" zusammen
         if (dataForPie.length > 7) {
-            const topServices = dataForPie.slice(0, 6); // Top 6 behalten
+            const topServices = dataForPie.slice(0, 6);
             const otherServicesCount = dataForPie.slice(6).reduce((sum, item) => sum + item.value, 0);
             if (otherServicesCount > 0) {
                 dataForPie = [...topServices, { name: 'Andere', value: otherServicesCount }];
@@ -120,7 +117,6 @@ class AppointmentsByServiceRechart extends PureComponent {
                             dataKey="value"
                             nameKey="name"
                             onMouseEnter={this.onPieEnter}
-                            // onClick Handler entfernt für V5
                             cursor="pointer"
                         >
                             {dataForPie.map((entry, index) => (

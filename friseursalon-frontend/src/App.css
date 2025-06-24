@@ -13,13 +13,14 @@
   --color-text-on-dark: #f9fafb;
 
   --color-background: #ffffff;
-  --color-background-offset: #f9fafb; /* Helles Grau für Header & Sektionen */
+  --color-background-offset: #f9fafb;
 
   --color-border: #e5e7eb;
 
-  /* Akzentfarbe */
-  --color-accent: #4f46e5;
-  --color-accent-dark: #4338ca;
+  /* Akzentfarbe (NEU: Moderner Grau/Schwarz-Ton) */
+  --color-accent: #1f2937;      /* Tailwind gray-800 */
+  --color-accent-dark: #111827; /* Tailwind gray-900 */
+
 
   /* Schriftarten */
   --font-heading: 'Playfair Display', serif;

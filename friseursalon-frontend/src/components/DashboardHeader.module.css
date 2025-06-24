@@ -41,7 +41,7 @@
 }
 
 .periodButton.active {
-    background-color: #4f46e5; /* bg-indigo-600 */
+    background-color: var(--color-accent); /* GEÄNDERT */
     color: white;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
@@ -93,8 +93,8 @@
 }
 
 .dropdownItem.active {
-    color: #4f46e5;
-    background-color: #e0e7ff;
+    color: var(--color-accent); /* GEÄNDERT */
+    background-color: #e5e7eb; /* Angepasst für besseren Kontrast mit dunkler Schrift */
 }
 
 .customPeriodBtn .filterIcon {

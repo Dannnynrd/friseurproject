@@ -9,48 +9,35 @@
 }
 
 .calendarWrapper {
-    /* Tailwind im JS: h-[70vh] md:h-[75vh]
-       Diese Klasse kann verwendet werden, um spezifische Stile für den Kalender-Wrapper
-       hinzuzufügen, die über die Höhensteuerung hinausgehen.
-    */
+    /* Tailwind im JS: h-[70vh] md:h-[75vh] */
 }
 
-/* Anpassungen für react-big-calendar
-   Viele dieser Stile sind notwendig, um das Aussehen des Kalenders
-   fein abzustimmen und an das Design der Anwendung anzupassen.
-   Es ist oft eine Mischung aus Überschreiben von Standardstilen und Hinzufügen eigener.
-*/
-
-/* Globale Anpassungen für den Kalender könnten hier oder in App.css stehen.
-   Wenn sie nur für diese Ansicht gelten, sind sie hier besser aufgehoben.
-   Verwende :global(), um die Klassen von react-big-calendar direkt anzusprechen. */
-
+/* Anpassungen für react-big-calendar */
 :global(.rbc-toolbar button) {
-    /* Tailwind-ähnliches Styling für Kalender-Navigationsbuttons */
     padding: 0.4rem 0.8rem !important;
-    font-size: 0.875rem !important; /* text-sm */
-    font-weight: 500 !important; /* font-medium */
-    border: 1px solid #D1D5DB !important; /* border-gray-300 */
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    border: 1px solid #D1D5DB !important;
     background-color: white !important;
-    color: #374151 !important; /* text-gray-700 */
-    border-radius: 0.375rem !important; /* rounded-md */
+    color: #374151 !important;
+    border-radius: 0.375rem !important;
     transition: background-color 0.2s, color 0.2s, border-color 0.2s;
 }
 :global(.rbc-toolbar button:hover) {
-    background-color: #F3F4F6 !important; /* bg-gray-100 */
-    border-color: #9CA3AF !important; /* border-gray-400 */
+    background-color: #F3F4F6 !important;
+    border-color: #9CA3AF !important;
 }
 :global(.rbc-toolbar button.rbc-active) {
-    background-color: #4F46E5 !important; /* bg-indigo-600 */
+    background-color: var(--color-accent) !important;
     color: white !important;
-    border-color: #4F46E5 !important; /* border-indigo-600 */
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; /* shadow-sm */
+    border-color: var(--color-accent) !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
 }
 
 :global(.rbc-toolbar .rbc-toolbar-label) {
-    font-size: 1.25rem !important; /* text-xl */
-    font-weight: 600 !important; /* font-semibold */
-    color: #1F2937 !important; /* text-gray-800 */
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+    color: #1F2937 !important;
 }
 
 /* Event-Styling (Basis, wird durch eventStyleGetter ergänzt/überschrieben) */
@@ -58,59 +45,50 @@
     padding: 4px 6px !important;
     border-radius: 4px !important;
     font-size: 0.8rem !important;
-    border: none !important; /* eventStyleGetter setzt spezifische Ränder */
+    border: none !important;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 :global(.rbc-event-label) {
     font-weight: 500;
 }
-:global(.rbc-event-content) {
-    /* Falls spezifische Stile für den Inhalt des Events benötigt werden */
-}
 
 /* Anpassung für Agenda-Ansicht */
 :global(.rbc-agenda-view table tbody tr:hover) {
-    background-color: #f9fafb !important; /* bg-gray-50 */
+    background-color: #f9fafb !important;
 }
 :global(.rbc-agenda-view table thead th) {
-    font-size: 0.75rem !important; /* text-xs */
-    color: #6B7280 !important; /* text-gray-500 */
+    font-size: 0.75rem !important;
+    color: #6B7280 !important;
     text-transform: uppercase !important;
 }
 :global(.rbc-agenda-time, .rbc-agenda-date-cell) {
-    font-size: 0.875rem !important; /* text-sm */
-    color: #4B5563 !important; /* text-gray-600 */
+    font-size: 0.875rem !important;
+    color: #4B5563 !important;
 }
 
 
 /* Hintergrund für den aktuellen Tag */
 :global(.rbc-day-bg.rbc-today) {
-    background-color: #E0E7FF !important; /* Indigo-100 als Beispiel */
-    opacity: 0.5;
+    background-color: rgba(37, 99, 235, 0.08) !important; /* Helles Blau, passend zum neuen Akzent */
+    opacity: 0.8;
 }
 
 /* Zeitschlitze in Wochen-/Tagesansicht */
-:global(.rbc-time-slot) {
-    /* border-top: 1px dotted #e5e7eb !important; /* Subtile Trennlinien für Zeitschlitze */
-}
-:global(.rbc-time-gutter .rbc-timeslot-group) {
-    border-bottom: none !important; /* Entfernt doppelte Linien in der Zeitspalte */
-}
 :global(.rbc-timeslot-group) {
-    border-bottom: 1px solid #e5e7eb; /* Tailwind: border-gray-200 */
+    border-bottom: 1px solid #e5e7eb;
 }
 :global(.rbc-time-view .rbc-row:last-child .rbc-timeslot-group) {
-    border-bottom: none; /* Keine Linie für die letzte Gruppe */
+    border-bottom: none;
 }
 
 
 /* Styling für den "Mehr Termine"-Link in der Monatsansicht */
 :global(.rbc-month-view .rbc-show-more) {
-    color: theme('colors.indigo.600') !important;
+    color: var(--color-accent) !important;
     font-size: 0.75rem !important;
     transition: color 0.2s ease-in-out;
 }
 :global(.rbc-month-view .rbc-show-more:hover) {
-    color: theme('colors.indigo.800') !important;
+    color: var(--color-accent-dark) !important;
     text-decoration: underline;
 }

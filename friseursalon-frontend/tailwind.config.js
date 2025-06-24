@@ -8,7 +8,11 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                // Mapping auf unsere neuen, neutraleren CSS-Variablen
+                // NEU: Eigene Akzentfarbe, die auf die CSS-Variable verweist
+                'accent': 'var(--color-accent)',
+                'accent-dark': 'var(--color-accent-dark)',
+
+                // Bestehendes Mapping
                 'light-bg': 'var(--light-bg)',
                 'dark-text': 'var(--dark-text)',
                 'medium-grey-text': 'var(--medium-grey-text)',
@@ -17,7 +21,6 @@ module.exports = {
                 'border-color-light': 'var(--border-color-light)',
                 'light-grey-bg': 'var(--light-grey-bg)',
 
-                // Die primäre Akzentfarbe ist jetzt neutral, gesteuert durch --dark-text.
                 // Statusfarben bleiben für ihre Signalwirkung erhalten.
                 'danger-color': 'var(--danger-color)',
                 'danger-color-dark': 'var(--danger-color-dark)',

@@ -52,7 +52,6 @@ function AdminCalendarView({ onAppointmentAction, currentUser }) {
         setLoading(true);
         setError(null);
         try {
-            // KORREKTUR: Relativer Pfad
             const response = await api.get('appointments');
             const fetchedAppointments = response.data || [];
 
@@ -163,7 +162,7 @@ function AdminCalendarView({ onAppointmentAction, currentUser }) {
     if (loading) {
         return (
             <div className="flex justify-center items-center p-10 text-gray-600">
-                <FontAwesomeIcon icon={faSpinner} spin size="2x" className="text-indigo-500" />
+                <FontAwesomeIcon icon={faSpinner} spin size="2x" className="text-accent" />
                 <p className="ml-3 text-md">Lade Kalenderansicht...</p>
             </div>
         );
@@ -178,7 +177,7 @@ function AdminCalendarView({ onAppointmentAction, currentUser }) {
                 <div className="mt-3 sm:mt-0 space-x-2">
                     <button
                         onClick={fetchAppointments}
-                        className="p-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="p-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-accent"
                         title="Kalender aktualisieren"
                         disabled={loading}
                     >
@@ -186,7 +185,7 @@ function AdminCalendarView({ onAppointmentAction, currentUser }) {
                     </button>
                     <button
                         onClick={() => { setSelectedSlotForCreate({ start: new Date(), end: addHours(new Date(), 1), allDay: false }); setShowCreateModal(true); }}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-accent hover:bg-accent-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
                     >
                         <FontAwesomeIcon icon={faCalendarPlus} className="mr-2" />
                         Neuer Termin
