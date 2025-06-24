@@ -1,10 +1,6 @@
 // friseursalon-frontend/src/components/AboutFounderSection.js
 import React, { useEffect, useRef } from 'react';
-// HIER den Import ändern:
-import styles from './AboutFounderSection.module.css'; // Importiert als CSS-Modul
-// Stelle sicher, dass das Bild im public-Ordner oder einem zugänglichen Pfad liegt
-// oder importiere es, wenn dein Setup das unterstützt (z.B. mit Webpack)
-// import founderImage from '../assets/images/founder-image.jpg'; // Beispielhafter Import
+import styles from './AboutFounderSection.module.css';
 
 function AboutFounderSection() {
     const sectionRef = useRef(null);
@@ -29,7 +25,6 @@ function AboutFounderSection() {
         };
     }, []);
 
-    // Beispiel-URL für das Bild. Ersetze dies durch deinen tatsächlichen Bildpfad.
     const founderImageUrl = "https://images.pexels.com/photos/3760695/pexels-photo-3760695.jpeg?auto=compress&cs=tinysrgb&w=800";
 
 
@@ -37,16 +32,14 @@ function AboutFounderSection() {
         <section
             id="about-founder"
             ref={sectionRef}
-            className="py-16 md:py-24 bg-white" // Hintergrundfarbe anpassen, falls nötig
+            className="py-16 md:py-24 bg-white"
         >
             <div className="container mx-auto px-6">
-                {/* Tailwind-Grid für ein zweispaltiges Layout, das auf Mobilgeräten untereinander dargestellt wird */}
                 <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
-                    {/* Bild-Spalte */}
                     <div className={`animate-up ${styles.founderImageContainer}`}>
                         <img
-                            src={founderImageUrl} // Verwende die Variable hier
-                            alt="Inhaberin des Salons"
+                            src={founderImageUrl}
+                            alt="Inhaber des Salons, Ibrahim"
                             className={`w-full h-auto object-cover rounded-lg shadow-lg ${styles.founderImage}`}
                             onError={(e) => {
                                 e.target.onerror = null;
@@ -55,29 +48,19 @@ function AboutFounderSection() {
                         />
                     </div>
 
-                    {/* Text-Spalte */}
                     <div className={`animate-up ${styles.founderTextContainer}`} style={{ transitionDelay: '0.1s' }}>
-                        <span className="text-xs font-semibold text-medium-grey-text uppercase tracking-wider mb-2 block">
-                            Die Gründerin
+                        <span className="text-xs font-semibold text-color-text-light uppercase tracking-wider mb-2 block">
+                            Der Gründer
                         </span>
-                        <h2 className="font-serif text-3xl md:text-4xl font-medium text-dark-text mb-6">
-                            Isabelle Müller-Weber
+                        <h2 className="font-serif text-3xl md:text-4xl font-medium text-color-text-dark mb-6">
+                            Ibrahim
                         </h2>
-                        <p className={`text-medium-grey-text mb-4 ${styles.founderBio}`}>
+                        <p className={`text-color-text-medium mb-4 ${styles.founderBio}`}>
                             Seit über einem Jahrzehnt widme ich mich der Kunst des Haares. Meine Philosophie basiert auf der Überzeugung, dass wahre Schönheit in der Harmonie von Schnitt, Farbe und der Persönlichkeit meiner Kundinnen und Kunden liegt.
                         </p>
-                        <p className={`text-medium-grey-text mb-6 ${styles.founderBio}`}>
-                            Nach meiner Ausbildung in renommierten Salons und stetigen Weiterbildungen bei internationalen Top-Stylisten, habe ich mir mit "IMW Friseure" den Traum eines eigenen Ateliers erfüllt – ein Ort, an dem Präzision auf Kreativität und Entspannung trifft.
+                        <p className={`text-color-text-medium mb-6 ${styles.founderBio}`}>
+                            Nach meiner Ausbildung in renommierten Salons und stetigen Weiterbildungen bei internationalen Top-Stylisten, habe ich mir mit meinem Salon den Traum eines eigenen Ateliers erfüllt – ein Ort, an dem Präzision auf Kreativität und Entspannung trifft.
                         </p>
-                        {/* Optional: Button für mehr Infos oder Link zur "Über Uns"-Seite */}
-                        {/*
-                        <a
-                            href="/ueber-uns"
-                            className="inline-block bg-dark-text text-light-bg px-6 py-3 rounded font-medium text-sm hover:bg-gray-700 transition-colors duration-200"
-                        >
-                            Mehr über meine Philosophie
-                        </a>
-                        */}
                     </div>
                 </div>
             </div>

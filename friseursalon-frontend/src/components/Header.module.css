@@ -1,29 +1,41 @@
-/* src/components/Header.module.css */
+/* src/components/Header.module.css - Finale, saubere Version */
 
+.bodyNoScroll {
+    overflow: hidden;
+}
+
+/* --- Grund-Header & Zustände --- */
 .header {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     z-index: 1000;
-    padding: 1.5rem 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.4s ease, border-color 0.4s ease, padding 0.4s ease;
-    border-bottom: 1px solid transparent;
-}
+    padding: 1.25rem 1.5rem;
+    transition: background-color 0.3s ease;
 
-/* Der Zustand nach dem Scrollen oder wenn nicht auf der Startseite */
+    --text-color: white;
+    --button-bg: white;
+    --button-text: black;
+}
 .header.scrolled {
-    background-color: var(--color-background-offset);
-    border-bottom-color: var(--color-border);
-    padding: 1rem 2rem;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-bottom: 1px solid var(--color-border);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+
+    --text-color: var(--color-text-dark);
+    --button-bg: var(--color-accent);
+    --button-text: white;
+}
+.header.menuOpen {
+    background-color: white;
+    --text-color: var(--color-text-dark);
 }
 
 .container {
-    width: 100%;
     max-width: var(--container-width);
+    margin: 0 auto;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -33,203 +45,152 @@
     font-family: var(--font-heading);
     font-weight: 700;
     font-size: 1.5rem;
-    letter-spacing: 0.05em;
     text-decoration: none;
-    color: var(--color-text-on-dark);
-    transition: color 0.4s ease;
-    z-index: 1002; /* Bleibt über dem mobilen Menü */
+    color: var(--text-color);
+    transition: color 0.3s ease;
+    z-index: 101;
 }
 
-.header.scrolled .logo,
-.header.menuOpen .logo {
-    color: var(--color-text-dark);
-}
+.desktopNav, .desktopActions { display: none; }
 
-/* --- Desktop Navigation --- */
-.desktopNav {
-    display: none;
-}
-
-@media (min-width: 992px) {
-    .desktopNav {
-        display: block;
-    }
-}
-
-.navList {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    gap: 2.5rem;
-}
-
-.navLink {
-    text-decoration: none;
-    color: var(--color-text-on-dark);
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: color 0.4s ease, opacity 0.2s ease;
-    padding-bottom: 0.25rem;
-    position: relative;
-    opacity: 0.9;
-}
-
-.navLink:hover {
-    opacity: 1;
-}
-
-.header.scrolled .navLink {
-    color: var(--color-text-medium);
-}
-.header.scrolled .navLink:hover {
-    color: var(--color-text-dark);
-}
-
-
-/* --- Aktionen (Login, Buchen) --- */
-.actions {
-    display: none;
-}
-
-@media (min-width: 992px) {
-    .actions {
-        display: flex;
-        align-items: center;
-        gap: 1.5rem;
-    }
-}
-
-.authActions {
-    display: flex;
-    gap: 1.5rem;
-    align-items: center;
-}
-
-.ctaButton {
-    background-color: var(--color-text-on-dark);
-    color: var(--color-text-dark);
-    border: 1px solid transparent;
-    padding: 0.6rem 1.25rem;
-    border-radius: 6px;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.9rem;
-    transition: all 0.4s ease;
-}
-
-.ctaButton:hover {
-    background-color: #e5e7eb; /* Helles Grau für Hover */
-}
-
-.header.scrolled .ctaButton {
-    background-color: var(--color-text-dark);
-    color: var(--color-text-on-dark);
-    border-color: var(--color-text-dark);
-}
-
-.header.scrolled .ctaButton:hover {
-    background-color: var(--color-text-medium);
-    border-color: var(--color-text-medium);
-}
-
-
-/* --- Mobile Menu --- */
-.mobileMenuButton {
-    display: block;
+/* --- Mobile Toggle & Animation --- */
+.mobileToggle {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 1.5rem;
-    color: var(--color-text-on-dark);
-    transition: color 0.4s ease, transform 0.3s ease;
-    z-index: 1002;
+    z-index: 101;
+    padding: 0.5rem;
+    width: 40px;
+    height: 40px;
 }
-.mobileMenuButton:hover {
-    transform: scale(1.1);
+.hamburger {
+    position: relative;
+    width: 24px;
+    height: 18px; /* Höhe des Containers für die 3 Striche */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.hamburgerBar {
+    width: 100%;
+    height: 2px;
+    background-color: var(--text-color);
+    border-radius: 2px;
+    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}
+.header.menuOpen .hamburgerBar:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+}
+.header.menuOpen .hamburgerBar:nth-child(2) {
+    opacity: 0;
+}
+.header.menuOpen .hamburgerBar:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
 }
 
-.header.scrolled .mobileMenuButton,
-.header.menuOpen .mobileMenuButton {
-    color: var(--color-text-dark);
-}
-
-@media (min-width: 992px) {
-    .mobileMenuButton {
-        display: none;
-    }
-}
-
-.mobileMenuOverlay {
+/* --- Mobile Menu --- */
+.mobileMenu {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
-    background-color: var(--color-background-offset);
-    z-index: 1001;
+    height: 100vh;
+    background-color: white;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    padding: 6rem 1.5rem 3rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s;
+}
+.header.menuOpen .mobileMenu {
+    opacity: 1;
+    visibility: visible;
+}
+.mobileNav {
+    flex-grow: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 6rem 2rem 2rem;
-
-    /* KORREKTUR: Sichtbarkeit steuert, ob das Element Raum einnimmt */
-    visibility: hidden;
-    opacity: 0;
-    transform: translateX(-100%);
-    transition: transform 0.4s ease-in-out, opacity 0.4s ease-in-out, visibility 0.4s;
+    gap: 2.5rem;
 }
-
-.mobileMenuOverlay.isOpen {
-    transform: translateX(0);
-    opacity: 1;
-    visibility: visible;
-}
-
-.mobileNavList {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 4rem 0;
-    text-align: center;
-}
-
-.mobileNavList li {
-    margin-bottom: 2rem;
-}
-
-.mobileNavList a {
-    /* KORREKTUR: Schriftgröße angepasst */
-    font-size: 1rem;
-    font-weight: 700;
+.mobileNav a {
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
     color: var(--color-text-dark);
     text-decoration: none;
-    transition: color 0.2s ease;
 }
-.mobileNavList a:hover {
-    color: var(--color-accent);
-}
-
 .mobileMenuFooter {
+    flex-shrink: 0;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
     text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.5rem;
+    padding-top: 2rem;
 }
-
 .mobileCtaButton {
-    background-color: var(--color-text-dark);
-    color: var(--color-text-on-dark);
-    padding: 0.8rem 2.5rem;
-    border-radius: 6px;
+    display: block;
+    background-color: var(--color-accent);
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 8px;
     text-decoration: none;
     font-weight: 600;
-    width: 100%;
 }
-
-.mobileLink {
-    color: var(--color-text-medium);
+.mobileActionLink {
+    display: block;
+    margin-top: 1.5rem;
+    color: var(--color-text-light);
     font-weight: 500;
     text-decoration: none;
+}
+
+/* --- Desktop Styles --- */
+@media (min-width: 1024px) {
+    .header { padding: 1.25rem 2rem; }
+    .mobileToggle { display: none; }
+
+    .desktopNav {
+        display: flex;
+        gap: 3rem;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    .desktopNav a {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-color);
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+    .desktopActions {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        margin-left: auto;
+    }
+    .actionLink {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-color);
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+    .ctaButton {
+        font-size: 0.9rem;
+        font-weight: 600;
+        background-color: var(--button-bg);
+        color: var(--button-text);
+        padding: 0.6rem 1.25rem;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    .ctaButton:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.1);
+    }
 }

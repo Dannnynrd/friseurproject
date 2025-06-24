@@ -1,43 +1,47 @@
 /* src/App.css */
 
 /* --- Schriftarten Importieren --- */
+/* Die Schriftarten werden bereits in public/index.html importiert.
+   Dieser @import ist eine zusätzliche Sicherheit, falls die HTML-Verlinkung entfernt wird. */
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap');
 
-/* --- Globale CSS Variablen (Design System) --- */
+/* --- Globale CSS Variablen (Neues Design System) --- */
 :root {
-  /* Farben */
-  --color-text-dark: #111827; /* Fast Schwarz für Headlines */
-  --color-text-medium: #374151; /* Dunkelgrau für Fließtext */
-  --color-text-light: #6b7280; /* Mittelgrau für Untertitel, Meta-Infos */
-  --color-text-subtle: #9ca3af; /* Hellgrau für dezente Hinweise */
-  --color-text-on-dark: #f9fafb; /* Weiß/Fast Weiß für Text auf dunklem Grund */
+  /* Farben: Eine minimalistische, professionelle Palette */
+  --color-text-dark: #0c0e15; /* Fast Schwarz für Headlines (Tailwind gray-900) */
+  --color-text-medium: #374151; /* Dunkelgrau für Fließtext (Tailwind gray-700) */
+  --color-text-light: #6b7280; /* Mittelgrau für Untertitel, Meta-Infos (Tailwind gray-500) */
+  --color-text-subtle: #9ca3af; /* Hellgrau für dezente Hinweise (Tailwind gray-400) */
+  --color-text-on-dark: #f9fafb; /* Weiß/Fast Weiß für Text auf dunklem Grund (Tailwind gray-50) */
 
   /* Hintergrundfarben */
-  --color-background: #f8fafc; /* Sehr helles Grau, fast Weiß */
-  --color-background-offset: #ffffff; /* Reines Weiß für Karten etc. */
-  --color-background-hover: #f1f5f9; /* Leicht dunkleres Grau für Hover-Effekte */
+  --color-background: #ffffff; /* Reines Weiß für einen klaren, hellen Look */
+  --color-background-offset: #f8fafc; /* Sehr helles Grau für abgesetzte Bereiche (Tailwind slate-50) */
+  --color-background-hover: #f1f5f9; /* Leicht dunkleres Grau für Hover-Effekte (Tailwind slate-100) */
 
   /* Rahmenfarben */
-  --color-border: #e2e8f0; /* Heller Rahmen */
-  --color-border-subtle: #f1f5f9; /* Sehr heller Rahmen */
+  --color-border: #e2e8f0; /* Heller Rahmen (Tailwind slate-200) */
+  --color-border-subtle: #f1f5f9; /* Sehr heller Rahmen (Tailwind slate-100) */
 
-  /* Akzentfarbe - wir wählen hier ein edles, dunkles Blau/Schwarz */
-  --color-accent: #1e293b;
-  --color-accent-dark: #0f172a; /* Dunklere Variante für Hover-Effekte */
-  --color-accent-text: #ffffff;
+  /* Akzentfarbe: Ein edles, dunkles Anthrazit statt purem Schwarz */
+  --color-accent: #1e293b; /* (Tailwind slate-800) */
+  --color-accent-dark: #0f172a; /* Dunklere Variante für Hover-Effekte (Tailwind slate-900) */
+  --color-accent-text: #ffffff; /* Textfarbe für Elemente mit Akzent-Hintergrund */
 
   /* Schriftarten */
-  --font-heading: 'Playfair Display', serif; /* Elegante Serif-Schrift für Überschriften */
-  --font-sans: 'Manrope', sans-serif; /* Moderne, gut lesbare Sans-Serif für Fließtext */
+  --font-heading: 'Playfair Display', serif;
+  --font-sans: 'Manrope', sans-serif;
 
   /* Layout */
-  --header-height: 5.5rem; /* Höhe des globalen Headers (wichtig für sticky Elemente) */
-  --container-width: 1400px; /* Maximale Breite des Inhalts */
+  --header-height: 5.5rem; /* Höhe des globalen Headers */
+  --container-width: 1280px; /* Maximale Breite des Inhalts (Tailwind xl) */
 }
 
 /* --- Globale Resets & Body Styles --- */
 html {
   scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 *, *::before, *::after {
@@ -49,28 +53,40 @@ body {
   font-family: var(--font-sans);
   color: var(--color-text-medium);
   background-color: var(--color-background);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.7;
 }
 
+/* Verhindert Scrollen des Bodys, wenn ein mobiles Menü offen ist */
 body.mobile-menu-active {
   overflow: hidden;
 }
 
+/* Globale Style für Textauswahl */
+::selection {
+  background-color: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+
 /* --- Globale Layout-Klassen --- */
+
+/* Haupt-Wrapper der App, sorgt dafür, dass der Footer immer unten ist */
 .App {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
+/* Wrapper für alle Seiten außer der Homepage, sorgt für korrekten Abstand zum Header */
 .page-layout {
   padding-top: var(--header-height);
-  flex-grow: 1; /* Nimmt den restlichen Platz ein */
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
+/* Stellt sicher, dass der direkte Inhalt im Page-Layout (z.B. das Dashboard) die volle Höhe einnimmt */
 .page-layout > div {
   height: 100%;
 }

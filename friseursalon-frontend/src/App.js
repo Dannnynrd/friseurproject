@@ -19,18 +19,16 @@ import AuthService from './services/auth.service';
 import AuthVerify from './common/AuthVerify';
 import EventBus from './common/EventBus';
 
-// Homepage Sections
+// --- NEUE, MODERNISIERTE HOMEPAGE SEKTIONEN ---
 import HeroSection from './components/HeroSection';
 import TrustBarSection from './components/TrustBarSection';
-import ExperienceSection from './components/ExperienceSection';
-import TestimonialsSection from './components/TestimonialsSection';
+import ServicesSection from './components/ServicesSection';
+import HowItWorksSection from './components/HowItWorksSection'; // NEU
 import AboutFounderSection from './components/AboutFounderSection';
-import ServicesSection from './components/ServicesSection'; // Wichtig: Import hinzugefügt
-import GalleryJournalSection from './components/GalleryJournalSection';
-import EssentialsSection from './components/EssentialsSection';
-import FAQSection from './components/FAQSection';
+import TestimonialsSection from './components/TestimonialsSection';
+import FinalCTASection from './components/FinalCTASection'; // NEU
 import LocationSection from './components/LocationSection';
-import NewsletterSection from './components/NewsletterSection';
+
 
 // --- Helper Components für das Layout ---
 
@@ -41,27 +39,23 @@ const PageLayout = ({ children }) => (
     </div>
 );
 
-// Bündelt alle Sektionen der Homepage
+// Bündelt alle Sektionen der neuen, modernisierten Homepage
 const HomePage = () => (
     <div className="homepage-layout">
         <HeroSection />
         <TrustBarSection />
-        <ExperienceSection />
         <div id="services-section">
-            {/* KORREKTUR: ServicesSection hier platziert */}
-            <ServicesSection maxServicesToShow={3} />
+            <ServicesSection />
         </div>
-        <TestimonialsSection />
+        <HowItWorksSection />
         <div id="about-founder">
             <AboutFounderSection />
         </div>
-        <GalleryJournalSection />
-        <EssentialsSection />
-        <FAQSection />
+        <TestimonialsSection />
+        <FinalCTASection />
         <div id="location">
             <LocationSection />
         </div>
-        <NewsletterSection />
     </div>
 );
 
@@ -72,6 +66,7 @@ const ProtectedRoute = ({ children, currentUser }) => {
     }
     return children;
 };
+
 
 // --- Main App Component ---
 
@@ -134,10 +129,12 @@ function App() {
                 <Routes>
                     <Route path="/" element={<HomePage />} />
 
+                    {/* Anchor-Link-Fallbacks, leiten zur Homepage weiter, wo das Scrolling stattfindet */}
                     <Route path="/#services-section" element={<Navigate to="/" replace />} />
                     <Route path="/#about-founder" element={<Navigate to="/" replace />} />
                     <Route path="/#location" element={<Navigate to="/" replace />} />
 
+                    {/* Seiten-Routen */}
                     <Route path="/buchen" element={<PageLayout><BookingPage currentUser={currentUser} onLoginSuccess={handleLoginSuccess} /></PageLayout>} />
                     <Route path="/login" element={currentUser ? <Navigate to="/account" replace /> : <PageLayout><Login onLoginSuccess={handleLoginSuccess} /></PageLayout>} />
                     <Route path="/register" element={currentUser ? <Navigate to="/account" replace /> : <PageLayout><Register /></PageLayout>} />
@@ -155,6 +152,7 @@ function App() {
                         }
                     />
 
+                    {/* Fallback für alle unbekannten Routen */}
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </main>

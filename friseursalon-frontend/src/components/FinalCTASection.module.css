@@ -1,0 +1,72 @@
+/* src/components/FinalCTASection.module.css */
+
+.ctaSection {
+    /* KORREKTUR: Reiner Schwarz/Grau-Verlauf ohne Blautöne */
+    background: linear-gradient(45deg, #222222, #0a0a0a);
+    color: var(--color-text-on-dark);
+    padding: 5rem 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .ctaSection {
+        padding: 6rem 1.5rem;
+    }
+}
+
+.ctaContent {
+    max-width: var(--container-width);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+@media (min-width: 768px) {
+    .ctaContent {
+        flex-direction: row;
+        justify-content: space-between;
+        text-align: left;
+    }
+}
+
+.ctaHeadline {
+    font-family: var(--font-heading);
+    font-size: clamp(1.75rem, 5vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+    .ctaHeadline {
+        margin-bottom: 0;
+        margin-right: 2rem;
+    }
+}
+
+.ctaButton {
+    --button-size: 64px;
+    width: var(--button-size);
+    height: var(--button-size);
+    border-radius: 12px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.buttonIcon {
+    font-size: 1.5rem;
+}
+
+.ctaButton:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
