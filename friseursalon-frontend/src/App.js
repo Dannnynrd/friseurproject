@@ -43,11 +43,12 @@ const PageLayout = ({ children }) => (
 const HomePage = () => (
     <div className="homepage-layout">
         <HeroSection />
-        <TrustBarSection />
+        <HowItWorksSection />
         <div id="services-section">
             <ServicesSection />
         </div>
-        <HowItWorksSection />
+
+        <TrustBarSection />
         <div id="about-founder">
             <AboutFounderSection />
         </div>

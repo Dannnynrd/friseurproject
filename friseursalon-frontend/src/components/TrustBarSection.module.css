@@ -1,131 +1,156 @@
-/* src/components/TrustBarSection.module.css */
+/* src/components/TrustBarSection.module.css - Finale "Desktop Bugfix" Edition */
 
 .trustSection {
-    position: relative; /* Wichtig für den ::before Pseudo-Effekt */
     background-color: var(--color-background-offset);
-    /* Das Padding oben wird erhöht, um Platz für die Welle zu schaffen */
-    padding: 8rem 1.5rem 5rem 1.5rem;
-    /* Die Sektion wird über die Hero-Sektion gezogen */
-    margin-top: -80px;
-
-    opacity: 0;
-    transition: opacity 1s ease-out 0.2s;
-}
-
-/* Der Wellen-Effekt, der den Übergang bildet */
-.trustSection::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 80px;
-    background-color: inherit; /* Nimmt die Hintergrundfarbe der Sektion an */
-    /* Erzeugt die Kurve */
-    -webkit-mask-image: url("data:image/svg+xml,%3csvg viewBox='0 0 1440 80' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M0 80H1440V0C1193.33 53.3333 821 80 720 80C619 80 246.667 53.3333 0 0V80Z' fill='black'/%3e%3c/svg%3e");
-    mask-image: url("data:image/svg+xml,%3csvg viewBox='0 0 1440 80' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M0 80H1440V0C1193.33 53.3333 821 80 720 80C619 80 246.667 53.3333 0 0V80Z' fill='black'/%3e%3c/svg%3e");
-    -webkit-mask-size: 100% 100%;
-    mask-size: 100% 100%;
-}
-
-.trustSection.visible {
-    opacity: 1;
+    padding: 5rem 0;
+    position: relative;
 }
 
 .container {
     max-width: var(--container-width);
     margin: 0 auto;
-    position: relative; /* Stellt sicher, dass der Inhalt über der Welle liegt */
-    z-index: 2;
 }
 
-.grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 3.5rem;
-}
-
-.trustElement {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+/* -- Sektions-Header -- */
+.sectionHeader {
     text-align: center;
-    padding: 1.5rem;
-    border-radius: 12px;
-    background-color: transparent;
-    /* Sanfter Übergang für den neuen Hover-Effekt */
-    transition: transform 0.4s ease, box-shadow 0.4s ease;
+    margin-bottom: 4rem;
+    padding: 0 1.5rem;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.visible .sectionHeader {
+    opacity: 1;
+    transform: translateY(0);
+}
+.subtitle {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.75rem;
+}
+.title {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 5vw, 3rem);
+    color: var(--color-text-dark);
+    margin: 0;
+    line-height: 1.2;
+    font-weight: 700;
 }
 
-/* KORREKTUR: Neuer, professionellerer Hover-Effekt */
-.trustElement:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.1);
+
+/* -- Grundlegende Karten-Stile -- */
+.trustElement {
+    padding: 2.5rem 2rem;
+    border-radius: 12px;
+    text-align: center;
+    background-color: var(--color-background);
+    border: 1px solid var(--color-border);
+    position: relative;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+.visible .trustElement {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .iconWrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    margin: 0 auto 1.5rem auto;
     height: 60px;
     width: 60px;
     border-radius: 50%;
-    /* Hintergrundfarbe des Icons für besseren Kontrast */
-    background-color: #fff;
-    border: 1px solid var(--color-border);
-    color: var(--color-text-dark);
-    margin-bottom: 1.5rem;
-    transition: all 0.4s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-background-offset);
+    color: var(--color-text-medium);
+    border: 1px solid var(--color-border-subtle);
+    transition: all 0.3s ease;
 }
-
-.trustElement:hover .iconWrapper {
-    background-color: var(--color-text-dark);
-    color: #fff;
-    border-color: var(--color-text-dark);
-}
-
-.textWrapper {
-    max-width: 300px;
-}
-
 .elementTitle {
     font-family: var(--font-heading);
     font-size: 1.2rem;
     font-weight: 700;
     color: var(--color-text-dark);
     margin: 0 0 0.5rem 0;
-    transition: color 0.4s ease;
 }
-
-.trustElement:hover .elementTitle {
-    color: var(--color-accent); /* Optional: Akzentfarbe für den Titel beim Hover */
-}
-
 .elementText {
     font-family: var(--font-sans);
     font-size: 0.9rem;
-    color: var(--color-text-light);
-    line-height: 1.7;
+    color: var(--color-text-medium);
+    line-height: 1.6;
 }
 
-/* Responsive Anpassungen */
-@media (min-width: 540px) {
-    .grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 2rem;
+
+/* ======================================= */
+/* NUR MOBILE & TABLET STYLES (bis 1023px) */
+/* ======================================= */
+@media (max-width: 1023px) {
+    .sliderContainer {
+        overflow: hidden;
+        position: relative;
+        cursor: grab;
+    }
+    .sliderContainer:active {
+        cursor: grabbing;
+    }
+
+    .sliderTrack {
+        display: flex;
+        gap: 4%; /* GAP_PERCENT */
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .trustElement {
+        flex: 0 0 85%; /* CARD_WIDTH_PERCENT */
+        transform: scale(0.95);
+    }
+
+    /* Diese Regeln existieren jetzt NUR auf Mobile/Tablet */
+    .trustElement.isActive {
+        border-color: var(--color-border-subtle);
+        transform: scale(1);
+    }
+
+    .trustElement.isActive .iconWrapper {
+        background-color: var(--color-accent);
+        color: white;
+        border-color: var(--color-accent);
     }
 }
 
+
+/* =================================== */
+/* NUR DESKTOP STYLES (ab 1024px) */
+/* =================================== */
 @media (min-width: 1024px) {
-    .trustSection {
-        padding: 10rem 2rem 6rem 2rem;
-        margin-top: -100px;
+    .sliderContainer {
+        overflow: visible;
+        cursor: default;
     }
-    .trustSection::before {
-        height: 100px;
-    }
-    .grid {
+    .sliderTrack {
+        display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 2rem;
+        /* Wichtig: Deaktiviert die JS-Transformation auf Desktop */
+        transform: none !important;
+    }
+
+    /* Hover-Effekt NUR für Geräte, die Hover unterstützen */
+    @media (hover: hover) {
+        .trustElement:hover {
+            transform: translateY(-8px);
+            border-color: var(--color-border);
+        }
+        .trustElement:hover .iconWrapper {
+            background-color: var(--color-accent);
+            color: white;
+            border-color: var(--color-accent);
+        }
     }
 }
