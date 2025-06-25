@@ -1,8 +1,8 @@
 // src/components/TestimonialsSection.js
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styles from './TestimonialsSection.module.css';
 import { FaStar, FaQuoteLeft } from 'react-icons/fa';
-import TestimonialModal from './TestimonialModal'; // NEU: Modal importieren
+import TestimonialModal from './TestimonialModal';
 
 const testimonials = [
     { id: 1, author: 'Julia S.', text: 'Der beste Haarschnitt, den ich je hatte! Ibrahim hat meine Wünsche perfekt verstanden und umgesetzt. Ich fühle mich wie ein neuer Mensch. Das Ambiente ist modern, sauber und man fühlt sich sofort wohl. Absolut jeden Cent wert!', rating: 5 },
@@ -19,7 +19,6 @@ const StarRating = ({ rating }) => (
     </div>
 );
 
-// Die Karte als eigene Komponente für die "Mehr lesen"-Logik
 const TestimonialCard = ({ testimonial, onReadMore }) => {
     const [needsExpansion, setNeedsExpansion] = useState(false);
     const textRef = useRef(null);
@@ -53,9 +52,9 @@ function TestimonialsSection() {
     const sectionRef = useRef(null);
     const trackRef = useRef(null);
     const [isVisible, setIsVisible] = useState(false);
-    // NEU: State für das Modal
     const [selectedTestimonial, setSelectedTestimonial] = useState(null);
 
+    // Observer für die Sichtbarkeit der Sektion
     useEffect(() => {
         const sectionObserver = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting) {
@@ -63,13 +62,12 @@ function TestimonialsSection() {
                 sectionObserver.unobserve(entries[0].target);
             }
         }, { threshold: 0.1 });
-
         const currentSectionRef = sectionRef.current;
         if (currentSectionRef) sectionObserver.observe(currentSectionRef);
         return () => { if (currentSectionRef) sectionObserver.unobserve(currentSectionRef); };
     }, []);
 
-    // Observer für den Fokus-Effekt auf Mobile
+    // Observer für den Fokus-Effekt
     useEffect(() => {
         const track = trackRef.current;
         if (!track || !isVisible) return;
@@ -84,6 +82,53 @@ function TestimonialsSection() {
         cards.forEach(card => cardObserver.observe(card));
         return () => cards.forEach(card => cardObserver.unobserve(card));
     }, [isVisible]);
+
+    // NEU: Logik für "Click and Drag" auf dem Desktop
+    useEffect(() => {
+        const slider = trackRef.current;
+        if (!slider) return;
+
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        const handleMouseDown = (e) => {
+            isDown = true;
+            slider.classList.add(styles.isDragging);
+            startX = e.pageX - slider.offsetLeft;
+            scrollLeft = slider.scrollLeft;
+        };
+
+        const handleMouseLeave = () => {
+            isDown = false;
+            slider.classList.remove(styles.isDragging);
+        };
+
+        const handleMouseUp = () => {
+            isDown = false;
+            slider.classList.remove(styles.isDragging);
+        };
+
+        const handleMouseMove = (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - slider.offsetLeft;
+            const walk = (x - startX) * 2; // Multiplikator für schnellere Bewegung
+            slider.scrollLeft = scrollLeft - walk;
+        };
+
+        slider.addEventListener('mousedown', handleMouseDown);
+        slider.addEventListener('mouseleave', handleMouseLeave);
+        slider.addEventListener('mouseup', handleMouseUp);
+        slider.addEventListener('mousemove', handleMouseMove);
+
+        return () => {
+            slider.removeEventListener('mousedown', handleMouseDown);
+            slider.removeEventListener('mouseleave', handleMouseLeave);
+            slider.removeEventListener('mouseup', handleMouseUp);
+            slider.removeEventListener('mousemove', handleMouseMove);
+        };
+    }, []);
 
     return (
         <>
@@ -109,7 +154,6 @@ function TestimonialsSection() {
                 </div>
             </section>
 
-            {/* NEU: Das Modal wird hier gerendert */}
             <TestimonialModal
                 testimonial={selectedTestimonial}
                 onClose={() => setSelectedTestimonial(null)}

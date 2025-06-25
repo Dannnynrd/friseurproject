@@ -2,7 +2,6 @@
 
 .testimonialSection {
     padding: 6rem 0;
-    /* NEU: Hintergrund auf reinweiß gesetzt */
     background-color: var(--color-background);
     position: relative;
     overflow: hidden;
@@ -50,17 +49,18 @@
     display: flex;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
-    /* Passt den seitlichen "Einblick" an */
     scroll-padding: 0 12%;
     gap: 2rem;
     padding: 2rem 12%;
 
     -ms-overflow-style: none;
     scrollbar-width: none;
-    cursor: grab;
+    cursor: grab; /* NEU: Zeigt an, dass man ziehen kann */
+    user-select: none; /* Verhindert das Markieren von Text beim Ziehen */
 }
-.testimonialsContainer:active {
-    cursor: grabbing;
+.testimonialsContainer.isDragging {
+    cursor: grabbing; /* NEU: Feedback beim aktiven Ziehen */
+    scroll-snap-type: none; /* Deaktiviert Snap während des Ziehens für flüssigere Bewegung */
 }
 .testimonialsContainer::-webkit-scrollbar {
     display: none;
@@ -107,7 +107,6 @@
     font-size: 1.1rem;
 }
 
-/* "Mehr lesen" Logik */
 .testimonialText {
     font-family: var(--font-heading);
     font-size: clamp(1.1rem, 3vw, 1.25rem);
@@ -141,11 +140,10 @@
 /* -- Desktop-Anpassungen für den Slider -- */
 @media (min-width: 1024px) {
     .testimonialsContainer {
-        scroll-padding: 0 20%;
-        padding: 2rem 20%;
-        gap: 2.5rem;
+        scroll-padding: 0 25%;
+        padding: 2rem 25%;
     }
     .testimonialCard {
-        flex-basis: 60%;
+        flex-basis: 50%; /* Auf Desktop sind die Karten etwas schmaler im Verhältnis */
     }
 }
