@@ -1,72 +1,130 @@
 /* src/components/FinalCTASection.module.css */
 
 .ctaSection {
-    /* KORREKTUR: Reiner Schwarz/Grau-Verlauf ohne Blautöne */
-    background: linear-gradient(45deg, #222222, #0a0a0a);
-    color: var(--color-text-on-dark);
-    padding: 5rem 1.5rem;
+    /* NEU: Weißer Hintergrund */
+    background-color: var(--color-background);
+    padding: 6rem 1.5rem;
 }
 
-@media (min-width: 768px) {
-    .ctaSection {
-        padding: 6rem 1.5rem;
-    }
-}
-
-.ctaContent {
+.container {
     max-width: var(--container-width);
     margin: 0 auto;
+}
+
+/* Die neue "Invitation Card" */
+.ctaCard {
+    position: relative;
+    border-radius: 24px;
+    padding: 4rem;
+    overflow: hidden; /* Wichtig für den Bildeffekt */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
+    min-height: 400px;
+
+    /* Animations-Setup */
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+.ctaSection.visible .ctaCard {
+    opacity: 1;
+    transform: scale(1);
 }
 
-@media (min-width: 768px) {
-    .ctaContent {
-        flex-direction: row;
-        justify-content: space-between;
-        text-align: left;
-    }
+/* Hintergrundbild mit Overlay */
+.ctaCard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('https://images.pexels.com/photos/3993458/pexels-photo-3993458.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2');
+    background-size: cover;
+    background-position: center;
+    z-index: 1;
+    transition: transform 0.6s ease;
+}
+.ctaCard:hover::before {
+    transform: scale(1.05); /* Leichter Zoom-Effekt beim Hovern */
+}
+/* Dunkler Farbverlauf für die Lesbarkeit */
+.ctaCard::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(10, 10, 10, 0.7), rgba(40, 40, 40, 0.5));
+    z-index: 2;
+}
+
+
+.textWrapper, .ctaButton {
+    position: relative;
+    z-index: 3;
+    color: white;
 }
 
 .ctaHeadline {
     font-family: var(--font-heading);
-    font-size: clamp(1.75rem, 5vw, 2.5rem);
+    font-size: clamp(2.2rem, 5vw, 3.5rem);
     font-weight: 700;
     line-height: 1.2;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
+    max-width: 600px;
 }
 
-@media (min-width: 768px) {
-    .ctaHeadline {
-        margin-bottom: 0;
-        margin-right: 2rem;
-    }
+.ctaSubline {
+    font-size: 1.1rem;
+    margin-bottom: 2.5rem;
+    opacity: 0.9;
 }
 
+/* Der neue, prominente Button */
 .ctaButton {
-    --button-size: 64px;
-    width: var(--button-size);
-    height: var(--button-size);
-    border-radius: 12px;
-    background-color: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: var(--color-accent);
     color: white;
+    padding: 1rem 2.5rem;
+    border-radius: 12px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
+    gap: 0.75rem;
     transition: all 0.3s ease;
-}
-
-.buttonIcon {
-    font-size: 1.5rem;
+    box-shadow: 0 5px 20px -5px rgba(var(--color-accent-rgb), 0.5);
 }
 
 .ctaButton:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.3);
-    transform: scale(1.1);
+    background-color: var(--color-accent-dark);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 25px -8px rgba(var(--color-accent-rgb), 0.6);
+}
+
+
+/* Responsive Anpassungen */
+@media (min-width: 768px) {
+    .ctaCard {
+        flex-direction: row;
+        justify-content: space-between;
+        text-align: left;
+        align-items: center;
+        padding: 6rem;
+    }
+    .textWrapper {
+        flex-basis: 60%;
+    }
+    .ctaButton {
+        flex-shrink: 0; /* Verhindert, dass der Button schrumpft */
+    }
+    .ctaSubline {
+        margin-bottom: 0;
+    }
 }
