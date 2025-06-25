@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styles from './TestimonialsSection.module.css';
 import { FaStar, FaQuoteLeft } from 'react-icons/fa';
+import TestimonialModal from './TestimonialModal'; // NEU: Modal importieren
 
 const testimonials = [
     { id: 1, author: 'Julia S.', text: 'Der beste Haarschnitt, den ich je hatte! Ibrahim hat meine Wünsche perfekt verstanden und umgesetzt. Ich fühle mich wie ein neuer Mensch. Das Ambiente ist modern, sauber und man fühlt sich sofort wohl. Absolut jeden Cent wert!', rating: 5 },
@@ -18,25 +19,19 @@ const StarRating = ({ rating }) => (
     </div>
 );
 
-const TestimonialCard = ({ testimonial, index }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+// Die Karte als eigene Komponente für die "Mehr lesen"-Logik
+const TestimonialCard = ({ testimonial, onReadMore }) => {
     const [needsExpansion, setNeedsExpansion] = useState(false);
     const textRef = useRef(null);
 
     useEffect(() => {
-        const checkExpansion = () => {
-            if (textRef.current && textRef.current.scrollHeight > textRef.current.clientHeight) {
-                setNeedsExpansion(true);
-            } else {
-                setNeedsExpansion(false);
-            }
-        };
-        // Kurze Verzögerung, um sicherzustellen, dass der Browser das Layout berechnet hat
-        setTimeout(checkExpansion, 100);
+        if (textRef.current && textRef.current.scrollHeight > textRef.current.clientHeight) {
+            setNeedsExpansion(true);
+        }
     }, [testimonial.text]);
 
     return (
-        <div className={`${styles.testimonialCard} ${isExpanded ? styles.isExpanded : ''}`} style={{transitionDelay: `${index * 100}ms`}}>
+        <div className={styles.testimonialCard}>
             <FaQuoteLeft className={styles.quoteIcon} />
             <div className={styles.cardContent}>
                 <StarRating rating={testimonial.rating} />
@@ -44,8 +39,8 @@ const TestimonialCard = ({ testimonial, index }) => {
                     {testimonial.text}
                 </p>
                 {needsExpansion && (
-                    <button onClick={() => setIsExpanded(!isExpanded)} className={styles.readMoreButton}>
-                        {isExpanded ? 'Weniger anzeigen' : 'Mehr lesen...'}
+                    <button onClick={() => onReadMore(testimonial)} className={styles.readMoreButton}>
+                        Mehr lesen...
                     </button>
                 )}
                 <p className={styles.testimonialAuthor}>- {testimonial.author}</p>
@@ -58,6 +53,8 @@ function TestimonialsSection() {
     const sectionRef = useRef(null);
     const trackRef = useRef(null);
     const [isVisible, setIsVisible] = useState(false);
+    // NEU: State für das Modal
+    const [selectedTestimonial, setSelectedTestimonial] = useState(null);
 
     useEffect(() => {
         const sectionObserver = new IntersectionObserver((entries) => {
@@ -72,10 +69,10 @@ function TestimonialsSection() {
         return () => { if (currentSectionRef) sectionObserver.unobserve(currentSectionRef); };
     }, []);
 
-    // Observer für den Fokus-Effekt NUR auf Mobile
+    // Observer für den Fokus-Effekt auf Mobile
     useEffect(() => {
         const track = trackRef.current;
-        if (!track || !isVisible || window.innerWidth >= 1024) return;
+        if (!track || !isVisible) return;
 
         const cardObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -89,23 +86,35 @@ function TestimonialsSection() {
     }, [isVisible]);
 
     return (
-        <section
-            ref={sectionRef}
-            className={`${styles.testimonialSection} ${isVisible ? styles.visible : ''}`}
-        >
-            <div className={styles.container}>
-                <header className={styles.sectionHeader}>
-                    <p className={styles.subtitle}>Echte Stimmen, Echte Begeisterung</p>
-                    <h2 className={styles.title}>Was unsere Kunden sagen</h2>
-                </header>
+        <>
+            <section
+                ref={sectionRef}
+                className={`${styles.testimonialSection} ${isVisible ? styles.visible : ''}`}
+            >
+                <div className={styles.container}>
+                    <header className={styles.sectionHeader}>
+                        <p className={styles.subtitle}>Echte Stimmen, Echte Begeisterung</p>
+                        <h2 className={styles.title}>Was unsere Kunden sagen</h2>
+                    </header>
 
-                <div ref={trackRef} className={styles.testimonialsContainer}>
-                    {testimonials.map((testimonial, index) => (
-                        <TestimonialCard key={testimonial.id} testimonial={testimonial} index={index} />
-                    ))}
+                    <div ref={trackRef} className={styles.testimonialsContainer}>
+                        {testimonials.map((testimonial) => (
+                            <TestimonialCard
+                                key={testimonial.id}
+                                testimonial={testimonial}
+                                onReadMore={setSelectedTestimonial}
+                            />
+                        ))}
+                    </div>
                 </div>
-            </div>
-        </section>
+            </section>
+
+            {/* NEU: Das Modal wird hier gerendert */}
+            <TestimonialModal
+                testimonial={selectedTestimonial}
+                onClose={() => setSelectedTestimonial(null)}
+            />
+        </>
     );
 }
 
