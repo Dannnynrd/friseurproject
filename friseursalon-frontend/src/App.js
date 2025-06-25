@@ -28,6 +28,7 @@ import AboutFounderSection from './components/AboutFounderSection';
 import TestimonialsSection from './components/TestimonialsSection';
 import FinalCTASection from './components/FinalCTASection'; // NEU
 import LocationSection from './components/LocationSection';
+import FAQSection from './components/FAQSection';
 
 
 // --- Helper Components für das Layout ---
@@ -54,6 +55,7 @@ const HomePage = () => (
         </div>
         <TestimonialsSection />
         <FinalCTASection />
+        <FAQSection/>
         <div id="location">
             <LocationSection />
         </div>
