@@ -1,14 +1,8 @@
 /* src/components/HowItWorksSection.module.css */
 
-.section {
-    background-color: var(--color-background-offset);
-    padding: 4rem 1.5rem;
-}
-
-@media (min-width: 768px) {
-    .section {
-        padding: 6rem 1.5rem;
-    }
+.howItWorksSection {
+    padding: 6rem 1.5rem;
+    background-color: var(--color-background); /* Hält es sauber und hell */
 }
 
 .container {
@@ -16,99 +10,150 @@
     margin: 0 auto;
 }
 
-.header {
+/* -- Sektions-Header -- */
+.sectionHeader {
     text-align: center;
-    margin-bottom: 3rem;
+    margin-bottom: 5rem;
 }
-
-.title {
-    font-family: var(--font-heading);
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--color-text-dark);
+.subtitle {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     margin-bottom: 0.5rem;
 }
-
-@media (min-width: 768px) {
-    .title {
-        font-size: 2.5rem;
-    }
+.title {
+    font-family: var(--font-heading);
+    font-size: clamp(2.2rem, 5vw, 3.2rem);
+    color: var(--color-text-dark);
+    margin: 0;
+    line-height: 1.2;
+    font-weight: 700;
 }
 
-.subtitle {
-    font-size: 1rem;
-    color: var(--color-text-light);
-    max-width: 500px;
-    margin: 0 auto;
-}
 
-.grid {
-    display: grid;
-    grid-template-columns: 1fr;
+/* -- Die Zeitachse ("Timeline") -- */
+.timeline {
+    position: relative;
+    display: flex;
+    flex-direction: column;
     gap: 2rem;
 }
 
+/* Die durchgehende Verbindungslinie (Mobile) */
+.timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 28px; /* Zentriert auf dem Icon */
+    bottom: 0;
+    width: 2px;
+    background-color: var(--color-border);
+    transform: translateX(-50%);
+}
+
+.step {
+    position: relative;
+    padding-left: 80px; /* Platz für die Nummer und die Linie */
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.step.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.stepContent {
+    background-color: var(--color-background-offset);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 12px;
+    padding: 2rem;
+    position: relative;
+}
+
+/* Der Kreis auf der Zeitachse */
+.step::before {
+    content: '';
+    position: absolute;
+    top: 22px;
+    left: 28px;
+    height: 14px;
+    width: 14px;
+    border-radius: 50%;
+    background-color: var(--color-accent);
+    border: 3px solid var(--color-background);
+    transform: translateX(-50%);
+    z-index: 1;
+}
+
+.stepNumber {
+    position: absolute;
+    top: -1.2rem;
+    left: 0;
+    font-size: 4rem;
+    font-weight: 700;
+    font-family: var(--font-heading);
+    color: var(--color-border);
+    opacity: 0.8;
+    z-index: -1;
+}
+
+.iconWrapper {
+    margin-bottom: 1rem;
+    color: var(--color-accent);
+}
+
+.stepTitle {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--color-text-dark);
+}
+
+.stepDescription {
+    color: var(--color-text-medium);
+    line-height: 1.7;
+}
+
+
+/* -- Desktop-Anpassungen (Zick-Zack-Layout) -- */
 @media (min-width: 768px) {
-    .grid {
-        grid-template-columns: repeat(2, 1fr);
+    .timeline::before {
+        left: 50%; /* Zentriert die Linie in der Mitte der Seite */
+    }
+    .step {
+        width: 50%;
+        padding-left: 0;
+        padding-right: 50px; /* Platz zur Mittellinie */
+    }
+    .step:nth-child(even) {
+        align-self: flex-end; /* Schiebt jeden zweiten Schritt nach rechts */
+        padding-left: 50px;
+        padding-right: 0;
+    }
+    .step::before {
+        left: 50%; /* Zentriert den Kreis auf der Mittellinie */
+    }
+
+    /* Positioniert den Kreis für die rechten Elemente korrekt */
+    .step:nth-child(even)::before {
+        left: -22px;
+    }
+    .step:nth-child(odd)::before {
+        right: -22px;
+        left: auto;
+    }
+    /* Positioniert die Nummer für die rechten Elemente korrekt */
+    .step:nth-child(even) .stepNumber {
+        left: auto;
+        right: 0;
     }
 }
 
 @media (min-width: 1024px) {
-    .grid {
-        grid-template-columns: repeat(4, 1fr);
+    .timeline {
+        gap: 3rem;
     }
-}
-
-.step {
-    background-color: var(--color-background);
-    padding: 2rem;
-    border-radius: 8px;
-    border: 1px solid var(--color-border);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.step:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.07);
-}
-
-.stepNumber {
-    font-family: var(--font-heading);
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--color-text-subtle);
-}
-
-.stepTitle {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--color-text-dark);
-    margin-top: 1rem;
-    margin-bottom: 0.5rem;
-    position: relative;
-    padding-bottom: 0.5rem;
-}
-
-.stepTitle::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 25px;
-    height: 2px;
-    background-color: var(--color-accent);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.3s ease-out;
-}
-
-.step:hover .stepTitle::after {
-    transform: scaleX(1);
-}
-
-.stepDescription {
-    font-size: 0.9rem;
-    color: var(--color-text-light);
-    line-height: 1.6;
 }

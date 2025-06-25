@@ -1,32 +1,74 @@
-// friseursalon-frontend/src/components/HowItWorksSection.js
-import React from 'react';
+// src/components/HowItWorksSection.js
+import React, { useEffect, useRef } from 'react';
 import styles from './HowItWorksSection.module.css';
+import { FiCalendar, FiCoffee, FiGift } from 'react-icons/fi';
 
 const steps = [
-    { number: "01", title: "Service & Zeit wählen", description: "Wählen Sie Ihre Wunschleistung und einen passenden Termin." },
-    { number: "02", title: "Details angeben", description: "Geben Sie Ihre Kontaktdaten für die Buchungsbestätigung an." },
-    { number: "03", title: "Bestätigung erhalten", description: "Sie erhalten sofort eine E-Mail mit allen Details zu Ihrem Termin." },
-    { number: "04", title: "Vorbeikommen & Genießen", description: "Freuen Sie sich auf Ihren Moment der Entspannung bei uns." }
+    {
+        number: '01',
+        icon: <FiCalendar size={28} />,
+        title: 'Einfach Online Buchen',
+        description: 'Wählen Sie Ihren Wunschtermin und Ihre Dienstleistung bequem von zu Hause aus. In wenigen Klicks ist Ihr Platz bei uns gesichert.'
+    },
+    {
+        number: '02',
+        icon: <FiCoffee size={28} />,
+        title: 'Ankommen & Entspannen',
+        description: 'Genießen Sie eine Tasse Kaffee oder Tee in unserer modernen und ruhigen Atmosphäre. Ihr persönlicher Stylist bespricht mit Ihnen Ihre Wünsche.'
+    },
+    {
+        number: '03',
+        icon: <FiGift size={28} />,
+        title: 'Verwöhnt & Begeistert',
+        description: 'Erleben Sie meisterhaftes Handwerk und verlassen Sie unseren Salon mit einem perfekten Look, der Ihr Selbstbewusstsein unterstreicht.'
+    }
 ];
 
 function HowItWorksSection() {
+    const sectionRef = useRef(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add(styles.visible);
+                    }
+                });
+            },
+            { threshold: 0.15 }
+        );
+
+        const elements = sectionRef.current?.querySelectorAll(`.${styles.step}`);
+        if (elements) {
+            elements.forEach(el => observer.observe(el));
+        }
+
+        return () => {
+            if (elements) {
+                elements.forEach(el => observer.unobserve(el));
+            }
+        };
+    }, []);
+
+
     return (
-        <section className={styles.section}>
+        <section className={styles.howItWorksSection}>
             <div className={styles.container}>
-                <div className={styles.header}>
-                    <h2 className={styles.title}>
-                        So einfach funktioniert's
-                    </h2>
-                    <p className={styles.subtitle}>
-                        In vier klaren Schritten zu Ihrem Wunschtermin.
-                    </p>
-                </div>
-                <div className={styles.grid}>
-                    {steps.map((step) => (
-                        <div key={step.number} className={styles.step}>
-                            <span className={styles.stepNumber}>{step.number}</span>
-                            <h3 className={styles.stepTitle}>{step.title}</h3>
-                            <p className={styles.stepDescription}>{step.description}</p>
+                <header className={styles.sectionHeader}>
+                    <p className={styles.subtitle}>So einfach geht's</p>
+                    <h2 className={styles.title}>Ihr Weg zum perfekten Look</h2>
+                </header>
+
+                <div ref={sectionRef} className={styles.timeline}>
+                    {steps.map((step, index) => (
+                        <div key={index} className={styles.step}>
+                            <div className={styles.stepContent}>
+                                <span className={styles.stepNumber}>{step.number}</span>
+                                <div className={styles.iconWrapper}>{step.icon}</div>
+                                <h3 className={styles.stepTitle}>{step.title}</h3>
+                                <p className={styles.stepDescription}>{step.description}</p>
+                            </div>
                         </div>
                     ))}
                 </div>
