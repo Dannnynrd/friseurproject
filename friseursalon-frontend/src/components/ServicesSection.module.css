@@ -1,9 +1,15 @@
 /* friseursalon-frontend/src/components/ServicesSection.module.css */
 
 .servicesSection {
-    padding: 5rem 1.5rem;
-    background-color: var(--color-background-offset); /* Weißer Hintergrund für klaren Kontrast */
-    overflow: hidden; /* Verhindert, dass Elemente bei Animationen überlappen */
+    padding: 6rem 1.5rem;
+    /* NEU: Reinweißer Hintergrund */
+    background-color: var(--color-background);
+    overflow: hidden;
+}
+
+.container {
+    max-width: var(--container-width);
+    margin: 0 auto;
 }
 
 .header {
@@ -13,159 +19,171 @@
 }
 
 .subtitle {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--color-accent); /* Akzentfarbe für den Untertitel */
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-accent);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
 }
 
 .title {
     font-family: var(--font-heading);
-    font-size: 2.75rem;
-    font-weight: 700;
+    font-size: clamp(2.2rem, 5vw, 3.2rem);
     color: var(--color-text-dark);
     margin: 0;
     line-height: 1.2;
+    font-weight: 700;
 }
 
-.statusMessage {
-    text-align: center;
-    padding: 3rem;
-    color: var(--color-text-light);
-}
+.statusMessage { text-align: center; padding: 3rem; color: var(--color-text-light); }
+.error { color: #ef4444; }
 
-.error {
-    color: #ef4444;
-}
 
-.serviceBlock {
+/* -- Das neue Service-Grid -- */
+.servicesGrid {
     display: grid;
+    /* Mobile-First: Eine Spalte */
     grid-template-columns: 1fr;
-    gap: 2rem;
-    align-items: center;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 3rem 0;
+    gap: 2.5rem;
+}
+
+.serviceCard {
+    background-color: var(--color-background);
+    border-radius: 16px;
+    border: 1px solid var(--color-border);
+    box-shadow: 0 10px 40px -20px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden; /* Wichtig für den "Reveal"-Effekt */
+
+    /* Animations-Setup */
     opacity: 0;
     transform: translateY(40px);
-    transition: opacity 0.8s cubic-bezier(0.165, 0.84, 0.44, 1), transform 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
-
-.serviceBlock.visible {
+.serviceCard.visible {
     opacity: 1;
     transform: translateY(0);
 }
 
 .imageWrapper {
-    aspect-ratio: 4 / 3;
-    border-radius: 12px;
+    aspect-ratio: 16 / 10;
     overflow: hidden;
-    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
 }
 
 .serviceImage {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.5s ease;
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.serviceBlock:hover .serviceImage {
+.serviceCard:hover .serviceImage {
     transform: scale(1.05);
 }
 
 .contentWrapper {
-    padding: 1rem;
-}
-
-.serviceCategory {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--color-text-light);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    margin-bottom: 1rem;
+    padding: 2rem;
 }
 
 .serviceName {
     font-family: var(--font-heading);
-    font-size: 2.25rem;
+    font-size: 1.5rem;
     color: var(--color-text-dark);
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.75rem;
 }
 
 .serviceDescription {
-    font-size: 1rem;
-    line-height: 1.8;
+    font-size: 0.95rem;
+    line-height: 1.7;
     color: var(--color-text-medium);
-    margin-bottom: 2rem;
-    max-width: 500px;
+    margin-bottom: 1.5rem;
+    /* Begrenzt die Textlänge für bessere Lesbarkeit */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .detailsList {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 2.5rem 0;
     display: flex;
-    gap: 2rem;
-    border-top: 1px solid var(--color-border);
-    padding-top: 1.5rem;
+    gap: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border-subtle);
 }
 
 .detailItem {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 500;
     color: var(--color-text-dark);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
-
 .detailItem .icon {
-    margin-right: 0.5rem;
     color: var(--color-accent);
 }
 
+/* -- Der "Interactive Reveal" Button -- */
 .ctaButton {
-    background-color: var(--color-text-dark);
-    color: var(--color-text-on-dark);
-    text-decoration: none;
-    padding: 0.9rem 2rem;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+
+    background-color: var(--color-accent);
+    color: white;
+    padding: 1.25rem;
+    border: none;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.serviceCard:hover .ctaButton {
+    transform: translateY(0);
+}
+
+
+/* -- Button für die komplette Liste -- */
+.fullListButtonContainer {
+    text-align: center;
+    margin-top: 5rem;
+}
+.fullListButton {
+    background: none;
+    border: 1px solid var(--color-border);
+    color: var(--color-text-dark);
+    padding: 1rem 2.5rem;
     border-radius: 8px;
     font-weight: 600;
-    font-size: 0.9rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: background-color 0.2s ease, transform 0.2s ease;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+.fullListButton:hover {
+    background-color: var(--color-text-dark);
+    color: white;
+    border-color: var(--color-text-dark);
 }
 
-.ctaButton:hover {
-    background-color: var(--color-accent);
-    transform: translateY(-2px);
-}
 
-/* --- Desktop Layout --- */
+/* -- Desktop Layout -- */
 @media (min-width: 768px) {
-    .serviceBlock {
+    .servicesGrid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 4rem;
-        padding: 5rem 0;
     }
-
-    /* Alternierendes Layout */
-    .serviceBlock:nth-child(even) .imageWrapper {
-        grid-column: 2 / 3;
-        grid-row: 1 / 2;
-    }
-
-    .serviceBlock:nth-child(even) .contentWrapper {
-        grid-column: 1 / 2;
-        grid-row: 1 / 2;
-        text-align: right;
-    }
-
-    .serviceBlock:nth-child(even) .contentWrapper .detailsList,
-    .serviceBlock:nth-child(even) .contentWrapper .ctaButton {
-        justify-content: flex-end; /* Kehrt die Ausrichtung für Text-Rechts-Layout um */
+}
+@media (min-width: 1024px) {
+    .servicesGrid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
     }
 }
