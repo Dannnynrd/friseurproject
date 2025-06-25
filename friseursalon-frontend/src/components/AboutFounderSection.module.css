@@ -1,54 +1,135 @@
 /* friseursalon-frontend/src/components/AboutFounderSection.module.css */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,700&display=swap');
 
-/*
-  Die meisten Layout- und Typografie-Stile werden durch Tailwind CSS
-  direkt in der JS-Datei oder über die tailwind.config.js gehandhabt.
-*/
+.aboutSection {
+    background-color: var(--color-background);
+    padding: 6rem 1.5rem;
+    overflow: hidden;
+}
 
-.founderImageContainer {
-    /*
-      Tailwind-Klassen im JS: animate-up
-      Kann für spezifische Positionierung oder Effekte des Bildcontainers genutzt werden.
-    */
-    position: relative; /* Für eventuelle Pseudo-Elemente oder Overlays */
+.container {
+    max-width: var(--container-width);
+    margin: 0 auto;
+}
+
+.layoutGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    align-items: center;
+}
+
+/* Initialer, unsichtbarer Zustand */
+.imageWrapper {
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+    border-radius: 12px;
+    overflow: hidden;
+}
+/* Sichtbarer Zustand */
+.aboutSection.visible .imageWrapper {
+    opacity: 1;
+    transform: scale(1);
 }
 
 .founderImage {
-    /*
-      Tailwind-Klassen im JS:
-      w-full h-auto object-cover rounded-lg shadow-lg
-      Diese decken das Basis-Styling des Bildes ab.
-    */
-    /* Beispiel für einen leichten Filter oder spezifischen Schatten, falls gewünscht: */
-    /* filter: grayscale(30%); */
-    /* transition: filter 0.3s ease-in-out; */
-    max-height: 70vh; /* Verhindert, dass das Bild auf großen Bildschirmen zu hoch wird */
-    aspect-ratio: 3/4; /* Sorgt für ein konsistentes Seitenverhältnis, falls gewünscht */
+    width: 100%;
+    height: 100%;
+    max-height: 75vh;
+    object-fit: cover;
 }
 
-/* .founderImageContainer:hover .founderImage { */
-/* filter: grayscale(0%); */
-/* } */
+/* Initialer, unsichtbarer Zustand */
+.textWrapper {
+    position: relative;
+    background-color: var(--color-background);
+    padding: 2.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--color-border-subtle);
 
-.founderTextContainer {
-    /*
-      Tailwind-Klassen im JS: animate-up
-      Kann für spezifische Ausrichtung oder Abstände des Textcontainers genutzt werden.
-    */
+    opacity: 0;
+    transform: translateX(30px);
+    transition: opacity 0.8s ease 0.2s, transform 0.8s ease 0.2s;
+}
+/* Sichtbarer Zustand */
+.aboutSection.visible .textWrapper {
+    opacity: 1;
+    transform: translateX(0);
 }
 
-.founderBio { /* ehemals #about-founder p */
-    /*
-      Tailwind-Klassen im JS:
-      text-medium-grey-text mb-4 (oder mb-6)
-      Diese decken Schriftfarbe und unteren Abstand ab.
-      Die Zeilenhöhe wird global oder durch Tailwind-Utilities wie `leading-relaxed` gesteuert.
-    */
-    line-height: 1.8; /* Etwas großzügigere Zeilenhöhe für bessere Lesbarkeit längerer Texte */
+.signature {
+    position: absolute;
+    bottom: -2rem;
+    right: -1rem;
+    font-family: 'Playfair Display', serif;
+    font-size: 18rem;
+    font-weight: 700;
+    font-style: italic;
+    color: var(--color-background-offset);
+    opacity: 0.8;
+    z-index: 1;
+    pointer-events: none;
+    line-height: 1;
 }
 
-/*
-  Die .animate-up Klasse und die Logik mit .visible für die Animation
-  wird als global betrachtet und sollte in App.css oder index.css verbleiben.
-  Die inline-styles für transition-delay bleiben im JS, da sie dynamisch sind.
-*/
+.textContent > * {
+    position: relative;
+    z-index: 2;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.aboutSection.visible .textContent > p:nth-of-type(1) { transition-delay: 0.4s; }
+.aboutSection.visible .textContent > h2 { transition-delay: 0.5s; }
+.aboutSection.visible .textContent > p:nth-of-type(2) { transition-delay: 0.6s; }
+.aboutSection.visible .textContent > p:nth-of-type(3) { transition-delay: 0.7s; }
+
+.aboutSection.visible .textContent > * {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.subtitle {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.title {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 5vw, 2.8rem);
+    color: var(--color-text-dark);
+    margin-bottom: 2rem;
+}
+
+.founderBio {
+    color: var(--color-text-medium);
+    line-height: 1.8;
+    margin-bottom: 1.5rem;
+}
+.founderBio:last-of-type {
+    margin-bottom: 0;
+}
+
+/* Desktop-Layout */
+@media (min-width: 1024px) {
+    .layoutGrid {
+        grid-template-columns: repeat(12, 1fr);
+        gap: 0;
+    }
+    .imageWrapper {
+        grid-column: 1 / span 7;
+        grid-row: 1 / 1;
+    }
+    .textWrapper {
+        grid-column: 6 / span 7;
+        grid-row: 1 / 1;
+        box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.15);
+        padding: 4rem;
+    }
+}

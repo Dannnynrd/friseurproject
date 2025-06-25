@@ -1,10 +1,11 @@
-/* src/components/TrustBarSection.module.css - Finale "Definitive Glass" Edition */
+/* src/components/TrustBarSection.module.css - Finale "Consistent" Edition */
 
 .trustSection {
-    background-color: var(--color-background-offset);
+    /* NEU: Hintergrund auf reinweiß gesetzt */
+    background-color: var(--color-background);
     padding: 5rem 0;
     position: relative;
-    overflow-x: clip; /* Verhindert horizontales Scrollen auf der ganzen Seite */
+    overflow-x: clip;
 }
 
 .container {
@@ -49,21 +50,13 @@
     border-radius: 16px;
     text-align: center;
 
-    /* NEU: Der verfeinerte Glas-Effekt */
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    /* NEU: "Floating Card" Design statt Glas-Effekt */
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 10px 40px -20px rgba(0, 0, 0, 0.08);
 
     position: relative;
-    opacity: 0;
-    transform: translateY(30px);
     transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-}
-.visible .trustElement {
-    opacity: 1;
-    transform: translateY(0);
 }
 
 .iconWrapper {
@@ -74,17 +67,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--color-background); /* Solider Hintergrund für das Icon */
+    background-color: var(--color-background-offset);
     color: var(--color-text-medium);
     border: 1px solid var(--color-border-subtle);
     transition: all 0.3s ease;
 }
 
-.elementTitle, .elementText {
-    /* Stellt sicher, dass der Text über dem Glas-Effekt liegt */
-    position: relative;
-    z-index: 2;
-}
 .elementTitle {
     font-family: var(--font-heading);
     font-size: 1.2rem;
@@ -105,10 +93,8 @@
 /* ======================================= */
 @media (max-width: 1023px) {
     .sliderContainer {
-        /* Layout-Fix, damit Schatten nicht abgeschnitten wird */
-        margin: 0 -1.5rem -2rem;
-        padding: 0 1.5rem 2rem;
-
+        margin: 0 -1.5rem;
+        padding: 0 1.5rem;
         position: relative;
         cursor: grab;
     }
@@ -124,13 +110,18 @@
 
     .trustElement {
         flex: 0 0 85%; /* CARD_WIDTH_PERCENT */
-        transform: scale(0.95);
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    .visible .trustElement {
+        opacity: 1;
+        transform: translateY(0) scale(0.95);
     }
 
-    /* Diese Regeln existieren jetzt NUR auf Mobile/Tablet */
+    /* Feedback für die aktive Karte */
     .trustElement.isActive {
-        transform: scale(1);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+        transform: translateY(0) scale(1);
+        box-shadow: 0 12px 40px -15px rgba(0, 0, 0, 0.12);
     }
 
     .trustElement.isActive .iconWrapper {
@@ -154,11 +145,19 @@
         gap: 2rem;
         transform: none !important;
     }
+    .trustElement {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+    .visible .trustElement {
+        opacity: 1;
+        transform: translateY(0);
+    }
 
     @media (hover: hover) {
         .trustElement:hover {
             transform: translateY(-8px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 12px 40px -15px rgba(0, 0, 0, 0.15);
         }
         .trustElement:hover .iconWrapper {
             background-color: var(--color-accent);
