@@ -1,14 +1,15 @@
 // src/components/HowItWorksSection.js
 import React, { useEffect, useRef } from 'react';
 import styles from './HowItWorksSection.module.css';
-import { FiCalendar, FiCoffee, FiGift } from 'react-icons/fi';
+import { FiCalendar, FiCoffee, FiGift, FiArrowRight } from 'react-icons/fi';
 
 const steps = [
     {
         number: '01',
         icon: <FiCalendar size={28} />,
         title: 'Einfach Online Buchen',
-        description: 'Wählen Sie Ihren Wunschtermin und Ihre Dienstleistung bequem von zu Hause aus. In wenigen Klicks ist Ihr Platz bei uns gesichert.'
+        description: 'Wählen Sie Ihren Wunschtermin und Ihre Dienstleistung bequem von zu Hause aus. In wenigen Klicks ist Ihr Platz bei uns gesichert.',
+        showButton: true // NEU: Zeigt den Button im ersten Schritt
     },
     {
         number: '02',
@@ -68,9 +69,21 @@ function HowItWorksSection() {
                                 <div className={styles.iconWrapper}>{step.icon}</div>
                                 <h3 className={styles.stepTitle}>{step.title}</h3>
                                 <p className={styles.stepDescription}>{step.description}</p>
+                                {step.showButton && (
+                                    <button className={`${styles.button} ${styles.buttonInCard}`}>
+                                        Jetzt Buchen <FiArrowRight />
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}
+                </div>
+
+                {/* NEU: Der finale Button am Ende der Sektion */}
+                <div className={styles.bottomButtonContainer}>
+                    <button className={`${styles.button} ${styles.buttonBottom}`}>
+                        Jetzt Wunschtermin sichern
+                    </button>
                 </div>
             </div>
         </section>
