@@ -1,43 +1,149 @@
 /* friseursalon-frontend/src/components/LocationSection.module.css */
 
-/*
-  Die meisten Basis-Layouts (Grid, Container, Padding, Section Header, Typografie)
-  werden durch Tailwind-Klassen im JS gehandhabt.
-  Dieses Modul enthält spezifische Stile für die Location-Sektion,
-  falls diese über Standard-Tailwind-Utilities hinausgehen.
-*/
-
-.mapContainer {
-    /*
-      Tailwind-Klassen im JS: animate-up
-      Der Iframe selbst wird mit Tailwind-Klassen für Rundung und Schatten gestylt.
-    */
-    /* min-height: 300px; Falls eine Mindesthöhe für den Kartencontainer benötigt wird */
+.locationSection {
+    position: relative;
+    padding: 6rem 1.5rem;
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
 }
 
-.contactInfoContainer {
-    /*
-      Tailwind-Klassen im JS: animate-up md:pt-4
-    */
+.mapBackground {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 1s ease-out;
+}
+.locationSection.visible .mapBackground {
+    opacity: 1;
+}
+/* Filter, um die Karte dezenter zu machen */
+.mapBackground iframe {
+    filter: grayscale(1) contrast(1.2) opacity(0.2);
 }
 
-.contactInfoContainer address p,
-.contactInfoContainer address div > span { /* Für mehrzeilige Öffnungszeiten etc. */
-    /*
-      Tailwind-Klassen im JS: text-medium-grey-text (oder text-dark-text für strong)
-      Flexbox für Icon und Text wird im JS verwendet.
-    */
+.container {
+    max-width: var(--container-width);
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+    width: 100%;
 }
 
+.infoCard {
+    background-color: var(--color-background);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 16px;
+    padding: 2.5rem;
+    box-shadow: 0 20px 60px -20px rgba(0,0,0,0.2);
+    max-width: 480px; /* Maximale Breite für die Karte */
+    margin: 0 auto; /* Zentriert die Karte auf Mobile */
+
+    /* Animation */
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s ease-out 0.2s, transform 0.8s ease-out 0.2s;
+}
+.locationSection.visible .infoCard {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.cardHeader {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+.subtitle {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+.title {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 5vw, 2.8rem);
+    color: var(--color-text-dark);
+    margin: 0;
+    line-height: 1.2;
+    font-weight: 700;
+}
+
+.contactList {
+    font-style: normal;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.contactItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
 .contactIcon {
-    /*
-      Tailwind-Klassen im JS: w-5 h-5 mt-1 mr-4 text-indigo-600
-      Diese Klasse dient als Haken, falls spezifische Anpassungen am Icon nötig sind,
-      die über Tailwind hinausgehen.
-    */
+    flex-shrink: 0;
+    color: var(--color-accent);
+    font-size: 1.25rem;
+    margin-top: 0.25rem;
+}
+.contactItem div {
+    display: flex;
+    flex-direction: column;
+}
+.contactItem strong {
+    font-weight: 600;
+    color: var(--color-text-dark);
+    margin-bottom: 0.25rem;
+}
+.contactItem span, .contactItem a {
+    color: var(--color-text-medium);
+    line-height: 1.6;
+}
+.contactItem a {
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+.contactItem a:hover {
+    color: var(--color-accent);
+    text-decoration: underline;
 }
 
+.ctaButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+    margin-top: 2.5rem;
+    padding: 1rem;
+    background-color: var(--color-accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+.ctaButton:hover {
+    background-color: var(--color-accent-dark);
+    transform: translateY(-3px);
+}
 
-/* Die .animate-up Klasse und die Logik mit .visible für die Animation
-   wird als global betrachtet und sollte in App.css oder index.css verbleiben. */
-
+/* -- Desktop-Layout (Asymmetrisch) -- */
+@media (min-width: 1024px) {
+    .locationSection {
+        padding: 8rem 1.5rem;
+    }
+    .infoCard {
+        margin: 0; /* Hebt die Zentrierung auf */
+        margin-left: auto; /* Schiebt die Karte nach rechts */
+    }
+}
