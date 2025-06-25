@@ -67,12 +67,11 @@ function HowItWorksSection() {
                         <div key={index} className={styles.step}>
                             <div className={styles.stepContent}>
                                 <span className={styles.stepNumber}>{step.number}</span>
-                                {/* NEU: Delay für gestaffelte Animation wird hier im Style-Attribut gesetzt */}
-                                <div className={styles.iconWrapper} style={{'--delay': '0.1s'}}>{step.icon}</div>
-                                <h3 className={styles.stepTitle} style={{'--delay': '0.2s'}}>{step.title}</h3>
-                                <p className={styles.stepDescription} style={{'--delay': '0.3s'}}>{step.description}</p>
+                                <div className={styles.iconWrapper} style={{'--delay': '0.2s'}}>{step.icon}</div>
+                                <h3 className={styles.stepTitle} style={{'--delay': '0.3s'}}>{step.title}</h3>
+                                <p className={styles.stepDescription} style={{'--delay': '0.4s'}}>{step.description}</p>
                                 {step.showButton && (
-                                    <button className={`${styles.button} ${styles.buttonInCard}`} style={{'--delay': '0.4s'}}>
+                                    <button className={`${styles.button} ${styles.buttonInCard}`} style={{'--delay': '0.5s'}}>
                                         Jetzt Buchen <FiArrowRight />
                                     </button>
                                 )}

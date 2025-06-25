@@ -1,9 +1,9 @@
-/* src/components/HowItWorksSection.module.css - Finale "Kinetic Timeline" Edition */
+/* src/components/HowItWorksSection.module.css - Finale "Polished" Edition */
 
 .howItWorksSection {
     padding: 6rem 1.5rem;
-    /* NEU: Hintergrund auf reinweiß gesetzt */
     background-color: var(--color-background);
+    overflow-x: clip;
 }
 
 .container {
@@ -34,7 +34,7 @@
 }
 
 
-/* -- Die "Kinetic" Zeitachse -- */
+/* -- Die "Living" Zeitachse -- */
 .timeline {
     position: relative;
     display: flex;
@@ -51,9 +51,10 @@
     left: 50%;
     bottom: 22px;
     width: 2px;
-    background-color: var(--color-border);
+    background-color: var(--color-border-subtle);
     transform: translateX(-50%);
 }
+
 .timeline::after {
     content: '';
     position: absolute;
@@ -71,12 +72,12 @@
     width: 100%;
     max-width: 450px;
     display: flex;
+    perspective: 1000px;
 }
 
 .step:nth-child(odd) { justify-content: flex-start; padding-left: 20px; }
 .step:nth-child(even) { justify-content: flex-end; padding-right: 20px; }
 
-/* NEU: "Floating Card" Design */
 .stepContent {
     background-color: var(--color-background);
     border: 1px solid var(--color-border-subtle);
@@ -85,10 +86,17 @@
     position: relative;
     overflow: hidden;
     width: 90%;
-    box-shadow: 0 15px 40px -20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 15px 40px -20px rgba(0, 0, 0, 0.05);
+
+    opacity: 0;
+    transform: rotateX(-15deg) translateY(50px);
+    transition: opacity 0.8s cubic-bezier(0.19, 1, 0.22, 1), transform 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+}
+.step.visible .stepContent {
+    opacity: 1;
+    transform: rotateX(0) translateY(0);
 }
 
-/* Der Kreis auf der Zeitachse */
 .step::before {
     content: '';
     position: absolute;
@@ -103,7 +111,6 @@
     z-index: 2;
     transition: all 0.5s ease;
 }
-/* NEU: Pulsierender Effekt für den aktiven Kreis */
 .step.visible::before {
     background-color: var(--color-accent);
     transform: translateX(-50%) scale(1.2);
@@ -112,25 +119,27 @@
 
 .stepNumber {
     position: absolute;
-    top: 0rem;
+    top: 0.5rem;
     right: 1.5rem;
     font-size: 5rem;
     font-weight: 700;
     font-family: var(--font-heading);
     color: var(--color-border-subtle);
-    opacity: 0.8;
+    opacity: 0.5;
     z-index: 1;
     pointer-events: none;
+    transition: transform 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+}
+.step.visible .stepNumber {
+    transform: translateY(-10px);
 }
 
-/* NEU: Gestaffelte "Stagger" Animation */
 .iconWrapper, .stepTitle, .stepDescription, .buttonInCard {
     position: relative;
     z-index: 2;
     opacity: 0;
     transform: translateY(20px);
-    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-    /* Das Delay wird aus dem Style-Attribut im JS gelesen */
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
     transition-delay: var(--delay);
 }
 .step.visible .iconWrapper,
@@ -145,25 +154,35 @@
 .stepTitle { font-family: var(--font-heading); font-size: 1.5rem; margin-bottom: 0.75rem; color: var(--color-text-dark); }
 .stepDescription { color: var(--color-text-medium); line-height: 1.7; margin-bottom: 2rem; }
 
-/* Button-Stile */
+/* Buttons */
 .button { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-sans); font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; }
 .buttonInCard { background-color: var(--color-accent); color: white; padding: 0.75rem 1.25rem; font-size: 0.9rem; }
-.buttonInCard:hover { background-color: var(--color-accent-dark); transform: scale(1.05); }
+.buttonInCard:hover {
+    background-color: var(--color-accent-dark);
+    transform: scale(1.05);
+}
+
 .bottomButtonContainer { text-align: center; margin-top: 5rem; }
-.buttonBottom { background-color: var(--color-accent); color: white; padding: 1rem 2.5rem; font-size: 1rem; box-shadow: 0 4px 15px -5px var(--color-accent); }
-.buttonBottom:hover { transform: translateY(-3px); box-shadow: 0 8px 25px -8px var(--color-accent); }
+.buttonBottom {
+    background-color: var(--color-accent);
+    color: white;
+    padding: 1rem 2.5rem;
+    font-size: 1rem;
+    box-shadow: 0 4px 15px -5px rgba(var(--color-accent-rgb), 0.6);
+}
+/* KORRIGIERT: Gleicher Hover-Effekt */
+.buttonBottom:hover {
+    background-color: var(--color-accent-dark);
+    transform: scale(1.01);
+    box-shadow: 0 6px 20px -5px rgba(var(--color-accent-rgb), 0.7);
+}
+
 
 /* Desktop-Anpassungen */
 @media (min-width: 768px) {
-    .step {
-        max-width: none;
-        width: 50%;
-        padding-left: 0;
-        padding-right: 50px;
-    }
+    .step { max-width: none; width: 50%; padding-left: 0; padding-right: 50px; }
     .step:nth-child(odd) { align-self: flex-start; padding-left: 0; }
     .step:nth-child(even) { align-self: flex-end; padding-left: 50px; padding-right: 0; }
     .step::before { left: auto; right: -7px; }
     .step:nth-child(even)::before { left: -7px; right: auto; }
-    .stepContent { width: 100%; }
 }
