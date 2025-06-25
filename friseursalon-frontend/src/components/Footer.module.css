@@ -1,54 +1,125 @@
 /* friseursalon-frontend/src/components/Footer.module.css */
 
-/*
-  Die meisten Basis-Layouts (Grid, Container, Padding, Typografie)
-  werden durch Tailwind-Klassen im JS gehandhabt.
-  Dieses Modul enthält spezifische Stile für den Footer,
-  falls diese über Standard-Tailwind-Utilities hinausgehen.
-*/
-
 .siteFooter {
-    /*
-      Tailwind-Klassen im JS:
-      bg-dark-text text-gray-300 pt-16 pb-8
-    */
-    /* Hier könnten z.B. spezifische Hintergrundbilder oder -muster für den Footer hin,
-       die nicht einfach mit Tailwind umsetzbar sind. */
+    /* NEU: Weißer Hintergrund und mehr Padding */
+    background-color: var(--color-background);
+    padding: 6rem 1.5rem 2rem 1.5rem;
+    border-top: 1px solid var(--color-border);
 }
 
-.footerColumn {
-    /* Dient als semantischer Haken für die Spalten im Footer-Grid.
-       Das Grid-Layout selbst wird durch Tailwind im JS definiert.
-       (grid md:grid-cols-2 lg:grid-cols-4 gap-10 md:gap-8)
-    */
+.container {
+    max-width: var(--container-width);
+    margin: 0 auto;
 }
 
-.footerColumn h3, /* Für den Salon-Namen */
-.footerColumn h4 {  /* Für die Überschriften der Link-Listen */
-    /*
-      Tailwind-Klassen im JS:
-      text-xl (für h3) / text-lg (für h4) font-serif (für h3) font-semibold text-white mb-4
-    */
-    /* Ggf. spezifische untere Ränder oder Linien hier definieren, falls gewünscht. */
+/* -- Hauptbereich des Footers -- */
+.mainContent {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+    padding-bottom: 4rem;
+    text-align: center;
+}
+
+.brandColumn {
+    margin-bottom: 1rem;
+}
+
+.salonName {
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--color-text-dark);
+    margin-bottom: 0.5rem;
+}
+
+.tagline {
+    font-size: 1rem;
+    color: var(--color-text-medium);
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.navGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+}
+
+.columnTitle {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-dark);
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.navColumn nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
 .footerLink {
-    /*
-      Tailwind-Klassen im JS:
-      text-sm hover:text-indigo-400 hover:underline transition-colors duration-200
-    */
-    /* Spezifische Stile für Footer-Links, falls benötigt. */
+    text-decoration: none;
+    color: var(--color-text-medium);
+    transition: color 0.2s ease;
+}
+.footerLink:hover {
+    color: var(--color-accent);
 }
 
-/* Spezifische Anpassungen für die Kontakt-Icons und Texte, falls Tailwind nicht ausreicht */
-.footerColumn address p {
-    /* Tailwind: flex items-start (oder items-center) */
-}
-.footerColumn address .svg-inline--fa { /* FontAwesome Icons */
-    /* Tailwind: mr-3 mt-1 (oder nur mr-3) w-4 text-indigo-400 */
-    /* Die Größe und Farbe wird bereits durch Tailwind gesetzt. */
+
+/* -- Sub-Footer -- */
+.subFooter {
+    border-top: 1px solid var(--color-border-subtle);
+    padding-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    font-size: 0.875rem;
+    color: var(--color-text-light);
 }
 
-/* Die .animate-up Klasse (falls im Footer verwendet) und die Logik mit .visible
-   wird als global betrachtet und sollte in App.css oder index.css verbleiben. */
+.copyright {
+    margin: 0;
+}
 
+.socialLinks {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.socialIcon {
+    font-size: 1.25rem;
+    color: var(--color-text-subtle);
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+.socialIcon:hover {
+    color: var(--color-accent);
+    transform: translateY(-3px);
+}
+
+
+/* -- Desktop-Anpassungen -- */
+@media (min-width: 768px) {
+    .mainContent {
+        display: grid;
+        grid-template-columns: 2fr 3fr; /* 2 Hauptspalten: Branding | Navigation */
+        text-align: left;
+        gap: 4rem;
+    }
+    .tagline {
+        margin: 0;
+    }
+    .navGrid {
+        grid-template-columns: 1fr 1fr; /* Nav-Spalten nebeneinander */
+        gap: 2rem;
+    }
+    .subFooter {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+}
