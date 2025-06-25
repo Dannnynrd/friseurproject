@@ -1,9 +1,10 @@
-/* src/components/TrustBarSection.module.css - Finale "Desktop Bugfix" Edition */
+/* src/components/TrustBarSection.module.css - Finale "Definitive Glass" Edition */
 
 .trustSection {
     background-color: var(--color-background-offset);
     padding: 5rem 0;
     position: relative;
+    overflow-x: clip; /* Verhindert horizontales Scrollen auf der ganzen Seite */
 }
 
 .container {
@@ -45,10 +46,16 @@
 /* -- Grundlegende Karten-Stile -- */
 .trustElement {
     padding: 2.5rem 2rem;
-    border-radius: 12px;
+    border-radius: 16px;
     text-align: center;
-    background-color: var(--color-background);
-    border: 1px solid var(--color-border);
+
+    /* NEU: Der verfeinerte Glas-Effekt */
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+
     position: relative;
     opacity: 0;
     transform: translateY(30px);
@@ -67,10 +74,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--color-background-offset);
+    background-color: var(--color-background); /* Solider Hintergrund für das Icon */
     color: var(--color-text-medium);
     border: 1px solid var(--color-border-subtle);
     transition: all 0.3s ease;
+}
+
+.elementTitle, .elementText {
+    /* Stellt sicher, dass der Text über dem Glas-Effekt liegt */
+    position: relative;
+    z-index: 2;
 }
 .elementTitle {
     font-family: var(--font-heading);
@@ -92,7 +105,10 @@
 /* ======================================= */
 @media (max-width: 1023px) {
     .sliderContainer {
-        overflow: hidden;
+        /* Layout-Fix, damit Schatten nicht abgeschnitten wird */
+        margin: 0 -1.5rem -2rem;
+        padding: 0 1.5rem 2rem;
+
         position: relative;
         cursor: grab;
     }
@@ -113,8 +129,8 @@
 
     /* Diese Regeln existieren jetzt NUR auf Mobile/Tablet */
     .trustElement.isActive {
-        border-color: var(--color-border-subtle);
         transform: scale(1);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
     }
 
     .trustElement.isActive .iconWrapper {
@@ -130,22 +146,19 @@
 /* =================================== */
 @media (min-width: 1024px) {
     .sliderContainer {
-        overflow: visible;
         cursor: default;
     }
     .sliderTrack {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 2rem;
-        /* Wichtig: Deaktiviert die JS-Transformation auf Desktop */
         transform: none !important;
     }
 
-    /* Hover-Effekt NUR für Geräte, die Hover unterstützen */
     @media (hover: hover) {
         .trustElement:hover {
             transform: translateY(-8px);
-            border-color: var(--color-border);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
         }
         .trustElement:hover .iconWrapper {
             background-color: var(--color-accent);
