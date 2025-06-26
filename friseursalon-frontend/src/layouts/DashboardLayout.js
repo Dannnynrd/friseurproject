@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom'; // WICHTIG: Outlet importieren
 import Sidebar from '../components/Sidebar';
-import DashboardHeader from '../components/DashboardHeader';
 import styles from './DashboardLayout.module.css';
 import { FiMenu, FiX } from 'react-icons/fi';
 
@@ -20,7 +19,7 @@ const DashboardLayout = ({ currentUser, logOut }) => { // Props currentUser und 
             />
 
             <div className={styles.mainContent}>
-                <DashboardHeader />
+
                 <button
                     className={styles.mobileMenuButton}
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}

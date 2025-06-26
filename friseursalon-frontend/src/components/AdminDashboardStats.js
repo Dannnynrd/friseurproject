@@ -8,7 +8,6 @@ import { de as deLocale } from 'date-fns/locale';
 import { registerLocale } from 'react-datepicker';
 
 // Importiere die neuen Kind-Komponenten
-import DashboardHeader from './DashboardHeader';
 import KpiGrid from './KpiGrid';
 import ChartsSection from './ChartsSection';
 import Sidebar from './Sidebar';
@@ -199,16 +198,7 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
 
     return (
         <div className={styles.adminDashboardStats}>
-            <DashboardHeader
-                selectedPeriod={selectedPeriod}
-                onPeriodChange={handlePeriodChange}
-                activeDateRangeLabel={activeDateRangeLabel}
-                lastUpdated={allData ? new Date() : null}
-                showMorePeriodsDropdown={showMorePeriodsDropdown}
-                setShowMorePeriodsDropdown={setShowMorePeriodsDropdown}
-                isLoading={isLoading}
-                showCustomDatePickersModal={showCustomDatePickersModal}
-            />
+
 
             {isLoading && !allData && <div className={styles.loadingIndicatorTop}><FontAwesomeIcon icon={faSpinner} spin /> Daten werden geladen...</div>}
             {error && <p className={styles.error}><FontAwesomeIcon icon={faExclamationCircle} /> {error}</p>}
