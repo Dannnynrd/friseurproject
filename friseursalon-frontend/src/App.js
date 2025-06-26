@@ -149,7 +149,7 @@ function App() {
     );
 }
 
-// Hilfskomponente, um die Homepage-Sektionen zu bündeln
+// Hilfskomponente, um die Homepage-Sektionen zu bündeln/
 const HomePageWrapper = () => (
     <>
         <HeroSection />
