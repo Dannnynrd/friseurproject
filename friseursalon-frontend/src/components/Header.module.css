@@ -12,7 +12,7 @@
     width: 100%;
     z-index: 1000;
     padding: 1.25rem 1.5rem;
-    transition: background-color 0.3s ease, border-color 0.3s ease, backdrop-filter 0.3s ease;
+    transition: all 0.3s ease; /* Vereinfachte Transition */
 
     --text-color: white;
     --button-bg: white;
@@ -33,9 +33,8 @@
     --text-color: var(--color-text-dark);
 }
 
-/* NEU: Klasse für den aktiven Header im Dashboard */
 .header.dashboardActive {
-    background-color: rgba(255, 255, 255, 0.8); /* Leicht durchsichtiges Weiß */
+    background-color: rgba(255, 255, 255, 0.8);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--color-border);
@@ -79,7 +78,7 @@
 .hamburger {
     position: relative;
     width: 24px;
-    height: 18px; /* Höhe des Containers für die 3 Striche */
+    height: 18px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -167,6 +166,12 @@
 @media (min-width: 1024px) {
     .header { padding: 1.25rem 2rem; }
     .mobileToggle { display: none; }
+
+    /* NEU: Anpassung für den Header auf Dashboard-Seiten */
+    .header.dashboardActive {
+        width: calc(100% - 260px); /* Breite minus Sidebar */
+        left: 260px; /* Startet rechts von der Sidebar */
+    }
 
     .desktopNav {
         display: flex;
