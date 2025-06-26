@@ -62,6 +62,7 @@ public class SecurityConfig {
         config.setAllowCredentials(true);
         config.addAllowedOrigin("http://localhost:3000"); // Frontend-URL
         config.addAllowedOrigin("http://localhost:8080"); // Backend-URL für interne Weiterleitungen (falls relevant)
+        config.addAllowedOrigin("http://192.168.178.32:3000"); // Für Tests im Netzwerk
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         source.registerCorsConfiguration("/**", config);

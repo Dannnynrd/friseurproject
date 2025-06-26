@@ -83,11 +83,11 @@
 }
 
 .applyButton {
-    background-color: #4f46e5;
+    background-color: var(--color-accent);
     color: white;
 }
 .applyButton:hover {
-    background-color: #4338ca;
+    background-color: var(--color-accent-dark);
 }
 .applyButton:disabled {
     background-color: #a5b4fc;

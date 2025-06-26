@@ -1,69 +1,85 @@
 // src/components/ActivitySidebar.js
 import React from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faRss, faCalendarDay, faExclamationTriangle, faSpinner } from '@fortawesome/free-solid-svg-icons';
-import { format } from 'date-fns';
-import { de as deLocale } from 'date-fns/locale';
 import styles from './ActivitySidebar.module.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+    faPlus, faCalendarCheck, faBoxOpen, faLightbulb, faExclamationTriangle,
+    faInfoCircle, faChartLine
+} from '@fortawesome/free-solid-svg-icons';
 
-const ActivitySidebar = ({ onOpenCreateModal, activityData, isLoading, onViewAppointmentDetails }) => {
+const insightConfig = {
+    alert: { icon: faExclamationTriangle, className: styles.alert },
+    warning: { icon: faExclamationTriangle, className: styles.warning },
+    info: { icon: faInfoCircle, className: styles.info },
+    success: { icon: faChartLine, className: styles.success },
+};
+
+const ActivitySidebar = ({ activityData, insightsData, isLoading, onOpenCreateModal, onViewAppointmentDetails }) => {
+    const { dailyAppointments = [] } = activityData || {};
+
     return (
-        <aside className={styles.sidebarStatsColumn}>
-            <div className={styles.statsSectionBox}>
-                <button
-                    onClick={onOpenCreateModal}
-                    className={styles.newAppointmentButton}
-                >
-                    <FontAwesomeIcon icon={faPlus} /> Neuer Termin
-                </button>
+        <div className={styles.activitySidebar}>
+            <button className={styles.newAppointmentButton} onClick={onOpenCreateModal}>
+                <FontAwesomeIcon icon={faPlus} />
+                <span>Neuer Termin</span>
+            </button>
+
+            <div className={styles.section}>
+                <h3 className={styles.sectionTitle}>
+                    <FontAwesomeIcon icon={faLightbulb} />
+                    <span>Einblicke & Trends</span>
+                </h3>
+                <div className={styles.insightsList}>
+                    {insightsData && insightsData.length > 0 ? (
+                        insightsData.map(insight => {
+                            const config = insightConfig[insight.type] || insightConfig.info;
+                            return (
+                                <div key={insight.id} className={`${styles.insightCard} ${config.className}`}>
+                                    <FontAwesomeIcon icon={config.icon} className={styles.insightIcon} />
+                                    <div className={styles.insightContent}>
+                                        <h4 className={styles.insightTitle}>{insight.title}</h4>
+                                        <p className={styles.insightDescription}>{insight.description}</p>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    ) : (
+                        <div className={styles.emptyState}>Keine aktuellen Einblicke.</div>
+                    )}
+                </div>
             </div>
 
-            <div className={styles.statsSectionBox}>
-                <h3 className={styles.statsSectionTitle}>
-                    <span><FontAwesomeIcon icon={faRss} /> Aktivitäten</span>
+            <div className={styles.section}>
+                <h3 className={styles.sectionTitle}>
+                    <FontAwesomeIcon icon={faCalendarCheck} />
+                    <span>Heutige & nächste Termine</span>
                 </h3>
                 {isLoading ? (
-                    <div className={styles.loadingSmall}><FontAwesomeIcon icon={faSpinner} spin /> Lade Aktivitäten...</div>
-                ) : activityData ? (
-                    <div className={styles.activityFeed}>
-                        <div className={styles.activityItem}>
-                            <span>Neue Buchungen (Heute)</span>
-                            <span className={styles.activityValue}>{activityData.newBookingsToday ?? 'N/A'}</span>
-                        </div>
-                        <div className={styles.activityItem}>
-                            <span>Neue Buchungen (Gestern)</span>
-                            <span className={styles.activityValue}>{activityData.newBookingsYesterday ?? 'N/A'}</span>
-                        </div>
+                    <div className={styles.loadingState}>Lade Termine...</div>
+                ) : dailyAppointments.length > 0 ? (
+                    <div className={styles.appointmentsList}>
+                        {dailyAppointments.map(app => (
+                            <div key={app.appointmentId} className={styles.appointmentItem} onClick={() => onViewAppointmentDetails(app.appointmentId)}>
+                                <div className={styles.timelineDot}></div>
+                                <div className={styles.appointmentDetails}>
+                                    <div className={styles.appointmentHeader}>
+                                        <span className={styles.appointmentTime}>{app.startTime}</span>
+                                        <span className={`${styles.appointmentStatus} ${app.status === 'Heute' ? styles.today : ''}`}>{app.status}</span>
+                                    </div>
+                                    <p className={styles.appointmentService}>{app.serviceName}</p>
+                                    <p className={styles.appointmentCustomer}>{app.customerFirstName} {app.customerLastName}</p>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : (
-                    <p className={styles.noData}>Keine Aktivitätsdaten.</p>
+                    <div className={styles.emptyState}>
+                        <FontAwesomeIcon icon={faBoxOpen} />
+                        <p>Keine bevorstehenden Termine.</p>
+                    </div>
                 )}
             </div>
-
-            <div className={styles.statsSectionBox}>
-                <h3 className={styles.statsSectionTitle}>
-                    <span><FontAwesomeIcon icon={faCalendarDay} /> Heutige & nächste Termine</span>
-                </h3>
-                {isLoading ? (
-                    <div className={styles.loadingSmall}><FontAwesomeIcon icon={faSpinner} spin /> Lade Termine...</div>
-                ) : (activityData.dailyAppointments && activityData.dailyAppointments.length > 0) ? (
-                    <ul className={styles.appointmentList}>
-                        {activityData.dailyAppointments.map(apt => (
-                            <li key={apt.appointmentId} className={styles.appointmentItem} onClick={() => onViewAppointmentDetails(apt.resource)}>
-                                <div className={styles.appointmentTime}>{format(new Date(apt.appointmentDate + 'T' + apt.startTime), 'HH:mm', { locale: deLocale })}</div>
-                                <div className={styles.appointmentDetails}>
-                                    <span className={styles.appointmentCustomer}>{`${apt.customerFirstName} ${apt.customerLastName}`}</span>
-                                    <span className={styles.appointmentService}>{apt.serviceName}</span>
-                                </div>
-                                <span className={styles.appointmentStatusBadge}>{apt.status}</span>
-                            </li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p className={styles.noData}>Keine bevorstehenden Termine.</p>
-                )}
-            </div>
-        </aside>
+        </div>
     );
 };
 
