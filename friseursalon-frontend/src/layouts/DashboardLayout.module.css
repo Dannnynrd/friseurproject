@@ -1,159 +1,54 @@
 /* src/layouts/DashboardLayout.module.css */
+
 .dashboardLayout {
     display: flex;
-    height: 100%; /* KORREKTUR: Füllt den verfügbaren Platz im .page-layout Container */
-    position: relative;
-    background-color: var(--color-background);
-}
-
-/* --- Desktop Sidebar --- */
-.sidebar {
+    min-height: 100vh;
+    /* NEU: Heller, konsistenter Hintergrund */
     background-color: var(--color-background-offset);
-    border-right: 1px solid var(--color-border-subtle);
-    display: flex;
-    flex-direction: column;
-    width: 260px;
-    height: 100%; /* KORREKTUR: Füllt die Höhe des .dashboardLayout Containers */
-    flex-shrink: 0;
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    overflow-x: hidden;
-}
-.sidebarCollapsed {
-    width: 80px;
-}
-.sidebarCollapsed .navText,
-.sidebarCollapsed .logoText,
-.sidebarCollapsed .navSectionTitle {
-    opacity: 0;
-    visibility: hidden;
-    width: 0;
-    transition: opacity 0.1s ease;
 }
 
-/* ...Rest der Sidebar-Stile (Header, Nav, Footer etc.) sind unverändert... */
-.sidebarHeader { display: flex; align-items: center; padding: 1.5rem 1.75rem; flex-shrink: 0; height: var(--header-height); }
-.logo { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; color: var(--color-text-dark); white-space: nowrap; }
-.logoIcon { font-size: 1.75rem; color: var(--color-accent); }
-.logoText { font-size: 1.5rem; font-weight: 800; font-family: var(--font-heading); transition: opacity 0.2s ease 0.1s; }
-.sidebarNav { flex-grow: 1; padding: 1rem 0.75rem; overflow-y: auto; }
-.navSection { margin-bottom: 1.25rem; }
-.navSectionTitle { font-size: 0.7rem; font-weight: 600; color: var(--color-text-subtle); text-transform: uppercase; padding: 0 1rem; margin-bottom: 0.5rem; white-space: nowrap; transition: opacity 0.2s ease 0.1s; }
-.navLink { display: flex; align-items: center; gap: 0.85rem; padding: 0.7rem 1rem; margin: 0.1rem 0; border-radius: 8px; text-decoration: none; color: var(--color-text-light); font-weight: 500; font-size: 0.9rem; white-space: nowrap; position: relative; transition: background-color 0.2s ease, color 0.2s ease; }
-.navLink:hover { background-color: var(--color-background-hover); color: var(--color-text-dark); }
-.navLinkActive { background-color: var(--color-accent); color: var(--color-accent-text); font-weight: 600; }
-.navLinkActive:hover { background-color: var(--color-accent); color: var(--color-accent-text); }
-.navIcon { font-size: 1.1rem; width: 24px; text-align: center; }
-.navText { transition: opacity 0.2s ease 0.1s; }
-.sidebarFooter { padding: 1rem 0.75rem; border-top: 1px solid var(--color-border-subtle); flex-shrink: 0; }
-.logoutButton:hover { background-color: #fef2f2; color: #ef4444; }
-.collapseButton { background: none; border: none; color: var(--color-text-subtle); width: 100%; padding: 0.75rem 0; margin-top: 0.5rem; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
-.collapseButton:hover { color: var(--color-text-dark); background-color: var(--color-background-hover); }
-
-/* --- NEU: Stile für das mobile Vollbild-Menü --- */
-.mobileMenuOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: var(--color-background-offset);
-    z-index: 2000;
-    transform: translateY(100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    flex-direction: column;
-}
-.mobileMenuOpen {
-    transform: translateY(0);
-}
-.mobileMenuHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 1.5rem;
-    height: var(--header-height);
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--color-border-subtle);
-}
-.mobileMenuTitle {
-    font-family: var(--font-heading);
-    font-size: 1.5rem;
-    font-weight: 700;
-}
-.mobileMenuClose {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: var(--color-text-medium);
-    cursor: pointer;
-}
-.mobileMenuNav {
-    padding: 1.5rem;
-    overflow-y: auto;
-    flex-grow: 1;
-}
-.mobileNavSection { margin-bottom: 1.5rem; }
-.mobileNavSectionTitle {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--color-text-subtle);
-    text-transform: uppercase;
-    margin-bottom: 0.75rem;
-}
-.mobileMenuLink {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.8rem 0;
-    font-size: 1rem;
-    font-weight: 500;
-    color: var(--color-text-medium);
-    text-decoration: none;
-    border-radius: 8px;
-}
-.mobileMenuLink:hover {
-    color: var(--color-accent);
-}
-.mobileMenuLinkActive {
-    color: var(--color-accent);
-    font-weight: 600;
-}
-.mobileMenuIcon {
-    font-size: 1.1rem;
-    width: 24px;
-}
-.mobileMenuLogout {
-    color: #ef4444;
-}
-
-/* --- Mobile Tab Bar --- */
-.mobileTabBar {
-    display: none;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: var(--color-background-offset);
-    border-top: 1px solid var(--color-border);
-    z-index: 1000;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-}
-.mobileNavLink { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.5rem 0; text-decoration: none; color: var(--color-text-light); transition: color 0.2s ease; }
-.mobileNavIcon { font-size: 1.25rem; margin-bottom: 0.2rem; }
-.mobileNavText { font-size: 0.65rem; }
-.mobileNavLinkActive { color: var(--color-accent); }
-
-/* --- Hauptinhaltsbereich --- */
 .mainContent {
     flex-grow: 1;
-    padding: 2.5rem;
-    overflow-y: auto;
-    height: 100%; /* Füllt die Höhe des .dashboardLayout Containers */
+    display: flex;
+    flex-direction: column;
+    position: relative;
 }
 
-/* --- Media Queries für Responsive Design --- */
-@media (max-width: 768px) {
-    .sidebar { display: none; }
-    .mainContent { padding: 1.5rem 1rem var(--bottom-nav-height-mobile) 1rem; }
-    .mobileTabBar { display: flex; }
+.pageContent {
+    padding: 2rem;
+    flex-grow: 1;
+}
+
+/* -- Mobile-First Anpassungen -- */
+.mobileMenuButton {
+    display: block; /* Standardmäßig auf Mobile sichtbar */
+    position: fixed;
+    top: 1rem;
+    right: 1.5rem;
+    z-index: 1100; /* Liegt über dem Inhalt, aber unter dem Modal-Overlay */
+    background-color: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-dark);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+
+/* -- Desktop-Layout -- */
+@media (min-width: 1024px) {
+    .mainContent {
+        /* Verschiebt den Inhalt nach rechts, um Platz für die Sidebar zu machen */
+        margin-left: 260px;
+    }
+    .pageContent {
+        padding: 2.5rem 3rem;
+    }
+    .mobileMenuButton {
+        display: none; /* Auf Desktop verstecken */
+    }
 }
