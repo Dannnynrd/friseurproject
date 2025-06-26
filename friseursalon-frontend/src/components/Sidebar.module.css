@@ -1,8 +1,11 @@
 /* src/components/Sidebar.module.css */
 
 .sidebar {
-    background-color: var(--color-background);
-    border-right: 1px solid var(--color-border);
+    background-color: rgba(255, 255, 255, 0.85); /* Semitransparenter Hintergrund */
+    -webkit-backdrop-filter: blur(12px); /* Der eigentliche Glas-Effekt für Safari */
+    backdrop-filter: blur(12px); /* Der Glas-Effekt für andere moderne Browser */
+    border-right: 1px solid rgba(0, 0, 0, 0.08); /* Dezenter Rahmen */
+
     width: 260px;
     position: fixed;
     top: 0;
@@ -11,7 +14,7 @@
     display: flex;
     flex-direction: column;
     padding: 2rem 1.5rem;
-    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     z-index: 1200;
 }
 
@@ -19,7 +22,12 @@
     text-align: center;
     margin-bottom: 3rem;
     padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--color-border-subtle);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* NEU: Logo als Link zur Homepage */
+.logoLink {
+    text-decoration: none;
 }
 
 .logo {
@@ -27,7 +35,12 @@
     font-size: 2rem;
     font-weight: 700;
     color: var(--color-text-dark);
+    transition: color 0.2s;
 }
+.logoLink:hover .logo {
+    color: var(--color-accent);
+}
+
 .logoSubtext {
     font-size: 0.8rem;
     color: var(--color-text-light);
@@ -37,6 +50,7 @@
 
 .mainNav {
     flex-grow: 1;
+    overflow-y: auto; /* Scrollbar, falls viele Menüpunkte */
 }
 
 .navSectionTitle {
@@ -45,9 +59,9 @@
     color: var(--color-text-light);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 1rem 0 0.5rem 0;
+    padding: 1.5rem 0 0.5rem 0;
     margin-top: 1.5rem;
-    border-top: 1px solid var(--color-border-subtle);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .navLink {
@@ -63,13 +77,13 @@
     transition: all 0.2s ease-in-out;
 }
 .navLink:hover {
-    background-color: var(--color-background-offset);
+    background-color: rgba(0, 0, 0, 0.04);
     color: var(--color-text-dark);
 }
 .navLink.active {
     background-color: var(--color-accent);
     color: white;
-    box-shadow: 0 4px 15px -5px rgba(var(--color-accent-rgb), 0.6);
+    box-shadow: 0 4px 15px -5px rgba(var(--color-accent-rgb, 30, 41, 59), 0.6);
 }
 
 .navIcon {
@@ -77,7 +91,8 @@
 }
 
 .sidebarFooter {
-    margin-top: auto; /* Schiebt den Footer nach unten */
+    margin-top: auto;
+    padding-top: 1rem;
 }
 
 .logoutButton {
@@ -87,8 +102,8 @@
     cursor: pointer;
 }
 .logoutButton:hover {
-    background-color: #fce8e8; /* Rötlicher Ton für Gefahr/Logout */
-    color: #c53030;
+    background-color: #fef2f2; /* Rötlicher Ton für Gefahr/Logout */
+    color: #ef4444;
 }
 
 /* -- Mobile-First Anpassungen -- */

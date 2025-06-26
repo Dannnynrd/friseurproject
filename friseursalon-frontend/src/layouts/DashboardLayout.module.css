@@ -52,3 +52,54 @@
         display: none; /* Auf Desktop verstecken */
     }
 }
+/* src/layouts/DashboardLayout.module.css */
+
+/* ... bestehender Code ... */
+
+/* NEU: Mobile-First Anpassungen für den Hauptinhalt */
+.mainContent {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    /* Wichtig, damit die Sidebar auf Desktop Platz hat */
+    transition: margin-left 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pageContent {
+    padding: 1.5rem; /* Etwas weniger Padding auf Mobile */
+    flex-grow: 1;
+}
+
+.mobileMenuButton {
+    display: block;
+    position: fixed;
+    top: 1rem;
+    left: 1.5rem; /* Button nach links für bessere Erreichbarkeit */
+    z-index: 1300; /* Sehr hoher z-index, um über allem zu liegen */
+    background-color: rgba(255, 255, 255, 0.7);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-dark);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* -- Desktop-Layout -- */
+@media (min-width: 1024px) {
+    .mainContent {
+        margin-left: 260px; /* Platz für die Sidebar */
+    }
+    .pageContent {
+        padding: 2.5rem 3rem;
+    }
+    .mobileMenuButton {
+        display: none; /* Auf Desktop verstecken */
+    }
+}

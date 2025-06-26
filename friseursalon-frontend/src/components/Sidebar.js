@@ -1,18 +1,46 @@
 // src/components/Sidebar.js
 import React, { useEffect, useRef } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import styles from './Sidebar.module.css';
 import AuthService from '../services/auth.service';
-import { FiGrid, FiUser, FiCalendar, FiStar, FiSettings, FiLogOut, FiBarChart2 } from 'react-icons/fi';
+import {
+    FiGrid, FiUser, FiCalendar, FiStar, FiSettings, FiLogOut,
+    FiBarChart2, FiBriefcase, FiUsers, FiClock, FiSlash, FiTag // FiTag Icon hinzugefügt
+} from 'react-icons/fi';
+
+// Zentrale Konfiguration für die Navigationslinks.
+// Das macht es super einfach, die Sidebar zu warten und zu erweitern.
+const navConfig = {
+    user: [
+        { to: 'appointments', icon: <FiCalendar />, label: 'Meine Termine' },
+        { to: 'profile', icon: <FiUser />, label: 'Mein Profil' },
+    ],
+    admin: [
+        { to: 'admin-dashboard', icon: <FiBarChart2 />, label: 'Übersicht & Statistiken' },
+        { to: 'admin-calendar', icon: <FiCalendar />, label: 'Kalender' },
+        { to: 'admin-appointments', icon: <FiBriefcase />, label: 'Alle Termine' },
+        { to: 'admin-customers', icon: <FiUsers />, label: 'Kunden' },
+        // NEUES ICON HIER: FiTag für Dienstleistungen
+        { to: 'admin-services', icon: <FiTag />, label: 'Dienstleistungen' },
+        // NEUES ICON HIER: FiStar für Bewertungen
+        { to: 'admin-testimonials', icon: <FiStar />, label: 'Bewertungen' },
+        { to: 'admin-working-hours', icon: <FiClock />, label: 'Öffnungszeiten' },
+        { to: 'admin-blocked-slots', icon: <FiSlash />, label: 'Sperrzeiten' },
+        { to: 'admin-settings', icon: <FiSettings />, label: 'Einstellungen' },
+    ]
+};
 
 const Sidebar = ({ isOpen, onClose }) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const sidebarRef = useRef(null);
+    const user = AuthService.getCurrentUser();
+    const isAdmin = user?.roles?.includes('ROLE_ADMIN');
 
     const handleLogout = () => {
         AuthService.logout();
         navigate('/login');
-        onClose(); // Schließt die Sidebar nach dem Logout
+        onClose();
     };
 
     // Schließt die Sidebar bei Klick außerhalb auf Mobile
@@ -26,48 +54,49 @@ const Sidebar = ({ isOpen, onClose }) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isOpen, onClose]);
 
-    const navLinks = [
-        { to: '/dashboard/overview', icon: <FiGrid />, label: 'Übersicht' },
-        { to: '/dashboard/appointments', icon: <FiCalendar />, label: 'Meine Termine' },
-        { to: '/dashboard/profile', icon: <FiUser />, label: 'Mein Profil' },
-        { to: '/dashboard/testimonials', icon: <FiStar />, label: 'Bewertungen' },
-        { to: '/dashboard/settings', icon: <FiSettings />, label: 'Einstellungen' },
-    ];
+    // Hilfsfunktion zum Rendern der Links
+    const renderNavLink = (link) => {
+        const destination = `/account?tab=${link.to}`;
+        const currentTab = new URLSearchParams(location.search).get('tab');
+        const isActive = currentTab === link.to;
 
-    // Beispiel: Admin-spezifische Links
-    const user = AuthService.getCurrentUser();
-    const isAdmin = user && user.roles.includes('ROLE_ADMIN');
+        return (
+            <NavLink
+                key={link.to}
+                to={destination}
+                className={`${styles.navLink} ${isActive ? styles.active : ''}`}
+                onClick={onClose}
+                aria-current={isActive ? 'page' : undefined}
+            >
+                <span className={styles.navIcon}>{link.icon}</span>
+                {link.label}
+            </NavLink>
+        );
+    };
 
     return (
         <aside ref={sidebarRef} className={`${styles.sidebar} ${isOpen ? styles.isOpen : ''}`}>
             <div className={styles.sidebarHeader}>
-                <h1 className={styles.logo}>IMW</h1>
-                <span className={styles.logoSubtext}>Dashboard</span>
+                <NavLink to="/" className={styles.logoLink} onClick={onClose}>
+                    <h1 className={styles.logo}>IMW</h1>
+                    <span className={styles.logoSubtext}>Dashboard</span>
+                </NavLink>
             </div>
-            <nav className={styles.mainNav}>
-                {navLinks.map(link => (
-                    <NavLink
-                        key={link.to}
-                        to={link.to}
-                        className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-                        onClick={onClose}
-                    >
-                        <span className={styles.navIcon}>{link.icon}</span>
-                        {link.label}
-                    </NavLink>
-                ))}
-            </nav>
 
-            {isAdmin && (
-                <nav className={styles.adminNav}>
-                    <p className={styles.navSectionTitle}>Admin</p>
-                    <NavLink to="/admin/dashboard" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`} onClick={onClose}>
-                        <span className={styles.navIcon}><FiBarChart2 /></span>
-                        Statistiken
-                    </NavLink>
-                    {/* Weitere Admin-Links hier */}
-                </nav>
-            )}
+            <nav className={styles.mainNav}>
+                {isAdmin ? (
+                    <>
+                        {/* Admin Links */}
+                        {navConfig.admin.map(renderNavLink)}
+                        {/* Trennlinie und User-spezifische Links für den Admin */}
+                        <p className={styles.navSectionTitle}>Benutzer-Ansicht</p>
+                        {navConfig.user.map(renderNavLink)}
+                    </>
+                ) : (
+                    // Nur User Links für normale Benutzer
+                    navConfig.user.map(renderNavLink)
+                )}
+            </nav>
 
             <div className={styles.sidebarFooter}>
                 <button onClick={handleLogout} className={`${styles.navLink} ${styles.logoutButton}`}>

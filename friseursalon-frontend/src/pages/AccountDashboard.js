@@ -1,12 +1,12 @@
 // src/pages/AccountDashboard.js
 import React from 'react';
-import { useLocation, Navigate } from 'react-router-dom';
+import { useLocation, Navigate, useSearchParams } from 'react-router-dom';
 
 // Import der Layout-Komponenten
 import DashboardLayout from '../layouts/DashboardLayout';
 import DashboardPage from '../components/DashboardPage';
 
-// Import der einzelnen Seiten-Komponenten
+// Import der einzelnen Dashboard-Seiten-Komponenten
 import AdminDashboardStats from '../components/AdminDashboardStats';
 import AdminCalendarView from '../components/AdminCalendarView';
 import AppointmentList from '../components/AppointmentList';
@@ -17,54 +17,71 @@ import BlockedTimeSlotManager from '../components/BlockedTimeSlotManager';
 import AdminTestimonialManagement from '../components/AdminTestimonialManagement';
 import DashboardSettings from '../components/DashboardSettings';
 import ProfileEditForm from '../components/ProfileEditForm';
+import AuthService from '../services/auth.service'; // Import für Rollenprüfung
 
-// Zentrale Konfiguration für alle Seiten im Dashboard
+// Zentrale Konfiguration aller Dashboard-Seiten
 const tabConfig = {
-    // Admin
-    'admin-dashboard': { component: AdminDashboardStats, title: 'Übersicht' },
-    'admin-calendar': { component: AdminCalendarView, title: 'Kalender' },
-    'admin-appointments': { component: AppointmentList, title: 'Terminverwaltung' },
-    'admin-customers': { component: CustomerManagement, title: 'Kundenverwaltung' },
-    'admin-services': { component: ServiceList, title: 'Dienstleistungen' },
-    'admin-testimonials': { component: AdminTestimonialManagement, title: 'Bewertungen' },
-    'admin-working-hours': { component: WorkingHoursManager, title: 'Öffnungszeiten' },
-    'admin-blocked-slots': { component: BlockedTimeSlotManager, title: 'Sperrzeiten' },
-    'admin-settings': { component: DashboardSettings, title: 'Salon Einstellungen' },
-    // User
-    'appointments': { component: AppointmentList, title: 'Meine Termine' },
-    'profile': { component: ProfileEditForm, title: 'Profil bearbeiten' },
-};
+    // User-Rollen
+    'appointments': { component: AppointmentList, title: 'Meine Termine', roles: ['USER', 'ADMIN'] },
+    'profile': { component: ProfileEditForm, title: 'Profil bearbeiten', roles: ['USER', 'ADMIN'] },
 
+    // Admin-Rollen
+    'admin-dashboard': { component: AdminDashboardStats, title: 'Übersicht & Statistiken', roles: ['ADMIN'] },
+    'admin-calendar': { component: AdminCalendarView, title: 'Kalender', roles: ['ADMIN'] },
+    'admin-appointments': { component: AppointmentList, title: 'Alle Termine', roles: ['ADMIN'] },
+    'admin-customers': { component: CustomerManagement, title: 'Kundenverwaltung', roles: ['ADMIN'] },
+    'admin-services': { component: ServiceList, title: 'Dienstleistungen', roles: ['ADMIN'] },
+    'admin-testimonials': { component: AdminTestimonialManagement, title: 'Bewertungen verwalten', roles: ['ADMIN'] },
+    'admin-working-hours': { component: WorkingHoursManager, title: 'Öffnungszeiten', roles: ['ADMIN'] },
+    'admin-blocked-slots': { component: BlockedTimeSlotManager, title: 'Sperrzeiten verwalten', roles: ['ADMIN'] },
+    'admin-settings': { component: DashboardSettings, title: 'Dashboard Einstellungen', roles: ['ADMIN'] },
+};
 
 function AccountDashboard({ currentUser, logOut, ...props }) {
     const location = useLocation();
+    const [searchParams] = useSearchParams();
 
     // Wenn kein Benutzer angemeldet ist, zum Login weiterleiten.
     if (!currentUser) {
-        return <Navigate to="/login" replace />;
+        return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    const activeTab = new URLSearchParams(location.search).get('tab');
-    const isAdmin = currentUser.roles.includes('ROLE_ADMIN');
+    const activeTab = searchParams.get('tab');
+    const userRoles = AuthService.getCurrentUser()?.roles || [];
+    const isAdmin = userRoles.includes('ROLE_ADMIN');
 
-    // Definiere die Standard-Seite basierend auf der Benutzerrolle.
     const defaultTabKey = isAdmin ? 'admin-dashboard' : 'appointments';
 
-    // **KORREKTUR & VERBESSERUNG:**
-    // 1. Prüfe, ob der `activeTab` aus der URL gültig ist.
-    // 2. Wenn nicht (oder wenn er fehlt), leite direkt auf die korrekte Standard-Seite um.
-    //    Dadurch wird sichergestellt, dass die URL immer einen gültigen Zustand widerspiegelt.
-    if (!activeTab || !tabConfig[activeTab]) {
-        return <Navigate to={`/account?tab=${defaultTabKey}`} replace />;
-    }
+    // Bestimme, welche Komponente gerendert werden soll.
+    const getComponentToRender = () => {
+        // Wenn kein Tab in der URL ist, leite zum Standard-Tab weiter.
+        if (!activeTab) {
+            return { redirect: `/account?tab=${defaultTabKey}` };
+        }
 
-    // Wenn wir hier ankommen, ist `activeTab` garantiert ein gültiger Schlüssel.
-    const { component: ComponentToRender, title } = tabConfig[activeTab];
+        const tabDetails = tabConfig[activeTab];
+        const userHasRole = tabDetails?.roles.some(role => userRoles.includes(`ROLE_${role}`));
+
+        // Wenn der Tab ungültig ist oder der User keine Berechtigung hat, leite zum Standard-Tab weiter.
+        if (!tabDetails || !userHasRole) {
+            return { redirect: `/account?tab=${defaultTabKey}` };
+        }
+
+        // Alles gut, gib die Komponente und den Titel zurück.
+        return { Component: tabDetails.component, title: tabDetails.title };
+    };
+
+    const { Component, title, redirect } = getComponentToRender();
+
+    if (redirect) {
+        return <Navigate to={redirect} replace />;
+    }
 
     return (
         <DashboardLayout currentUser={currentUser} logOut={logOut}>
             <DashboardPage title={title}>
-                <ComponentToRender
+                {/* Übergib alle relevanten Props an die Kind-Komponente */}
+                <Component
                     currentUser={currentUser}
                     adminView={activeTab.startsWith('admin-')}
                     {...props}
