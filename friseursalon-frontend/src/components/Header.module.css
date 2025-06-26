@@ -12,7 +12,7 @@
     width: 100%;
     z-index: 1000;
     padding: 1.25rem 1.5rem;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, border-color 0.3s ease, backdrop-filter 0.3s ease;
 
     --text-color: white;
     --button-bg: white;
@@ -32,6 +32,19 @@
     background-color: white;
     --text-color: var(--color-text-dark);
 }
+
+/* NEU: Klasse für den aktiven Header im Dashboard */
+.header.dashboardActive {
+    background-color: rgba(255, 255, 255, 0.8); /* Leicht durchsichtiges Weiß */
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--color-border);
+
+    --text-color: var(--color-text-dark);
+    --button-bg: var(--color-accent);
+    --button-text: white;
+}
+
 
 .container {
     max-width: var(--container-width);
@@ -76,7 +89,10 @@
     height: 2px;
     background-color: var(--text-color);
     border-radius: 2px;
-    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out, background-color 0.3s ease;
+}
+.header.menuOpen .hamburgerBar {
+    background-color: var(--color-text-dark);
 }
 .header.menuOpen .hamburgerBar:nth-child(1) {
     transform: translateY(8px) rotate(45deg);

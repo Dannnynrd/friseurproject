@@ -8,6 +8,7 @@ const Header = ({ currentUser, logOut }) => {
     const [isScrolled, setIsScrolled] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
+    const isDashboard = location.pathname.startsWith('/account');
 
     // Effekt für das Scroll-Verhalten
     useEffect(() => {
@@ -15,7 +16,7 @@ const Header = ({ currentUser, logOut }) => {
             setIsScrolled(window.scrollY > 10);
         };
         window.addEventListener('scroll', handleScroll, { passive: true });
-        handleScroll();
+        handleScroll(); // Initialen Zustand setzen
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
@@ -45,7 +46,14 @@ const Header = ({ currentUser, logOut }) => {
         }
     };
 
-    const headerClasses = `${styles.header} ${isScrolled ? styles.scrolled : ''} ${isMenuOpen ? styles.menuOpen : ''}`;
+    // Logik für die Header-Klassen:
+    // 1. Basis-Klasse ist immer .header
+    // 2. Wenn es eine Dashboard-Seite ist, füge .dashboardActive hinzu.
+    // 3. Wenn es KEINE Dashboard-Seite ist, füge .scrolled hinzu, wenn gescrollt wurde.
+    // 4. Füge .menuOpen hinzu, wenn das mobile Menü offen ist.
+    const headerClasses = `${styles.header} ${
+        isDashboard ? styles.dashboardActive : (isScrolled ? styles.scrolled : '')
+    } ${isMenuOpen ? styles.menuOpen : ''}`;
 
     return (
         <header className={headerClasses}>
