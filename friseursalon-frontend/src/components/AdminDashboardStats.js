@@ -1,26 +1,24 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import api from '../services/api.service';
+// src/components/AdminDashboardStats.js
+import React, { useState, useMemo } from 'react';
 import styles from './AdminDashboardStats.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChartLine, faExclamationCircle, faCheckCircle, faSpinner, faArrowUp, faArrowDown, faEquals } from '@fortawesome/free-solid-svg-icons';
+import { faChartLine, faExclamationCircle, faSpinner, faArrowUp, faArrowDown, faEquals } from '@fortawesome/free-solid-svg-icons';
 import { parseISO, format as formatDateFns, subDays, startOfMonth, endOfMonth, subMonths, startOfWeek, endOfWeek, startOfYear as dateFnsStartOfYear, formatISO } from 'date-fns';
 import { de as deLocale } from 'date-fns/locale';
 import { registerLocale } from 'react-datepicker';
 
-// Importiere die neuen Kind-Komponenten
+// KORREKTUR: Der Pfad wurde angepasst, um direkt vom 'src'-Verzeichnis auszugehen.
+import { useDashboardData } from '../hooks/useDashboardData';
 import KpiGrid from './KpiGrid';
 import ChartsSection from './ChartsSection';
-import Sidebar from './Sidebar';
+import ActivitySidebar from './ActivitySidebar';
 import CustomDateRangeModal from './CustomDateRangeModal';
-
-// Modals
 import AppointmentEditModal from './AppointmentEditModal';
 import AppointmentCreateModal from './AppointmentCreateModal';
 
 registerLocale('de', deLocale);
 
-
-// Konstanten und Hilfsfunktionen
+// Konstanten und Hilfsfunktionen bleiben unverändert
 const PERIOD_OPTIONS = {
     TODAY: 'today', THIS_WEEK: 'thisWeek', LAST_7_DAYS: 'last7days', THIS_MONTH: 'thisMonth', LAST_MONTH: 'lastMonth',
     LAST_30_DAYS: 'last30days', YEAR_TO_DATE: 'yearToDate', LAST_365_DAYS: 'last365days', CUSTOM: 'custom',
@@ -55,103 +53,32 @@ const getDatesForPeriod = (period) => {
     }
     return { startDate: formatISO(startDate, { representation: 'date' }), endDate: formatISO(endDate, { representation: 'date' }) };
 };
-const formatCurrency = (value) => value != null ? `${parseFloat(value).toFixed(2).replace('.', ',')} €` : 'N/A';
-const formatPercentage = (value) => value != null ? `${parseFloat(value).toFixed(1).replace('.', ',')}%` : 'N/A';
 
 function AdminDashboardStats({ currentUser, onAppointmentAction }) {
-    // --- STATE MANAGEMENT ---
-    const [allData, setAllData] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState('');
-
     const [selectedPeriod, setSelectedPeriod] = useState(PERIOD_OPTIONS.THIS_MONTH);
     const [dateRange, setDateRange] = useState(getDatesForPeriod(PERIOD_OPTIONS.THIS_MONTH));
     const [activeDateRangeLabel, setActiveDateRangeLabel] = useState(PERIOD_LABELS[PERIOD_OPTIONS.THIS_MONTH]);
+    const [topNServicesConfig, setTopNServicesConfig] = useState(() => parseInt(localStorage.getItem('topNServicesConfig'), 10) || 5);
 
-    // UI State
+    const { allData, isLoading, error } = useDashboardData(dateRange, topNServicesConfig, onAppointmentAction);
+
     const [showCustomDatePickersModal, setShowCustomDatePickersModal] = useState(false);
     const [customPickerStartDate, setCustomPickerStartDate] = useState(new Date());
     const [customPickerEndDate, setCustomPickerEndDate] = useState(new Date());
-    const [showMorePeriodsDropdown, setShowMorePeriodsDropdown] = useState(false);
-    const [customizationMessage, setCustomizationMessage] = useState('');
-
-    // Customization
     const [kpiVisibility, setKpiVisibility] = useState(() => JSON.parse(localStorage.getItem('kpiVisibility')) || { main: { visible: true, kpis: { termine: true, umsatz: true } } });
     const [kpiGoals, setKpiGoals] = useState(() => JSON.parse(localStorage.getItem('kpiGoals')) || {});
     const [kpiGroupOrder, setKpiGroupOrder] = useState(() => JSON.parse(localStorage.getItem('kpiGroupOrder')) || ['main']);
-    const [topNServicesConfig, setTopNServicesConfig] = useState(() => parseInt(localStorage.getItem('topNServicesConfig'), 10) || 5);
-
-    // Modals
     const [selectedAppointmentForEdit, setSelectedAppointmentForEdit] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
 
-    // --- DATA FETCHING ---
-    const fetchData = useCallback(async (startDate, endDate) => {
-        setIsLoading(true);
-        setError('');
-        try {
-            const [statsRes, activityRes, chartsResDay, chartsResService, chartsResRevenue, chartsResHour] = await Promise.all([
-                api.get('statistics/detailed-counts', { params: { startDate, endDate } }),
-                api.get('statistics/today-upcoming-appointments'),
-                api.get('statistics/by-day-of-week', { params: { startDate, endDate } }),
-                api.get('statistics/by-service', { params: { startDate, endDate, topN: topNServicesConfig } }),
-                api.get('statistics/revenue-over-time', { params: { startDate, endDate } }),
-                api.get('statistics/by-hour-of-day', { params: { startDate, endDate } }),
-            ]);
-
-            const kpiDataRaw = statsRes.data;
-            const kpiData = {
-                formatted: {
-                    totalRevenueInPeriod: formatCurrency(kpiDataRaw.totalRevenueInPeriod),
-                    totalAppointmentsInPeriod: kpiDataRaw.totalAppointmentsInPeriod,
-                    avgRevenuePerAppointment: formatCurrency(kpiDataRaw.totalRevenueInPeriod / kpiDataRaw.totalAppointmentsInPeriod),
-                },
-                numeric: {
-                    totalRevenueInPeriod: kpiDataRaw.totalRevenueInPeriod,
-                    totalAppointmentsInPeriod: kpiDataRaw.totalAppointmentsInPeriod,
-                },
-                ...kpiDataRaw
-            };
-
-            setAllData({
-                kpiData,
-                activityData: {
-                    dailyAppointments: activityRes.data,
-                    newBookingsToday: kpiDataRaw.newBookingsToday,
-                    newBookingsYesterday: kpiDataRaw.newBookingsYesterday,
-                },
-                chartData: {
-                    appointmentsByDay: { labels: chartsResDay.data.map(d => d.dayName), data: chartsResDay.data.map(d => d.appointmentCount) },
-                    appointmentsByService: { labels: chartsResService.data.map(s => s.serviceName), data: chartsResService.data.map(s => s.appointmentCount) },
-                    revenueOverTime: chartsResRevenue.data,
-                    appointmentsByHour: chartsResHour.data,
-                },
-                keyChanges: [],
-                dashboardAlerts: []
-            });
-
-        } catch (err) {
-            setError(`Fehler beim Laden der Dashboard-Daten: ${err.message || 'Unbekannter Fehler'}`);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [topNServicesConfig]);
-
-    useEffect(() => {
-        fetchData(dateRange.startDate, dateRange.endDate);
-    }, [dateRange, fetchData, onAppointmentAction]);
-
-    const { kpiData, activityData, chartData, keyChanges, dashboardAlerts } = useMemo(() => ({
+    const { kpiData, activityData, chartData } = useMemo(() => ({
         kpiData: allData?.kpiData || null,
         activityData: allData?.activityData || {},
         chartData: allData?.chartData || {},
-        keyChanges: allData?.keyChanges || [],
-        dashboardAlerts: allData?.dashboardAlerts || [],
     }), [allData]);
 
     const handlePeriodChange = (period) => {
         setSelectedPeriod(period);
-        setShowMorePeriodsDropdown(false);
         if (period === PERIOD_OPTIONS.CUSTOM) {
             setCustomPickerStartDate(parseISO(dateRange.startDate));
             setCustomPickerEndDate(parseISO(dateRange.endDate));
@@ -170,9 +97,9 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         setShowCustomDatePickersModal(false);
     };
 
-    const handleViewAppointmentDetails = useCallback(async (appointment) => {
+    const handleViewAppointmentDetails = (appointment) => {
         setSelectedAppointmentForEdit(appointment);
-    }, []);
+    };
 
     const handleModalClose = () => {
         setSelectedAppointmentForEdit(null);
@@ -196,13 +123,11 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
         return <span className={`${styles.comparisonData} ${colorClass}`}><FontAwesomeIcon icon={icon} /> {change.toFixed(1).replace('.', ',')}%</span>;
     };
 
+
     return (
         <div className={styles.adminDashboardStats}>
-
-
             {isLoading && !allData && <div className={styles.loadingIndicatorTop}><FontAwesomeIcon icon={faSpinner} spin /> Daten werden geladen...</div>}
             {error && <p className={styles.error}><FontAwesomeIcon icon={faExclamationCircle} /> {error}</p>}
-            {customizationMessage && <div className={styles.success}><FontAwesomeIcon icon={faCheckCircle} /> {customizationMessage}</div>}
 
             <div className={styles.dashboardGridLayout}>
                 <main className={styles.mainStatsColumn}>
@@ -214,8 +139,8 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                             kpiDefinitions={KPI_DEFINITIONS}
                             kpiVisibility={kpiVisibility}
                             kpiGroupOrder={kpiGroupOrder}
-                            kpiGoals={kpiGoals}
                             renderComparison={renderComparison}
+                            kpiGoals={kpiGoals}
                         />
                     </div>
 
@@ -227,12 +152,9 @@ function AdminDashboardStats({ currentUser, onAppointmentAction }) {
                     />
                 </main>
 
-                <Sidebar
+                <ActivitySidebar
                     onOpenCreateModal={() => setShowCreateModal(true)}
                     activityData={activityData}
-                    keyChanges={keyChanges}
-                    dashboardAlerts={dashboardAlerts}
-                    dailyAppointments={activityData.dailyAppointments || []}
                     isLoading={isLoading}
                     onViewAppointmentDetails={handleViewAppointmentDetails}
                 />

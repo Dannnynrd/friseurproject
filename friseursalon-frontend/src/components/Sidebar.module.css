@@ -1,10 +1,11 @@
-/* src/components/Sidebar.module.css */
+/* src/components/Sidebar.module.css - Modernisierte Version */
 
 .sidebar {
-    background-color: rgba(255, 255, 255, 0.85); /* Semitransparenter Hintergrund */
-    -webkit-backdrop-filter: blur(12px); /* Der eigentliche Glas-Effekt für Safari */
-    backdrop-filter: blur(12px); /* Der Glas-Effekt für andere moderne Browser */
-    border-right: 1px solid rgba(0, 0, 0, 0.08); /* Dezenter Rahmen */
+    /* --- Der Glas-Effekt --- */
+    background-color: rgba(255, 255, 255, 0.65); /* Weiß mit 65% Deckkraft */
+    -webkit-backdrop-filter: blur(12px); /* Unschärfe für den Hintergrund (Safari) */
+    backdrop-filter: blur(12px); /* Unschärfe für den Hintergrund */
+    border-right: 1px solid rgba(230, 230, 230, 0.7); /* Heller, semi-transparenter Rahmen */
 
     width: 260px;
     position: fixed;
@@ -13,100 +14,186 @@
     bottom: 0;
     display: flex;
     flex-direction: column;
-    padding: 2rem 1.5rem;
-    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     z-index: 1200;
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .sidebarHeader {
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
     text-align: center;
-    margin-bottom: 3rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-/* NEU: Logo als Link zur Homepage */
 .logoLink {
     text-decoration: none;
+    display: inline-block;
 }
 
 .logo {
     font-family: var(--font-heading);
     font-size: 2rem;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--color-text-dark);
+    letter-spacing: -1px;
     transition: color 0.2s;
 }
+
 .logoLink:hover .logo {
     color: var(--color-accent);
 }
 
 .logoSubtext {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     color: var(--color-text-light);
-    letter-spacing: 0.1em;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
+    font-weight: 500;
+    margin-top: -8px;
+    display: block;
 }
 
 .mainNav {
     flex-grow: 1;
-    overflow-y: auto; /* Scrollbar, falls viele Menüpunkte */
+    overflow-y: auto;
+    padding: 0 1rem;
+}
+
+.mainNav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.navDivider {
+    margin: 1rem 0.75rem;
+}
+
+.navDivider hr {
+    border: none;
+    height: 1px;
+    background-color: var(--color-border);
 }
 
 .navSectionTitle {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     color: var(--color-text-light);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 1.5rem 0 0.5rem 0;
-    margin-top: 1.5rem;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 0.5rem 0.75rem 0.75rem;
+}
+
+.mainNav ul > li:first-child.navSectionTitle {
+    padding-top: 0;
 }
 
 .navLink {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 0.85rem 1rem;
-    margin-bottom: 0.5rem;
+    gap: 0.85rem;
+    padding: 0.75rem;
+    margin: 0.25rem 0;
     border-radius: 8px;
     text-decoration: none;
     font-weight: 500;
+    font-size: 0.9rem;
     color: var(--color-text-medium);
-    transition: all 0.2s ease-in-out;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* box-shadow hinzugefügt */
+    position: relative;
+    background-color: transparent;
 }
-.navLink:hover {
-    background-color: rgba(0, 0, 0, 0.04);
+
+.navLink:hover:not(.active) {
+    background-color: rgba(255, 255, 255, 0.5); /* Semi-transparenter Hover-Effekt */
     color: var(--color-text-dark);
 }
+
 .navLink.active {
-    background-color: var(--color-accent);
-    color: white;
-    box-shadow: 0 4px 15px -5px rgba(var(--color-accent-rgb, 30, 41, 59), 0.6);
+    background-color: #ffffff; /* Aktiver Link ist voll sichtbar */
+    color: var(--color-text-dark);
+    font-weight: 600;
+    box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.1); /* Moderner Schatten für aktive Links */
 }
 
 .navIcon {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    width: 24px;
+    text-align: center;
 }
 
 .sidebarFooter {
-    margin-top: auto;
-    padding-top: 1rem;
+    padding: 1.5rem;
+    border-top: 1px solid rgba(230, 230, 230, 0.7);
+    flex-shrink: 0;
+}
+
+.userProfile {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.userAvatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--color-accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.userInfo {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+    overflow: hidden;
+}
+
+.userName {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--color-text-dark);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.userEmail {
+    font-size: 0.75rem;
+    color: var(--color-text-light);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
 }
 
 .logoutButton {
     width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 8px;
     background: none;
-    border: none;
+    border: 1px solid transparent;
     cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--color-text-light);
+    transition: all 0.2s ease;
 }
+
 .logoutButton:hover {
-    background-color: #fef2f2; /* Rötlicher Ton für Gefahr/Logout */
+    background-color: #fef2f2;
     color: #ef4444;
 }
 
-/* -- Mobile-First Anpassungen -- */
 @media (max-width: 1023px) {
     .sidebar {
         transform: translateX(-100%);
