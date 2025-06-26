@@ -3,60 +3,10 @@
 .dashboardLayout {
     display: flex;
     min-height: 100vh;
-    /* NEU: Heller, konsistenter Hintergrund */
+    /* Heller, konsistenter Hintergrund */
     background-color: var(--color-background-offset);
 }
 
-.mainContent {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-}
-
-.pageContent {
-    padding: 2rem;
-    flex-grow: 1;
-}
-
-/* -- Mobile-First Anpassungen -- */
-.mobileMenuButton {
-    display: block; /* Standardmäßig auf Mobile sichtbar */
-    position: fixed;
-    top: 1rem;
-    right: 1.5rem;
-    z-index: 1100; /* Liegt über dem Inhalt, aber unter dem Modal-Overlay */
-    background-color: var(--color-background);
-    border: 1px solid var(--color-border);
-    border-radius: 50%;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-text-dark);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-
-/* -- Desktop-Layout -- */
-@media (min-width: 1024px) {
-    .mainContent {
-        /* Verschiebt den Inhalt nach rechts, um Platz für die Sidebar zu machen */
-        margin-left: 260px;
-    }
-    .pageContent {
-        padding: 2.5rem 3rem;
-    }
-    .mobileMenuButton {
-        display: none; /* Auf Desktop verstecken */
-    }
-}
-/* src/layouts/DashboardLayout.module.css */
-
-/* ... bestehender Code ... */
-
-/* NEU: Mobile-First Anpassungen für den Hauptinhalt */
 .mainContent {
     flex-grow: 1;
     display: flex;
@@ -69,6 +19,8 @@
 .pageContent {
     padding: 1.5rem; /* Etwas weniger Padding auf Mobile */
     flex-grow: 1;
+    /* NEU: Abstand oben für den mobilen Header hinzufügen */
+    padding-top: calc(var(--header-height) + 1.5rem);
 }
 
 .mobileMenuButton {
@@ -98,6 +50,9 @@
     }
     .pageContent {
         padding: 2.5rem 3rem;
+        /* NEU: Der obere Abstand wird für Desktop zurückgesetzt */
+        padding-top: calc(var(--header-height) + 1.5rem);
+
     }
     .mobileMenuButton {
         display: none; /* Auf Desktop verstecken */

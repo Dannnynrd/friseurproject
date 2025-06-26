@@ -1,82 +1,115 @@
-/* src/components/KpiGrid.module.css */
+/* src/components/KpiGrid.module.css - Modernisierte Version */
+
 .kpiGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 1.5rem;
+    /* Passt die Spaltenanzahl dynamisch an die Bildschirmgröße an */
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.5rem; /* 24px */
+}
+
+.statsSectionSubtitle {
+    font-size: 0.875rem; /* 14px */
+    font-weight: 600;
+    color: var(--color-text-light);
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--color-border);
 }
 
 .statCard {
-    background-color: var(--color-background-offset);
-    padding: 1.25rem;
-    border-radius: 12px;
-    border: 1px solid var(--color-border-subtle);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    /* --- Der Glas-Effekt für die Karten --- */
+    background-color: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+
+    padding: 1.25rem 1.5rem; /* 20px 24px */
+    border-radius: 12px; /* Abgerundete Ecken */
+    box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease-in-out;
 }
+
 .statCard:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 16px -4px rgba(0,0,0,0.05);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px -8px rgba(0, 0, 0, 0.15);
+    background-color: rgba(255, 255, 255, 0.9);
 }
 
 .statCardHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
 }
 
 .statLabel {
-    font-size: 0.8rem;
+    font-size: 0.8rem; /* Kleinere, feinere Schrift */
     font-weight: 600;
     color: var(--color-text-medium);
 }
+
 .statIcon {
-    color: var(--color-text-subtle);
+    color: var(--color-text-light);
+    font-size: 0.9rem;
 }
 
 .statValue {
-    font-weight: 700;
-    font-size: 2rem;
+    font-family: var(--font-sans); /* Klare Sans-Serif für Zahlen */
+    font-weight: 700; /* Fett, um hervorzustechen */
+    font-size: 2.25rem; /* 36px, große, klare Zahl */
     color: var(--color-text-dark);
+    line-height: 1.2;
 }
 
 .statComparison {
     font-size: 0.8rem;
-    font-weight: 500;
+    font-weight: 600;
     margin-top: 0.25rem;
 }
 
+/* Tooltip für Erklärungen */
 .kpiTooltipWrapper {
     cursor: help;
     color: var(--color-text-subtle);
 }
 .kpiTooltipWrapper:hover {
-    color: var(--color-text-medium);
+    color: var(--color-text-dark);
+}
+.statTooltipIcon {
+    font-size: 0.8rem;
 }
 
-/* Skeleton- und NoData-Stile können weitgehend beibehalten oder
-   an die neuen Farben (var(--color-background-hover) etc.) angepasst werden. */
-
+/* -- Skeleton Loader für den Ladezustand -- */
 .kpiGridSkeleton {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 1.5rem;
 }
 .skeletonCard {
-    background-color: var(--color-background-offset);
-    padding: 1.25rem;
+    background-color: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 1.25rem 1.5rem;
     border-radius: 12px;
-    border: 1px solid var(--color-border-subtle);
+    border: 1px solid rgba(255, 255, 255, 0.7);
 }
 @keyframes pulse {
-    50% { opacity: .6; }
+    50% { opacity: .7; }
 }
 .skeletonCard > div {
-    background-color: var(--color-background-hover);
+    background-color: rgba(200, 200, 210, 0.3); /* Angepasste Skeleton-Farbe */
     border-radius: 6px;
-    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    animation: pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 .skeletonHeader { height: 1rem; width: 60%; margin-bottom: 1rem; }
-.skeletonValue { height: 2.25rem; width: 40%; }
-.skeletonFooter { height: 0.875rem; width: 70%; margin-top: 1rem; }
+.skeletonValue { height: 2.25rem; width: 40%; margin-bottom: 0.75rem; }
+.skeletonFooter { height: 0.875rem; width: 70%; }
+.noData {
+    grid-column: 1 / -1; /* Nimmt die volle Breite des Grids ein */
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background-color: rgba(255, 255, 255, 0.6);
+    border-radius: 12px;
+    font-size: 0.9rem;
+    color: var(--color-text-medium);
+}

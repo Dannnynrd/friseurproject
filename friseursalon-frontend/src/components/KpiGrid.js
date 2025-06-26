@@ -1,3 +1,4 @@
+// src/components/KpiGrid.js
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
@@ -9,8 +10,8 @@ const KpiCard = ({ label, value, icon, comparison, tooltipText, isMain = false, 
     return (
         <div className={`${styles.statCard} ${isMain ? styles.mainKpi : ''}`} title={cardTitleTooltip}>
             <div className={styles.statCardHeader}>
-                <FontAwesomeIcon icon={icon} className={styles.statIcon} />
                 <span className={styles.statLabel}>{label}</span>
+                <FontAwesomeIcon icon={icon} className={styles.statIcon} />
                 {tooltipText && (
                     <span className={styles.kpiTooltipWrapper} data-tooltip={tooltipText}>
                         <FontAwesomeIcon icon={faQuestionCircle} className={styles.statTooltipIcon} />
