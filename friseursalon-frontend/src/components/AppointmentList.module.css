@@ -162,7 +162,7 @@
     border-radius: 10px;
     padding: 1rem 1.5rem;
     display: grid;
-    grid-template-columns: 80px 2fr 2fr 1.5fr auto;
+    grid-template-columns: 80px 2fr 2fr 1.5fr 1fr auto;
     align-items: center;
     gap: 1.5rem;
     transition: box-shadow 0.2s ease, border-color 0.2s ease;
@@ -192,3 +192,80 @@
 .actionBtnDefault:hover { background-color: #0d6efd; color: #fff; border-color: #0d6efd; }
 .actionBtnSuccess:hover { background-color: #198754; color: #fff; border-color: #198754; }
 .actionBtnDanger:hover { background-color: #dc3545; color: #fff; border-color: #dc3545; }
+
+/* --- Neue Verwaltungs-Steuerelemente --- */
+.adminControls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.searchWrapper {
+    position: relative;
+    flex-grow: 1;
+    max-width: 280px;
+}
+
+.searchIcon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    pointer-events: none;
+}
+
+.searchInput {
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background-color: #fff;
+    color: #374151;
+}
+
+.statusFilter {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    background-color: #fff;
+    color: #374151;
+}
+
+.refreshButton {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    color: #374151;
+    background-color: #f9fafb;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.refreshButton:hover {
+    background-color: #f1f5f9;
+}
+
+.adminStatus {
+    text-align: center;
+}
+
+.statusBadge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 6px;
+    color: #fff;
+    text-transform: uppercase;
+}
+
+.statusconfirmed { background-color: #0d6efd; }
+.statuscompleted { background-color: #198754; }
+.statuscancelled { background-color: #dc3545; }

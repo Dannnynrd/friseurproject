@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faCalendarCheck, faSpinner, faExclamationTriangle, faStar, faEdit, faTrashAlt,
     faClock, faCalendarPlus, faRedo, faPhone, faStickyNote, faUserPlus, faCheckCircle,
-    faTimesCircle, faCalendarDay, faCalendarWeek, faTasks
+    faTimesCircle, faCalendarDay, faCalendarWeek, faTasks, faSyncAlt, faSearch
 } from '@fortawesome/free-solid-svg-icons';
 import { format, parseISO, isPast, isFuture, isToday, endOfWeek, differenceInDays } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -25,6 +25,12 @@ const formatCountdown = (dateString) => {
     if (days > 1) return `in ${days} Tagen`;
     if (days === 1) return `Morgen um ${format(date, 'HH:mm')} Uhr`;
     return `Heute um ${format(date, 'HH:mm')} Uhr`;
+};
+
+const statusLabels = {
+    CONFIRMED: 'Bestätigt',
+    COMPLETED: 'Abgeschlossen',
+    CANCELLED: 'Storniert'
 };
 
 // --- Eigene Komponenten für Action-Buttons zur klaren Trennung ---
@@ -75,6 +81,8 @@ function AppointmentList({ adminView = false, refreshTrigger, onAppointmentActio
     const [error, setError] = useState(null);
     const [adminTab, setAdminTab] = useState('today');
     const [modal, setModal] = useState({ type: null, data: null });
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('ALL');
 
     const fetchAppointments = useCallback(async () => {
         setLoading(true);
@@ -153,6 +161,7 @@ function AppointmentList({ adminView = false, refreshTrigger, onAppointmentActio
                             <div className={styles.cardDetails}>
                                 <span>{format(parseISO(app.startTime), 'EEEE, dd. MMMM yy', { locale: de })}</span>
                                 <span><FontAwesomeIcon icon={faClock} /> {app.service?.durationMinutes} min &bull; {app.service?.price?.toFixed(2)} €</span>
+                                <span className={`${styles.statusBadge} ${styles[app.status.toLowerCase()]}`}>{statusLabels[app.status]}</span>
                             </div>
                             <div className={styles.cardActions}>
                                 <UserActions appointment={app} onAction={handleAction} />
@@ -167,6 +176,9 @@ function AppointmentList({ adminView = false, refreshTrigger, onAppointmentActio
                             <div className={styles.cardHeader}>
                                 <h3>{app.service?.name}</h3>
                                 <span>{format(parseISO(app.startTime), 'dd.MM.yyyy', { locale: de })}</span>
+                            </div>
+                            <div className={styles.cardDetails}>
+                                <span className={`${styles.statusBadge} ${styles[app.status.toLowerCase()]}`}>{statusLabels[app.status]}</span>
                             </div>
                             <div className={styles.cardActions}>
                                 <UserActions appointment={app} onAction={handleAction} />
@@ -183,14 +195,49 @@ function AppointmentList({ adminView = false, refreshTrigger, onAppointmentActio
         const now = new Date();
         const endOfWeekDate = endOfWeek(now, { weekStartsOn: 1 });
 
-        const filteredAppointments = appointments.filter(app => {
+        let filteredAppointments = appointments.filter(app => {
             const appDate = parseISO(app.startTime);
             if (adminTab === 'today') return isToday(appDate);
             if (adminTab === 'week') return appDate >= now && appDate <= endOfWeekDate && isFuture(appDate);
             return isFuture(appDate);
         });
+
+        if (searchTerm) {
+            const search = searchTerm.toLowerCase();
+            filteredAppointments = filteredAppointments.filter(app =>
+                (app.customer?.firstName?.toLowerCase().includes(search) ||
+                 app.customer?.lastName?.toLowerCase().includes(search) ||
+                 app.service?.name?.toLowerCase().includes(search))
+            );
+        }
+
+        if (statusFilter !== 'ALL') {
+            filteredAppointments = filteredAppointments.filter(app => app.status === statusFilter);
+        }
+
         return (
             <div className={styles.viewContainer}>
+                <div className={styles.adminControls}>
+                    <div className={styles.searchWrapper}>
+                        <FontAwesomeIcon icon={faSearch} className={styles.searchIcon} />
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            placeholder="Suchen..."
+                            className={styles.searchInput}
+                        />
+                    </div>
+                    <select className={styles.statusFilter} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+                        <option value="ALL">Alle</option>
+                        <option value="CONFIRMED">Bestätigt</option>
+                        <option value="COMPLETED">Abgeschlossen</option>
+                        <option value="CANCELLED">Storniert</option>
+                    </select>
+                    <button className={styles.refreshButton} onClick={fetchAppointments} title="Liste aktualisieren" disabled={loading}>
+                        <FontAwesomeIcon icon={loading ? faSpinner : faSyncAlt} spin={loading} />
+                    </button>
+                </div>
                 <div className={styles.adminTabs}>
                     <button onClick={() => setAdminTab('today')} className={adminTab === 'today' ? styles.activeTab : ''}><FontAwesomeIcon icon={faCalendarDay}/> Heute</button>
                     <button onClick={() => setAdminTab('week')} className={adminTab === 'week' ? styles.activeTab : ''}><FontAwesomeIcon icon={faCalendarWeek}/> Diese Woche</button>
@@ -209,6 +256,7 @@ function AppointmentList({ adminView = false, refreshTrigger, onAppointmentActio
                             </div>
                             <div className={styles.adminService}>{app.service?.name}</div>
                             <div className={styles.adminContact}><FontAwesomeIcon icon={faPhone}/> {app.customer?.phoneNumber || '-'}</div>
+                            <div className={styles.adminStatus}><span className={`${styles.statusBadge} ${styles[app.status.toLowerCase()]}`}>{statusLabels[app.status]}</span></div>
                             <div className={styles.adminActions}>
                                 <AdminActions appointment={app} onAction={handleAction} onStatusUpdate={updateAppointmentStatus} />
                             </div>
