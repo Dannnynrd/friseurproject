@@ -250,7 +250,7 @@ function AppointmentList({ adminView = false }) {
             ) : renderEmptyState(true)}
         </>
     );
-
+//
     return (
         <div className={styles.pageWrapper}>
             <div className={styles.container}>
