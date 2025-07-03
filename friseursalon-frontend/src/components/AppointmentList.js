@@ -1,4 +1,4 @@
-// friseursalon-frontend/src/components/AppointmentList.js
+// src/components/AppointmentList.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api.service';
@@ -33,7 +33,7 @@ const UserActions = ({ appointment, onAction }) => {
     const isUpcoming = isFuture(parseISO(appointment.startTime));
 
     const bookAgain = (service) => {
-        if (service && service.name) navigate(`/buchen/${encodeURIComponent(service.name)}`);
+        if (service && service.name) navigate(`/buchen?service=${service.id}`);
     };
     const addToCalendar = (app) => generateICS(app);
 
@@ -183,12 +183,10 @@ function AppointmentList({ adminView = false, refreshTrigger, onAppointmentActio
         const now = new Date();
         const endOfWeekDate = endOfWeek(now, { weekStartsOn: 1 });
 
-        // KORRIGIERTE FILTER-LOGIK
         const filteredAppointments = appointments.filter(app => {
             const appDate = parseISO(app.startTime);
             if (adminTab === 'today') return isToday(appDate);
             if (adminTab === 'week') return appDate >= now && appDate <= endOfWeekDate && isFuture(appDate);
-            // Für 'all' nur zukünftige
             return isFuture(appDate);
         });
         return (
