@@ -1,60 +1,200 @@
 /* friseursalon-frontend/src/components/AppointmentList.module.css */
 
-.appointmentListContainer {
-    /* Tailwind im JS: bg-white p-6 rounded-xl shadow-lg */
+.appointmentListPage {
+    width: 100%;
 }
 
+/* Stil für Nachrichten (Fehler/Erfolg) */
 .message {
-    /* Tailwind im JS: mb-4 p-3 rounded-md border text-sm flex items-center */
-    /* Farben etc. werden direkt im JS via Tailwind gesetzt. */
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border: 1px solid transparent;
 }
 
-.noAppointments {
-    /* Tailwind im JS: text-center py-10 px-6 bg-gray-50 rounded-lg */
+.message.error {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #b91c1c;
+    border-color: rgba(239, 68, 68, 0.2);
 }
 
-.tableContainer {
-    /* Tailwind im JS: overflow-x-auto */
-    /* Stellt sicher, dass die Tabelle auf kleinen Bildschirmen scrollbar ist,
-       ohne das Seitenlayout zu zerstören. */
+.message.success {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: #15803d;
+    border-color: rgba(34, 197, 94, 0.2);
 }
 
-.appTable {
-    /* Tailwind im JS: min-w-full divide-y divide-gray-200 */
-    /* Die Basis-Tabellenstile (wie .app-table aus App.css) werden hier durch Tailwind ersetzt. */
+/* Container für die Terminkarten */
+.appointmentsGrid {
+    display: grid;
+    grid-template-columns: 1fr; /* Mobile-first: eine Spalte */
+    gap: 1.5rem;
 }
 
-.appTable th {
-    /* Tailwind im JS: px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider */
-    /* (aus der thead mit bg-gray-50) */
+/* Die einzelne Terminkarte */
+.appointmentCard {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 16px;
+
+    /* --- Der "Glas"-Effekt --- */
+    background-color: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.tableRow:hover {
-    /* Tailwind im JS: hover:bg-gray-50 */
+.appointmentCard:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px -10px rgba(31, 38, 135, 0.15);
 }
 
-.appTable td {
-    /* Tailwind im JS: px-6 py-4 whitespace-nowrap text-sm text-gray-700 */
-    /* (aus tbody mit bg-white divide-y divide-gray-200) */
+/* Styling für vergangene Termine */
+.past {
+    background-color: rgba(241, 245, 249, 0.6); /* Helleres Grau */
+    opacity: 0.8;
 }
 
-.statusBadge {
-    /* Tailwind im JS: px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full */
-    /* Farben werden dynamisch durch getStatusClass() im JS gesetzt. */
+.past .cardDate {
+    background-color: #cbd5e1; /* Tailwind slate-300 */
+    color: #475569; /* Tailwind slate-600 */
+}
+
+
+/* Datums-Block auf der linken Seite der Karte */
+.cardDate {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    background-color: var(--color-accent);
+    color: var(--color-accent-text);
+    flex-shrink: 0;
+}
+
+.dateDay {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.dateMonth {
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Mittlerer Teil der Karte mit den Details */
+.cardDetails {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    overflow: hidden;
+}
+
+.cardTime {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-light);
+}
+
+.cardService {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-text-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cardMeta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: var(--color-text-medium);
+    align-items: center;
+}
+
+.cardMeta span {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+/* Aktionen-Block auf der rechten Seite */
+.cardActions {
+    display: flex;
+    gap: 0.5rem;
 }
 
 .actionButton {
-    /* Tailwind im JS: p-1 rounded-md transition-colors */
-    /* Spezifische Farben für Edit (text-indigo-600 hover:text-indigo-900 hover:bg-indigo-100)
-       und Delete (text-red-600 hover:text-red-900 hover:bg-red-100) werden direkt im JS gesetzt. */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    color: var(--color-text-light);
+    background-color: var(--color-background-offset);
 }
 
-/*
-  Responsive Kartenansicht (md:hidden im JS)
-  Die Logik für eine alternative Kartenansicht auf Mobile wurde entfernt,
-  da die Tabelle mit overflow-x-auto auf Mobile horizontal scrollbar ist,
-  was oft eine akzeptable Lösung für komplexe Tabellen darstellt.
-  Wenn eine dedizierte Kartenansicht benötigt wird, müsste diese separat
-  implementiert und hier gestylt werden.
-*/
+.actionButton:hover {
+    color: white;
+}
 
+.editButton:hover {
+    background-color: #4f46e5; /* Indigo 600 */
+}
+
+.cancelButton:hover {
+    background-color: #dc2626; /* Red 600 */
+}
+
+.reviewButton {
+    color: #f59e0b; /* Amber 500 */
+}
+
+.reviewButton:hover {
+    background-color: #f59e0b;
+    color: white;
+}
+
+
+/* Fallback für keine Termine */
+.noAppointments {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background-color: rgba(241, 245, 249, 0.7);
+    border-radius: 16px;
+    border: 1px dashed var(--color-border);
+}
+
+/* -- Desktop-Ansicht -- */
+@media (min-width: 768px) {
+    .appointmentsGrid {
+        /* Optional: Mehrspaltiges Layout auf größeren Bildschirmen */
+        /* grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); */
+    }
+
+    .appointmentCard {
+        padding: 1.5rem;
+        gap: 1.5rem;
+    }
+}

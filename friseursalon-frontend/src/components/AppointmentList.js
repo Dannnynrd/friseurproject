@@ -1,30 +1,47 @@
 // friseursalon-frontend/src/components/AppointmentList.js
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api.service';
-import styles from './AppointmentList.module.css';
+import styles from './AppointmentList.module.css'; // Wir verwenden das neue CSS-Modul
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCalendarCheck, faSpinner, faExclamationTriangle, faInfoCircle, faTimesCircle, faEdit, faTrashAlt, faStar } from '@fortawesome/free-solid-svg-icons';
-import { format, parseISO, isPast } from 'date-fns';
+import {
+    faCalendarCheck, faSpinner, faExclamationTriangle, faInfoCircle,
+    faStar, faCut, faClock, faEuro, faEdit, faTrashAlt, faCheckCircle // KORREKTUR: HIER HINZUGEFÜGT
+} from '@fortawesome/free-solid-svg-icons';
+import { format, parseISO, isPast, isFuture } from 'date-fns';
 import { de } from 'date-fns/locale';
 import AppointmentEditModal from './AppointmentEditModal';
 import ConfirmModal from './ConfirmModal';
-import TestimonialSubmitModal from './TestimonialSubmitModal'; // Import des neuen Modals
+import TestimonialSubmitModal from './TestimonialSubmitModal';
 
+// Hilfsfunktion zur Formatierung des Datums und der Zeit
+const formatAppointmentDate = (dateString) => {
+    try {
+        const date = parseISO(dateString);
+        return {
+            day: format(date, 'dd', { locale: de }),
+            month: format(date, 'MMM', { locale: de }),
+            time: format(date, 'HH:mm', { locale: de }),
+            full: format(date, 'EEEE, dd. MMMM yyyy \'um\' HH:mm \'Uhr\'', { locale: de })
+        };
+    } catch (e) {
+        return { day: '?', month: '???', time: '??:??' };
+    }
+};
+
+// Die Hauptkomponente
 function AppointmentList({ refreshTrigger, onAppointmentAction }) {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState('');
 
+    // State-Hooks für die Modals bleiben gleich
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedAppointmentForEdit, setSelectedAppointmentForEdit] = useState(null);
-
     const [showConfirmCancelModal, setShowConfirmCancelModal] = useState(false);
     const [appointmentToCancel, setAppointmentToCancel] = useState(null);
-
     const [showTestimonialModal, setShowTestimonialModal] = useState(false);
     const [appointmentToReview, setAppointmentToReview] = useState(null);
-
 
     const fetchAppointments = useCallback(async () => {
         setLoading(true);
@@ -32,9 +49,14 @@ function AppointmentList({ refreshTrigger, onAppointmentAction }) {
         setSuccessMessage('');
         try {
             const response = await api.get('appointments/my-appointments');
-            setAppointments(response.data || []);
+            // Termine sortieren: Zukünftige zuerst, dann vergangene
+            const sortedAppointments = (response.data || []).sort((a, b) =>
+                isFuture(parseISO(a.startTime)) && isPast(parseISO(b.startTime)) ? -1 :
+                    isPast(parseISO(a.startTime)) && isFuture(parseISO(b.startTime)) ? 1 :
+                        new Date(b.startTime) - new Date(a.startTime) // Neueste zuerst
+            );
+            setAppointments(sortedAppointments);
         } catch (err) {
-            console.error("Error fetching appointments:", err);
             setError(err.response?.data?.message || "Termine konnten nicht geladen werden.");
             setAppointments([]);
         } finally {
@@ -46,6 +68,7 @@ function AppointmentList({ refreshTrigger, onAppointmentAction }) {
         fetchAppointments();
     }, [fetchAppointments, refreshTrigger]);
 
+    // Handler-Funktionen bleiben unverändert
     const handleEditAppointment = (appointment) => {
         setSelectedAppointmentForEdit(appointment);
         setShowEditModal(true);
@@ -70,15 +93,12 @@ function AppointmentList({ refreshTrigger, onAppointmentAction }) {
 
     const handleCancelAppointment = async () => {
         if (!appointmentToCancel) return;
-        setError(null);
-        setSuccessMessage('');
         try {
             await api.delete(`appointments/${appointmentToCancel}`);
             setSuccessMessage("Termin erfolgreich storniert.");
             fetchAppointments();
             if (onAppointmentAction) onAppointmentAction();
         } catch (err) {
-            console.error("Error cancelling appointment:", err);
             setError(err.response?.data?.message || "Fehler beim Stornieren des Termins.");
         } finally {
             setShowConfirmCancelModal(false);
@@ -92,111 +112,90 @@ function AppointmentList({ refreshTrigger, onAppointmentAction }) {
     };
 
     const handleTestimonialSubmitted = () => {
-        // Hier könnten wir den Status des Termins lokal aktualisieren, um den "Bewerten"-Button auszublenden,
-        // oder einfach die Liste neu laden. Fürs Erste laden wir neu.
         fetchAppointments();
     };
 
-    const formatAppointmentDate = (dateString) => {
-        try {
-            return format(parseISO(dateString), 'EEEE, dd. MMMM yyyy \'um\' HH:mm \'Uhr\'', { locale: de });
-        } catch (e) {
-            return "Ungültiges Datum";
-        }
-    };
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center p-6 text-gray-500">
-                <FontAwesomeIcon icon={faSpinner} spin size="lg" className="mr-2" />
-                Lade Ihre Termine...
+            <div className="flex justify-center items-center p-10 text-gray-500">
+                <FontAwesomeIcon icon={faSpinner} spin size="2x" className="text-indigo-500" />
+                <p className="ml-3 text-md">Lade deine Termine...</p>
             </div>
         );
     }
 
     return (
-        <div className={`bg-white p-4 sm:p-6 rounded-lg shadow-md ${styles.appointmentListContainer}`}>
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <FontAwesomeIcon icon={faCalendarCheck} className="mr-2 text-indigo-600" />
-                Meine Termine
-            </h3>
-
+        <div className={styles.appointmentListPage}>
             {error && (
-                <div className={`p-3 mb-4 text-sm rounded-md flex items-center bg-red-50 text-red-700 border border-red-200 ${styles.message}`}>
-                    <FontAwesomeIcon icon={faExclamationTriangle} className="mr-2 flex-shrink-0" /> {error}
+                <div className={`${styles.message} ${styles.error}`}>
+                    <FontAwesomeIcon icon={faExclamationTriangle} /> {error}
                 </div>
             )}
             {successMessage && (
-                <div className={`p-3 mb-4 text-sm rounded-md flex items-center bg-green-50 text-green-600 border border-green-200 ${styles.message}`}>
-                    <FontAwesomeIcon icon={faInfoCircle} className="mr-2 flex-shrink-0" /> {successMessage}
+                <div className={`${styles.message} ${styles.success}`}>
+                    <FontAwesomeIcon icon={faCheckCircle} /> {successMessage}
                 </div>
             )}
 
-            {appointments.length === 0 && !error && (
-                <div className={`text-center py-6 px-4 bg-slate-50 rounded-md ${styles.noAppointments}`}>
-                    <FontAwesomeIcon icon={faInfoCircle} size="lg" className="text-gray-400 mb-2" />
-                    <p className="text-gray-600">Sie haben derzeit keine bevorstehenden Termine.</p>
+            {appointments.length === 0 && !error ? (
+                <div className={styles.noAppointments}>
+                    <FontAwesomeIcon icon={faCalendarCheck} size="3x" className="text-gray-300 mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-700">Keine Termine gefunden</h3>
+                    <p className="text-gray-500 mt-2">Sie haben noch keine Termine gebucht.</p>
                 </div>
-            )}
+            ) : (
+                <div className={styles.appointmentsGrid}>
+                    {appointments.map(app => {
+                        const formattedDate = formatAppointmentDate(app.startTime);
+                        const isUpcoming = isFuture(parseISO(app.startTime));
 
-            {appointments.length > 0 && (
-                <ul className="space-y-4">
-                    {appointments.map(app => (
-                        <li key={app.id} className={`p-4 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow ${styles.appointmentItem} ${styles['status-' + (app.status?.toLowerCase() || 'default')]}`}>
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-                                <div>
-                                    <p className="font-semibold text-md text-indigo-700">{app.service?.name || 'Unbekannter Service'}</p>
-                                    <p className="text-sm text-gray-600">{formatAppointmentDate(app.startTime)}</p>
-                                    {app.notes && <p className="text-xs text-gray-500 mt-1">Notiz: {app.notes}</p>}
+                        return (
+                            <div key={app.id} className={`${styles.appointmentCard} ${isUpcoming ? styles.upcoming : styles.past}`}>
+                                <div className={styles.cardDate}>
+                                    <span className={styles.dateDay}>{formattedDate.day}</span>
+                                    <span className={styles.dateMonth}>{formattedDate.month}</span>
                                 </div>
-                                <div className="mt-3 sm:mt-0 flex flex-col sm:flex-row items-start sm:items-center sm:space-x-2">
-                                    <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${
-                                        app.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' :
-                                            app.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
-                                                app.status === 'CANCELLED' ? 'bg-red-100 text-red-700 line-through' :
-                                                    app.status === 'COMPLETED' ? 'bg-gray-100 text-gray-600' :
-                                                        'bg-blue-100 text-blue-700'
-                                    } ${styles.statusBadge}`}>
-                                        {app.status === 'PENDING' ? 'Ausstehend' :
-                                            app.status === 'CONFIRMED' ? 'Bestätigt' :
-                                                app.status === 'COMPLETED' ? 'Abgeschlossen' :
-                                                    app.status === 'CANCELLED' ? 'Storniert' : app.status}
-                                    </span>
-                                    <div className="mt-2 sm:mt-0 flex space-x-2">
-                                        {(app.status === 'PENDING' || (app.status === 'CONFIRMED' && !isPast(parseISO(app.startTime)))) && (
-                                            <>
-                                                <button onClick={() => handleEditAppointment(app)} className={`p-1.5 text-xs text-indigo-600 hover:text-indigo-800 rounded-md hover:bg-indigo-50 transition-colors ${styles.actionButton}`} title="Termin bearbeiten">
-                                                    <FontAwesomeIcon icon={faEdit} />
-                                                </button>
-                                                <button onClick={() => confirmCancelAppointment(app.id)} className={`p-1.5 text-xs text-red-500 hover:text-red-700 rounded-md hover:bg-red-50 transition-colors ${styles.actionButton}`} title="Termin stornieren">
-                                                    <FontAwesomeIcon icon={faTrashAlt} />
-                                                </button>
-                                            </>
-                                        )}
-                                        {app.status === 'COMPLETED' && (
-                                            <button onClick={() => handleReviewAppointment(app)} className={`inline-flex items-center px-3 py-1.5 border border-amber-500 text-xs font-medium rounded-md text-amber-700 bg-amber-100 hover:bg-amber-200 ${styles.actionButton}`} title="Bewertung abgeben">
-                                                <FontAwesomeIcon icon={faStar} className="mr-1.5" />
-                                                Bewerten
-                                            </button>
-                                        )}
+                                <div className={styles.cardDetails}>
+                                    <span className={styles.cardTime}>{formattedDate.time} Uhr</span>
+                                    <h4 className={styles.cardService}>{app.service?.name || 'Unbekannter Service'}</h4>
+                                    <div className={styles.cardMeta}>
+                                        <span><FontAwesomeIcon icon={faClock} /> {app.service?.durationMinutes || '?'} min</span>
+                                        <span><FontAwesomeIcon icon={faEuro} /> {app.service?.price?.toFixed(2) || '?.??'}</span>
                                     </div>
                                 </div>
+                                <div className={styles.cardActions}>
+                                    {isUpcoming && (
+                                        <>
+                                            <button onClick={() => handleEditAppointment(app)} className={`${styles.actionButton} ${styles.editButton}`} title="Bearbeiten">
+                                                <FontAwesomeIcon icon={faEdit} />
+                                            </button>
+                                            <button onClick={() => confirmCancelAppointment(app.id)} className={`${styles.actionButton} ${styles.cancelButton}`} title="Stornieren">
+                                                <FontAwesomeIcon icon={faTrashAlt} />
+                                            </button>
+                                        </>
+                                    )}
+                                    {app.status === 'COMPLETED' && (
+                                        <button onClick={() => handleReviewAppointment(app)} className={`${styles.actionButton} ${styles.reviewButton}`} title="Bewerten">
+                                            <FontAwesomeIcon icon={faStar} />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                        </li>
-                    ))}
-                </ul>
+                        );
+                    })}
+                </div>
             )}
 
+            {/* Die Modals bleiben unverändert */}
             {showEditModal && selectedAppointmentForEdit && (
                 <AppointmentEditModal
                     isOpen={showEditModal}
                     onClose={handleCloseEditModal}
                     onSave={handleAppointmentUpdated}
                     appointmentData={selectedAppointmentForEdit}
-                    adminView={false}
                 />
             )}
-
             {showConfirmCancelModal && (
                 <ConfirmModal
                     isOpen={showConfirmCancelModal}
@@ -205,11 +204,8 @@ function AppointmentList({ refreshTrigger, onAppointmentAction }) {
                     title="Termin stornieren"
                     message="Möchten Sie diesen Termin wirklich stornieren? Diese Aktion kann nicht rückgängig gemacht werden."
                     confirmButtonText="Ja, stornieren"
-                    icon={faTimesCircle}
-                    iconColorClass="text-red-500"
                 />
             )}
-
             {showTestimonialModal && appointmentToReview && (
                 <TestimonialSubmitModal
                     isOpen={showTestimonialModal}
