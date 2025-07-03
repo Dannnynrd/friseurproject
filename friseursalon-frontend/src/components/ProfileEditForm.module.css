@@ -1,35 +1,143 @@
 /* friseursalon-frontend/src/components/ProfileEditForm.module.css */
 
-.profileEditFormContainer {
-    max-width: 768px; /* Tailwind: max-w-3xl */
-    width: 100%;
-    /* Zentrierung erfolgt durch mx-auto in der Parent-Komponente (AccountDashboard.js) */
+.profileContainer {
+    max-width: 800px;
+    margin: 0 auto;
+    display: grid;
+    gap: 2rem;
 }
 
-.formSection {
-    /* Tailwind-Klassen im JS: p-6 md:p-8 bg-white rounded-xl shadow-lg space-y-6 */
+.profileSection {
+    background-color: white;
+    border-radius: 1rem; /* 16px */
+    padding: 2rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    border: 1px solid #e5e7eb; /* slate-200 */
 }
+
+@media (min-width: 768px) {
+    .profileSection {
+        padding: 2.5rem;
+    }
+}
+
+.sectionTitle {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937; /* gray-800 */
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb; /* slate-200 */
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.sectionTitle .fa-user-circle { color: #4f46e5; } /* indigo-600 */
+.sectionTitle .fa-shield-alt { color: #16a34a; } /* green-600 */
 
 .formGroup {
-    /* Tailwind im JS: Wird durch space-y im Form-Tag geregelt */
+    margin-bottom: 1.5rem;
 }
 
-.formInput {
-    /* Tailwind-Klassen im JS */
-    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+.formGroup label {
+    display: block;
+    font-size: 0.875rem; /* 14px */
+    font-weight: 500;
+    color: #4b5563; /* gray-600 */
+    margin-bottom: 0.5rem;
 }
 
-.submitButton {
-    /* Tailwind-Klassen im JS */
+.formInput, .formInputDisabled {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem; /* 8px */
+    border: 1px solid #d1d5db; /* gray-300 */
+    background-color: #f9fafb; /* gray-50 */
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-size: 1rem;
+}
+
+.formInput:focus {
+    outline: none;
+    border-color: #4f46e5; /* indigo-600 */
+    background-color: white;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.formInputDisabled {
+    background-color: #e5e7eb; /* gray-200 */
+    color: #6b7280; /* gray-500 */
+    cursor: not-allowed;
+}
+
+.passwordToggle {
+    position: absolute;
+    top: 50%;
+    right: 0.75rem;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #9ca3af; /* gray-400 */
+    cursor: pointer;
+    padding: 0.25rem;
+}
+.passwordToggle:hover {
+    color: #4f46e5;
+}
+
+.errorMessage {
+    margin-top: 0.25rem;
+    font-size: 0.75rem; /* 12px */
+    color: #ef4444; /* red-500 */
 }
 
 .formMessage {
-    /* Tailwind-Klassen im JS */
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.formMessage.success {
+    background-color: #ecfdf5; /* green-50 */
+    color: #065f46; /* green-800 */
+    border: 1px solid #a7f3d0; /* green-200 */
 }
 
 .formMessage.error {
-    /* Semantischer Haken */
+    background-color: #fff1f2; /* red-50 */
+    color: #9f1239; /* red-800 */
+    border: 1px solid #fecdd3; /* red-200 */
 }
-.formMessage.success {
-    /* Semantischer Haken */
+
+.submitButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    background-color: #1f2937; /* gray-800 */
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.submitButton:hover:not(:disabled) {
+    background-color: #374151; /* gray-700 */
+    transform: translateY(-1px);
+}
+
+.submitButton:disabled {
+    background-color: #9ca3af; /* gray-400 */
+    cursor: not-allowed;
+}
+
+.submitButton .svg-inline--fa {
+    font-size: 0.9em;
 }
