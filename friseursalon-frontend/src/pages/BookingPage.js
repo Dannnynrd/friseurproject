@@ -1,26 +1,26 @@
 // friseursalon-frontend/src/pages/BookingPage.js
-import React, { useState, useEffect, useCallback, useRef } from 'react'; // useRef hinzugefügt
-import DatePicker, { registerLocale } from 'react-datepicker'; // registerLocale hinzugefügt
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api.service';
 import AuthService from '../services/auth.service';
-import AppointmentForm from '../components/AppointmentForm'; // Sicherstellen, dass der Pfad korrekt ist
+import AppointmentForm from '../components/AppointmentForm';
 import styles from './BookingPage.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faTimes, faSpinner, faExclamationCircle, faCheckCircle,
     faCalendarAlt, faClock, faUserEdit, faCreditCard,
-    faChevronLeft, faChevronRight, faConciergeBell // faConciergeBell für Serviceauswahl hinzugefügt
+    faChevronLeft, faChevronRight, faConciergeBell
 } from '@fortawesome/free-solid-svg-icons';
-import { de } from 'date-fns/locale'; // Import für deutsche Lokalisierung
+import { de } from 'date-fns/locale';
 
-registerLocale('de', de); // Deutsche Lokalisierung für DatePicker registrieren
+registerLocale('de', de);
 
 function BookingPage({ onAppointmentAdded: onAppointmentAddedProp, currentUser: propCurrentUser, onLoginSuccess }) {
     const params = useParams();
     const navigate = useNavigate();
-    const appointmentFormRef = useRef(null); // Ref für AppointmentForm
+    const appointmentFormRef = useRef(null);
 
     const serviceNameFromUrl = params.serviceName ? decodeURIComponent(params.serviceName) : null;
 
@@ -35,7 +35,7 @@ function BookingPage({ onAppointmentAdded: onAppointmentAddedProp, currentUser: 
     const [bookingError, setBookingError] = useState('');
     const [bookingSuccess, setBookingSuccess] = useState('');
     const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
-    const [customerDetails, setCustomerDetails] = useState(null); // <<<< HIER IST DIE DEKLARATION
+    const [customerDetails, setCustomerDetails] = useState(null);
 
     const currentUser = propCurrentUser || AuthService.getCurrentUser();
 
@@ -58,7 +58,7 @@ function BookingPage({ onAppointmentAdded: onAppointmentAddedProp, currentUser: 
         setSelectedTimeSlot('');
         setBookingError('');
         setBookingSuccess('');
-        setCustomerDetails(null); // Auch customerDetails zurücksetzen
+        setCustomerDetails(null);
     }, []);
 
     useEffect(() => {
@@ -74,10 +74,10 @@ function BookingPage({ onAppointmentAdded: onAppointmentAddedProp, currentUser: 
                         setSelectedService(foundService);
                     } else {
                         setBookingError(`Dienstleistung "${serviceNameFromUrl}" nicht gefunden.`);
-                        setSelectedService(null); // explizit null setzen
+                        setSelectedService(null);
                     }
                 } else {
-                    setSelectedService(null); // Kein Service via URL, also initial null
+                    setSelectedService(null);
                 }
             } catch (err) {
                 console.error("Fehler beim Laden der Services für BookingPage:", err);
@@ -103,7 +103,8 @@ function BookingPage({ onAppointmentAdded: onAppointmentAddedProp, currentUser: 
         setBookingError('');
         try {
             const formattedDate = date.toISOString().split('T')[0];
-            const response = await api.get('/api/appointments/available-slots', {
+            // KORREKTUR HIER: '/api/' entfernt
+            const response = await api.get('appointments/available-slots', {
                 params: {
                     serviceId: serviceForSlots.id,
                     date: formattedDate
@@ -151,14 +152,12 @@ function BookingPage({ onAppointmentAdded: onAppointmentAddedProp, currentUser: 
             setBookingError("Bitte wählen Sie zuerst Dienstleistung, Datum und Uhrzeit aus.");
             return;
         }
-        // Wenn der aktuelle Schritt der ist, wo das AppointmentForm angezeigt wird (für Gäste)
-        if (currentStep === (currentUser ? 1 : 2) && !currentUser) { // Schritt 2 für Gäste ist Detailformular
+        if (currentStep === (currentUser ? 1 : 2) && !currentUser) {
             const formData = appointmentFormRef.current?.triggerSubmitAndGetData();
             if (!formData) {
-                // Fehler wird bereits im AppointmentForm oder durch triggerSubmitAndGetData gesetzt.
                 return;
             }
-            setCustomerDetails(formData); // Speichere die Formulardaten
+            setCustomerDetails(formData);
         }
 
         setBookingError('');
@@ -175,12 +174,11 @@ function BookingPage({ onAppointmentAdded: onAppointmentAddedProp, currentUser: 
         }
     };
 
-    // Diese Funktion wird jetzt vom "Weiter zur Bestätigung" Button im Gast-Detail-Schritt aufgerufen
     const handleFormSubmitDetails = () => {
         const formData = appointmentFormRef.current?.triggerSubmitAndGetData();
         if (formData) {
             setCustomerDetails(formData);
-            setCurrentStep(prev => prev + 1); // Zum Bestätigungsschritt
+            setCurrentStep(prev => prev + 1);
         }
     };
 
@@ -189,7 +187,7 @@ function BookingPage({ onAppointmentAdded: onAppointmentAddedProp, currentUser: 
         if (!selectedService || !selectedDate || !selectedTimeSlot) {
             setBookingError('Unvollständige Terminauswahl.'); return;
         }
-        if (!currentUser && !customerDetails) { // Überprüfe customerDetails
+        if (!currentUser && !customerDetails) {
             setBookingError('Kundendaten fehlen.'); return;
         }
 
@@ -208,20 +206,19 @@ function BookingPage({ onAppointmentAdded: onAppointmentAddedProp, currentUser: 
                 lastName: currentUser.lastName,
                 email: currentUser.email,
                 phoneNumber: currentUser.phoneNumber || ''
-            } : { // Für Gäste verwenden wir die gesammelten Daten
+            } : {
                 firstName: customerDetails.firstName,
                 lastName: customerDetails.lastName,
                 email: customerDetails.email,
                 phoneNumber: customerDetails.phoneNumber,
-                // Falls Registrierung gewünscht, hier Passwort mitgeben
-                // password: customerDetails.password, // Nur wenn AppointmentForm das Passwortfeld hat und es relevant ist
             },
             startTime: appointmentDateTime.toISOString(),
             notes: currentUser ? (selectedService.notes || '') : (customerDetails?.notes || ''),
         };
 
         try {
-            await api.post('/api/appointments', bookingPayload);
+            // KORREKTUR HIER: '/api/' entfernt
+            await api.post('appointments', bookingPayload);
             setBookingSuccess(`Ihr Termin für ${selectedService.name} wurde erfolgreich gebucht!`);
             if (onAppointmentAddedProp) onAppointmentAddedProp();
             setCurrentStep(MAX_STEPS + 1);
@@ -241,6 +238,7 @@ function BookingPage({ onAppointmentAdded: onAppointmentAddedProp, currentUser: 
         return day !== 0 && day !== 6;
     };
 
+    // Die renderStepContent Funktion bleibt unverändert...
     const renderStepContent = () => {
         if (currentStep > MAX_STEPS) { // Erfolgs-Schritt
             return (
@@ -339,8 +337,8 @@ function BookingPage({ onAppointmentAdded: onAppointmentAddedProp, currentUser: 
                         )}
                     </>
                 );
-            case 2: // Details (Gäste) ODER Bestätigung (User)
-                if (!currentUser) { // Gast: Detailformular
+            case 2:
+                if (!currentUser) {
                     return (
                         <>
                             <h3 className={styles.bookingStepHeading}>Ihre Kontaktdaten</h3>
@@ -348,17 +346,15 @@ function BookingPage({ onAppointmentAdded: onAppointmentAddedProp, currentUser: 
                         </>
                     );
                 }
-            // Eingeloggter User: Direkte Bestätigung - Fallthrough zu case 3 (oder MAX_STEPS, wenn nur 2 Schritte für User)
-            case 3: // Bestätigung (für Gäste nach Formular, oder für eingeloggte User als Schritt 2)
+            case 3:
                 const summaryCustomerDetails = currentUser ? {
                     name: `${currentUser.firstName} ${currentUser.lastName}`,
                     email: currentUser.email,
                     phone: currentUser.phoneNumber || 'Nicht angegeben'
-                } : customerDetails; // Verwende die gespeicherten customerDetails für Gäste
+                } : customerDetails;
 
 
                 if (!summaryCustomerDetails && !currentUser) {
-                    // Sollte nicht passieren, wenn Logik in handleNextStep greift
                     return <p>Fehler: Kundendetails nicht verfügbar für Zusammenfassung.</p>;
                 }
 
@@ -395,7 +391,6 @@ function BookingPage({ onAppointmentAdded: onAppointmentAddedProp, currentUser: 
                     <h2 className={`text-xl font-serif font-semibold text-dark-text ${styles.bookingPageMainHeading} mb-0`}>
                         Termin buchen
                     </h2>
-                    {/* Navigation erfolgt über Browser/Header oder Erfolgs-Button */}
                 </div>
 
                 {currentStep <= MAX_STEPS && (
@@ -433,7 +428,6 @@ function BookingPage({ onAppointmentAdded: onAppointmentAddedProp, currentUser: 
                             <FontAwesomeIcon icon={faChevronLeft} className="mr-2 h-4 w-4"/> Zurück
                         </button>
 
-                        {/* "Weiter" Button oder "Weiter zur Bestätigung" für Gast-Details */}
                         {currentStep < MAX_STEPS && (
                             <button
                                 onClick={currentStep === (currentUser ? 1 : 2) && !currentUser ? handleFormSubmitDetails : handleNextStep}
