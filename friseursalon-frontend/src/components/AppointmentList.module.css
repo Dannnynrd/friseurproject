@@ -1,194 +1,318 @@
-/* friseursalon-frontend/src/components/AppointmentList.module.css */
+/* components/AppointmentList.module.css */
 
-.pageWrapper {
-    background-color: #f8f9fa; /* Heller, fast weißer Hintergrund */
-    padding: clamp(1rem, 5vw, 2rem);
-    min-height: 100%;
-}
-
-.viewContainer {
-    max-width: 1100px;
-    margin: 0 auto;
-}
-
-.viewTitle {
-    font-size: 1.8rem;
+.pageTitle {
+    font-size: 2rem;
     font-weight: 700;
-    color: #212529;
+    color: #1f2937; /* Tailwind: text-gray-800 */
     margin-bottom: 1.5rem;
 }
-.pastHeader {
-    margin-top: 3rem;
-    color: #6c757d;
+
+.sectionTitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #374151; /* Tailwind: text-gray-700 */
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e7eb; /* Tailwind: border-gray-200 */
 }
 
-.centeredMessage {
-    padding: 3rem;
+.pastTitle {
+    color: #6b7280; /* Tailwind: text-gray-500 */
+}
+
+.centeredMessage, .emptyState {
     text-align: center;
-    color: #6c757d;
-}
-.centeredMessage h3 {
-    color: #343a40;
+    padding: 3rem 1rem;
+    color: #6b7280; /* Tailwind: text-gray-500 */
 }
 
-/* --- User-Karten-Design "White Glass" --- */
+.centeredMessage svg, .emptyState svg {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: #d1d5db; /* Tailwind: text-gray-300 */
+}
+
+.centeredMessage h3, .emptyState h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #4b5569; /* Tailwind: text-gray-600 */
+    margin-bottom: 0.5rem;
+}
+
+.emptyState {
+    background-color: #f9fafb; /* Tailwind: bg-gray-50 */
+    border-radius: 0.75rem;
+    border: 1px dashed #e5e7eb;
+}
+
+.primaryButton {
+    margin-top: 1rem;
+    background-color: #4f46e5; /* Tailwind: bg-indigo-600 */
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.primaryButton:hover {
+    background-color: #4338ca; /* Tailwind: bg-indigo-700 */
+}
+
+
+/* --- User View: Card Design --- */
+.userViewContainer {
+    max-width: 1200px;
+    margin: auto;
+    padding: 1rem;
+}
+
 .cardGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 1.5rem;
 }
-.glassCard {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(10px) saturate(180%);
-    -webkit-backdrop-filter: blur(10px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.8);
-    border-radius: 16px;
-    padding: 1.5rem;
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+.appointmentCard {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.06);
     display: flex;
     flex-direction: column;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
-.glassCard:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.1);
+
+.appointmentCard:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.07), 0 4px 6px -2px rgba(0,0,0,0.05);
 }
+
 .pastCard {
-    background: rgba(248, 249, 250, 0.8);
-    opacity: 0.9;
+    background-color: #f9fafb;
+    opacity: 0.85;
 }
+
 .cardHeader {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    margin-bottom: 1rem;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f3f4f6;
 }
-.cardHeader h3 {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #111827;
-    margin: 0;
-}
-.countdown, .cardHeader span {
-    color: #4b5563;
-    font-size: 0.85rem;
+
+.statusBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
     font-weight: 500;
 }
-.cardDetails {
-    font-size: 0.9rem;
-    color: #6c757d;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    flex-grow: 1; /* Wichtig damit der Footer unten bleibt */
+
+.statusConfirmed { background-color: #dcfce7; color: #166534; }
+.statusCompleted { background-color: #e5e7eb; color: #374151; }
+.statusCancelled { background-color: #fee2e2; color: #991b1b; }
+.statusPending { background-color: #fef9c3; color: #854d0e; }
+
+.countdown {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #6b7280;
 }
-.cardActions {
-    margin-top: 1.5rem;
+
+.cardBody {
+    padding: 1.25rem;
+    flex-grow: 1;
+}
+
+.serviceName {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 0.75rem 0;
+}
+
+.dateTime {
+    font-size: 0.9rem;
+    color: #4b5569;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.cardFooter {
+    padding: 1rem 1.25rem;
+    background-color: #f9fafb;
+    border-top: 1px solid #f3f4f6;
+    border-bottom-left-radius: 0.75rem;
+    border-bottom-right-radius: 0.75rem;
     display: flex;
     gap: 0.75rem;
     flex-wrap: wrap;
 }
-.cardActions button {
-    background-color: rgba(255, 255, 255, 0.5);
-    border: 1px solid rgba(0, 0, 0, 0.08);
+
+.cardFooter button {
+    background-color: #fff;
+    border: 1px solid #d1d5db;
     color: #374151;
     padding: 0.5rem 1rem;
-    border-radius: 8px;
+    border-radius: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 500;
     cursor: pointer;
-    font-weight: 500;
     transition: all 0.2s ease;
-}
-.cardActions button:hover {
-    background-color: #fff;
-    border-color: rgba(0, 0, 0, 0.1);
-    color: #111827;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-.cancelButton:hover {
-    background-color: #fee2e2;
-    border-color: #fca5a5;
-    color: #991b1b;
-}
-.reviewButton:hover {
-    background-color: #fef3c7;
-    border-color: #fde68a;
-    color: #92400e;
-}
-.reviewed {
-    color: #16a34a;
-    font-weight: 500;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
 }
 
-
-/* --- Admin Ansicht --- */
-.adminTabs {
-    display: flex;
-    justify-content: center;
-    background-color: #e9ecef;
-    border-radius: 10px;
-    padding: 0.5rem;
-    margin: 0 auto 2rem auto;
-    max-width: fit-content;
-}
-.adminTabs button {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    background-color: transparent;
-    color: #495057;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.adminTabs .activeTab {
-    background-color: #ffffff;
-    color: #0d6efd;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+.cardFooter button:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
 }
 
-.adminList {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-.adminRow {
+.cardFooter .cancelButton:hover { background-color: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+.cardFooter .reviewButton:hover { background-color: #fef3c7; border-color: #fde68a; color: #92400e; }
+.reviewed { color: #16a34a; font-weight: 500; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; }
+
+
+/* --- Admin View: Table Design --- */
+.adminViewContainer {
     background-color: #fff;
-    border: 1px solid #e9ecef;
-    border-radius: 10px;
-    padding: 1rem 1.5rem;
-    display: grid;
-    grid-template-columns: 80px 2fr 2fr 1.5fr auto;
-    align-items: center;
-    gap: 1.5rem;
-    transition: box-shadow 0.2s ease, border-color 0.2s ease;
-}
-.adminRow:hover {
-    border-color: #ced4da;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.04);
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.06);
+    overflow: hidden;
 }
 
-.adminTime { font-size: 1.1rem; font-weight: 700; color: #0d6efd; }
-.adminCustomer { font-weight: 600; color: #212529; }
-.adminService, .adminContact { color: #6c757d; font-size: 0.9rem; }
-.adminActions { display: flex; gap: 0.5rem; justify-content: flex-end; }
-.adminActions button {
-    background-color: #f1f3f5;
-    border: 1px solid #dee2e6;
-    color: #6c757d;
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
-    cursor: pointer;
-    transition: all 0.2s ease;
+.adminHeader {
+    padding: 1rem 1.5rem;
     display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
+    gap: 1rem;
+    border-bottom: 1px solid #e5e7eb;
 }
-.actionBtnDefault:hover { background-color: #0d6efd; color: #fff; border-color: #0d6efd; }
-.actionBtnSuccess:hover { background-color: #198754; color: #fff; border-color: #198754; }
-.actionBtnDanger:hover { background-color: #dc3545; color: #fff; border-color: #dc3545; }
+
+.searchContainer {
+    position: relative;
+}
+
+.searchInput {
+    background-color: #f3f4f6;
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.75rem 0.6rem 2.25rem;
+    font-size: 0.9rem;
+    width: 250px;
+    transition: width 0.3s ease, background-color 0.2s ease;
+}
+
+.searchInput:focus {
+    width: 350px;
+    background-color: #fff;
+    outline: 2px solid #4f46e5;
+    outline-offset: 2px;
+}
+
+.searchIcon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+}
+
+.tableWrapper {
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th {
+    background-color: #f9fafb;
+    padding: 0.75rem 1.5rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+}
+
+.table th svg {
+    margin-left: 0.25rem;
+    opacity: 0.5;
+}
+
+.table th:hover svg {
+    opacity: 1;
+}
+
+.table td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 0.9rem;
+    color: #374151;
+    vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table tbody tr:hover {
+    background-color: #f9fafb;
+}
+
+.customerCell { display: flex; align-items: center; gap: 0.75rem; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background-color: #e0e7ff; color: #4338ca; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.8rem; flex-shrink: 0; }
+.customerName { font-weight: 500; color: #111827; }
+.customerEmail { font-size: 0.8rem; color: #6b7280; }
+
+.actionCell { text-align: right; }
+.actionButton {
+    background: none;
+    border: none;
+    color: #6b7280;
+    padding: 0.5rem;
+    cursor: pointer;
+    border-radius: 0.375rem;
+}
+.actionButton:hover {
+    background-color: #e5e7eb;
+    color: #1f2937;
+}
+
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    font-size: 0.9rem;
+    color: #4b5569;
+}
+
+.pagination button {
+    background-color: #fff;
+    border: 1px solid #d1d5db;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+}
+
+.pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

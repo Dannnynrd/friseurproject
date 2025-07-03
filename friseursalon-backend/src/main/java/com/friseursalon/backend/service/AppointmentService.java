@@ -1,8 +1,9 @@
 // Datei: friseursalon-backend/src/main/java/com/friseursalon/backend/service/AppointmentService.java
 package com.friseursalon.backend.service;
 
-import com.friseursalon.backend.dto.DailyAppointmentsDTO; // NEU: DTO importieren
+import com.friseursalon.backend.dto.DailyAppointmentsDTO;
 import com.friseursalon.backend.model.Appointment;
+import com.friseursalon.backend.model.AppointmentStatus;
 import com.friseursalon.backend.model.BlockedTimeSlot;
 import com.friseursalon.backend.model.Service;
 import com.friseursalon.backend.model.WorkingHours;
@@ -12,15 +13,16 @@ import com.friseursalon.backend.exception.AppointmentConflictException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest; // NEU
-import org.springframework.data.domain.Pageable;    // NEU
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional; // HINZUGEFÜGT: Fehlender Import
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter; // NEU
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -48,7 +50,6 @@ public class AppointmentService {
         this.blockedTimeSlotService = blockedTimeSlotService;
     }
 
-    // ... (bestehende Methoden bleiben unverändert) ...
     public List<Appointment> getAllAppointments() {
         return appointmentRepository.findAll();
     }
@@ -181,6 +182,17 @@ public class AppointmentService {
 
         return appointmentRepository.save(appointmentToUpdate);
     }
+
+    @Transactional
+    public Appointment updateAppointmentStatus(Long appointmentId, AppointmentStatus newStatus) {
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new RuntimeException("Termin nicht gefunden für ID: " + appointmentId));
+
+        logger.info("Aktualisiere Status für Termin ID {} von {} zu {}", appointmentId, appointment.getStatus(), newStatus);
+        appointment.setStatus(newStatus);
+        return appointmentRepository.save(appointment);
+    }
+
     public boolean deleteUserAppointment(Long appointmentId, String userEmail, boolean isAdmin) {
         logger.info("Versuch, Termin {} durch User {} (isAdmin: {}) zu löschen.", appointmentId, userEmail, isAdmin);
         Optional<Appointment> appointmentOpt = appointmentRepository.findById(appointmentId);
@@ -281,19 +293,17 @@ public class AppointmentService {
         return availableSlots;
     }
 
-    // NEUE METHODE
     public List<DailyAppointmentsDTO> getRecentAppointments(int count) {
         Pageable limit = PageRequest.of(0, count);
         List<Appointment> appointments = appointmentRepository.findByOrderByIdDesc(limit);
         return appointments.stream()
                 .map(apt -> {
                     LocalDate appointmentDate = apt.getStartTime().toLocalDate();
-                    // Für 'status' könnten wir hier 'Neu erstellt' oder das Datum nehmen
                     String status = "Neu";
                     if (appointmentDate.isEqual(LocalDate.now())) {
                         status = "Heute erstellt";
                     } else if (appointmentDate.isBefore(LocalDate.now())) {
-                        status = "Vergangen (neu)"; // Sollte nicht oft vorkommen für neue
+                        status = "Vergangen (neu)";
                     } else {
                         status = "Zukünftig (neu)";
                     }

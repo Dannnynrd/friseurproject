@@ -1,8 +1,10 @@
-// Datei: friseursalon-backend/src/main/java/com/friseursalon/backend/controller/AppointmentController.java
+// Ergänzung für src/main/java/com/friseursalon/backend/controller/AppointmentController.java
+
 package com.friseursalon.backend.controller;
 
 import com.friseursalon.backend.dto.DailyAppointmentsDTO;
 import com.friseursalon.backend.model.Appointment;
+import com.friseursalon.backend.model.AppointmentStatus;
 import com.friseursalon.backend.model.Customer;
 import com.friseursalon.backend.model.Service;
 import com.friseursalon.backend.payload.response.MessageResponse;
@@ -28,6 +30,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -55,6 +58,13 @@ public class AppointmentController {
         return appointmentService.getAllAppointments();
     }
 
+    @GetMapping("/sorted")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<Appointment> getAllAppointmentsSorted() {
+        logger.info("GET /api/appointments/sorted - getAllAppointmentsSorted called by admin");
+        return appointmentService.getAllAppointmentsSorted();
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<Appointment> getAppointmentById(@PathVariable Long id) {
@@ -70,7 +80,6 @@ public class AppointmentController {
         boolean isAdmin = userDetails.getAuthorities().stream()
                 .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
 
-        // Admins oder der Besitzer des Termins dürfen ihn sehen
         if (isAdmin || (appointment.getCustomer() != null && appointment.getCustomer().getEmail().equals(userDetails.getEmail()))) {
             return new ResponseEntity<>(appointment, HttpStatus.OK);
         } else {
@@ -198,6 +207,26 @@ public class AppointmentController {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } else {
             return new ResponseEntity<>(new MessageResponse("Termin konnte nicht storniert werden. Entweder nicht gefunden oder keine Berechtigung."), HttpStatus.FORBIDDEN);
+        }
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateAppointmentStatus(@PathVariable Long id, @RequestBody Map<String, String> statusUpdate) {
+        String statusStr = statusUpdate.get("status");
+        if (statusStr == null) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Status fehlt im Request Body."));
+        }
+        try {
+            AppointmentStatus status = AppointmentStatus.valueOf(statusStr.toUpperCase());
+            Appointment updatedAppointment = appointmentService.updateAppointmentStatus(id, status);
+            return ResponseEntity.ok(updatedAppointment);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Ungültiger Statuswert empfangen: {}", statusStr);
+            return ResponseEntity.badRequest().body(new MessageResponse("Ungültiger Statuswert: " + statusStr));
+        } catch (RuntimeException e) {
+            logger.error("Fehler beim Aktualisieren des Termin-Status für ID {}: {}", id, e.getMessage());
+            return ResponseEntity.notFound().build();
         }
     }
 
