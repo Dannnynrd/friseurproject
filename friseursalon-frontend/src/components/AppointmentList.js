@@ -6,10 +6,10 @@ import styles from './AppointmentList.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faCalendarCheck, faSpinner, faExclamationTriangle, faStar, faEdit, faTrashAlt,
-    faClock, faCalendarPlus, faRedo, faUser, faChevronDown, faSearch,
-    faSort, faSortUp, faSortDown, faCheckCircle, faTimesCircle, faEllipsisV
+    faClock, faCalendarPlus, faRedo, faUser, faEuroSign, faCut, faSlidersH, faSearch, faTimesCircle,
+    faChevronDown, faCalendarDay
 } from '@fortawesome/free-solid-svg-icons';
-import { format, parseISO, isPast, isFuture, differenceInDays } from 'date-fns';
+import { format, parseISO, isPast, isFuture, isToday, startOfDay } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { generateICS } from '../utils/ics';
 
@@ -17,42 +17,105 @@ import AppointmentEditModal from './AppointmentEditModal';
 import ConfirmModal from './ConfirmModal';
 import TestimonialSubmitModal from './TestimonialSubmitModal';
 
-const ROWS_PER_PAGE = 10;
 
-// Hilfsfunktion, um Statusinformationen zu erhalten
-const getStatusInfo = (status) => {
-    switch (status) {
-        case 'CONFIRMED':
-            return { text: 'Bestätigt', className: styles.statusConfirmed, icon: faCheckCircle };
-        case 'COMPLETED':
-            return { text: 'Abgeschlossen', className: styles.statusCompleted, icon: faCheckCircle };
-        case 'CANCELLED':
-            return { text: 'Storniert', className: styles.statusCancelled, icon: faTimesCircle };
-        default:
-            return { text: 'Ausstehend', className: styles.statusPending, icon: faClock };
-    }
+// --- Kleine, logische Sub-Komponenten für maximale Übersichtlichkeit ---
+
+const StatusBadge = ({ status }) => {
+    // BUGFIX: Fängt unbekannte Statuswerte ab und verhindert "Unbekannt"-Anzeige
+    const config = useMemo(() => ({
+        CONFIRMED: { label: 'Bestätigt', className: styles.statusConfirmed },
+        COMPLETED: { label: 'Abgeschlossen', className: styles.statusCompleted },
+        CANCELLED: { label: 'Storniert', className: styles.statusCancelled },
+        PENDING: { label: 'Ausstehend', className: styles.statusPending }
+    }), [])[status] || { label: 'Ausstehend', className: styles.statusPending };
+
+    return <span className={`${styles.statusBadge} ${config.className}`}>{config.label}</span>;
 };
 
-// Hauptkomponente
-function AppointmentList({ adminView = false, refreshTrigger, onAppointmentAction }) {
-    const [allAppointments, setAllAppointments] = useState([]);
-    const [filteredAppointments, setFilteredAppointments] = useState([]);
+const AppointmentCard = ({ appointment, onAction, isAdmin }) => {
+    const navigate = useNavigate();
+    const { id, service, startTime, status, customer } = appointment;
+    const date = parseISO(startTime);
+
+    const handleBookAgain = () => service && navigate(`/buchen?service=${service.id}`);
+    const handleAddToCalendar = () => generateICS(appointment);
+
+    const isUpcoming = isFuture(date) && status !== 'CANCELLED';
+
+    // Logik für die primäre und sekundäre Aktion des Kunden
+    const primaryUserAction = isUpcoming ?
+        { label: 'Zum Kalender', icon: faCalendarPlus, handler: handleAddToCalendar } :
+        { label: 'Erneut Buchen', icon: faRedo, handler: handleBookAgain };
+
+    const secondaryUserAction = isUpcoming ?
+        { label: 'Stornieren', icon: faTrashAlt, handler: () => onAction('cancel', appointment) } :
+        (status === 'COMPLETED' && !appointment.reviewSubmitted) ?
+            { label: 'Bewerten', icon: faStar, handler: () => onAction('review', appointment) } : null;
+
+    return (
+        <div className={styles.card}>
+            {/* Kopfzeile der Karte */}
+            <div className={styles.cardHeader}>
+                <div className={styles.timeInfo}>
+                    <span className={styles.time}>{format(date, 'HH:mm')} Uhr</span>
+                    <span className={styles.date}>{format(date, 'dd. MMMM', { locale: de })}</span>
+                </div>
+                {isAdmin ? (
+                    <div className={styles.adminCustomerInfo}>
+                        <p>{customer?.firstName} {customer?.lastName}</p>
+                        <span>{service.name}</span>
+                    </div>
+                ) : (
+                    <div className={styles.serviceInfo}>
+                        <p>{service?.name}</p>
+                        <span>{service?.durationMinutes} min · {service?.price.toFixed(2)}€</span>
+                    </div>
+                )}
+            </div>
+
+            {/* Fußzeile mit Status und Aktionen */}
+            <div className={styles.cardFooter}>
+                <StatusBadge status={status} />
+                <div className={styles.actions}>
+                    {isAdmin ? (
+                        <>
+                            <button onClick={() => onAction('edit', appointment)} className={styles.iconButton} title="Bearbeiten"><FontAwesomeIcon icon={faEdit} /></button>
+                            {status !== 'CANCELLED' && <button onClick={() => onAction('cancel', appointment)} className={`${styles.iconButton} ${styles.danger}`} title="Stornieren"><FontAwesomeIcon icon={faTrashAlt} /></button>}
+                        </>
+                    ) : (
+                        <>
+                            {secondaryUserAction && <button onClick={secondaryUserAction.handler} className={styles.secondaryButton}><FontAwesomeIcon icon={secondaryUserAction.icon} /></button>}
+                            <button onClick={primaryUserAction.handler} className={styles.primaryButton}>
+                                <FontAwesomeIcon icon={primaryUserAction.icon} />
+                                <span>{primaryUserAction.label}</span>
+                            </button>
+                        </>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+function AppointmentList({ adminView = false }) {
+    const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [modal, setModal] = useState({ type: null, data: null });
-    const [searchTerm, setSearchTerm] = useState('');
-    const [sortConfig, setSortConfig] = useState({ key: 'startTime', direction: 'descending' });
-    const [currentPage, setCurrentPage] = useState(1);
-    const navigate = useNavigate();
 
-    // Abrufen der Termine vom Backend
+    // Filter-Zustände
+    const [searchTerm, setSearchTerm] = useState('');
+    const [timeFilter, setTimeFilter] = useState('UPCOMING'); // UPCOMING oder ARCHIVED
+
+    // Datenabruf
     const fetchAppointments = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const url = adminView ? 'appointments/sorted' : 'appointments/my-appointments';
+            const url = adminView ? 'appointments' : 'appointments/my-appointments';
             const { data } = await api.get(url);
-            setAllAppointments(data || []);
+            setAppointments(data || []);
         } catch (err) {
             setError(err.response?.data?.message || "Termine konnten nicht geladen werden.");
         } finally {
@@ -62,271 +125,146 @@ function AppointmentList({ adminView = false, refreshTrigger, onAppointmentActio
 
     useEffect(() => {
         fetchAppointments();
-    }, [fetchAppointments, refreshTrigger]);
+    }, [fetchAppointments]);
 
-    // Memoized-Funktion für das Sortieren und Filtern der Termine
-    const sortedAndFilteredAppointments = useMemo(() => {
-        let sortableItems = [...allAppointments];
+    // Memoized Filtering & Sorting Logic
+    const processedAppointments = useMemo(() => {
+        const filtered = appointments.filter(app => {
+            if (!adminView) return true; // Filterung nur für Admin-Ansicht
 
-        if (searchTerm) {
-            const lowercasedFilter = searchTerm.toLowerCase();
-            sortableItems = sortableItems.filter(item => {
-                return (
-                    item.customer?.firstName?.toLowerCase().includes(lowercasedFilter) ||
-                    item.customer?.lastName?.toLowerCase().includes(lowercasedFilter) ||
-                    item.service?.name?.toLowerCase().includes(lowercasedFilter)
-                );
-            });
-        }
+            const isArchived = isPast(parseISO(app.startTime)) || app.status === 'CANCELLED';
+            if (timeFilter === 'UPCOMING' && isArchived) return false;
+            if (timeFilter === 'ARCHIVED' && !isArchived) return false;
 
-        if (sortConfig.key !== null) {
-            sortableItems.sort((a, b) => {
-                let valA, valB;
+            const search = searchTerm.toLowerCase().trim();
+            if (!search) return true;
+            return (
+                (app.customer?.firstName?.toLowerCase() || '').includes(search) ||
+                (app.customer?.lastName?.toLowerCase() || '').includes(search) ||
+                (app.service?.name?.toLowerCase() || '').includes(search)
+            );
+        });
 
-                switch (sortConfig.key) {
-                    case 'customer':
-                        valA = `${a.customer?.lastName} ${a.customer?.firstName}`.toLowerCase();
-                        valB = `${b.customer?.lastName} ${b.customer?.firstName}`.toLowerCase();
-                        break;
-                    case 'service':
-                        valA = a.service?.name?.toLowerCase();
-                        valB = b.service?.name?.toLowerCase();
-                        break;
-                    default:
-                        valA = a[sortConfig.key];
-                        valB = b[sortConfig.key];
-                }
+        // Sortieren: Anstehende chronologisch, Archivierte umgekehrt
+        return filtered.sort((a, b) => {
+            const dateA = new Date(a.startTime);
+            const dateB = new Date(b.startTime);
+            return isPast(dateA) ? dateB - dateA : dateA - dateB;
+        });
+    }, [appointments, adminView, searchTerm, timeFilter]);
 
-                if (valA < valB) return sortConfig.direction === 'ascending' ? -1 : 1;
-                if (valA > valB) return sortConfig.direction === 'ascending' ? 1 : -1;
-                return 0;
-            });
-        }
+    // NEUE LOGIK: Termine für den User aufteilen
+    const userAppointments = useMemo(() => {
+        if (adminView) return {};
+        const today = [];
+        const upcoming = [];
+        const archived = [];
 
-        return sortableItems;
-    }, [allAppointments, searchTerm, sortConfig]);
-
-    useEffect(() => {
-        setFilteredAppointments(sortedAndFilteredAppointments);
-        setCurrentPage(1);
-    }, [sortedAndFilteredAppointments]);
+        processedAppointments.forEach(app => {
+            const date = parseISO(app.startTime);
+            if(isPast(date) || app.status === 'CANCELLED') {
+                archived.push(app)
+            } else if (isToday(date)) {
+                today.push(app);
+            } else {
+                upcoming.push(app);
+            }
+        });
+        return { today, upcoming, archived };
+    }, [processedAppointments, adminView]);
 
 
+    // Modal-Handler
     const handleAction = (type, data) => setModal({ type, data });
     const handleCloseModal = () => setModal({ type: null, data: null });
-
-    const handleSaveAndRefresh = () => {
-        handleCloseModal();
-        fetchAppointments();
-        if (onAppointmentAction) onAppointmentAction();
-    };
-
+    const handleSaveAndRefresh = () => { handleCloseModal(); fetchAppointments(); };
     const handleConfirmCancel = async () => {
         if (!modal.data) return;
-        try {
-            await api.delete(`appointments/${modal.data.id}`);
-            handleSaveAndRefresh();
-        } catch (err) {
-            setError(err.response?.data?.message || "Fehler beim Stornieren.");
-            handleCloseModal();
-        }
+        try { await api.delete(`appointments/${modal.data.id}`); handleSaveAndRefresh(); }
+        catch (err) { setError(err.response?.data?.message || "Fehler."); handleCloseModal(); }
     };
 
-    const requestSort = (key) => {
-        let direction = 'ascending';
-        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-            direction = 'descending';
-        }
-        setSortConfig({ key, direction });
-    };
+    // Render-Zustände
+    if (loading) return <div className={styles.centeredMessage}><FontAwesomeIcon icon={faSpinner} spin size="2x" /></div>;
+    if (error) return <div className={styles.centeredMessage}><FontAwesomeIcon icon={faExclamationTriangle} /> {error}</div>;
 
-    const getSortIcon = (key) => {
-        if (sortConfig.key !== key) return faSort;
-        return sortConfig.direction === 'ascending' ? faSortUp : faSortDown;
-    };
-
-    const paginatedAppointments = filteredAppointments.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
-    const totalPages = Math.ceil(filteredAppointments.length / ROWS_PER_PAGE);
-
-    if (loading) return <div className={styles.centeredMessage}><FontAwesomeIcon icon={faSpinner} spin size="2x" /><p>Lade Termine...</p></div>;
-    if (error) return <div className={`${styles.message} ${styles.error}`}><FontAwesomeIcon icon={faExclamationTriangle} /> {error}</div>;
-
-    const renderEmptyState = (view) => (
-        <div className={styles.emptyState}>
-            <FontAwesomeIcon icon={faCalendarCheck} />
-            <h3>{view === 'user' ? 'Keine Termine gefunden' : 'Keine Termine für diese Ansicht'}</h3>
-            <p>{view === 'user' ? 'Sie haben aktuell keine gebuchten Termine.' : 'Passen Sie Ihre Filter an oder legen Sie einen neuen Termin an.'}</p>
-            {!adminView && <button onClick={() => navigate('/buchen')} className={styles.primaryButton}>Jetzt Termin buchen</button>}
+    const renderEmptyState = (isFiltered) => (
+        <div className={styles.centeredMessage}>
+            <FontAwesomeIcon icon={faCalendarCheck} size="3x" className={styles.emptyIcon} />
+            <h3 className={styles.emptyTitle}>{isFiltered ? "Nichts gefunden" : "Keine Termine"}</h3>
+            <p className={styles.emptyText}>
+                {isFiltered ? "Ihre Suche oder Filterung ergab keine Treffer." : "Es sind aktuell keine Termine vorhanden."}
+            </p>
         </div>
     );
 
-    const renderUserView = () => {
-        const upcoming = filteredAppointments.filter(app => isFuture(parseISO(app.startTime)) && app.status !== 'CANCELLED');
-        const past = filteredAppointments.filter(app => isPast(parseISO(app.startTime)) || app.status === 'CANCELLED');
+    // --- RENDER-METHODEN FÜR USER UND ADMIN ---
 
-        return (
-            <div className={styles.userViewContainer}>
-                <h1 className={styles.pageTitle}>Meine Termine</h1>
-                {upcoming.length > 0 && <h2 className={styles.sectionTitle}>Anstehend</h2>}
-                {upcoming.length === 0 && past.length === 0 && renderEmptyState('user')}
-                <div className={styles.cardGrid}>
-                    {upcoming.map(app => <AppointmentCard key={app.id} appointment={app} onAction={handleAction} />)}
-                </div>
-
-                {past.length > 0 && <h2 className={`${styles.sectionTitle} ${styles.pastTitle}`}>Vergangen & Storniert</h2>}
-                <div className={styles.cardGrid}>
-                    {past.map(app => <AppointmentCard key={app.id} appointment={app} onAction={handleAction} isPast />)}
-                </div>
-            </div>
-        );
-    };
-
-    const renderAdminView = () => (
-        <div className={styles.adminViewContainer}>
-            <div className={styles.adminHeader}>
-                <h1 className={styles.pageTitle}>Terminverwaltung</h1>
-                <div className={styles.searchContainer}>
-                    <FontAwesomeIcon icon={faSearch} className={styles.searchIcon} />
-                    <input
-                        type="text"
-                        placeholder="Kunde oder Service suchen..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className={styles.searchInput}
-                    />
-                </div>
-            </div>
-            <div className={styles.tableWrapper}>
-                <table className={styles.table}>
-                    <thead>
-                    <tr>
-                        <th onClick={() => requestSort('customer')}>Kunde <FontAwesomeIcon icon={getSortIcon('customer')} /></th>
-                        <th onClick={() => requestSort('service')}>Service <FontAwesomeIcon icon={getSortIcon('service')} /></th>
-                        <th onClick={() => requestSort('startTime')}>Datum & Zeit <FontAwesomeIcon icon={getSortIcon('startTime')} /></th>
-                        <th onClick={() => requestSort('status')}>Status <FontAwesomeIcon icon={getSortIcon('status')} /></th>
-                        <th>Aktionen</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {paginatedAppointments.length > 0 ? paginatedAppointments.map(app => (
-                        <tr key={app.id}>
-                            <td>
-                                <div className={styles.customerCell}>
-                                    <div className={styles.avatar}>{app.customer.firstName.charAt(0)}{app.customer.lastName.charAt(0)}</div>
-                                    <div>
-                                        <div className={styles.customerName}>{app.customer.firstName} {app.customer.lastName}</div>
-                                        <div className={styles.customerEmail}>{app.customer.email}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>{app.service.name}</td>
-                            <td>{format(parseISO(app.startTime), 'dd.MM.yy, HH:mm', { locale: de })} Uhr</td>
-                            <td>
-                                    <span className={`${styles.statusBadge} ${getStatusInfo(app.status).className}`}>
-                                        <FontAwesomeIcon icon={getStatusInfo(app.status).icon} />
-                                        {getStatusInfo(app.status).text}
-                                    </span>
-                            </td>
-                            <td>
-                                <div className={styles.actionCell}>
-                                    <button onClick={() => handleAction('edit', app)} className={styles.actionButton} title="Bearbeiten">
-                                        <FontAwesomeIcon icon={faEdit} />
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    )) : (
-                        <tr>
-                            <td colSpan="5">{renderEmptyState('admin')}</td>
-                        </tr>
-                    )}
-                    </tbody>
-                </table>
-            </div>
-            {totalPages > 1 && (
-                <div className={styles.pagination}>
-                    <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Zurück</button>
-                    <span>Seite {currentPage} von {totalPages}</span>
-                    <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Weiter</button>
-                </div>
+    const UserView = () => (
+        <>
+            {userAppointments.today.length > 0 && (
+                <section>
+                    <h2 className={styles.sectionTitle}>Heute</h2>
+                    <div className={styles.cardList}>
+                        {userAppointments.today.map(app => <AppointmentCard key={app.id} appointment={app} onAction={handleAction} />)}
+                    </div>
+                </section>
             )}
-        </div>
+            {userAppointments.upcoming.length > 0 && (
+                <section>
+                    <h2 className={styles.sectionTitle}>Demnächst</h2>
+                    <div className={styles.cardList}>
+                        {userAppointments.upcoming.map(app => <AppointmentCard key={app.id} appointment={app} onAction={handleAction} />)}
+                    </div>
+                </section>
+            )}
+            {userAppointments.archived.length > 0 && (
+                <section>
+                    <h2 className={styles.sectionTitle}>Archiv</h2>
+                    <div className={styles.cardList}>
+                        {userAppointments.archived.map(app => <AppointmentCard key={app.id} appointment={app} onAction={handleAction} />)}
+                    </div>
+                </section>
+            )}
+            {appointments.length === 0 && renderEmptyState(false)}
+        </>
+    );
+
+    const AdminView = () => (
+        <>
+            <div className={styles.adminHeader}>
+                <div className={styles.searchWrapper}>
+                    <FontAwesomeIcon icon={faSearch} className={styles.controlIcon} />
+                    <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Suche..." className={styles.inputField} />
+                </div>
+                <div className={styles.tabs}>
+                    <button onClick={() => setTimeFilter('UPCOMING')} className={timeFilter === 'UPCOMING' ? styles.activeTab : ''}>Anstehend</button>
+                    <button onClick={() => setTimeFilter('ARCHIVED')} className={timeFilter === 'ARCHIVED' ? styles.activeTab : ''}>Archiv</button>
+                </div>
+            </div>
+
+            {processedAppointments.length > 0 ? (
+                <div className={styles.cardList}>
+                    {processedAppointments.map(app => <AppointmentCard key={app.id} appointment={app} onAction={handleAction} isAdmin />)}
+                </div>
+            ) : renderEmptyState(true)}
+        </>
     );
 
     return (
-        <>
-            {adminView ? renderAdminView() : renderUserView()}
-            <AppointmentEditModal isOpen={modal.type === 'edit'} onClose={handleCloseModal} onSave={handleSaveAndRefresh} appointmentData={modal.data} adminView={adminView} />
-            <ConfirmModal isOpen={modal.type === 'cancel'} onClose={handleCloseModal} onConfirm={handleConfirmCancel} title="Termin stornieren" message="Möchten Sie diesen Termin wirklich stornieren? Dies kann nicht rückgängig gemacht werden." />
-            <TestimonialSubmitModal isOpen={modal.type === 'review'} onClose={handleCloseModal} onSubmitted={handleSaveAndRefresh} appointment={modal.data} />
-        </>
+        <div className={styles.pageWrapper}>
+            <div className={styles.container}>
+                {adminView ? <AdminView /> : <UserView />}
+            </div>
+            {modal.type && (
+                <>
+                    {modal.type === 'edit' && <AppointmentEditModal isOpen={true} onClose={handleCloseModal} onSave={handleSaveAndRefresh} appointmentData={modal.data} adminView={adminView} />}
+                    {modal.type === 'cancel' && <ConfirmModal isOpen={true} onClose={handleCloseModal} onConfirm={handleConfirmCancel} title="Termin stornieren?" message="Diese Aktion kann nicht rückgängig gemacht werden." confirmButtonText="Ja, stornieren" icon={faTrashAlt} iconColorClass="text-red-500" />}
+                    {modal.type === 'review' && <TestimonialSubmitModal isOpen={true} onClose={handleCloseModal} onSubmitted={handleSaveAndRefresh} appointment={modal.data} />}
+                </>
+            )}
+        </div>
     );
 }
-
-// Sub-Komponente für die Benutzeransicht-Karten
-const AppointmentCard = ({ appointment, onAction, isPast = false }) => {
-    const status = getStatusInfo(appointment.status);
-    const countdown = isFuture(parseISO(appointment.startTime)) ? differenceInDays(parseISO(appointment.startTime), new Date()) : -1;
-
-    return (
-        <div className={`${styles.appointmentCard} ${isPast ? styles.pastCard : ''}`}>
-            <div className={styles.cardHeader}>
-                <span className={`${styles.statusBadge} ${status.className}`}>
-                    <FontAwesomeIcon icon={status.icon} />
-                    {status.text}
-                </span>
-                {!isPast && countdown >= 0 && (
-                    <span className={styles.countdown}>
-                        {countdown === 0 ? 'Heute' : `in ${countdown + 1} Tagen`}
-                    </span>
-                )}
-            </div>
-            <div className={styles.cardBody}>
-                <h3 className={styles.serviceName}>{appointment.service.name}</h3>
-                <p className={styles.dateTime}>
-                    <FontAwesomeIcon icon={faCalendarCheck} />
-                    {format(parseISO(appointment.startTime), 'EEEE, dd. MMMM yyyy', { locale: de })}
-                </p>
-                <p className={styles.dateTime}>
-                    <FontAwesomeIcon icon={faClock} />
-                    {format(parseISO(appointment.startTime), 'HH:mm', { locale: de })} Uhr
-                </p>
-            </div>
-            <div className={styles.cardFooter}>
-                <UserActions appointment={appointment} onAction={onAction} />
-            </div>
-        </div>
-    );
-};
-
-// Sub-Komponente für die Benutzer-Aktionen
-const UserActions = ({ appointment, onAction }) => {
-    const navigate = useNavigate();
-    const isUpcoming = isFuture(parseISO(appointment.startTime)) && appointment.status !== 'CANCELLED';
-
-    const bookAgain = (service) => {
-        if (service && service.id) navigate(`/buchen?service=${service.id}`);
-    };
-    const addToCalendar = (app) => generateICS(app);
-
-    if (isUpcoming) {
-        return (
-            <>
-                <button onClick={() => addToCalendar(appointment)}><FontAwesomeIcon icon={faCalendarPlus} /> Zum Kalender</button>
-                <button className={styles.cancelButton} onClick={() => onAction('cancel', appointment)}><FontAwesomeIcon icon={faTrashAlt} /> Stornieren</button>
-            </>
-        );
-    }
-
-    return (
-        <>
-            <button onClick={() => bookAgain(appointment.service)}><FontAwesomeIcon icon={faRedo} /> Erneut Buchen</button>
-            {appointment.status === 'COMPLETED' && (!appointment.review ?
-                    <button className={styles.reviewButton} onClick={() => onAction('review', appointment)}><FontAwesomeIcon icon={faStar} /> Bewerten</button>
-                    : <span className={styles.reviewed}><FontAwesomeIcon icon={faCheckCircle}/> Bewertet</span>
-            )}
-        </>
-    );
-};
 
 export default AppointmentList;
