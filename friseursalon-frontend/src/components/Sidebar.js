@@ -6,7 +6,7 @@ import {
     FiUser, FiCalendar, FiLogOut, FiBarChart2, FiBriefcase,
     FiUsers, FiClock, FiSlash, FiSettings, FiScissors, FiStar
 } from 'react-icons/fi';
-
+//
 // Die Navigationsstruktur bleibt unverändert
 const navConfig = {
     user: [
