@@ -1,200 +1,194 @@
 /* friseursalon-frontend/src/components/AppointmentList.module.css */
 
-.appointmentListPage {
-    width: 100%;
+.pageWrapper {
+    background-color: #f8f9fa; /* Heller, fast weißer Hintergrund */
+    padding: clamp(1rem, 5vw, 2rem);
+    min-height: 100%;
 }
 
-/* Stil für Nachrichten (Fehler/Erfolg) */
-.message {
-    padding: 1rem;
+.viewContainer {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.viewTitle {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #212529;
     margin-bottom: 1.5rem;
-    border-radius: 12px;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    border: 1px solid transparent;
+}
+.pastHeader {
+    margin-top: 3rem;
+    color: #6c757d;
 }
 
-.message.error {
-    background-color: rgba(239, 68, 68, 0.1);
-    color: #b91c1c;
-    border-color: rgba(239, 68, 68, 0.2);
+.centeredMessage {
+    padding: 3rem;
+    text-align: center;
+    color: #6c757d;
+}
+.centeredMessage h3 {
+    color: #343a40;
 }
 
-.message.success {
-    background-color: rgba(34, 197, 94, 0.1);
-    color: #15803d;
-    border-color: rgba(34, 197, 94, 0.2);
-}
-
-/* Container für die Terminkarten */
-.appointmentsGrid {
+/* --- User-Karten-Design "White Glass" --- */
+.cardGrid {
     display: grid;
-    grid-template-columns: 1fr; /* Mobile-first: eine Spalte */
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 1.5rem;
 }
-
-/* Die einzelne Terminkarte */
-.appointmentCard {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    border-radius: 16px;
-
-    /* --- Der "Glas"-Effekt --- */
-    background-color: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+.glassCard {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(10px) saturate(180%);
+    -webkit-backdrop-filter: blur(10px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
-
-.appointmentCard:hover {
+.glassCard:hover {
     transform: translateY(-5px);
-    box-shadow: 0 12px 40px -10px rgba(31, 38, 135, 0.15);
+    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.1);
 }
-
-/* Styling für vergangene Termine */
-.past {
-    background-color: rgba(241, 245, 249, 0.6); /* Helleres Grau */
-    opacity: 0.8;
+.pastCard {
+    background: rgba(248, 249, 250, 0.8);
+    opacity: 0.9;
 }
-
-.past .cardDate {
-    background-color: #cbd5e1; /* Tailwind slate-300 */
-    color: #475569; /* Tailwind slate-600 */
-}
-
-
-/* Datums-Block auf der linken Seite der Karte */
-.cardDate {
+.cardHeader {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
-    background-color: var(--color-accent);
-    color: var(--color-accent-text);
-    flex-shrink: 0;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    margin-bottom: 1rem;
 }
-
-.dateDay {
-    font-size: 1.5rem;
-    font-weight: 700;
-    line-height: 1;
-}
-
-.dateMonth {
-    font-size: 0.8rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-/* Mittlerer Teil der Karte mit den Details */
-.cardDetails {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    overflow: hidden;
-}
-
-.cardTime {
-    font-size: 0.8rem;
+.cardHeader h3 {
+    font-size: 1.2rem;
     font-weight: 600;
-    color: var(--color-text-light);
+    color: #111827;
+    margin: 0;
 }
-
-.cardService {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--color-text-dark);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.cardMeta {
-    display: flex;
-    gap: 1rem;
+.countdown, .cardHeader span {
+    color: #4b5563;
     font-size: 0.85rem;
-    color: var(--color-text-medium);
-    align-items: center;
+    font-weight: 500;
 }
-
-.cardMeta span {
+.cardDetails {
+    font-size: 0.9rem;
+    color: #6b7280;
     display: flex;
-    align-items: center;
-    gap: 0.3rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-grow: 1; /* Wichtig damit der Footer unten bleibt */
 }
-
-/* Aktionen-Block auf der rechten Seite */
 .cardActions {
+    margin-top: 1.5rem;
     display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+.cardActions button {
+    background-color: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    color: #374151;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+.cardActions button:hover {
+    background-color: #fff;
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #111827;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.cancelButton:hover {
+    background-color: #fee2e2;
+    border-color: #fca5a5;
+    color: #991b1b;
+}
+.reviewButton:hover {
+    background-color: #fef3c7;
+    border-color: #fde68a;
+    color: #92400e;
+}
+.reviewed {
+    color: #16a34a;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
     gap: 0.5rem;
 }
 
-.actionButton {
+
+/* --- Admin Ansicht --- */
+.adminTabs {
+    display: flex;
+    justify-content: center;
+    background-color: #e9ecef;
+    border-radius: 10px;
+    padding: 0.5rem;
+    margin: 0 auto 2rem auto;
+    max-width: fit-content;
+}
+.adminTabs button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    background-color: transparent;
+    color: #495057;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.adminTabs .activeTab {
+    background-color: #ffffff;
+    color: #0d6efd;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.adminList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.adminRow {
+    background-color: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    display: grid;
+    grid-template-columns: 80px 2fr 2fr 1.5fr auto;
+    align-items: center;
+    gap: 1.5rem;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.adminRow:hover {
+    border-color: #ced4da;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.04);
+}
+
+.adminTime { font-size: 1.1rem; font-weight: 700; color: #0d6efd; }
+.adminCustomer { font-weight: 600; color: #212529; }
+.adminService, .adminContact { color: #6c757d; font-size: 0.9rem; }
+.adminActions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+.adminActions button {
+    background-color: #f1f3f5;
+    border: 1px solid #dee2e6;
+    color: #6c757d;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease;
-    color: var(--color-text-light);
-    background-color: var(--color-background-offset);
 }
-
-.actionButton:hover {
-    color: white;
-}
-
-.editButton:hover {
-    background-color: #4f46e5; /* Indigo 600 */
-}
-
-.cancelButton:hover {
-    background-color: #dc2626; /* Red 600 */
-}
-
-.reviewButton {
-    color: #f59e0b; /* Amber 500 */
-}
-
-.reviewButton:hover {
-    background-color: #f59e0b;
-    color: white;
-}
-
-
-/* Fallback für keine Termine */
-.noAppointments {
-    text-align: center;
-    padding: 3rem 1.5rem;
-    background-color: rgba(241, 245, 249, 0.7);
-    border-radius: 16px;
-    border: 1px dashed var(--color-border);
-}
-
-/* -- Desktop-Ansicht -- */
-@media (min-width: 768px) {
-    .appointmentsGrid {
-        /* Optional: Mehrspaltiges Layout auf größeren Bildschirmen */
-        /* grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); */
-    }
-
-    .appointmentCard {
-        padding: 1.5rem;
-        gap: 1.5rem;
-    }
-}
+.actionBtnDefault:hover { background-color: #0d6efd; color: #fff; border-color: #0d6efd; }
+.actionBtnSuccess:hover { background-color: #198754; color: #fff; border-color: #198754; }
+.actionBtnDanger:hover { background-color: #dc3545; color: #fff; border-color: #dc3545; }
