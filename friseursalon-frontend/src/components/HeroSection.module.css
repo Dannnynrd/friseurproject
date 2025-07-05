@@ -22,7 +22,6 @@
     /* --- HIER IHR BILD EINFÜGEN --- */
     /* Ersetzen Sie die URL durch den Pfad zu Ihrem Bild im 'public' Ordner. */
     /* Beispiel: background-image: url('/images/hero-image.png'); */
-    background-image: url('/Users/danielnrd/IdeaProjects/friseurproject/friseursalon-frontend/src/assets/images/hero-image.png');
 
     background-size: cover;
     background-position: center;
